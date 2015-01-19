@@ -157,7 +157,7 @@ import glob
 import pandas as pd
 import itertools
 import re
-
+import CGATPipelines.PipelineExome as Exome
 USECLUSTER = True
 
 #########################################################################
@@ -286,13 +286,6 @@ def mapReads(infile, outfile):
     P.run()
 
 
-#########################################################################
-#########################################################################
-#########################################################################
-# BAM file processing
-#########################################################################
-
-
 @merge(mapReads, "picard_duplicate_stats.load")
 def loadPicardDuplicateStats(infiles, outfile):
     '''Merge Picard duplicate stats into single table and load into SQLite.'''
@@ -322,21 +315,22 @@ def buildCoverageStats(infile, outfile):
     # this is performed before CalculateHsMetrics
     to_cluster = USECLUSTER
     baits = PARAMS["roi_baits"]
+    modified_baits = infile + "_temp_baits_final.bed"
     regions = PARAMS["roi_regions"]
     statement = '''samtools view -H %(infile)s > %(infile)s_temp_header.txt;
                 awk 'NR>2' %(baits)s |
                 awk -F '\\t' 'BEGIN { OFS="\\t" } {print $1,$2,$3,"+",$4;}'
                 > %(infile)s_temp_baits.bed;
                 cat  %(infile)s_temp_header.txt %(infile)s_temp_baits.bed
-                > %(infile)s_temp_baits_final.bed;
-                CalculateHsMetrics
-                BAIT_INTERVALS=%(infile)s_temp_baits_final.bed
-                TARGET_INTERVALS=%(infile)s_temp_baits_final.bed
-                INPUT=%(infile)s OUTPUT=%(outfile)s
-                VALIDATION_STRINGENCY=LENIENT;
+                > %(modified_baits)s; checkpoint ;
                 rm -rf %(infile)s_temp_baits.bed %(infile)s_temp_header.txt
-                %(infile)s_temp_baits_final.bed''' % locals()
+                ''' % locals()
     P.run()
+
+    PipelineMappingQC.loadPicardAlignmentStats(
+        infile, outfile, modified_baits, modified_baits)
+
+    IOTools.zapFile(modified_baits)
 
 
 @follows(buildCoverageStats)
@@ -369,7 +363,7 @@ def loadCoverageStats(infiles, outfile):
 #########################################################################
 #########################################################################
 #########################################################################
-# GATK relaign bams
+# GATK realign bams
 #########################################################################
 
 
@@ -380,91 +374,39 @@ def GATKpreprocessing(infile, outfile):
     '''Reorders BAM according to reference fasta and add read groups using
        SAMtools, realigns around indels and recalibrates base quality scores
        using GATK'''
-    to_cluster = USECLUSTER
-    track = P.snip(os.path.basename(infile), ".bam")
-    tmpdir_gatk = P.getTempDir('/ifs/scratch')
-    job_options = getGATKOptions()
+
     library = PARAMS["readgroup_library"]
     platform = PARAMS["readgroup_platform"]
     platform_unit = PARAMS["readgroup_platform_unit"]
-    # threads = PARAMS["gatk_threads"]
+    gatk_threads = PARAMS["gatk_threads"]
     dbsnp = PARAMS["gatk_dbsnp"]
     solid_options = PARAMS["gatk_solid_options"]
+    genome = "%s/%s.fa" % (PARAMS["bwa_index_dir"],
+                           PARAMS["genome"])
 
-    # need to unload java before runnning GATK as it now runs on java version 7
-    # full path to .jar file being specified as using module "GenomeAnalysisTK"
-    # resulted in error: "Could not find the main class:
-    # org.broadinstitute.sting.gatk.CommandLineGATK. Program will exit."
-    # This error is seen when java version 6 is used
-    # Find out why this error occurs when not specifying full path
+    outfile1 = re.sub(".bqsr", ".readgroups.bqsr", outfile)
+    outfile2 = re.sub(".bqsr", ".realign.bqsr", outfile)
 
-    statement = '''module unload apps/java/jre1.6.0_26; checkpoint;'''
-    statement += '''ReorderSam INPUT=%(infile)s
-                    OUTPUT=%(tmpdir_gatk)s/%(track)s.reordered.bam
-                    REFERENCE=%%(bwa_index_dir)s/%%(genome)s.fa
-                    ALLOW_INCOMPLETE_DICT_CONCORDANCE=true
-                    VALIDATION_STRINGENCY=SILENT ;
-                    checkpoint ;''' % locals()
-    statement += '''samtools index %(tmpdir_gatk)s/%(track)s.reordered.bam ;
-                    checkpoint ;''' % locals()
-    statement += '''AddOrReplaceReadGroups
-                    INPUT=%(tmpdir_gatk)s/%(track)s.reordered.bam
-                    OUTPUT=%(tmpdir_gatk)s/%(track)s.readgroups.bam
-                    RGLB=%(library)s RGPL=%(platform)s
-                    RGPU=%(platform_unit)s RGSM=%(track)s
-                    VALIDATION_STRINGENCY=SILENT ;
-                    checkpoint ;''' % locals()
-    statement += '''samtools index %(tmpdir_gatk)s/%(track)s.readgroups.bam ;
-                    checkpoint ;''' % locals()
-    statement += '''java -Xmx4g -jar
-                    /ifs/apps/bio/GATK-2.7-2/GenomeAnalysisTK.jar
-                    -T RealignerTargetCreator
-                    -o %(tmpdir_gatk)s/%(track)s.indelrealignment.intervals
-                    -R %%(bwa_index_dir)s/%%(genome)s.fa
-                    -I %(tmpdir_gatk)s/%(track)s.readgroups.bam ;
-                    checkpoint ;''' % locals()
-    statement += '''java -Xmx4g -jar
-                    /ifs/apps/bio/GATK-2.7-2/GenomeAnalysisTK.jar
-                    -T IndelRealigner
-                    -o %(tmpdir_gatk)s/%(track)s.indelrealigned.bam
-                    -R %%(bwa_index_dir)s/%%(genome)s.fa
-                    -I %(tmpdir_gatk)s/%(track)s.readgroups.bam
-                    -targetIntervals
-                    %(tmpdir_gatk)s/%(track)s.indelrealignment.intervals ;
-                    checkpoint ;''' % locals()
-    statement += '''java -Xmx4g -jar
-                    /ifs/apps/bio/GATK-2.7-2/GenomeAnalysisTK.jar
-                    -T BaseRecalibrator
-                    --out %(tmpdir_gatk)s/%(track)s.recal.grp
-                    -R %%(bwa_index_dir)s/%%(genome)s.fa
-                    -I %(tmpdir_gatk)s/%(track)s.indelrealigned.bam
-                    --knownSites %(dbsnp)s %(solid_options)s ;
-                    checkpoint ;''' % locals()
-    statement += '''java -Xmx4g -jar
-                    /ifs/apps/bio/GATK-2.7-2/GenomeAnalysisTK.jar
-                    -T PrintReads -o %(outfile)s
-                    -BQSR %(tmpdir_gatk)s/%(track)s.recal.grp
-                    -R %%(bwa_index_dir)s/%%(genome)s.fa
-                    -I %(tmpdir_gatk)s/%(track)s.indelrealigned.bam ;
-                    checkpoint ;''' % locals()
-    statement += '''rm -rf %(tmpdir_gatk)s ;'''
-    P.run()
+    Exome.GATKreadGroups(infile, outfile1, genome, library, platform,
+                         platform_unit)
+
+    Exome.GATKrealign(outfile1, outfile2, genome, gatk_threads)
+
+    Exome.GATKrescore(outfile2, outfile, genome, dbsnp, solid_options)
+
+    IOTools.zapFile(outfile1 + ".bam")
+    IOTools.zapFile(outfile1 + ".bai")
+    IOTools.zapFile(outfile2 + ".bam")
+    IOTools.zapFile(outfile2 + ".bai")
 
 
 @transform(GATKpreprocessing,
            regex("bam/(\S+)-Control-(\d+).bqsr.bam"),
-           r"bam/\1-Control-\2.realigned.bqsr.bam")
-def realignMatchedSample(infile, outfile):
-    ''' repeat realignments with merged bam of control and tumor
-        this should help avoid problems with sample-specific realignments'''
+           r"bam/\1-Control-\2.merged.bam")
+def mergeSampleBams(infile, outfile):
+    '''merge control and tumor bams'''
     # Note: need to change readgroup headers for merge and subsequent
     # splitting of bam files
-
-    to_cluster = USECLUSTER
-    job_options = getGATKOptions()
-    # tmpdir_gatk = P.getTempDir('tmpbam')
-    tmpdir_gatk = P.getTempDir('/ifs/scratch')
-    # threads = PARAMS["gatk_threads"]
 
     outfile_tumor = outfile.replace("Control", PARAMS["mutect_tumour"])
     infile_tumor = infile.replace("Control", PARAMS["mutect_tumour"])
@@ -481,9 +423,9 @@ def realignMatchedSample(infile, outfile):
 
     control_id = "Control.bam"
     tumor_id = control_id.replace("Control", PARAMS["mutect_tumour"])
+    tmpdir_gatk = P.getTempDir('.')
 
-    statement = '''module unload apps/java/jre1.6.0_26; checkpoint;'''
-    statement += '''AddOrReplaceReadGroups
+    statement = '''AddOrReplaceReadGroups
                     INPUT=%(infile)s
                     OUTPUT=%(tmpdir_gatk)s/%(infile_base)s
                     RGLB=%(library)s RGPL=%(platform)s
@@ -500,44 +442,56 @@ def realignMatchedSample(infile, outfile):
                     VALIDATION_STRINGENCY=SILENT ;
                     checkpoint ;''' % locals()
     statement += '''samtools merge -rf
-                    %(tmpdir_gatk)s/merged.bam
+                    %(outfile)s
                     %(tmpdir_gatk)s/%(infile_base)s
                     %(tmpdir_gatk)s/%(infile_tumor_base)s
                     ; checkpoint ;''' % locals()
-    statement += '''samtools index %(tmpdir_gatk)s/merged.bam;
-                    checkpoint ;''' % locals()
-    statement += '''java -Xmx4g -jar
-                    /ifs/apps/bio/GATK-2.7-2/GenomeAnalysisTK.jar
-                    -T RealignerTargetCreator
-                    -o %(tmpdir_gatk)s/merged.indelrealignment.intervals
-                    -R %%(bwa_index_dir)s/%%(genome)s.fa
-                    -I %(tmpdir_gatk)s/merged.bam;
-                    checkpoint ;''' % locals()
-    statement += '''java -Xmx4g -jar
-                    /ifs/apps/bio/GATK-2.7-2/GenomeAnalysisTK.jar
-                    -T IndelRealigner
-                    -o %(tmpdir_gatk)s/merged.indelrealigned.bam
-                    -R %%(bwa_index_dir)s/%%(genome)s.fa
-                    -I %(tmpdir_gatk)s/merged.bam
-                    -targetIntervals
-                    %(tmpdir_gatk)s/merged.indelrealignment.intervals;
-                    checkpoint ;''' % locals()
-    statement += '''samtools view -hb
-                    %(tmpdir_gatk)s/merged.indelrealigned.bam
-                    -r %(track)s > %(outfile)s;
-                    samtools view -hb
-                    %(tmpdir_gatk)s/merged.indelrealigned.bam
-                    -r %(track_tumor)s > %(outfile_tumor)s;
-                    samtools index %(outfile)s;
-                    samtools index %(outfile_tumor)s;
-                    checkpoint;''' % locals()
-    statement += '''rm -rf %(tmpdir_gatk)s;''' % locals()
-    print statement
+    statement += '''samtools index %(outfile)s ;
+                    checkpoint ;'''
+    statement += '''rm -rf %(tmpdir_gatk)s ;
+                    checkpoint ; ''' % locals()
     P.run()
+    IOTools.zapFile(infile)
+    IOTools.zapFile(infile_tumor)
+
+
+@transform(mergeSampleBams,
+           regex("bam/(\S+)-Control-(\d+).merged.bam"),
+           r"bam/\1-Control-\2.realigned.bqsr.bam")
+def realignMatchedSample(infile, outfile):
+    ''' repeat realignments with merged bam of control and tumor
+        this should help avoid problems with sample-specific realignments'''
+
+    genome = "%s/%s.fa" % (PARAMS["bwa_index_dir"],
+                           PARAMS["genome"])
+
+    Exome.GATKrealign(infile, outfile, genome)
+
+    IOTools.zapFile(infile)
 
 
 @transform(realignMatchedSample,
-           regex("bam/(\S+)-Control-(\S+).realigned.bqsr.bam"),
+           regex("bam/(\S+)-Control-(\d+).realigned.bqsr.bam"),
+           r"bam/\1-Control-\2.realigned.split.bqsr.bam")
+def splitMergedRealigned(infile, outfile):
+    ''' split realignment file and truncate intermediate bams'''
+
+    track = P.snip(os.path.basename(infile), "realigned.bqsr.bam") + ".bqsr"
+    track_tumor = track.replace("Control", PARAMS["mutect_tumour"])
+    outfile_tumor = outfile.replace("Control", PARAMS["mutect_tumour"])
+
+    statement = '''samtools view -hb %(infile)s
+                   -r %(track)s > %(outfile)s;
+                   samtools view -hb %(infile)s
+                   -r %(track_tumor)s > %(outfile_tumor)s; checkpoint ;
+                   samtools index %(outfile)s;
+                   samtools index %(outfile_tumor)s; checkpoint;''' % locals()
+    P.run()
+    IOTools.zapFile(infile)
+
+
+@transform(splitMergedRealigned,
+           regex("bam/(\S+)-Control-(\S+).realigned.split.bqsr.bam"),
            r"bam/\1-Control-\2.realigned.picard_stats")
 def runPicardOnRealigned(infile, outfile):
     to_cluster = USECLUSTER
@@ -551,6 +505,14 @@ def runPicardOnRealigned(infile, outfile):
     track = P.snip(os.path.basename(infile), ".bam")
     track_tumor = track.replace("Control", PARAMS["mutect_tumour"])
 
+    genome = "%s/%s.fa" % (PARAMS["bwa_index_dir"],
+                           PARAMS["genome"])
+
+    PipelineMappingQC.buildPicardAlignmentStats(infile, outfile, genome)
+    PipelineMappingQC.buildPicardAlignmentStats(infile_tumour,
+                                                outfile_tumour, genome)
+
+    # check above functions then remove statement
     statement = '''
     cat %(infile)s
     | python %%(scriptsdir)s/bam2bam.py -v 0 --method=set-sequence
@@ -572,8 +534,6 @@ def runPicardOnRealigned(infile, outfile):
     VALIDATION_STRINGENCY=SILENT
     >& %(outfile_tumor)s;''' % locals()
 
-    P.run()
-
 
 @follows(runPicardOnRealigned)
 @merge("bam/*.realigned.picard_stats", "realigned_picard_stats.load")
@@ -589,10 +549,30 @@ def loadPicardRealigenedAlignStats(infiles, outfile):
 
 
 @follows(mkdir("normal_panel_variants"))
+@transform(splitMergedRealigned,
+           regex(r"bam/(\S+)-Control-(\S).realigned.split.bqsr.bam"),
+           r"normal_panel_variants/\1_normal_mutect.vcf")
+def callControlVariants(infile, outfile):
+    '''run mutect to call snps in tumor sample'''
+    cluster_options = getMuTectOptions()
+    basename = P.snip(outfile, "_normal_mutect.vcf")
+    call_stats_out = basename + "_call_stats.out"
+    mutect_log = basename + ".log"
+    gatk_key = PARAMS["mutect_key"]
+    cosmic, dbsnp, = (PARAMS["mutect_cosmic"],
+                      PARAMS["gatk_dbsnp"])
+    genome = "%(bwa_index_dir)s/%(genome)s.fa" % locals()
+
+    Exome.mutectSNPCaller(infile, outfile, mutect_log, genome, cosmic,
+                          dbsnp, call_stats_out, cluster_options)
+    P.run()
+
+
+@follows(mkdir("normal_panel_variants"))
 @transform(realignMatchedSample,
            regex(r"bam/(\S+)-Control-(\S).realigned.bqsr.bam"),
            r"normal_panel_variants/\1_normal_mutect.vcf")
-def callControlVariants(infile, outfile):
+def callControlVariants2(infile, outfile):
     '''run mutect to call snps in tumor sample'''
     job_options = getMuTectOptions()
     basename = P.snip(outfile, "_normal_mutect.vcf")
@@ -652,15 +632,46 @@ def mergeControlVariants(infiles, outfile):
     P.run()
 
 
-# modularise mutect command - it's used three times now, four if you include
-# PON analysis
+@follows(mkdir("variants"), callControlVariants)
+@transform(splitMergedRealigned,
+           regex(r"bam/(\S+)-Control-(\S).realigned.split.bqsr.bam"),
+           add_inputs(mergeControlVariants),
+           r"variants/\1.mutect.snp.vcf")
+def runMutect(infiles, outfile):
+    '''calls somatic SNPs using MuTect'''
+    infile, normal_panel = infiles
+    infile_tumour = infile.replace(
+        "Control", PARAMS["mutect_tumour"])
+    cluster_options = getMuTectOptions()
+    basename = P.snip(outfile, "_normal_mutect.vcf")
+    call_stats_out = basename + "_call_stats.out"
+    mutect_log = basename + ".log"
+
+    (cosmic, dbsnp, quality, max_alt_qual, max_alt,
+     max_fraction, tumor_LOD, gatk_key) = (
+         PARAMS["mutect_cosmic"], PARAMS["gatk_dbsnp"],
+         PARAMS["mutect_quality"], PARAMS["mutect_max_alt_qual"],
+         PARAMS["mutect_max_alt"], PARAMS["mutect_max_fraction"],
+         PARAMS["mutect_LOD"], PARAMS["mutect_key"])
+
+    genome = "%s/%s.fa" % (PARAMS["bwa_index_dir"],
+                           PARAMS["genome"])
+
+    Exome.mutectSNPCaller(infile_tumour, outfile, mutect_log, genome,
+                          cosmic, dbsnp, call_stats_out,
+                          cluster_options, quality, max_alt_qual,
+                          max_alt, max_fraction, tumor_LOD,
+                          normal_panel, infile_matched=infile)
+    P.run()
+
+# delete once above function checked
 @follows(mkdir("variants"), callControlVariants)
 @transform(realignMatchedSample,
            regex(r"bam/(\S+)-Control-(\S).realigned.bqsr.bam"),
            add_inputs(mergeControlVariants),
            r"variants/\1.mutect.snp.vcf")
 #            r"variants/\1_call_stats.out"])
-def runMutect(infiles, outfile):
+def runMutect2(infiles, outfile):
     '''calls somatic SNPs using MuTect'''
     infile, normal_panel = infiles
     infile_tumour = infile.replace(
@@ -710,39 +721,35 @@ def runMutect(infiles, outfile):
     P.run()
 
 
-@transform(realignMatchedSample,
-           regex(r"bam/(\S+)-Control-(\S+).bqsr.bam"),
+#@transform(realignMatchedSample,
+#           regex(r"bam/(\S+)-Control-(\S+).bqsr.bam"),
+@transform(splitMergedRealigned,
+           regex(r"bam/(\S+)-Control-(\S).realigned.split.bqsr.bam"),
            r"variants/\1/results/all.somatic.indels.vcf")
 def indelCaller(infile, outfile):
     '''Call somatic indels using Strelka'''
-    infile_tumor = infile.replace(
-        "Control", PARAMS["mutect_tumour"])
+    infile_tumour = infile.replace("Control", PARAMS["mutect_tumour"])
     outdir = "/".join(outfile.split("/")[0:2])
-    job_options = "-pe dedicated 12 -R y -l mem_free=1.9G"
-    to_cluster = USECLUSTER
+    genome = "%s/%s.fa" % (PARAMS["bwa_index_dir"],
+                           PARAMS["genome"])
+    cluster_options = "-pe dedicated 12 -R y -l mem_free=1.9G"
+    config = "config.ini"
 
-    statement = '''rm -rf %(outdir)s;
-                   /ifs/apps/bio/strelka-1.0.14/bin/configureStrelkaWorkflow.pl
-                   --normal=%(infile)s
-                   --tumor=%(infile_tumor)s
-                   --ref=%%(bwa_index_dir)s/%%(genome)s.fa
-                   --config=config.ini
-                   --output-dir=%(outdir)s;
-                   make -j 12 -C %(outdir)s''' % locals()
-    P.run()
+    PipelineExome.strelkaINDELCaller(infile, infile_tumour, outfile,
+                                     genome, config, outdir, cluster_options)
 
 ##########################################################################
 ##########################################################################
 ##########################################################################
-# repeat mutect on subsampled control bam
+# repeat mutect in reverse and on subsampled control bam as quality control
 ##########################################################################
 # this analysis should be part of an optional check of mutect parameters
 # mutect paramters should be identical to the runMutect function above
 
 
 @follows(mergeControlVariants)
-@transform(realignMatchedSample,
-           regex(r"bam/(\S+)-Control-(\S+).realigned.bqsr.bam"),
+@transform(splitMergedRealigned,
+           regex(r"bam/(\S+)-Control-(\S).realigned.split.bqsr.bam"),
            add_inputs(mergeControlVariants),
            r"variants/\1.mutect.reverse.snp.vcf")
 def runMutectReverse(infiles, outfile):
@@ -750,47 +757,28 @@ def runMutectReverse(infiles, outfile):
     infile, normal_panel = infiles
     infile_tumour = infile.replace(
         "Control", PARAMS["mutect_tumour"])
-    # mutect repeatedly hangs-up with multithreading
-    # threads = PARAMS["gatk_threads"]
+    cluster_options = getMuTectOptions()
+    basename = P.snip(outfile, "_normal_mutect.vcf")
+    call_stats_out = basename + "_call_stats.out"
+    mutect_log = basename + ".log"
 
-    job_options = getMuTectOptions()
-    basename = P.snip(outfile, ".mutect.reverse.snp.vcf")
-    call_stats_out = basename + "_call_stats.reverse.out"
-    coverage_wig_out = basename + "_coverage.reverse.wig"
-    mutect_log = basename + ".reverse.log"
+    (cosmic, dbsnp, quality, max_alt_qual, max_alt,
+     max_fraction, tumor_LOD, gatk_key) = (
+         PARAMS["mutect_cosmic"], PARAMS["gatk_dbsnp"],
+         PARAMS["mutect_quality"], PARAMS["mutect_max_alt_qual"],
+         PARAMS["mutect_max_alt"], PARAMS["mutect_max_fraction"],
+         PARAMS["mutect_LOD"], PARAMS["mutect_key"])
 
-    cosmic, dbsnp, = (
-        PARAMS["mutect_cosmic"],
-        PARAMS["gatk_dbsnp"])
-    tumor_LOD = PARAMS["mutect_lod"]
+    genome = "%s/%s.fa" % (PARAMS["bwa_index_dir"],
+                           PARAMS["genome"])
 
-    if PARAMS["mutect_key"]:
-        key = "-et NO_ET -K %s" % PARAMS["mutect_key_path"]
-    else:
-        key = ""
-
-    statement = '''java -Xmx4g -jar
-    /ifs/apps/bio/muTect-1.1.4/muTect-1.1.4.jar
-    --analysis_type MuTect
-    --reference_sequence %%(bwa_index_dir)s/%%(genome)s.fa
-    --cosmic %(cosmic)s
-    --dbsnp %(dbsnp)s
-    --input_file:normal %(infile_tumour)s
-    --input_file:tumor %(infile)s
-    --out %(call_stats_out)s
-    --coverage_file %(coverage_wig_out)s
-    --vcf %(outfile)s
-    --min_qscore 20
-    --max_alt_alleles_in_normal_qscore_sum 150
-    --max_alt_alleles_in_normal_count 5
-    --max_alt_allele_in_normal_fraction 0.05
-    --gap_events_threshold 2
-    --tumor_lod %(tumor_LOD)s
-    --enable_extended_output
-    --normal_panel %(normal_panel)s
-    %(key)s > %(mutect_log)s''' % locals()
-
+    Exome.mutectSNPCaller(infile, outfile, mutect_log, genome,
+                          cosmic, dbsnp, call_stats_out,
+                          cluster_options, quality, max_alt_qual,
+                          max_alt, max_fraction, tumor_LOD,
+                          normal_panel, infile_matched=infile_tumour)
     P.run()
+
 
 
 # generalise the functions below
@@ -801,7 +789,6 @@ def runMutectReverse(infiles, outfile):
 # 4. summary table
 
 adeno_bam = "bam/NU16C-Control-1.realigned.bqsr.bam"
-
 
 @subdivide(adeno_bam,
            regex("(\S+).bqsr.bam"),
@@ -840,51 +827,30 @@ def indexSubsets(infile, outfile):
            add_inputs(mergeControlVariants),
            r"variants/\1-downsampled-\2.mutect.snp.vcf")
 def runMutectOnDownsampled(infiles, outfile):
-    '''calls somatic SNPs using MuTect'''
+    '''call somatic SNPs using MuTect on downsampled bams'''
     infile, normal_panel = infiles
-    infile_tumour = adeno_bam
-    # mutect repeatedly hangs-up with multithreading
-    # furthermore, multithreading doesn't speed up even nearly linearly
-    # threads = PARAMS["gatk_threads"]
-    job_options = getMuTectOptions()
-    # outfile, extended_out = outfiles
-    basename = P.snip(outfile, ".mutect.snp.vcf")
+    infile_tumour = infile.replace(
+        "Control", PARAMS["mutect_tumour"])
+    cluster_options = getMuTectOptions()
+    basename = P.snip(outfile, "_normal_mutect.vcf")
     call_stats_out = basename + "_call_stats.out"
-    coverage_wig_out = basename + "_coverage.wig"
     mutect_log = basename + ".log"
 
-    cosmic, dbsnp, = (
-        PARAMS["mutect_cosmic"],
-        PARAMS["gatk_dbsnp"])
-    tumor_LOD = PARAMS["mutect_lod"]
+    (cosmic, dbsnp, quality, max_alt_qual, max_alt,
+     max_fraction, tumor_LOD, gatk_key) = (
+         PARAMS["mutect_cosmic"], PARAMS["gatk_dbsnp"],
+         PARAMS["mutect_quality"], PARAMS["mutect_max_alt_qual"],
+         PARAMS["mutect_max_alt"], PARAMS["mutect_max_fraction"],
+         PARAMS["mutect_LOD"], PARAMS["mutect_key"])
 
-    # problems with public key for GATK so this is not yet implemented
-    if PARAMS["mutect_key"]:
-        key = "-et NO_ET -K %s" % PARAMS["mutect_key_path"]
-    else:
-        key = ""
+    genome = "%s/%s.fa" % (PARAMS["bwa_index_dir"],
+                           PARAMS["genome"])
 
-    statement = '''java -Xmx4g -jar
-    /ifs/apps/bio/muTect-1.1.4/muTect-1.1.4.jar
-    --analysis_type MuTect
-    --reference_sequence %%(bwa_index_dir)s/%%(genome)s.fa
-    --cosmic %(cosmic)s
-    --dbsnp %(dbsnp)s
-    --input_file:normal %(infile)s
-    --input_file:tumor %(infile_tumour)s
-    --out %(call_stats_out)s
-    --coverage_file %(coverage_wig_out)s
-    --vcf %(outfile)s
-    --min_qscore 20
-    --max_alt_alleles_in_normal_qscore_sum 100
-    --max_alt_alleles_in_normal_count 6
-    --max_alt_allele_in_normal_fraction 0.05
-    --gap_events_threshold 2
-    --tumor_lod %(tumor_LOD)s
-    --enable_extended_output
-    --normal_panel %(normal_panel)s
-    %(key)s > %(mutect_log)s''' % locals()
-
+    Exome.mutectSNPCaller(infile_tumour, outfile, mutect_log, genome,
+                          cosmic, dbsnp, call_stats_out,
+                          cluster_options, quality, max_alt_qual,
+                          max_alt, max_fraction, tumor_LOD,
+                          normal_panel, infile_matched=infile)
     P.run()
 
 ##############################################################################
@@ -893,12 +859,22 @@ def runMutectOnDownsampled(infiles, outfile):
 # Variant Annotation and Recalibration
 ##############################################################################
 
+@collate(realignMatchedSample,
+         regex(r"bam/(\S+)-(\S+)-(\S+).realigned.bqsr.bam"),
+         r"bam/\1.list")
+def listOfBAMs(infiles, outfile):
+    '''generates a file containing a list of BAMs for each patient,
+       for use in variant calling'''
+    with IOTools.openFile(outfile, "w") as outf:
+        for infile in infiles:
+            outf.write(infile + '\n')
+
 
 @transform(runMutect,
            regex(r"variants/(\S+).mutect.snp.vcf"),
            r"variants/\1.mutect.snp.snpeff.vcf")
 def annotateVariantsSNPeff(infile, outfile):
-    '''Annotate variants using SNPeff'''
+    '''Annotate SNP variants using SNPeff'''
     to_cluster = USECLUSTER
     job_options = "-pe dedicated 2 -R y -l mem_free=4G"
 
@@ -914,7 +890,7 @@ def annotateVariantsSNPeff(infile, outfile):
            regex("variants/(\S+)/results/all.somatic.indels.vcf"),
            r"variants/\1.indels.snpeff.vcf")
 def annotateVariantsINDELsSNPeff(infile, outfile):
-    '''Annotate indel variants using SNPeff'''
+    '''Annotate INDEL variants using SNPeff'''
     to_cluster = USECLUSTER
     job_options = "-pe dedicated 2 -R y -l mem_free=4G"
 
@@ -925,19 +901,6 @@ def annotateVariantsINDELsSNPeff(infile, outfile):
                    %(infile)s > %(outfile)s''' % locals()
     P.run()
 
-
-#########################################################################
-
-
-@collate(realignMatchedSample,
-         regex(r"bam/(\S+)-(\S+)-(\S+).realigned.bqsr.bam"),
-         r"bam/\1.list")
-def listOfBAMs(infiles, outfile):
-    '''generates a file containing a list of BAMs for each patient,
-       for use in variant calling'''
-    with IOTools.openFile(outfile, "w") as outf:
-        for infile in infiles:
-            outf.write(infile + '\n')
 
 
 #########################################################################
@@ -1052,13 +1015,6 @@ def filterIndels(infile, outfile):
     P.run()
 
 
-# what is this doing, if anything?!
-@transform(variantAnnotatorIndels,
-           suffix(".vcf"),
-           ".null")
-def annotateVariantsSNPsift():
-    pass
-
 #########################################################################
 #########################################################################
 # convert vcf to tsv files and load into database
@@ -1158,23 +1114,23 @@ def loadMutectExtendedOutput(infile, outfile):
 # Genes of interest
 # check this will run in the correct position if option selected
 
-@active_if(PARAMS["annotation_add_genes_of_interest"] == 1)
-@transform((annotateVariantsSNPsift),
-           regex(r"variants/(\S+).haplotypeCaller.snpsift.vcf"),
-           r"variants/\1.genes.vcf")
-def findGenes(infile, outfile):
-    '''Adds expression "GENE_OF_INTEREST" to the FILTER column of the vcf
-    if variant is within a gene of interest as defined in the ini
-    file'''
-
-    geneList = P.asList(PARAMS["annotation_genes_of_interest"])
-    expression = '\'||SNPEFF_GENE_NAME==\''.join(geneList)
-    statement = '''GenomeAnalysisTK -T VariantFiltration
-    -R %%(bwa_index_dir)s/%%(genome)s.fa
-    --variant %(infile)s
-    --filterExpression "SNPEFF_GENE_NAME=='%(expression)s'"
-    --filterName "GENE_OF_INTEREST" -o %(outfile)s''' % locals()
-    P.run()
+#@active_if(PARAMS["annotation_add_genes_of_interest"] == 1)
+#@transform((annotateVariantsSNPsift),
+#           regex(r"variants/(\S+).haplotypeCaller.snpsift.vcf"),
+#           r"variants/\1.genes.vcf")
+#def findGenes(infile, outfile):
+#    '''Adds expression "GENE_OF_INTEREST" to the FILTER column of the vcf
+#    if variant is within a gene of interest as defined in the ini
+#    file'''
+#
+#    geneList = P.asList(PARAMS["annotation_genes_of_interest"])
+#    expression = '\'||SNPEFF_GENE_NAME==\''.join(geneList)
+#    statement = '''GenomeAnalysisTK -T VariantFiltration
+#    -R %%(bwa_index_dir)s/%%(genome)s.fa
+#    --variant %(infile)s
+#    --filterExpression "SNPEFF_GENE_NAME=='%(expression)s'"
+#    --filterName "GENE_OF_INTEREST" -o %(outfile)s''' % locals()
+#    P.run()
 
 #########################################################################
 #########################################################################
@@ -1217,73 +1173,8 @@ def loadVCFstats(infiles, outfile):
 @transform(runMutect,
            suffix(".mutect.snp.vcf"),
            "_mutect_filtering_summary.tsv")
-# write python script to parse call_stats.out files and place code in module
-# this is a temporary solution using bash
 def summariseFiltering(infile, outfile):
-    basename = P.snip(infile, ".mutect.snp.vcf")
-    call_stats = basename + "_call_stats.out"
-    statement = '''
-    echo -e "filter\\tvariants_remaining" > %(outfile)s;
-    wc -l  %(call_stats)s |
-    awk 'OFS="\\t" {print "all_variants",$1 }'
-    >> %(outfile)s;
-    grep -v -e '##' -e 'normal_lod' -e 'alt_allele_in_normal'
-    -e 'possible_contamination' %(call_stats)s  |
-    wc -l | awk 'OFS="\\t" {print "somatic",$0 }'
-    >> %(outfile)s;
-    grep -v -e '##' -e 'normal_lod' -e 'alt_allele_in_normal'
-    -e 'possible_contamination' -e 'DBSNP Site'
-    %(call_stats)s | wc -l | awk 'OFS="\\t" {print "dbSNP",$0 }'
-    >> %(outfile)s;
-    grep -v -e '##' -e 'normal_lod' -e 'alt_allele_in_normal'
-    -e 'possible_contamination' -e 'DBSNP Site'
-    -e 'poor_mapping_region_alternate_allele_mapq'
-    -e 'poor_mapping_region_mapq0' %(call_stats)s | wc -l |
-    awk 'OFS="\\t" {print "poor_mapping_region",$0 }'
-    >> %(outfile)s;
-    grep -v -e '##' -e 'normal_lod' -e 'alt_allele_in_normal'
-    -e 'possible_contamination' -e 'DBSNP Site'
-    -e 'poor_mapping_region_alternate_allele_mapq'
-    -e 'poor_mapping_region_mapq0' -e 'clustered_read_position'
-    %(call_stats)s | wc -l |
-    awk 'OFS="\\t" {print "clustered_read_position",$0 }'
-    >> %(outfile)s;
-    grep -v -e '##' -e 'normal_lod' -e 'alt_allele_in_normal'
-    -e 'possible_contamination' -e 'DBSNP Site'
-    -e 'poor_mapping_region_alternate_allele_mapq'
-    -e 'poor_mapping_region_mapq0' -e 'nearby_gap_events'
-    -e 'clustered_read_position' %(call_stats)s | wc -l |
-    awk 'OFS="\\t" {print "nearby_indels",$0 }'
-    >> %(outfile)s;
-    grep -v -e '##' -e 'normal_lod' -e 'alt_allele_in_normal'
-    -e 'possible_contamination' -e 'DBSNP Site'
-    -e 'poor_mapping_region_alternate_allele_mapq'
-    -e 'poor_mapping_region_mapq0' -e 'nearby_gap_events'
-    -e 'strand_artifact' -e 'clustered_read_position'
-    %(call_stats)s | wc -l |
-    awk 'OFS="\\t" {print "strand_artifact",$0 }'
-    >> %(outfile)s;
-    grep -v -e '##' -e 'normal_lod' -e 'alt_allele_in_normal'
-    -e 'possible_contamination' -e 'DBSNP Site'
-    -e 'poor_mapping_region_alternate_allele_mapq'
-    -e 'poor_mapping_region_mapq0' -e 'nearby_gap_events'
-    -e 'strand_artifact' -e 'seen_in_panel_of_normals'
-    -e 'clustered_read_position' %(call_stats)s | wc -l |
-    awk 'OFS="\\t" {print "Panel_of_normals",$0 }'
-    >> %(outfile)s;
-    grep -v -e '##' -e 'normal_lod' -e 'alt_allele_in_normal'
-    -e 'possible_contamination' -e 'DBSNP Site'
-    -e 'poor_mapping_region_alternate_allele_mapq'
-    -e 'poor_mapping_region_mapq0' -e 'nearby_gap_events'
-    -e 'strand_artifact' -e 'seen_in_panel_of_normals'
-    -e 'triallelic_site' -e 'clustered_read_position'
-    %(call_stats)s | wc -l |
-    awk 'OFS="\\t" {print "triallelic",$0 }'
-    >> %(outfile)s;
-    grep 'KEEP' %(call_stats)s | wc -l |
-    awk 'OFS="\\t" {print "passed_filters",$0 }'
-    >> %(outfile)s''' % locals()
-    P.run()
+    PipelineExome.parseMutectCallStats(infile, outfile)
 
 
 @transform(summariseFiltering,
@@ -1339,11 +1230,12 @@ def mutationalSignature(infiles, outfiles):
     min_t_alt_freq = PARAMS["filter_minimum_tumor_allele_frequency"]
     min_n_depth = PARAMS["filter_minimum_normal_depth"]
     max_n_alt_freq = PARAMS["filter_maximim_normal_allele_frequency"]
+    tumour = PARAMS["mutect_tumour"]
 
     ExomeCancer.compileMutationalSignature(infiles, outfiles,
                                            min_t_alt, min_n_depth,
                                            max_n_alt_freq, min_t_alt_freq,
-                                           submit=True)
+                                           tumour, submit=True)
 
 
 @transform(mutationalSignature,
@@ -1366,9 +1258,13 @@ def loadMutationalSignature(infiles, outfile):
          loadPicardRealigenedAlignStats,
          loadPicardAlignStats,
          loadNCG,
-         loadMutationalSignature,
-         findGenes)
+         loadMutationalSignature)
 def full():
+    pass
+
+
+@follows(loadMutectFilteringSummary)
+def test():
     pass
 
 
@@ -1401,7 +1297,7 @@ def postMappingQC():
 
 
 @follows(GATKpreprocessing,
-         realignMatchedSample)
+         runPicardOnRealigned)
 def gatk():
     pass
 
@@ -1410,13 +1306,7 @@ def gatk():
          indelCaller)
 def callVariants():
     pass
-
-
-@follows(findGenes)
-def genesOfInterest():
-    pass
-
-
+    
 @follows(loadVariantAnnotation)
 def tabulation():
     pass
@@ -1427,16 +1317,6 @@ def tabulation():
 def vcfstats():
     pass
 
-
-@follows(mapping,
-         postMappingQC,
-         gatk,
-         callVariants,
-         genesOfInterest,
-         tabulation,
-         vcfstats)
-def full2():
-    pass
 
 #########################################################################
 #########################################################################
