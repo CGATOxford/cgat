@@ -826,11 +826,11 @@ class BWA(Mapper):
     which removes reads that don't have tag X0:i:1 (i.e. have > 1 best hit)
     '''
 
-    def __init__(self, remove_unique=False, align_stats=False, dedup=False,
+    def __init__(self, remove_non_unique=False, align_stats=False, dedup=False,
                  read_group_header=False, *args, **kwargs):
         Mapper.__init__(self, *args, **kwargs)
 
-        self.remove_unique = remove_unique
+        self.remove_non_unique = remove_non_unique
         self.align_stats = align_stats
         self.dedup = dedup
         self.read_group_header = read_group_header
@@ -914,10 +914,10 @@ class BWA(Mapper):
 
         strip_cmd, unique_cmd = "", ""
 
-        if self.remove_unique:
+        if self.remove_non_unique:
             unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
             --method=filter
-            --filter-method=unique
+            --filter-method=unique, mapped
             --log=%(outfile)s.log''' % locals()
 
         if self.strip_sequence:
@@ -1070,7 +1070,7 @@ class Bismark(Mapper):
         if nfiles == 1:
             infiles = infiles[0][0]
             statement = '''
-            bismark %%(bismark_options)s -q --bowtie2 --output_dir %%(outdir)s
+            bismark %%(bismark_options)s -q --bowtie2 --output_dir %(tmpdir_fastq)s
             -p %%(bismark_threads)s --bam --phred33-quals %(bismark_index)s
             %(infiles)s;
             ''' % locals()
@@ -1080,7 +1080,7 @@ class Bismark(Mapper):
             infiles2 = infiles[0][1]
 
             statement = '''
-            bismark %%(bismark_options)s -q --bowtie2 --output_dir %%(outdir)s
+            bismark %%(bismark_options)s -q --bowtie2 --output_dir %(tmpdir_fastq)s
             -p %%(bismark_threads)s --bam --non_directional
             --phred33-quals %(bismark_index)s -1 %(infiles1)s -2 %(infiles2)s;
             ''' % locals()
@@ -1093,15 +1093,75 @@ class Bismark(Mapper):
 
         return statement
 
-    # what should the post processing be?
-    def postprocess(self, infiles, outfile):
+    # Postprocessing can identify .sra input from the infiles, the use
+    # mapfiles to identify whether the input was single or paired end, then
+    # remove reads with low CHH/CHG conversions (i.e more than one unconverted)
+    # and rename the bismark outfile to fit ruffus expectations.
+    def postprocess(self, infiles, mapfiles, outfile):
+        tmpdir_fastq = self.tmpdir_fastq
         track = P.snip(os.path.basename(outfile), ".bam")
-        for infile in infiles:
-            if infile.endswith(".fastq.gz"):
-                statement = ""
-            elif infile.endswith(".fastq.1.gz"):
-                statement = '''mv %%(outdir)s/%(track)s_pe.bam
-                           %%(outdir)s/%(track)s.bam;''' % locals()
+        infile = infiles[0]
+        if infile.endswith(".fastq.gz"):
+            statement = '''samtools view -h %(tmpdir_fastq)s/%(track)s.bam|
+            awk -F" " '$14!~/^XM:Z:[zZhxUu\.]*[HX][zZhxUu\.]*[HX]/ ||
+            $1=="@SQ" || $1=="@PG"' | samtools view -b - >
+            %%(outdir)s/%(track)s.bam;
+            mv %(tmpdir_fastq)s/%(track)s_SE_report.txt
+            %%(outdir)s/%(track)s_SE_report.txt;''' % locals()
+        elif infile.endswith(".fastq.1.gz"):
+            statement = '''samtools view -h %(tmpdir_fastq)s/%(track)s_pe.bam|
+            awk -F" " '$14!~/^XM:Z:[zZhxUu\.]*[HX][zZhxUu\.]*[HX]/ ||
+            $1=="@SQ" || $1=="@PG"' | samtools view -b - >
+            %%(outdir)s/%(track)s.bam;
+            mv %(tmpdir_fastq)s/%(track)s_PE_report.txt
+            %%(outdir)s/%(track)s_PE_report.txt;''' % locals()
+        elif infile.endswith(".sra"):
+            for mapfile in mapfiles:
+                mapfile = os.path.basename(mapfile[0])
+                if mapfile.endswith(".fastq.1.gz"):
+                    statement = '''samtools view -h
+                    %(tmpdir_fastq)s/%(mapfile)s_bismark_bt2_pe.bam|
+                    awk -F" " '$14!~/^XM:Z:[zZhxUu\.]*[HX][zZhxUu\.]*[HX]/ ||
+                    $1=="@SQ" || $1=="@PG"' | samtools view -b - >
+                    %%(outdir)s/%(track)s.bam;
+                    mv %(tmpdir_fastq)s/%(mapfile)s_bismark_bt2_PE_report.txt
+                    %%(outdir)s/%(track)s_PE_report.txt;''' % locals()
+                else:
+                    statement = '''samtools view -h
+                    %(tmpdir_fastq)s/%(mapfile)s_bismark_bt2.bam|
+                    awk -F" " '$14!~/^XM:Z:[zZhxUu\.]*[HX][zZhxUu\.]*[HX]/||
+                    $1=="@SQ" || $1=="@PG"' | samtools view -b - >
+                    %%(outdir)s/%(track)s.bam;
+                    mv %(tmpdir_fastq)s/%(mapfile)s_bismark_bt2_SE_report.txt
+                    %%(outdir)s/%(track)s_SE_report.txt;''' % locals()
+        else:
+            # shouldn't arrive here
+            statement = "checkpoint;"
+
+        return statement
+
+    # redefine build method so that mapfiles are
+    # also passed to postprocess method
+    # this is neccessary for the reasons explained above
+    def build(self, infiles, outfile):
+        '''run mapper.'''
+
+        cmd_preprocess, mapfiles = self.preprocess(infiles, outfile)
+        cmd_mapper = self.mapper(mapfiles, outfile)
+        cmd_postprocess = self.postprocess(infiles, mapfiles, outfile)
+        cmd_clean = self.cleanup(outfile)
+
+        assert cmd_preprocess.strip().endswith(";")
+        assert cmd_mapper.strip().endswith(";")
+        if cmd_postprocess:
+            assert cmd_postprocess.strip().endswith(";")
+        if cmd_clean:
+            assert cmd_clean.strip().endswith(";")
+
+        statement = " checkpoint; ".join((cmd_preprocess,
+                                          cmd_mapper,
+                                          cmd_postprocess,
+                                          cmd_clean))
 
         return statement
 
