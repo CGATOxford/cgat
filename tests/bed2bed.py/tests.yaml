@@ -58,6 +58,13 @@ bed12_merge:
    stdin: null
    references: [bed12_merge_out.bed]
    options: --method=merge --merge-and-resolve-blocks -I %DIR%/bed12_merge_in.bed --merge-min-intervals=2 -L /dev/null
+
+stranded_merge:
+   outputs: [stdout]
+   stdin: null
+   references: [stranded_merge_out.bed]
+   options: --method=merge --merge-stranded -I %DIR%/stranded_merge_in.bed -L /dev/null
+
 #filterGenome
 #############
 
