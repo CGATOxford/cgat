@@ -445,13 +445,13 @@ def runDE(infiles, outfile, outdir,
         statement = "zcat %(counts_file)s"
     else:
         statement = '''python %(scriptsdir)s/combine_tables.py
-                           --missing-value=0
-                           --cat=filename
-                           --log=%(outfile)s.log
-                           %(counts_file)s %(spike_file)s
-              | python %(scriptsdir)s/csv_cut.py
-                           --remove filename
-                           --log=%(outfile)s.log
+        --missing-value=0
+        --cat=filename
+        --log=%(outfile)s.log
+        %(counts_file)s %(spike_file)s
+        | python %(scriptsdir)s/csv_cut.py
+        --remove filename
+        --log=%(outfile)s.log
         '''
 
     prefix = os.path.basename(outfile)
@@ -461,16 +461,17 @@ def runDE(infiles, outfile, outdir,
     # and adds a new qvalue column after recomputing
     # over all windows.
     statement += '''
-              | perl %(scriptsdir)s/randomize_lines.pl -h
-              | %(cmd-farm)s
-                  --input-header
-                  --output-header
-                  --split-at-lines=200000
-                  --cluster-options="-l mem_free=8G"
-                  --log=%(outfile)s.log
-                  --output-filename-pattern=%(outdir)s/%%s
-                  --subdirs
-              "python %(scriptsdir)s/runExpression.py
+    | perl %(scriptsdir)s/randomize_lines.pl -h
+    | %(cmd-farm)s
+    --input-header
+    --output-header
+    --split-at-lines=200000
+    --cluster-options="-l mem_free=8G"
+    --log=%(outfile)s.log
+    --output-filename-pattern=%(outdir)s/%%s
+    --subdirs
+    --output-regex-header="^test_id"
+    "python %(scriptsdir)s/runExpression.py
               --method=%(method)s
               --tags-tsv-file=-
               --design-tsv-file=%(design_file)s
@@ -483,17 +484,15 @@ def runDE(infiles, outfile, outdir,
               --filter-percentile-rowsums=%(tags_filter_percentile_rowsums)i
               --log=%(outfile)s.log
               --fdr=%(edger_fdr)f"
-              | grep -v "warnings"
-              | perl %(scriptsdir)s/regtail.pl ^test_id
-              | perl -p -e "s/qvalue/old_qvalue/"
-              | python %(scriptsdir)s/table2table.py
-              --log=%(outfile)s.log
-              --method=fdr
-              --column=pvalue
-              --fdr-method=BH
-              --fdr-add-column=qvalue
-              | gzip
-              > %(outfile)s '''
+    | perl -p -e "s/qvalue/old_qvalue/"
+    | python %(scriptsdir)s/table2table.py
+    --log=%(outfile)s.log
+    --method=fdr
+    --column=pvalue
+    --fdr-method=BH
+    --fdr-add-column=qvalue
+    | gzip
+    > %(outfile)s '''
 
     P.run()
 
