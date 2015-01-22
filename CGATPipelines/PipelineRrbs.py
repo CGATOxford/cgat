@@ -62,6 +62,7 @@ import rpy2.robjects as robj
 from rpy2.robjects.packages import importr
 from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import FloatVector
+import CGATPipelines.PipelineTracks as PipelineTracks
 stats = importr('stats')
 
 
@@ -525,25 +526,27 @@ def M3Dstat2pvalue(df, columns, pair):
 def calculateM3DSpikepvalue(infiles, outfile, design):
     '''takes a list of M3D stats files and a design dataframe and outputs
     p-values for each cluster for the pairwise comparison'''
-    # to do: use design dataframe to identify groups
-    # currently hardcoded in pipeline
-    # this may fail with updated M3Dstat2Pvalues function
-    # need to supply full experiment name as per calculateM3Dpvalue
+    # currently expects the first pair from the design table to be used 
+    # to generate the M3D stats
 
     # ***** this will no fail *****
     # need to change call to M3D2pvalue to supply proper group labels as "pair"
     # see calculateM3Dpvalue
 
-    outfile1 = P.snip(outfile, ".tsv") + "_between.tsv"
-    outfile2 = P.snip(outfile, ".tsv") + "_within.tsv"
+    outfile_within = P.snip(outfile, "_between.tsv") + "_within.tsv"
 
     design_df = pd.read_csv(design, sep="\t")
     design_df = design_df.ix[design_df['include'] == 1, ]
 
-    pair = design_df['pair'].tolist()[0]
-    design_df_subset = design_df[design_df['pair'] == pair]
+    first_pair = design_df['pair'].tolist()[0]
+    design_df_subset = design_df[design_df['pair'] == first_pair]
 
-    groups = list(set(design_df_subset['group']))
+    # need to create list along the lines of:
+    # ["Germline-Saline", "Germline-Dex"]
+    # here, this is acheived by removing replicates from track names and
+    # outputting unique values
+    pair = list(set([re.sub("-(\d+)", "", x)
+                     for x in design_df_subset['track'].tolist()]))
 
     df = pd.read_csv(infiles[0], sep="\t")
     if len(infiles) > 0:
@@ -565,10 +568,10 @@ def calculateM3DSpikepvalue(infiles, outfile, design):
     concat_df.to_csv(outfile, index=False, header=True, sep="\t")
 
     between, within = M3Dstat2pvalue(concat_df, cluster_characteristics,
-                                     groups)
+                                     pair)
 
-    between.to_csv(outfile1, index=False, header=True, sep="\t")
-    within.to_csv(outfile2, index=False, header=True, sep="\t")
+    between.to_csv(outfile, index=False, header=True, sep="\t")
+    within.to_csv(outfile_within, index=False, header=True, sep="\t")
 
     r_between_melt = com.convert_to_r_dataframe(between)
     r_within_melt = com.convert_to_r_dataframe(within)
@@ -648,8 +651,7 @@ def calculateM3Dpvalue(infiles, outfile, pair):
     # to do: use design dataframe to identify groups
     # currently hardcoded in pipeline
 
-    outfile1 = P.snip(outfile, ".tsv") + "_between.tsv"
-    outfile2 = P.snip(outfile, ".tsv") + "_within.tsv"
+    outfile_within = P.snip(outfile, "_between.tsv") + "_within.tsv"
     plots_dir = os.path.dirname(outfile)
 
     df = pd.read_csv(infiles[0], sep="\t")
@@ -661,8 +663,8 @@ def calculateM3Dpvalue(infiles, outfile, pair):
     between, within = M3Dstat2pvalue(
         df, ["seqnames", "start", "end"], pair)
 
-    between.to_csv(outfile1, index=False, header=True, sep="\t")
-    within.to_csv(outfile2, index=False, header=True, sep="\t")
+    between.to_csv(outfile, index=False, header=True, sep="\t")
+    within.to_csv(outfile_within, index=False, header=True, sep="\t")
 
     r_between_melt = com.convert_to_r_dataframe(between)
     r_within_melt = com.convert_to_r_dataframe(within)
@@ -690,11 +692,11 @@ def calculateM3Dpvalue(infiles, outfile, pair):
          scale_fill_discrete(name="Comparison") + xlab("M3D statistic") +
          ggtitle('%(title)s')
     p3 = ggplot(merge, aes(x=value)) +
-         stat_density(adjust = 10,aes(fill=cluster),
+         stat_density(aes(fill=cluster),
                       position="identity",alpha=0.5) + base_theme +
          xlab("M3D statistic") + scale_fill_discrete(name="Comparison")+
          ggtitle('%(title)s')
-    p4 = ggplot(merge, aes(x=value)) + stat_density(adjust = 10) +
+    p4 = ggplot(merge, aes(x=value)) + stat_density() +
          xlab("M3D statistic") + facet_grid(cluster~.) + base_theme +
          ggtitle('%(title)s')
 
@@ -708,6 +710,23 @@ def calculateM3Dpvalue(infiles, outfile, pair):
     plot = p4, width = 5, height = 5)}''' % locals())
 
     plotter(r_between_melt, r_within_melt)
+
+
+@cluster_runnable
+def summariseM3D(infile, outfile, threshold):
+    '''count number of clusters passing threshold'''
+    out = open(outfile, "w")
+    df = pd.read_csv(infile, sep="\t")
+    out.write("group1\tgroup2\ttotal\tsignificant\n")
+    # remove any rows without 'value' column entry
+    df_complete = df.ix[df['value'] > -1, ]
+    total = len(df_complete.iloc[:, 1])
+    g1, g2 = os.path.basename(infile).split("_vs_")
+    g2 = g2.split("_")[0]
+    df_thresh = df_complete.ix[df_complete['p_value_adj'] < threshold, ]
+    significant = len(df_thresh.iloc[:, 1])
+    out.write("%(g1)s\t%(g2)s\t%(total)s\t%(significant)s\n" % locals())
+    out.close()
 
 
 @cluster_runnable
@@ -738,7 +757,7 @@ def calculateBiSeqStat(infile, outfile):
     relData <- rawToRel(rawData)
     print(rawData)
     clust.unlim <-clusterSites(object = rawData,  perc.samples = 1,
-    min.sites = 10, max.dist = 100, mc.cores=1)
+    min.sites = 10, max.dist = 100, mc.cores=6)
     ind.cov <- totalReads(clust.unlim) > 0
     quant <- quantile(totalReads(clust.unlim)[ind.cov], 0.95)
     clust.lim <- limitCov(clust.unlim, maxCov = quant)
@@ -926,8 +945,8 @@ def summaryPlots(infile, outfile):
     xlab("Fraction Methylation") +
     ggtitle("Methylation by sample: Non-CpG Islands")
 
-    ggsave(paste0('%(base)s','_methylation_by_sample_non_cpgi.png'),
-    plot = p, width = 5, height = 5)
+    #ggsave(paste0('%(base)s','_methylation_by_sample_non_cpgi.png'),
+    #plot = p, width = 5, height = 5)
 
     df5 = as.matrix(sapply(df4[,apply(df4,2,max)>0], as.numeric))
     df6 = cor(df4, method="spearman")
@@ -957,8 +976,8 @@ def summaryPlots(infile, outfile):
     xlab("Fraction Methylation") +
     ggtitle("Methylation by sample: CpG Islands")
 
-    ggsave(paste0('%(base)s','_methylation_by_sample_cpgi.png'),
-    plot = p, width = 5, height = 5)
+    #ggsave(paste0('%(base)s','_methylation_by_sample_cpgi.png'),
+    #plot = p, width = 5, height = 5)
 
     df8 = as.matrix(sapply(df7[,apply(df7,2,max)>0], as.numeric))
     df9 = cor(df8, method="spearman")
@@ -1403,13 +1422,10 @@ def runBiSeq(infiles, outfile):
         "basenames: %(basenames)s\ngroups: %(groups)s\nsamples: %(samples)s\n"
         % locals())
     out.write("c: %(c)s\ns: %(s)s\ng: %(g)s " % locals())
+    out.close()
 
     grdevices = importr('grDevices')
     grdevices.png(file=base + "_test_vario.png")
-
-    # p=ggplot(temp_df,aes(x, y))+geom_point()
-    # ggsave(paste0('%(base)s',"_biseq_plot_1.png"),
-    # plot = p, width = 5, height = 5)
 
     rcode = r('''
     library("BiSeq")
@@ -1421,7 +1437,7 @@ def runBiSeq(infiles, outfile):
     rrbs_rel <- rawToRel(raw)
     rrbs.clust.unlim <- clusterSites(
     object = raw,groups = colData(raw)$group,perc.samples = 1,
-    min.sites = 5,max.dist = 50,mc.cores=4)
+    min.sites = 5,max.dist = 50,mc.cores=8)
     ind.cov <- totalReads(rrbs.clust.unlim) > 0
     quant <- quantile(totalReads(rrbs.clust.unlim)[ind.cov], 0.9)
     rrbs.clust.lim <- limitCov(rrbs.clust.unlim, maxCov = quant)
@@ -1429,30 +1445,23 @@ def runBiSeq(infiles, outfile):
     temp_df=data.frame(y=methLevel(predictedMeth)[order(rowData(predictedMeth)),1])
     temp_df["x"]=methReads(rrbs.clust.lim)/((totalReads(rrbs.clust.lim))[,1])
     temp_df["cov"] = totalReads(rrbs.clust.lim)[,1]
-    write.table(temp_df, file = paste0("%(base)s", "_biseq_df_1.tsv"), sep = "\t")
+    write.table(temp_df, file = paste0("%(base)s", "_biseq_df_1.tsv"),
+    sep = "\t", quote = F)
 
     betaResults <- betaRegression(formula = ~group, link = "probit",
     object = predictedMeth, type = "BR",mc.cores=8)
-    print(head(betaResults))
     predictedMethNull <- predictedMeth
-    print((predictedMethNull))
-    print(head(methLevel(predictedMethNull)))
     colData(predictedMethNull)$group.null <- rep(c(1,2), 3)
-    print((predictedMethNull))
     betaResultsNull <- betaRegression(formula = ~group.null,
     link = "probit",object = predictedMethNull, type = "BR",mc.cores=8)
     vario <- makeVariogram(betaResultsNull)
     length_vario = length(vario$variogram[[1]][,2])
-    estimated_sill =
-    median(vario$variogram[[1]][-(1:(length_vario-50)),2])
+    estimated_sill = median(vario$variogram[[1]][-(1:(length_vario-50)),2])
     vario.sm <- smoothVariogram(vario, sill = estimated_sill)
 
     plot(vario$variogram[[1]],ylim=c(0,5))
     lines(vario.sm$variogram[,c("h", "v.sm")],col = "red", lwd = 1.5)
 
-    print(names(vario.sm))
-    print(head(vario.sm$variogram))
-    print(head(vario.sm$pValsList[[1]]))
     vario.aux <- makeVariogram(betaResults, make.variogram=FALSE)
     vario.sm$pValsList <- vario.aux$pValsList
     print(head(vario.sm$pValsList[[1]]))
@@ -1462,20 +1471,21 @@ def runBiSeq(infiles, outfile):
     clusters.trimmed <- trimClusters(clusters.rej,FDR.loc = 0.5)
     print(clusters.trimmed)
     DMRs <- findDMRs(clusters.trimmed,max.dist = 100,diff.dir = TRUE)
-    print(DMRs)
+
+    write.tabe(DMRS, paste0("%(base)s", "_trimmed_clusters.tsv"), sep="\t",
+    quote=F, row.names=F)
 
     concat_vario = do.call(rbind, vario.sm$pValsList)
+    write.table(concat_vario, paste0("%(base)s", "_vario_table_test.tsv"),
+    sep="\t",quote = F,row.names = F)
+
     row_p = rowData(predictedMeth)
     df_ranges<- data.frame(seqnames=seqnames(row_p), starts=start(row_p),
     ends=end(row_p))
     ranges_pred_meth_df=cbind(df_ranges,methLevel(predictedMeth))
-    write.table(concat_vario, "clusters_vario_table_test.tsv",
-    sep="\t",quote = F,row.names = F)
-    write.table(ranges_pred_meth_df, "clusters.tsv", sep="\t",
-    quote = F,row.names = F)}''' % locals())
 
-    out.write("%s" % rcode)
+    write.table(ranges_pred_meth_df, paste0("%(base)s", "_predicted_meth.tsv"),
+    sep="\t", quote = F,row.names = F)}''' % locals())
 
     rcode()
     grdevices.dev_off()
-    out.close()
