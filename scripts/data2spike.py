@@ -38,35 +38,22 @@ columns called "contig" and "position" from which to derive the clusters.
 The script further requires a design table describing the groups and columns.
 The design table has four columns::
 
-track    spike group   include
-GS1_perc        1       S       1
-GS2_perc        1       S       1
-GD1_perc        1       D       1
-GD2_perc        1       D       1
-GS1_unmeth      0       S       1
-GS2_unmeth      0       S       1
-GD1_unmeth      0       D       1
-GD2_unmeth      0       D       1
-GS1_meth        0       S       1
-GS1_meth        0       S       1
-GS1_meth        0       D       1
-GS1_meth        0       D       1
-GS1_unwanted    0       S       0
-GS2_unwanted    0       S       0
-GD1_unwanted    0       D       0
-GD2_unwanted    0       D       0
+      track   include group   pair
+      GS1        1       S       1
+      GS2        1       S       1
+      GD1        1       D       1
+      GD2        1       D       1
 
 
 track
      name of track - should correspond to column header in the counts
      table.
-spike
-     flag to indicate columns to shuffle to generate the spike-ins
 include
      flag to indicate whether or not to include this data in the output
 group
      group indicator - experimental group
-
+pair
+     pair that sample belongs to (for paired tests)
 
 Output
 ++++++
@@ -86,33 +73,41 @@ import re
 import pandas as pd
 import numpy as np
 import CGAT.Experiment as E
+import CGAT.Pipeline as P
 
 
-def groupMappers(design_table):
+def groupMappers(design_table, spike_regex, shuffle_suffix, keep_suffix):
     '''from design table, extract groups and return dictionaries mapping
     groups to tracks'''
 
-    groups = list(set([design_table['group'][ix]
-                       for ix in design_table.index
-                       if design_table['spike'][ix] == 1]))
+    design_table = design_table.ix[design_table['include'] == 1, ]
+    design_table = design_table.ix[design_table['pair'] == 1, ]
+
+    keep = [ix for ix in design_table.index if
+            re.match(spike_regex, design_table['track'][ix])]
+    design_table = design_table.ix[keep]
+
+    groups = list(set([design_table['group'][ix] for
+                       ix in design_table.index]))
+
     groups_to_keep_ix = {}
     groups_to_keep_tracks = {}
-    groups_to_spike_ix = {}
     groups_to_spike_tracks = {}
 
+    keep_suffix = keep_suffix.split(",")
     for group in groups:
         groups_to_keep_ix[group] = [
             ix for ix in design_table.index
-            if re.match(group, design_table['group'][ix])
-            and design_table['include'][ix] == 1]
-        groups_to_keep_tracks[group] = design_table.ix[
-            groups_to_keep_ix[group], "track"]
-        groups_to_spike_ix[group] = [
-            ix for ix in groups_to_keep_ix[group]
-            if design_table['spike'][ix] == 1]
-        groups_to_spike_tracks[group] = design_table.ix[
-            groups_to_spike_ix[group], "track"]
-
+            if re.match(group, design_table['group'][ix])]
+        groups_to_spike_tracks[group] = [
+            x + shuffle_suffix
+            for x in design_table.ix[
+                groups_to_keep_ix[group], "track"].tolist()]
+        groups_to_keep_tracks[group] = copy.copy(groups_to_spike_tracks[group])
+        groups_to_keep_tracks[group].extend([
+            x + y for
+            x in design_table.ix[groups_to_keep_ix[group], "track"].tolist()
+            for y in keep_suffix])
     return (groups,  groups_to_keep_tracks, groups_to_spike_tracks)
 
 
@@ -122,10 +117,12 @@ def means2idxarrays(g1, g2, i_bins, c_bins, difference):
 
     if difference == "relative":
         change = [g2[x] - g1[x] for x in range(0, len(g1))]
-        initial = [g1[x] for x in range(0, len(g1))]
+        initial = g1
     elif difference == "logfold":
-        change = [np.log2((g2[x]+1.0) / (g1[x]+1.0))]
+        change = [np.log2((g2[x]+1.0) / (g1[x]+1.0))
+                  for x in range(0, len(g1))]
         initial = [np.log2(g1[x]+1.0) for x in range(0, len(g1))]
+
     change_idx = np.digitize(change, c_bins)
     initial_idx = np.digitize(initial, i_bins)
 
@@ -146,19 +143,12 @@ def findClusters(df, distance, size, tracks_map, groups):
     for ix in range(0, len(positions)):
         next_pos = positions[ix]
         next_contig = contigs[ix]
-        # if next_contig != current_contig:
-        #    E.info("contig change %s --> %s" % (current_contig, next_contig))
         if (((next_pos < current_pos + distance) &
              (next_contig == current_contig))):
             cluster_ix.append(ix)
         else:
             if len(cluster_ix) >= size:
                 start, end = (cluster_ix[0], cluster_ix[-1])
-                # print "found one..."
-                # print df.loc[start:end]
-                # tmp = df.loc[start:end]
-                # print groups
-                # print tmp.ix[:, tracks_map[groups[0]]]
                 cluster_dfs[n] = df.loc[start:end]
                 n += 1
             cluster_ix = []
@@ -173,19 +163,15 @@ def shuffleCluster(i_bins, c_bins, tracks_map, groups,
                    difference, s_max, i, clusters_dict,
                    s_bins_max, s_bins_min, s_bins_width):
 
-    s_bins = np.arange(s_bins_min, s_bins_max, s_bins_width)
+    s_bins = range(s_bins_min, s_bins_max+1, s_bins_width, )
 
-    counts = np.zeros((len(i_bins)+1, len(c_bins)+1,
-                       len(s_bins)+1))
+    counts = np.zeros((len(i_bins)+1, len(c_bins)+1, len(s_bins)+1))
 
     indices = {(key1, key2, key3): []
                for key1 in np.digitize(i_bins, i_bins)
                for key2 in np.digitize(c_bins, c_bins)
                for key3 in np.digitize(s_bins, s_bins)}
-    # perhaps remove min_occupancy, it's being used to avoid over-iteration
-    # if the user asks for more iterations than required to fill all bins
-    # how likely is it to be helpful?
-    min_occup = min(counts.flatten())
+
     for iteration in range(0,  i):
         E.info("performing shuffling iteration number %i.." % (iteration + 1))
         for size in s_bins:
@@ -193,61 +179,56 @@ def shuffleCluster(i_bins, c_bins, tracks_map, groups,
             group2_mean = []
             g1_rand_s = []
             g2_rand_s = []
-            if min_occup >= s_max:
-                E.info("stopping iterations, all bins full")
-            else:
-                g1_rand = np.random.permutation(clusters_dict.keys())
-                g2_rand = np.random.permutation(clusters_dict.keys())
-                for perm in range(0, len(g1_rand)):
-                    cluster1 = clusters_dict[g1_rand[perm]].ix[
-                        :, tracks_map[groups[0]]]
-                    cluster2 = clusters_dict[g2_rand[perm]].ix[
-                        :, tracks_map[groups[1]]]
+            g1_rand = np.random.permutation(clusters_dict.keys())
+            g2_rand = np.random.permutation(clusters_dict.keys())
+            for perm in range(0, len(g1_rand)):
+                cluster1 = clusters_dict[g1_rand[perm]].ix[
+                    :, tracks_map[groups[0]]]
+                cluster2 = clusters_dict[g2_rand[perm]].ix[
+                    :, tracks_map[groups[1]]]
 
-                    c1_rand_s = random.randint(
-                        min(cluster1.index), max(cluster1.index)-size)
-                    c1_e = int(c1_rand_s + size - 1)
-                    c2_rand_s = random.randint(
-                        min(cluster2.index), max(cluster2.index)-size)
-                    c2_e = int(c2_rand_s + size - 1)
+                c1_rand_s = random.randint(
+                    min(cluster1.index), max(cluster1.index)-size)
+                c1_e = int(c1_rand_s + size)
+                c2_rand_s = random.randint(
+                    min(cluster2.index), max(cluster2.index)-size)
+                c2_e = int(c2_rand_s + size)
 
-                    c1_mean = np.mean(np.mean(cluster1.ix[
-                        c1_rand_s: c1_e]))
-                    c2_mean = np.mean(np.mean(cluster2.ix[
-                        c2_rand_s: c2_e]))
-                    group1_mean.append(c1_mean)
-                    group2_mean.append(c2_mean)
-                    g1_rand_s.append(c1_rand_s)
-                    g2_rand_s.append(c2_rand_s)
+                c1_mean = np.mean(np.mean(cluster1.ix[c1_rand_s: c1_e]))
+                c2_mean = np.mean(np.mean(cluster2.ix[c2_rand_s: c2_e]))
+                group1_mean.append(c1_mean)
+                group2_mean.append(c2_mean)
+                g1_rand_s.append(c1_rand_s)
+                g2_rand_s.append(c2_rand_s)
 
-            change_idx, initial_idx = means2idxarrays(
-                group1_mean, group2_mean, i_bins, c_bins, difference)
-            for idx, coord in enumerate(zip(initial_idx, change_idx,
-                                            itertools.repeat(size))):
-                        if counts[coord] < s_max:
-                            counts[coord] += 1
-                            cluster1_ix = clusters_dict[
-                                g1_rand[idx]].index.values
-                            cluster1_start = cluster1_ix[0]
-                            cluster1_end = cluster1_ix[-1]
-                            cluster2_ix = clusters_dict[
-                                g2_rand[idx]].index.values
-                            cluster2_start = cluster2_ix[0]
-                            cluster2_end = cluster2_ix[-1]
-                            c1_rand_s = g1_rand_s[idx]
-                            c1_rand_e = int(c1_rand_s + size)
-                            c2_rand_s = g2_rand_s[idx]
-                            c2_rand_e = int(c2_rand_s + size)
-                            indices[coord].append((
-                                cluster1_start, cluster1_end, cluster2_start,
-                                cluster2_end, c1_rand_s, c1_rand_e, c2_rand_s,
-                                c2_rand_e))
-            min_occup = min(counts.flatten())
+            change_idx, initial_idx,  = means2idxarrays(
+                group1_mean, group2_mean, i_bins,
+                c_bins,  difference)
+            size_idx = np.digitize([size]*len(initial_idx), s_bins)
+            for idx, coord in enumerate(zip(
+                    initial_idx, change_idx, size_idx)):
+                if counts[coord] < s_max:
+                    counts[coord] += 1
+                    cluster1_ix = clusters_dict[g1_rand[idx]].index.values
+                    cluster1_start = cluster1_ix[0]
+                    cluster1_end = cluster1_ix[-1]
+                    cluster2_ix = clusters_dict[g2_rand[idx]].index.values
+                    cluster2_start = cluster2_ix[0]
+                    cluster2_end = cluster2_ix[-1]
+                    c1_rand_s = g1_rand_s[idx]
+                    c1_rand_e = int(c1_rand_s + size)
+                    c2_rand_s = g2_rand_s[idx]
+                    c2_rand_e = int(c2_rand_s + size)
+                    indices[coord].append((
+                        cluster1_start, cluster1_end, cluster2_start,
+                        cluster2_end, c1_rand_s, c1_rand_e, c2_rand_s,
+                        c2_rand_e))
     return indices, counts
 
 
 def shuffleRows(df, i_bins, c_bins, tracks_map,  groups,
                 difference, s_max=100, i=1):
+
     counts = np.zeros((len(i_bins) + 1, len(c_bins) + 1))
 
     indices = {(key1, key2): []
@@ -297,8 +278,9 @@ def thresholdBins(indices, counts, s_min):
 
 
 def outputSpikes(df, id_column, indices, tracks_map, groups,
-                 method="seperate", spike_type="row",
-                 min_cbin=1, width_cbin=1, min_ibin=1, width_ibin=1):
+                 method, spike_type,
+                 min_cbin, width_cbin, min_ibin, width_ibin,
+                 min_sbin, width_sbin):
 
     def printHeader(keep_columns, groups):
         header = keep_columns
@@ -317,10 +299,20 @@ def outputSpikes(df, id_column, indices, tracks_map, groups,
         df.to_csv(sys.stdout, index=False, header=False, sep="\t",
                   dtype={'position': int})
 
+    def getInitialChangeSize(key, width_ibin, min_ibin, width_cbin, min_cbin,
+                             width_s_bin, min_s_bin):
+        initial_bin, change_bin, size_bin = key
+        # initial and change values are the center of the bin
+        initial = ((initial_bin*width_ibin) + min_ibin - (width_ibin*0.5))
+        change = ((change_bin*width_cbin) + min_cbin - (width_cbin*0.5))
+        size = ((size_bin*width_sbin) + min_sbin - 1)
+        return initial, change, size
+
     def getInitialChange(key, width_ibin, min_ibin, width_cbin, min_cbin):
-        initial_bin, change_bin = key[0:2]
-        initial = ((initial_bin*width_ibin) + min_ibin)
-        change = ((change_bin*width_cbin)+min_cbin)
+        initial_bin, change_bin = key
+        # initial and change values are the center of the bin
+        initial = ((initial_bin*width_ibin) + min_ibin - (width_ibin*0.5))
+        change = ((change_bin*width_cbin) + min_cbin - (width_cbin*0.5))
         return initial, change
 
     n = 0
@@ -338,9 +330,9 @@ def outputSpikes(df, id_column, indices, tracks_map, groups,
 
     elif spike_type == "cluster":
         for key in indices.keys():
-            initial, change = getInitialChange(key, width_ibin, min_ibin,
-                                               width_cbin, min_cbin)
-            size = key[2]
+            initial, change, size = getInitialChangeSize(
+                key, width_ibin, min_ibin, width_cbin,
+                min_cbin, width_sbin, min_sbin)
             for values in indices[key]:
                 (c1s, c1e, c2s, c2e, c1rs, c1re,
                  c2rs, c2re) = values
@@ -371,7 +363,7 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id: gtf2fasta.py 2861 2010-02-23 17:36:32Z andreas $", usage=globals()["__doc__"])
 
-    parser.add_option("-t", "--design-tsv-file", dest="design_file",
+    parser.add_option("-t", "--design-file-tsv", dest="design_file",
                       type="string",
                       help="filename with design [default=%default].")
 
@@ -457,11 +449,23 @@ def main(argv=None):
                       help="defines whether the spike-ins should be appended\
                       to the original table or seperately [default=%default].")
 
-    parser.add_option("-p", "--id-column",
-                      dest="id_column", type="string",
-                      help="the name of the id column [default=%default].")
+    parser.add_option("-p", "--shuffle-column-suffix",
+                      dest="shuffle_suffix", type="string",
+                      help="the suffix of the columns which are to be shuffled\
+                      [default=%default].")
+
+    parser.add_option("-q", "--keep-column-suffix",
+                      dest="keep_suffix", type="string",
+                      help="a list of suffixes for the columns which are to be\
+                      keep along with the shuffled columns[default=%default].")
+
+    parser.add_option("-z", "--spike-regex",
+                      dest="spike_regex", type="string", action="append",
+                      help="a regex to identify tracks for shuffling\
+                      [default=%default].")
 
     parser.set_defaults(
+        design_file=None,
         output_method="seperate",
         difference="relative",
         spike_type="row",
@@ -481,15 +485,15 @@ def main(argv=None):
         min_sbin=1,
         max_sbin=9,
         width_sbin=2,
-        id_column=None)
+        id_column=None,
+        shuffle_suffix=None,
+        keep_suffix=None,
+        spike_regex=".*")
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
     df = pd.read_table(sys.stdin, sep="\t")
-    df_sort = df.sort(columns=["contig", "position"])
-    df_sort.set_index(df.index, inplace=True)
-    #print df_sort.head()
 
     if not options.design_file:
         raise ValueError("a design table is required.")
@@ -502,7 +506,15 @@ def main(argv=None):
         df_columns = set(df.columns.values.tolist())
         msg = "cluster analysis requires columns named 'contig' and\
         'position' in the dataframe"
-        assert "contig" in df_columns and "position" in df_columns, E.info(msg)
+        assert "contig" in df_columns and "position" in df_columns, msg
+
+        msg2 = '''the minimum cluster size (%s) must be larger than the maximum
+        size of subcluster to be shuffled (%s)''' % (options.cluster_min_size,
+                                                     options.max_sbin)
+        assert options.max_sbin < options.cluster_min_size, msg2
+
+        df_sort = df.sort(columns=["contig", "position"])
+        df_sort.set_index(df.index, inplace=True)
 
     if not options.id_column:
         if options.output_method == "append" and options.spike_type == "row":
@@ -516,7 +528,10 @@ def main(argv=None):
     design_table = pd.read_table(options.design_file, sep="\t")
 
     # get dictionaries to map group members to column names
-    groups,  g_to_keep_tracks, g_to_spike_tracks = groupMappers(design_table)
+
+    groups,  g_to_keep_tracks, g_to_spike_tracks = groupMappers(
+        design_table, options.spike_regex,
+        options.shuffle_suffix, options.keep_suffix)
 
     change_bins = np.arange(options.min_cbin, options.max_cbin,
                             options.width_cbin)
@@ -554,7 +569,8 @@ def main(argv=None):
                  groups, method=options.output_method,
                  spike_type=options.spike_type,
                  min_cbin=options.min_cbin, width_cbin=options.width_cbin,
-                 min_ibin=options.min_ibin, width_ibin=options.width_ibin)
+                 min_ibin=options.min_ibin, width_ibin=options.width_ibin,
+                 min_sbin=options.min_sbin, width_sbin=options.width_sbin)
 
     # write footer and output benchmark information.
     E.Stop()
