@@ -247,7 +247,8 @@ if PARAMS["preprocessors"]:
         trimmomatic_options = PARAMS["trimmomatic_options"]
         if PARAMS["trimmomatic_adapter"]:
             adapter_options = " ILLUMINACLIP:%s:%s:%s:%s " % (
-                PARAMS["trimmomatic_adapter"], PARAMS["trimmomatic_mismatches"],
+                PARAMS["trimmomatic_adapter"],
+                PARAMS["trimmomatic_mismatches"],
                 PARAMS["trimmomatic_p_thresh"], PARAMS["trimmomatic_c_thresh"])
             trimmomatic_options = adapter_options + trimmomatic_options
 
@@ -258,7 +259,7 @@ if PARAMS["preprocessors"]:
             save=PARAMS["save"], summarise=PARAMS["summarise"],
             threads=PARAMS["threads"], scriptsdir=PARAMS["scriptsdir"],
             trimgalore_options=PARAMS["trimgalore_options"],
-            trimmomatic_options=PARAMS["trimmomatic_options"],
+            trimmomatic_options=trimmomatic_options,
             sickle_options=PARAMS["sickle_options"],
             flash_options=PARAMS["flash_options"],
             fastx_trimmer_options=PARAMS["fastx_trimmer_options"])
@@ -277,11 +278,26 @@ if PARAMS["preprocessors"]:
         statement = m.build((infiles,), outfile)
         P.run()
 
+
+    @jobs_limit(1, "db")
+    @transform(runFastqcFinal, suffix(".fastqc"), "_fastqc.load")
+    def loadFastqcFinal(infile, outfile):
+        '''load FASTQC stats.'''
+        track = P.snip(os.path.basename(infile), ".fastqc")
+        filename = os.path.join(
+            PARAMS["exportdir"], "fastqc",
+            track + "*_fastqc", "fastqc_data.txt")
+        PipelineReadqc.loadFastqc(filename)
+        #P.touch(outfile)
+
 else:
     def processReads():
         pass
 
     def runFastqcFinal():
+        pass
+
+    def loadFastqcFinal():
         pass
 
 
@@ -353,7 +369,7 @@ def loadFastqcSummary(infile, outfile):
     P.load(infile, outfile, options="--add-index=track")
 
 
-@follows(loadFastqc, loadFastqcSummary, runFastqcFinal)
+@follows(loadFastqc, loadFastqcSummary, loadFastqcFinal)
 def full():
     pass
 

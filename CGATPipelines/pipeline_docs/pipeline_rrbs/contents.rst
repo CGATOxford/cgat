@@ -9,8 +9,10 @@ Contents:
 
 .. toctree::
    :maxdepth: 2
-
-   pipeline.rst
+	      
+   qc.rst
+   exploratoryDataAnalysis.rst
+   regions.rst
 
 
 

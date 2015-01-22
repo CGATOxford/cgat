@@ -90,6 +90,9 @@ The default file format assumes the following convention:
 :term:`experiment`. The ``suffix`` determines the file type.  The
 following suffixes/file types are possible:
 
+.sra
+   Single-end reads
+   (Paired-end reads not yet checked)
 
 fastq.gz
    Single-end reads in fastq format.
@@ -129,7 +132,10 @@ To run the example, simply unpack and untar::
 
 TODO
 ====
-
+document design file
+document power analysis options
+parameterise power analysis?
+clean up bash code for coverage analysis, i.e replace with python
 
 Code
 ====
@@ -166,6 +172,7 @@ import CGATPipelines.PipelineRrbs as RRBS
 import pandas as pd
 from rpy2.robjects import r
 from rpy2.robjects.packages import importr
+import CGATPipelines.PipelineTracks as PipelineTracks
 import warnings
 
 ###################################################
@@ -225,8 +232,6 @@ def connect():
 #########################################################################
 # Read mapping
 #########################################################################
-
-
 SEQUENCESUFFIXES = ("*.fastq.1.gz",
                     "*.fastq.gz",
                     "*.fa.gz",
@@ -240,7 +245,23 @@ SEQUENCEFILES = tuple([os.path.join(DATADIR, suffix_name)
                       for suffix_name in SEQUENCESUFFIXES])
 
 SEQUENCEFILES_REGEX = regex(
-    r".*/(\S+).(?P<suffix>fastq.1.gz|fastq.gz)")
+    r"(\S+)-(\S+)-(\S+).(?P<suffix>fastq.1.gz|fastq.gz|sra)")
+
+Sample = PipelineTracks.AutoSample
+Sample.attributes = ('tissue', 'condition', 'replicate')
+TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory(
+    [y for x in SEQUENCESUFFIXES for y in glob.glob(x)],
+    "(\S+).(fastq.1.gz|fastq.gz|sra)")
+
+EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("tissue", "condition"))
+CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("condition", ))
+REPLICATES = PipelineTracks.Aggregate(TRACKS, labels=("replicate", ))
+
+
+print [x for x in EXPERIMENTS]
+print [x for x in CONDITIONS]
+print [x for x in REPLICATES]
+
 
 #########################################################################
 # summarise read 3'
@@ -250,16 +271,25 @@ SEQUENCEFILES_REGEX = regex(
 @follows(mkdir("sequence_characteristics.dir"))
 @transform(SEQUENCEFILES,
            SEQUENCEFILES_REGEX,
-           r"sequence_characteristics.dir/\1.\g<suffix>_start.tsv")
+           r"sequence_characteristics.dir/\1-\2-\3.\g<suffix>_start.tsv")
 def summariseReadStart(infile, outfile):
-    statement = '''zcat %(infile)s |
-                paste - - - - | cut -f2 | cut -c1-3 | sort | uniq -c |
-                sort -nk1 | awk -F' ' 'BEGIN{total=0; sum=0}
-                {total+=$1; OFS"\\t";
-                if($2=="CGG"||$2=="TGG"||$2=="CGA"||$2=="TGA")
-                {sum+=$1; print $1, $2}}
-                END {print total-sum,"others"}' > %(outfile)s ''' % locals()
-    P.run()
+    # this only works for fastq files. Fails with .sra files
+    # this function and the next section should be replaced with a call to
+    # fastq-dump if the file ends with .sra and then use the functions of
+    # the fastq module to count the first bases in the fastq records.
+    # for now, create empty outfile
+    if infile.endswith(".sra"):
+        P.touch(outfile)
+    else:
+        statement = '''zcat %(infile)s |
+        paste - - - - | cut -f2 | cut -c1-3 | sort | uniq -c |
+        sort -nk1 | awk -F' ' 'BEGIN{total=0; sum=0}
+        {total+=$1; OFS"\\t";
+        if($2=="CGG"||$2=="TGG"||$2=="CGA"||$2=="TGA")
+        {sum+=$1; print $1, $2}}
+        END {print total-sum,"others"}' > %(outfile)s ''' % locals()
+
+        P.run()
 
 
 @merge(summariseReadStart,
@@ -279,7 +309,6 @@ def combineReadStartSummaries(infiles, outfile):
             print $1,$2,$3,a[1],a[2],a[3]}'
             >> %(outfile)s;''' % locals()
 
-    print statement
     P.run()
 
 
@@ -306,14 +335,14 @@ def loadStartSummary(infile, outfile):
 @follows(mkdir("bismark.dir"))
 @transform(SEQUENCEFILES,
            SEQUENCEFILES_REGEX,
-           r"bismark.dir/\1.\g<suffix>_bismark_bt2.bam")
+           r"bismark.dir/\1-\2-\3_bismark_bt2.bam")
 def mapReadsWithBismark(infile, outfile):
     '''map reads with bismark'''
 
     # can this handle paired end?
-    # is appears bismark uses twice as many CPUs as expeceted!
+    # it appears bismark uses twice as many CPUs as expeceted!
     job_options = "-l mem_free=%s " % PARAMS["bismark_memory"]
-    job_threads = PARAMS["bismark_threads"] * 2
+    job_threads = (PARAMS["bismark_threads"] * 2) + 1
     outdir = "bismark.dir"
     bismark_options = PARAMS["bismark_options"]
     m = PipelineMapping.Bismark()
@@ -331,8 +360,8 @@ def mapReadsWithBismark(infile, outfile):
            r"methylation.dir/\1.bismark.cov")
 def callMethylationStatus(infile, outfile):
 
-    if infile.endswith((".fastq.gz_bismark_bt2.bam",
-                        ".fastq.gz_bismark_bt.bam")):
+    if infile.endswith(("bismark_bt2.bam",
+                        "bismark_bt.bam")):
         options = " --single-end "
     else:
         options = " --paired-end "
@@ -340,7 +369,6 @@ def callMethylationStatus(infile, outfile):
     if PARAMS["bismark_extraction_options"]:
         options += PARAMS["bismark_extraction_options"]
 
-    # not using P.snip as two extensions in outfiles
     CG = ("methylation.dir/CpG_context_" +
           P.snip(os.path.basename(outfile), ".bismark.cov") + ".txt")
     CHG = re.sub("CpG", "CHG", CG)
@@ -371,16 +399,16 @@ def plotReadBias(infile, outfile):
     print m_bias_infile
 
     RRBS.plotReadBias(m_bias_infile, outfile,
-                      submit=True, jobOptions=job_options)
+                      submit=True, job_options=job_options)
 
 #########################################################################
 # Sort and index bams
 #########################################################################
 # this is done here rather than during mapping as bismark requires read sorted
 # bam files, not coordinate sorted
-# can this be removed entirely? Nope, unfortunately not. Filtering is
-# now done as a postprocessing step in Bismark though
-
+# the infiles from bismark
+# both the original Bismark bams and the sorted bams are used downstream
+# so currently both bams are kept (any way around this?)
 
 @follows(callMethylationStatus)
 @transform(mapReadsWithBismark,
@@ -393,7 +421,6 @@ def sortAndIndexBams(infile, outfile):
     print statement
     P.run()
 
-
 ########################################################################
 ########################################################################
 ########################################################################
@@ -403,6 +430,7 @@ def sortAndIndexBams(infile, outfile):
 # CpG Islands and computes coverage across these regions
 # an alternative approach would be to load the CpG bed into database and query
 # (see below)
+
 
 @follows(mkdir("coverage.dir"))
 @originate("coverage.dir/cpgIslands.bed")
@@ -418,33 +446,18 @@ def makeCpgIslandsBed(outfile):
     out.close()
 
 
-# @follows(makeCpgIslandsBed)
-# @transform(sortFilterAndIndexBams,
-#            regex("bismark.dir/(\S+).sorted.bam"),
-#            add_inputs(makeCpgIslandsBed),
-#            r"coverage.dir/\1.cpg.coverage")
-# def overlapCpgIslands(infiles, outfile):
-#     infile, bed = infiles
-#
-#     job_options = "-l mem_free=1G"
-#     statement = '''samtools view -b %(infile)s|
-#                    coverageBed -hist -d -abam stdin -b %(bed)s
-#                    > %(outfile)s''' % locals()
-#     print statement
-#     P.run()
 
 ########################################################################
 # RRBS alternative CpGI coverage summary
 ########################################################################
 
-
 @subdivide(makeCpgIslandsBed,
            regex("coverage.dir/(\S+).bed"),
-           [r"coverage.dir/\1_1based.tsv",
-            r"coverage.dir/\1_1based.load"])
-def make1basedCpgIslands(infile, outfiles):
+           r"coverage.dir/\1_1based.tsv")
+# r"coverage.dir/\1_1based.load"
+def make1basedCpgIslands(infile, outfile):
 
-    outfile, loadfile = outfiles
+    #outfile, loadfile = outfiles
 
     out = open(outfile, "w")
     out.write("%s\t%s\t%s\n" % ("contig", "position", "cpgi"))
@@ -456,16 +469,16 @@ def make1basedCpgIslands(infile, outfiles):
             for position in [x for x in range(int(start), int(stop)+2)]:
                 out.write("%s\t%s\t%s\n" % (contig, position, "CpGIsland"))
     out.close()
+    # this file takes hours(!) to load and it's not being used from csvdb
+    #dbh = connect()
+    #tablename = P.toTable(loadfile)
+    #scriptsdir = PARAMS["general_scriptsdir"]
 
-    dbh = connect()
-    tablename = P.toTable(loadfile)
-    scriptsdir = PARAMS["general_scriptsdir"]
-
-    statement = '''cat %(outfile)s |
-                python %(scriptsdir)s/csv2db.py
-                --table %(tablename)s --retry --ignore-empty
-                 > %(loadfile)s''' % locals()
-    P.run()
+    #statement = '''cat %(outfile)s |
+    #            python %(scriptsdir)s/csv2db.py
+    #            --table %(tablename)s --retry --ignore-empty
+    #             > %(loadfile)s''' % locals()
+    #P.run()
 
 
 @transform(make1basedCpgIslands,
@@ -484,7 +497,7 @@ def joinAllCpGsAndCpGIslands(infile, outfile):
 # load bismark coverage and join tables in sql
 #########################################################################
 
-
+# change to subset10 after testing biseq
 @transform(callMethylationStatus,
            suffix(".bismark.cov"),
            r".bismark.subset10.cov")
@@ -502,7 +515,8 @@ def findCpGs(outfile):
     genome_infile = PARAMS["methylation_summary_genome_fasta"]
     job_options = "-l mem_free=2G"
 
-    RRBS.fasta2CpG(genome_infile, outfile, submit=True, jobOptions=job_options)
+    RRBS.fasta2CpG(genome_infile, outfile,
+                   submit=True, job_options=job_options)
 
 
 @follows(findCpGs)
@@ -512,12 +526,12 @@ def findCpGs(outfile):
 def mergeCoverage(infiles, outfile):
     cpgs_infile = infiles[-1]
     coverage_infiles = infiles[:-1]
-
+    # very memory intensive! - find out why and re-code
     job_options = "-l mem_free=48G"
     job_threads = 2
 
     RRBS.mergeAndDrop(cpgs_infile, coverage_infiles, outfile,
-                      submit=True, jobOptions=job_options)
+                      submit=True, job_options=job_options)
 
 
 @transform(mergeCoverage,
@@ -526,14 +540,14 @@ def mergeCoverage(infiles, outfile):
            "_meth_cpgi.tsv")
 def addCpGIs(infiles, outfile):
     infile, CpGI_load, CpGI = infiles
-    # very memory intensive!
+    # memory intensive!
     job_options = "-l mem_free=20G"
     job_threads = 2
 
     RRBS.pandasMerge(infile, CpGI, outfile, merge_type="left",
                      left=['contig', 'position'],
                      right=['contig', 'position'],
-                     submit=True, jobOptions=job_options)
+                     submit=True, job_options=job_options)
 
 
 @transform(addCpGIs,
@@ -552,80 +566,6 @@ def loadMergeCoverage(infile, outfile):
                 --table %(tablename)s --retry --ignore-empty
                  > %(outfile)s''' % locals()
     P.run()
-
-
-#########################################################################
-#########################################################################
-#########################################################################
-# this is an entirely different approach to generating the coverage table
-# using sqlite3. Currently not correctly implemented (requires multiple
-# inner joins and union in sqlite3 command)
-# @jobs_limit(1)
-# @follows(makeCoverageHeader)
-# @transform(callMethylationStatus,
-#           suffix(".cov"),
-#           add_inputs(makeCoverageHeader),
-#           ".cov.load")
-# def loadAndIndexBismarkCoverage(infiles, outfile):
-#    infile, header = infiles
-#    dbh = connect()
-#    tablename = P.toTable(outfile)
-#    scriptsdir = PARAMS["general_scriptsdir"]
-#    index = "idx" + re.sub('_fastq_.+', "", tablename)
-#
-#
-#    statement = '''cat %(header)s %(infile)s |
-#                python %(scriptsdir)s/csv2db.py
-#                --table %(tablename)s --retry --ignore-empty
-#                 > %(outfile)s;
-#                sqlite3 csvdb "CREATE INDEX %(index)s ON
-#                %(tablename)s(contig, start)" ''' % locals()
-#    P.run()
-#
-#
-# @merge(loadAndIndexBismarkCoverage,
-#       "methylation.dir/csvdb_join_bismark_coverage.sentinel")
-# def joinBismarkCoverage(infiles, outfile):
-#    print infiles
-#    print outfile
-#
-#    new_columns = ["a.contig", "a.start"]
-#    tables = [" FROM "]
-#    letters = string.ascii_lowercase
-#    n = 0
-#    for cov_file in infiles:
-#        track = re.sub('[-\.]', "_", os.path.basename(cov_file))
-#        column_track = re.sub('\_fastq\_.+', "", track)
-#        table_track = P.snip(track, "_load")
-#        letter = letters[n]
-#
-#        new_columns.append(letter +
-#                           ".count_meth AS %(column_track)s_meth" % locals())
-#        new_columns.append(letter +
-#                           ".count_unmeth AS %(column_track)s_unmeth" %
-#                           locals())
-#        if n == 0:
-#            tables.append("%(table_track)s AS %(letter)s" % locals())
-#        else:
-#            tables.append('''FULL OUTER JOIN
-#                          %(table_track)s AS %(letter)s
-#                          ON a.contig = %(letter)s.contig
-#                          AND a.start = %(letter)s.start''' % locals())
-#        n += 1
-#
-#    new_columns = ", ".join(new_columns)
-#    tables = " ".join(tables)
-#
-#    statement = '''sqlite3 csvdb "CREATE TABLE merged_bismark_cov AS SELECT'''
-#    statement += new_columns
-#    statement += tables
-#    statement += ''' " '''
-#
-#    print statement
-#    P.run()
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 #########################################################################
@@ -664,7 +604,7 @@ def concatenateCoverage(infiles, outfile):
                 python %(scriptsdir)s/combine_tables.py -v0
                 --glob="methylation.dir/*.coverage.tsv" -a CAT -t|
                 sed -e 's/methylation.dir\///g'
-                -e 's/.fastq.*coverage.tsv//g'|
+                -e 's/_bismark.*.coverage.tsv//g'|
                 awk '{OFS="\\t"; split ($1, a, "-");
                 print $1,$2,$3,a[1],a[2],a[3]}'
                 >> %(outfile)s;''' % locals()
@@ -755,7 +695,7 @@ def concatenateRemainingReads(infiles, outfile):
                 python %(scriptsdir)s/combine_tables.py -v0
                 --glob="methylation.dir/*.reads_by_threshold.tsv" -a CAT -t|
                 sed -e 's/methylation.dir\///g'
-                -e 's/.fastq.*.reads_by_threshold.tsv//g'|
+                -e 's/_bismark.*.reads_by_threshold.tsv//g'|
                 awk '{OFS="\\t"; split ($1, a, "-");
                 print $1,$2,$3,$4,a[1],a[2],a[3]}'
                 >> %(outfile)s;''' % locals()
@@ -818,7 +758,7 @@ def makeGeneProfiles(infiles, outfile):
 
 @transform(addCpGIs,
            regex("methylation.dir/(\S+)_meth_cpgi.tsv"),
-           r"plots.dir/\1_covered_meth_cpgi.tsv")
+           r"methylation.dir/\1_covered_meth_cpgi.tsv")
 def subsetCpGsToCovered(infile, outfile):
 
     job_options = "-l mem_free=48G"
@@ -828,25 +768,26 @@ def subsetCpGsToCovered(infile, outfile):
 
 
 @transform(subsetCpGsToCovered,
-           regex("plots.dir/(\S+)_covered_meth_cpgi.tsv"),
-           r"plots.dir/\1_covered_with_means.tsv")
+           regex("methylation.dir/(\S+)_covered_meth_cpgi.tsv"),
+           r"methylation.dir/\1_covered_with_means.tsv")
 def addTreatmentMeans(infile, outfile):
 
     job_options = "-l mem_free=48G"
 
     RRBS.addTreatmentMean(infile, outfile,
-                          submit=True, jobOptions=job_options)
+                          submit=True, job_options=job_options)
 
 
 @transform(addTreatmentMeans,
-           regex("plots.dir/(\S+)_covered_with_means.tsv"),
-           r"plots.dir/\1_summary_plots.log")
+           regex("methylation.dir/(\S+)_covered_with_means.tsv"),
+           r"plots.dir/\1_summary_plots")
 def makeSummaryPlots(infile, outfile):
 
     job_options = "-l mem_free=48G"
 
     RRBS.summaryPlots(infile, outfile,
-                      submit=True, jobOptions=job_options)
+                      submit=True, job_options=job_options)
+    P.touch(outfile)
 
 ########################################################################
 ########################################################################
@@ -856,118 +797,12 @@ def makeSummaryPlots(infile, outfile):
 # add functionality to deal with no replicate experimental designs
 
 
+@follows(mkdir("biseq.dir"))
 @merge(subsetCoverage,
-       "clusters.tsv")
+       "biseq.dir/clusters.tsv")
 def runBiSeq(infiles, outfile):
-    # use this when following callMethylationStatus(i.e full run)
-    # cov_infiles = filter(lambda x: 'Liver' in x, infiles)
-    cov_infiles = infiles
-    # implement properly
-    if len(cov_infiles) >= 4:
-        pass
-    else:
-        warnings.warn("nope, not gonna work")
-        out = open(outfile, "w")
-        out.write("You don't have replicates! This wont work")
-        out.close()
-        return 0
-    print ("how did I get here given that I only have %s samples"
-           % len(cov_infiles))
-
-    basenames = [os.path.basename(x) for x in cov_infiles]
-    samples = [re.sub(r".fastq\S+", "", x) for x in basenames]
-    groups = [x.split("-")[1] for x in samples]
-    c = '","'.join(cov_infiles)
-    s = '","'.join(samples)
-    g = '","'.join(groups)
-    print ("basenames: %(basenames)s\ngroups: %(groups)s\nsamples: %(samples)s"
-           % locals())
-    print "c: %(c)s\ns: %(s)s\ng: %(g)s " % locals()
-    # load BiSeq package
-    r.library("BiSeq")
-    r.library("ggplot2")
-    grdevices = importr('grDevices')
-
-    rcode = ('raw = readBismark(files = c("%(c)s"),DataFrame(group = c("%(g)s"),\
-    row.names = c("%(s)s")))' % locals())
-
-    r(rcode)
-
-    r('colData(raw)$group <- factor(colData(raw)$group)')
-    r('rrbs_rel <- rawToRel(raw)')
-    # parameterise this step
-    print "working fine to here"
-    r('print(head(methReads(raw)))')
-    r('print(head(totalReads(raw)))')
-    r('print(rowData(raw))')
-    r('print(colData(raw))')
-    r('print(colData(raw)$group)')
-
-    r('rrbs.clust.unlim <- BiSeq::clusterSites(\
-    object = raw,groups = colData(raw)$group,perc.samples = 1,\
-    min.sites = 5,max.dist = 50,mc.cores=4)')
-    print "made it here"
-    r('ind.cov <- totalReads(rrbs.clust.unlim) > 0')
-    r('quant <- quantile(totalReads(rrbs.clust.unlim)[ind.cov], 0.9)')
-    r('rrbs.clust.lim <- limitCov(rrbs.clust.unlim, maxCov = quant)')
-    # emperically derive value for h (this is the bandwidth)
-    r('predictedMeth <- predictMeth(object = rrbs.clust.lim,h=25,mc.cores=4)')
-    r('temp_df=data.frame(y=methLevel(predictedMeth)\
-    [order(rowData(predictedMeth)),1])')
-    r('temp_df["x"]=\
-    (methReads(rrbs.clust.lim)/totalReads(rrbs.clust.lim))[,1]')
-    r('temp_df["cov"] = totalReads(rrbs.clust.lim)[,1]')
-    r('p=ggplot(temp_df,aes(x, y, size=cov))+geom_point(aes(colour=cov))')
-
-    grdevices.png(file="/ifs/projects/proj034/mapping_bismark_0.12.5/test.png")
-    r('print(p)')
-    grdevices.dev_off()
-
-    r('betaResults <- betaRegression(formula = ~group, link = "probit",\
-    object = predictedMeth, type = "BR",mc.cores=8)')
-    r('print(head(betaResults))')
-    r('predictedMethNull <- predictedMeth')
-    r('print((predictedMethNull))')
-    r('print(head(methLevel(predictedMethNull)))')
-    r('colData(predictedMethNull)$group.null <- rep(c(1,2), 3)')
-    r('print((predictedMethNull))')
-    r('betaResultsNull <- betaRegression(formula = ~group.null,\
-    link = "probit",object = predictedMethNull, type = "BR",mc.cores=4)')
-    r('vario <- makeVariogram(betaResultsNull)')
-    r('length_vario = length(vario$variogram[[1]][,2])')
-    r('estimated_sill =\
-    median(vario$variogram[[1]][-(1:(length_vario-50)),2])')
-    r('vario.sm <- smoothVariogram(vario, sill = estimated_sill)')
-
-    grdevices.png(
-        file="/ifs/projects/proj034/mapping_bismark_0.12.5/test_vario.png")
-    r('plot(vario$variogram[[1]],ylim=c(0,5))')
-    r('lines(vario.sm$variogram[,c("h", "v.sm")],col = "red", lwd = 1.5)')
-    grdevices.dev_off()
-
-    r('print(names(vario.sm))')
-    r('print(head(vario.sm$variogram))')
-    r('print(head(vario.sm$pValsList[[1]]))')
-    r('vario.aux <- makeVariogram(betaResults, make.variogram=FALSE)')
-    r('vario.sm$pValsList <- vario.aux$pValsList')
-    r('print(head(vario.sm$pValsList[[1]]))')
-    r('locCor <- estLocCor(vario.sm)')
-    r('clusters.rej <- testClusters(locCor,FDR.cluster = 0.5)')
-    r('print(clusters.rej$clusters.reject)')
-    r('clusters.trimmed <- trimClusters(clusters.rej,FDR.loc = 0.5)')
-    r('print(clusters.trimmed)')
-    r('DMRs <- findDMRs(clusters.trimmed,max.dist = 100,diff.dir = TRUE)')
-    r('print(DMRs)')
-    # concatenate pvalue lists into one table to write out
-    r('concat_vario = do.call(rbind, vario.sm$pValsList)')
-    r('row_p = rowData(predictedMeth)')
-    r('df_ranges<- data.frame(seqnames=seqnames(row_p), starts=start(row_p),\
-    ends=end(row_p))')
-    r('ranges_pred_meth_df=cbind(df_ranges,methLevel(predictedMeth))')
-    r('write.table(concat_vario, "clusters_vario_table_test.tsv",\
-    sep="\t",quote = F,row.names = F)')
-    r('write.table(ranges_pred_meth_df, "clusters.tsv", sep="\t",\
-    quote = F,row.names = F)')
+    job_options = "-l mem_free=10G -pe dedicated 10"
+    RRBS.runBiSeq(infiles, outfile, submit=True, job_options=job_options)
 
 ########################################################################
 #########################################################################
@@ -976,44 +811,281 @@ def runBiSeq(infiles, outfile):
 
 
 @follows(mkdir("power.dir"))
-@merge(callMethylationStatus,
-       "power.dir/power.out")
-def generateClusterSpikeIns(infiles, outfile):
+@transform(subsetCpGsToCovered,
+           regex("methylation.dir/(\S+)_covered_meth_cpgi.tsv"),
+           "power.dir/spike_ins.tsv")
+def generateClusterSpikeIns(infile, outfile):
+    # parametrise binning in pipeline.ini
+    job_options = "-l mem_free=4G"
+    scriptsdir = PARAMS['scriptsdir'] 
+    statement = '''cat %(infile)s |
+    python %(scriptsdir)s/data2spike.py --design-file-tsv=design.tsv
+    --shuffle-column-suffix=-perc --keep-column-suffix=-meth,-unmeth
+    --difference-method=relative --spike-minimum=100 --spike-maximum=100
+    --output-method=seperate --cluster-maximum-distance=150
+    --cluster-minimum-size=10 --iterations=50 --spike-type=cluster
+    --change-bin-min=-100 --change-bin-max=100 --change-bin-width=10
+    --initial-bin-min=0 --initial-bin-max=100 --initial-bin-width=100
+    --subcluster-min-size=1 --subcluster-max-size=9 --subcluster-bin-width=1
+    > %(outfile)s_tmp; mv %(outfile)s_tmp %(outfile)s''' % locals()
+    P.run()
 
-    # include some way of restricting power analysis to subset of samples
-    job_options = "-l mem_free=23G"
 
-    RRBS.spikeInClusters(infiles, outfile,
-                         submit=True, jobOptions=job_options)
+@split(generateClusterSpikeIns,
+       "power.dir/spike_ins_subframe.tsv_*")
+def splitSpikeClustersDataframe(infile, outfiles):
+    outprefix = "power.dir/spike_ins_subframe.tsv"
+    df = pd.read_csv(infile, comment='#', sep="\t")
+    df['cluster_id'] = df['contig'].apply(
+        lambda x: x.split("_")[-1]).astype(float)
+    split_at = 1000
+    for sub in range(0, int(max(df['cluster_id'])), split_at):
+        temp_df = df[df['cluster_id'] >= sub]
+        temp_df = temp_df[temp_df['cluster_id'] < sub+split_at]
+        temp_df.to_csv("_".join((outprefix, str(sub))),
+                       header=True, index=False, sep="\t")
+
+
+@transform(splitSpikeClustersDataframe,
+           regex("power.dir/spike_ins_subframe.tsv_(\d+)$"),
+           add_inputs("design.tsv"),
+           r"power.dir/spike_ins_subframe.tsv_\1_M3D.stats")
+def runM3DSpikeClusters(infiles, outfile):
+    job_options = "-l mem_free=4G -pe dedicated 1"
+    infile, design = infiles
+    RRBS.calculateM3DStat(infile, outfile, design,
+                          submit=True, job_options=job_options)
+
+
+@merge([runM3DSpikeClusters, "design.tsv"],
+       "power.dir/spike_in_M3D_stat_merged_between.tsv")
+def calculateM3DSpikeClustersPvalue(infiles, outfile):
+    job_options = "-l mem_free=4G -pe dedicated 1"
+    design = infiles[-1]
+    infiles = infiles[:-1]
+    RRBS.calculateM3DSpikepvalue(infiles, outfile, design,
+                                 submit=True, job_options=job_options)
+    P.touch(outfile)
+
+
+###########################################################################
+
+@transform(splitSpikeClustersDataframe,
+           regex("power.dir/spike_ins_subframe.tsv_(\d+)"),
+           r"power.dir/spike_ins_subframe.tsv_\1_BiSeq.stats")
+def runBiSeqSpikeClusters(infile, outfile):
+    pass
+    job_options = "-l mem_free=10G -pe dedicated 6"
+    # RRBS.calculateBiSeqStat(infile, outfile,
+    # submit=True, job_options=job_options)
 
 
 @follows(generateClusterSpikeIns)
 @transform(generateClusterSpikeIns,
-           suffix(".out"),
+           suffix(".tsv"),
            ".analysis.out")
 def clusterSpikeInsPowerAnalysis(infiles, outfile):
 
     job_options = "-l mem_free=23G"
 
     RRBS.spikeInClustersAnalysis(infiles, outfile,
-                                 submit=True, jobOptions=job_options)
+                                 submit=True, job_options=job_options)
 
 
-@transform(clusterSpikeInsPowerAnalysis,
-           suffix(".analysis.out"),
-           ".plot.out")
-def clusterSpikeInsPowerPlot(infiles, outfile):
+#@transform(clusterSpikeInsPowerAnalysis,
+#           suffix(".analysis.out"),
+#           ".M3D_plot_list.out")
+#def clusterSpikeInsPowerPlotM3D(infiles, outfile):
+#
+#    job_options = "-l mem_free=23G"
+#
+#    RRBS.spikeInClustersPlotM3D(infiles, outfile, groups=["Saline", "Dex"],
+#                                submit=True, job_options=job_options)
+    #P.touch(outfile)
+#
+#@transform(generateClusterSpikeIns,
+#           suffix(".out"),
+#           ".Biseq_plot_list.out")
+#def clusterSpikeInsPowerPlotBiSeq(infiles, outfile):
+#
+#    job_options = "-l mem_free=48G -pe dedicated 8"
+#
+#    RRBS.spikeInClustersAnalysisBiSeq(infiles, outfile,
+#                                      submit=True, job_options=job_options)
 
-    job_options = "-l mem_free=23G"
-
-    RRBS.spikeInClustersPlot(infiles, outfile, groups=["Saline", "Dex"],
-                             submit=True, jobOptions=job_options)
 
 ########################################################################
+# to do: utilise farm.py to split task up
+# will need to write a new iterator function for farm.py
+# to keep clusters together 
+
+@follows(mkdir("subframes.dir"))
+@split(subsetCpGsToCovered,
+       "subframes.dir/cluster_subframe_*.tsv")
+def splitClustersDataframe(infile, outfiles):
+    outprefix = "subframes.dir/cluster_subframe_"
+    suffix = ".tsv"
+
+    job_options = "-l mem_free=8G -pe dedicated 1"
+    RRBS.splitDataframeClusters(infile, outprefix, suffix,
+                                submit=True, job_options=job_options)
+
+
+####################################################################
+# this allows all against all for pairs in EXPERIMENTS
+# to do:
+# re-code so that user can supply a list of pairs in the pipeline.ini
+# e.g PARAMS['pair_x]=y,z where multiple pairs can be given
+# these pairs would then overide the itertools combinations
+
+
+@follows(mkdir("M3D"))
+@subdivide(splitClustersDataframe,
+           formatter(),
+           "M3D/{basename[0]}_M3D_stats_*.tsv",
+           "M3D/{basename[0]}_M3D_stats_",
+           "design.tsv")
+def runM3D(infile, outfile, root, design):
+    job_options = "-l mem_free=4G -pe dedicated 1"
+    groups = [x for x in itertools.combinations(EXPERIMENTS, 2)]
+
+    # **code repeated - refactor**
+    for pair in groups:
+        pair = [re.sub("-agg", "", str(x)) for x in pair]
+        pair1, pair2 = pair
+        pair1_split = pair1.split("-")
+        pair2_split = pair2.split("-")
+        # only want pairs with one difference
+        # e.g treatment or tissue but not both
+        if not (pair1_split[0] != pair2_split[0] and
+                pair1_split[1] != pair2_split[1]):
+            outfile = ("%(root)s%(pair1)s_vs_%(pair2)s.tsv"
+                       % locals())
+            if pair1_split[0] != pair2_split[0]:
+                groups = [pair1_split[0], pair2_split[0]]
+            elif pair1_split[1] != pair2_split[1]:
+                groups = [pair1_split[1], pair2_split[1]]
+            else:
+                E.error("This pair does not contain any comparisons: %(pair)s"
+                        % locals())
+
+            RRBS.calculateM3DStat(infile, outfile, design, pair=pair,
+                                  groups=groups, submit=True,
+                                  job_options=job_options)
+
+
+# @follows(mkdir("M3D_plots.dir"))
+# @merge([runM3D, ["design.tsv", "M3D_plots.dir"]],
+#       "M3D_plots.dir/cluster_stat_merged.tsv")
+
+@follows(mkdir("M3D_plots.dir"))
+@collate(runM3D,
+         regex(r"M3D/cluster_subframe_(\d+)_M3D_stats_(\S+)_vs_(\S+).tsv"),
+         r"M3D_plots.dir/\2_vs_\3_cluster_stat_merged_between.tsv",
+         r"\2", r"\3")
+def calculateM3DClustersPvalue(infiles, outfile, pair1, pair2):
+    job_options = "-l mem_free=4G -pe dedicated 1"
+    infiles = infiles[:-1]
+    print "pair1: %s" % pair1
+    print "pair2: %s" % pair2
+    pair = [pair1, pair2]
+
+    print infiles, outfile, pair
+    RRBS.calculateM3Dpvalue(infiles, outfile, pair,
+                            submit=True, job_options=job_options)
+
+
+@transform(calculateM3DClustersPvalue,
+           suffix(".tsv"),
+           ".load")
+def loadM3DClusters(infile, outfile):
+    dbh = connect()
+    tablename = P.toTable(outfile)
+    scriptsdir = PARAMS["general_scriptsdir"]
+
+    statement = '''cat %(infile)s |
+                python %(scriptsdir)s/csv2db.py
+                --table %(tablename)s --retry --ignore-empty
+                 > %(outfile)s''' % locals()
+    P.run()
+
+
+@transform(calculateM3DClustersPvalue,
+           suffix(".tsv"),
+           "_summary.tsv")
+def summariseM3D(infile, outfile):
+    ''' summarise the number of cluster passing threshold'''
+    # adjusted p-value threshold
+    threshold = 0.05
+    print infile, outfile, threshold
+    RRBS.summariseM3D(infile, outfile, threshold, submit=True)
+
+
+@merge(summariseM3D,
+       ["M3D_plots.dir/summary_table.tsv", "M3D_plots.dir/summary_table.load"])
+def combineM3Dsummaries(infiles, outfiles):
+    ''' combine M3D summary tables'''
+    outfile1, outfile2 = outfiles
+    print outfile1, outfile2
+    scriptsdir = PARAMS["general_scriptsdir"]
+    tablename = P.toTable(outfile2)
+
+    statement = ''' python %%(scriptsdir)s/combine_tables.py -v0  -a file
+                    --glob=M3D_plots.dir/*between_summary.tsv > %(outfile1)s;
+                    cat %(outfile1)s |
+                    python %(scriptsdir)s/csv2db.py
+                    --table %(tablename)s --retry --ignore-empty
+                    > %(outfile2)s''' % locals()
+    print statement
+    P.run()
+
+
 #########################################################################
 
 
-@follows(generateClusterSpikeIns)
+@follows(calculateM3DSpikeClustersPvalue)
+def power():
+    pass
+
+
+@follows(loadM3DClusters,
+         combineM3Dsummaries)
+def M3D():
+    pass
+
+
+# add this to full once start summarising functions have been refactored
+@follows(loadStartSummary)
+def startSummary():
+    pass
+
+
+@follows(loadStartSummary,
+         loadCoverage,
+         loadCpGOverlap,
+         loadRemainingReads,
+         findCpGs,
+         subsetCoverage,
+         sortAndIndexBams,
+         makeCpgIslandsBed,
+         make1basedCpgIslands,
+         loadMergeCoverage,
+         makeSummaryPlots,
+         mergeCoverage,
+         plotReadBias,
+         power,
+         M3D)
+def full():
+    pass
+
+
+@follows(mapReadsWithBismark)
+def mapReads():
+    pass
+
+
+@follows(loadM3DClusters,
+         combineM3Dsummaries)
 def test():
     pass
 
@@ -1023,25 +1095,8 @@ def biseq():
     pass
 
 
-@follows(loadCoverage,
-         loadCpGOverlap,
-         loadRemainingReads,
-         loadStartSummary,
-         findCpGs,
-         subsetCoverage,
-         sortAndIndexBams,
-         makeCpgIslandsBed,
-         makeGeneProfiles,
-         make1basedCpgIslands,
-         loadMergeCoverage,
-         makeSummaryPlots,
-         mergeCoverage,
+@follows(callMethylationStatus,
          plotReadBias)
-def full():
-    pass
-
-
-@follows(callMethylationStatus)
 def callMeth():
     pass
 #########################################################################
