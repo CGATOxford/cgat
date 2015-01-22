@@ -188,18 +188,6 @@ PARAMS = P.PARAMS
 # Helper functions mapping tracks to conditions, etc
 ###################################################################
 # determine the location of the input files (reads).
-try:
-    PARAMS["input"]
-except NameError:
-    DATADIR = "."
-else:
-    if PARAMS["input"] == 0:
-        DATADIR = "."
-    elif PARAMS["input"] == 1:
-        DATADIR = "data.dir"
-    else:
-        DATADIR = PARAMS["input"]  # not recommended practise
-
 
 def connect():
     '''connect to database.
@@ -226,8 +214,6 @@ SEQUENCESUFFIXES = ("*.fastq.1.gz",
                     "*.csfasta.F3.gz",
                     )
 
-SEQUENCEFILES = tuple([os.path.join(DATADIR, suffix_name)
-                      for suffix_name in SEQUENCESUFFIXES])
 
 SEQUENCEFILES_REGEX = regex(r".*/(\S+).(?P<suffix>fastq.1.gz|fastq.gz|fa.gz|\
 sra|csfasta.gz|csfasta.F3.gz|export.txt.gz)")
@@ -236,15 +222,11 @@ PREPROCESSTOOLS = [tool for tool in
                    P.asList(PARAMS["general_preprocessors"])]
 preprocess_prefix = ("-".join(PREPROCESSTOOLS[::-1]) + "-")
 
-print "preprocessing tools: %s",
-print PREPROCESSTOOLS
-print "\n\n\n\n\n"
-
 
 @follows(mkdir("processed.dir"),
          mkdir("log.dir"),
          mkdir("summary.dir"))
-@transform(SEQUENCEFILES,
+@transform(INPUT_FORMATS,
            SEQUENCEFILES_REGEX,
            r"processed.dir/%s\1.\g<suffix>" % preprocess_prefix)
 def processReads(infile, outfile):

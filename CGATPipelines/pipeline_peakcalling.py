@@ -1964,6 +1964,17 @@ def full():
     pass
 
 
+# avoid running estimateSPPQualityMetrics which throws an error:
+# ValueError("could not find run_spp.R")
+@follows(calling,
+         loadBAMStats,
+         loadDuplicationStats,
+         exportIntervalsAsBed,
+         loadFilteredExportSummary)
+def test():
+    pass
+
+
 @follows(mkdir("report"))
 def build_report():
     '''build report from scratch.'''
