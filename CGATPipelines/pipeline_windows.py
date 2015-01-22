@@ -902,7 +902,7 @@ def normalizeBed(infile, outfile):
              infiles=infile,
              outfiles=tmpfile,
              to_cluster=True,
-             jobOptions="-l mem_free=32G")
+             job_options="-l mem_free=32G")
 
     statement = '''cat %(tmpfile)s |
                    gzip > %(outfile)s; rm -f %(tmpfile)s'''
