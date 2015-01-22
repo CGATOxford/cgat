@@ -309,7 +309,6 @@ def combineReadStartSummaries(infiles, outfile):
             print $1,$2,$3,a[1],a[2],a[3]}'
             >> %(outfile)s;''' % locals()
 
-    print statement
     P.run()
 
 
@@ -454,11 +453,11 @@ def makeCpgIslandsBed(outfile):
 
 @subdivide(makeCpgIslandsBed,
            regex("coverage.dir/(\S+).bed"),
-           [r"coverage.dir/\1_1based.tsv",
-            r"coverage.dir/\1_1based.load"])
-def make1basedCpgIslands(infile, outfiles):
+           r"coverage.dir/\1_1based.tsv")
+# r"coverage.dir/\1_1based.load"
+def make1basedCpgIslands(infile, outfile):
 
-    outfile, loadfile = outfiles
+    #outfile, loadfile = outfiles
 
     out = open(outfile, "w")
     out.write("%s\t%s\t%s\n" % ("contig", "position", "cpgi"))
@@ -470,16 +469,16 @@ def make1basedCpgIslands(infile, outfiles):
             for position in [x for x in range(int(start), int(stop)+2)]:
                 out.write("%s\t%s\t%s\n" % (contig, position, "CpGIsland"))
     out.close()
+    # this file takes hours(!) to load and it's not being used from csvdb
+    #dbh = connect()
+    #tablename = P.toTable(loadfile)
+    #scriptsdir = PARAMS["general_scriptsdir"]
 
-    dbh = connect()
-    tablename = P.toTable(loadfile)
-    scriptsdir = PARAMS["general_scriptsdir"]
-
-    statement = '''cat %(outfile)s |
-                python %(scriptsdir)s/csv2db.py
-                --table %(tablename)s --retry --ignore-empty
-                 > %(loadfile)s''' % locals()
-    P.run()
+    #statement = '''cat %(outfile)s |
+    #            python %(scriptsdir)s/csv2db.py
+    #            --table %(tablename)s --retry --ignore-empty
+    #             > %(loadfile)s''' % locals()
+    #P.run()
 
 
 @transform(make1basedCpgIslands,
@@ -817,7 +816,7 @@ def runBiSeq(infiles, outfile):
            "power.dir/spike_ins.tsv")
 def generateClusterSpikeIns(infile, outfile):
     # parametrise binning in pipeline.ini
-    job_options = "-l mem_free=4G -pe dedicated 1"
+    job_options = "-l mem_free=4G"
     scriptsdir = PARAMS['scriptsdir'] 
     statement = '''cat %(infile)s |
     python %(scriptsdir)s/data2spike.py --design-file-tsv=design.tsv
@@ -859,7 +858,7 @@ def runM3DSpikeClusters(infiles, outfile):
 
 
 @merge([runM3DSpikeClusters, "design.tsv"],
-       "power.dir/spike_in_M3D_stat_merged.tsv")
+       "power.dir/spike_in_M3D_stat_merged_between.tsv")
 def calculateM3DSpikeClustersPvalue(infiles, outfile):
     job_options = "-l mem_free=4G -pe dedicated 1"
     design = infiles[-1]
@@ -893,26 +892,26 @@ def clusterSpikeInsPowerAnalysis(infiles, outfile):
                                  submit=True, job_options=job_options)
 
 
-@transform(clusterSpikeInsPowerAnalysis,
-           suffix(".analysis.out"),
-           ".M3D_plot_list.out")
-def clusterSpikeInsPowerPlotM3D(infiles, outfile):
-
-    job_options = "-l mem_free=23G"
-
-    RRBS.spikeInClustersPlotM3D(infiles, outfile, groups=["Saline", "Dex"],
-                                submit=True, job_options=job_options)
+#@transform(clusterSpikeInsPowerAnalysis,
+#           suffix(".analysis.out"),
+#           ".M3D_plot_list.out")
+#def clusterSpikeInsPowerPlotM3D(infiles, outfile):
+#
+#    job_options = "-l mem_free=23G"
+#
+#    RRBS.spikeInClustersPlotM3D(infiles, outfile, groups=["Saline", "Dex"],
+#                                submit=True, job_options=job_options)
     #P.touch(outfile)
-
-@transform(generateClusterSpikeIns,
-           suffix(".out"),
-           ".Biseq_plot_list.out")
-def clusterSpikeInsPowerPlotBiSeq(infiles, outfile):
-
-    job_options = "-l mem_free=48G -pe dedicated 8"
-
-    RRBS.spikeInClustersAnalysisBiSeq(infiles, outfile,
-                                      submit=True, job_options=job_options)
+#
+#@transform(generateClusterSpikeIns,
+#           suffix(".out"),
+#           ".Biseq_plot_list.out")
+#def clusterSpikeInsPowerPlotBiSeq(infiles, outfile):
+#
+#    job_options = "-l mem_free=48G -pe dedicated 8"
+#
+#    RRBS.spikeInClustersAnalysisBiSeq(infiles, outfile,
+#                                      submit=True, job_options=job_options)
 
 
 ########################################################################
@@ -931,29 +930,6 @@ def splitClustersDataframe(infile, outfiles):
     RRBS.splitDataframeClusters(infile, outprefix, suffix,
                                 submit=True, job_options=job_options)
 
-
-##############################################################
-# this only allows a sinlge pairwise comparison to be made
-@transform(splitClustersDataframe,
-           regex("subframes.dir/cluster_subframe.tsv_(\d+)$"),
-           add_inputs("design.tsv"),
-           r"subframes.dir/cluster_subframe_\1_M3D.stats")
-def runM3DSingle(infiles, outfile):
-    job_options = "-l mem_free=4G -pe dedicated 1"
-    infile, design = infiles
-    RRBS.calculateM3DStat(infile, outfile, design,
-                          submit=True, job_options=job_options)
-
-
-@merge([runM3DSingle, "design.tsv"],
-       "methylation.dir/cluster_stat_merged.tsv")
-def calculateM3DClustersPvalueSingle(infiles, outfile):
-    job_options = "-l mem_free=4G -pe dedicated 1"
-    design = infiles[-1]
-    infiles = infiles[:-1]
-    RRBS.calculateM3Dpvalue(infiles, outfile, design,
-                            submit=True, job_options=job_options)
-    P.touch(outfile)
 
 ####################################################################
 # this allows all against all for pairs in EXPERIMENTS
@@ -1005,7 +981,8 @@ def runM3D(infile, outfile, root, design):
 @follows(mkdir("M3D_plots.dir"))
 @collate(runM3D,
          regex(r"M3D/cluster_subframe_(\d+)_M3D_stats_(\S+)_vs_(\S+).tsv"),
-         r"M3D_plots.dir/\2_vs_\3_cluster_stat_merged.tsv", r"\2", r"\3")
+         r"M3D_plots.dir/\2_vs_\3_cluster_stat_merged_between.tsv",
+         r"\2", r"\3")
 def calculateM3DClustersPvalue(infiles, outfile, pair1, pair2):
     job_options = "-l mem_free=4G -pe dedicated 1"
     infiles = infiles[:-1]
@@ -1016,19 +993,63 @@ def calculateM3DClustersPvalue(infiles, outfile, pair1, pair2):
     print infiles, outfile, pair
     RRBS.calculateM3Dpvalue(infiles, outfile, pair,
                             submit=True, job_options=job_options)
-    # P.touch(outfile)
+
+
+@transform(calculateM3DClustersPvalue,
+           suffix(".tsv"),
+           ".load")
+def loadM3DClusters(infile, outfile):
+    dbh = connect()
+    tablename = P.toTable(outfile)
+    scriptsdir = PARAMS["general_scriptsdir"]
+
+    statement = '''cat %(infile)s |
+                python %(scriptsdir)s/csv2db.py
+                --table %(tablename)s --retry --ignore-empty
+                 > %(outfile)s''' % locals()
+    P.run()
+
+
+@transform(calculateM3DClustersPvalue,
+           suffix(".tsv"),
+           "_summary.tsv")
+def summariseM3D(infile, outfile):
+    ''' summarise the number of cluster passing threshold'''
+    # adjusted p-value threshold
+    threshold = 0.05
+    print infile, outfile, threshold
+    RRBS.summariseM3D(infile, outfile, threshold, submit=True)
+
+
+@merge(summariseM3D,
+       ["M3D_plots.dir/summary_table.tsv", "M3D_plots.dir/summary_table.load"])
+def combineM3Dsummaries(infiles, outfiles):
+    ''' combine M3D summary tables'''
+    outfile1, outfile2 = outfiles
+    print outfile1, outfile2
+    scriptsdir = PARAMS["general_scriptsdir"]
+    tablename = P.toTable(outfile2)
+
+    statement = ''' python %%(scriptsdir)s/combine_tables.py -v0  -a file
+                    --glob=M3D_plots.dir/*between_summary.tsv > %(outfile1)s;
+                    cat %(outfile1)s |
+                    python %(scriptsdir)s/csv2db.py
+                    --table %(tablename)s --retry --ignore-empty
+                    > %(outfile2)s''' % locals()
+    print statement
+    P.run()
+
 
 #########################################################################
 
 
-@follows(clusterSpikeInsPowerPlotM3D,
-         clusterSpikeInsPowerPlotBiSeq)
+@follows(calculateM3DSpikeClustersPvalue)
 def power():
     pass
 
 
-@follows(calculateM3DClustersPvalue,
-         calculateM3DSpikeClustersPvalue)
+@follows(loadM3DClusters,
+         combineM3Dsummaries)
 def M3D():
     pass
 
@@ -1052,6 +1073,7 @@ def startSummary():
          makeSummaryPlots,
          mergeCoverage,
          plotReadBias,
+         power,
          M3D)
 def full():
     pass
@@ -1062,7 +1084,8 @@ def mapReads():
     pass
 
 
-@follows(calculateM3DClustersPvalue)
+@follows(loadM3DClusters,
+         combineM3Dsummaries)
 def test():
     pass
 
