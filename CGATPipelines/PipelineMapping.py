@@ -1024,15 +1024,18 @@ class Bismark(Mapper):
         nfiles = max(num_files)
 
         tmpdir = os.path.join(self.tmpdir_fastq + "bwa")
+        tmpdir = "."
 
         bismark_index = "%(bismark_index_dir)s/%(bismark_genome)s"
 
         tmpdir_fastq = self.tmpdir_fastq
+        tmpdir_fastq = "."
 
         if nfiles == 1:
             infiles = infiles[0][0]
             statement = '''
-            bismark %%(bismark_options)s -q --bowtie2 --output_dir %(tmpdir_fastq)s
+            bismark %%(bismark_options)s -q --bowtie2
+            --output_dir %(tmpdir_fastq)s
             -p %%(bismark_threads)s --bam --phred33-quals %(bismark_index)s
             %(infiles)s;
             ''' % locals()
@@ -1042,7 +1045,8 @@ class Bismark(Mapper):
             infiles2 = infiles[0][1]
 
             statement = '''
-            bismark %%(bismark_options)s -q --bowtie2 --output_dir %(tmpdir_fastq)s
+            bismark %%(bismark_options)s -q --bowtie2
+            --output_dir %(tmpdir_fastq)s
             -p %%(bismark_threads)s --bam --non_directional
             --phred33-quals %(bismark_index)s -1 %(infiles1)s -2 %(infiles2)s;
             ''' % locals()
@@ -1061,6 +1065,7 @@ class Bismark(Mapper):
     # and rename the bismark outfile to fit ruffus expectations.
     def postprocess(self, infiles, mapfiles, outfile):
         tmpdir_fastq = self.tmpdir_fastq
+        tmpdir_fastq = "."
         track = P.snip(os.path.basename(outfile), ".bam")
         infile = infiles[0]
         if infile.endswith(".fastq.gz"):
