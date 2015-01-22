@@ -423,19 +423,19 @@ def calculateM3DStat(infile, outfile, design,
     keep_columns.extend([x + "-perc" for x in samples])
     keep_columns.extend([x + y for x in design_df_subset['track']
                          for y in ["-unmeth", "-meth"]])
-    
+
     df = df.ix[:, keep_columns]
     ncols = len(samples)
     samples = '","'.join(samples)
     conditions = '","'.join(conditions)
     r_df = com.convert_to_r_dataframe(df)
 
-    #out = open(outfile, "w")
-    #out.write("ncols: %s\n" % ncols)
-    #out.write("conditions: %s\n" % conditions)
-    #out.write("samples: %s\n" % samples)
-    #out.write("pair: %s\n" % pair)
-    #out.write("groups: %s\n" % groups)
+    # out = open(outfile, "w")
+    # out.write("ncols: %s\n" % ncols)
+    # out.write("conditions: %s\n" % conditions)
+    # out.write("samples: %s\n" % samples)
+    # out.write("pair: %s\n" % pair)
+    # out.write("groups: %s\n" % groups)
     func = r('''library(BiSeq)
     library(M3D)
     function(df){
@@ -526,7 +526,7 @@ def M3Dstat2pvalue(df, columns, pair):
 def calculateM3DSpikepvalue(infiles, outfile, design):
     '''takes a list of M3D stats files and a design dataframe and outputs
     p-values for each cluster for the pairwise comparison'''
-    # currently expects the first pair from the design table to be used 
+    # currently expects the first pair from the design table to be used
     # to generate the M3D stats
 
     # ***** this will no fail *****
@@ -825,7 +825,7 @@ def summaryPlots(infile, outfile):
 
     header = [re.sub("-", "_", x) for x in df.columns.values.tolist()]
     df.columns = header
-    
+
     r_dataframe = com.convert_to_r_dataframe(df)
 
     base = outfile
@@ -1104,12 +1104,12 @@ def spikeInClustersAnalysis(infile, outfile):
     samples_str = '","'.join(samples)
     outfile_log = open(outfile+".log", "w")
     outfile_log.close()
-    #outfile_log.write("samples: %s\n" % samples)
+    # outfile_log.write("samples: %s\n" % samples)
     samples_treatment = [x[1] for x in samples]
     samples_treatment = '","'.join(samples_treatment)
-    #outfile_log.write("sample treatments: %s\n" % samples_treatment)
+    # outfile_log.write("sample treatments: %s\n" % samples_treatment)
     infiles = '","'.join([x.strip() for x in infiles])
-    #outfile_log.write("infiles: %s \n" % infiles)
+    # outfile_log.write("infiles: %s \n" % infiles)
     M3D = r('''library(BiSeq)
             library(M3D)
             files <- c("%(infiles)s")
@@ -1291,7 +1291,7 @@ def spikeInClustersPlotM3D(infile, outfile, groups):
     seqnames_split = [["".join((x[0], x[1])), x[2], x[3], x[4], x[5], x[6]]
                       if len(x) > 6 else x for x in seqnames_split]
     cluster_values_df = pd.DataFrame(data=seqnames_split,
-                                     index=range(1,len(seqnames_split)+1))
+                                     index=range(1, len(seqnames_split)+1))
     cluster_values_df.columns = cluster_characteristics
     concat_df = pd.concat([analysis_df, cluster_values_df], axis=1)
     groups = [x[0] for x in groups]
@@ -1371,7 +1371,8 @@ def spikeInClustersPlotM3D(infile, outfile, groups):
                   plot = p, width = 5, height = 5)
 
                   p = ggplot(agg_between,aes(x=as.numeric(change),
-                  y=as.numeric(power),col=factor(as.numeric(as.character(size))))) +
+                  y=as.numeric(power),
+                  col=factor(as.numeric(as.character(size))))) +
                   geom_line(size=2) +
                   scale_colour_discrete(name = "Size") +
                   scale_y_continuous(breaks=seq(0,1,0.1)) +

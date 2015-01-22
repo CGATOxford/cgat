@@ -410,6 +410,7 @@ def plotReadBias(infile, outfile):
 # both the original Bismark bams and the sorted bams are used downstream
 # so currently both bams are kept (any way around this?)
 
+
 @follows(callMethylationStatus)
 @transform(mapReadsWithBismark,
            suffix(".bam"),
@@ -446,7 +447,6 @@ def makeCpgIslandsBed(outfile):
     out.close()
 
 
-
 ########################################################################
 # RRBS alternative CpGI coverage summary
 ########################################################################
@@ -457,7 +457,7 @@ def makeCpgIslandsBed(outfile):
 # r"coverage.dir/\1_1based.load"
 def make1basedCpgIslands(infile, outfile):
 
-    #outfile, loadfile = outfiles
+    # outfile, loadfile = outfiles
 
     out = open(outfile, "w")
     out.write("%s\t%s\t%s\n" % ("contig", "position", "cpgi"))
@@ -470,15 +470,15 @@ def make1basedCpgIslands(infile, outfile):
                 out.write("%s\t%s\t%s\n" % (contig, position, "CpGIsland"))
     out.close()
     # this file takes hours(!) to load and it's not being used from csvdb
-    #dbh = connect()
-    #tablename = P.toTable(loadfile)
-    #scriptsdir = PARAMS["general_scriptsdir"]
+    # dbh = connect()
+    # tablename = P.toTable(loadfile)
+    # scriptsdir = PARAMS["general_scriptsdir"]
 
-    #statement = '''cat %(outfile)s |
+    # statement = '''cat %(outfile)s |
     #            python %(scriptsdir)s/csv2db.py
     #            --table %(tablename)s --retry --ignore-empty
     #             > %(loadfile)s''' % locals()
-    #P.run()
+    # P.run()
 
 
 @transform(make1basedCpgIslands,
@@ -817,7 +817,7 @@ def runBiSeq(infiles, outfile):
 def generateClusterSpikeIns(infile, outfile):
     # parametrise binning in pipeline.ini
     job_options = "-l mem_free=4G"
-    scriptsdir = PARAMS['scriptsdir'] 
+    scriptsdir = PARAMS['scriptsdir']
     statement = '''cat %(infile)s |
     python %(scriptsdir)s/data2spike.py --design-file-tsv=design.tsv
     --shuffle-column-suffix=-perc --keep-column-suffix=-meth,-unmeth
@@ -892,21 +892,21 @@ def clusterSpikeInsPowerAnalysis(infiles, outfile):
                                  submit=True, job_options=job_options)
 
 
-#@transform(clusterSpikeInsPowerAnalysis,
+# @transform(clusterSpikeInsPowerAnalysis,
 #           suffix(".analysis.out"),
 #           ".M3D_plot_list.out")
-#def clusterSpikeInsPowerPlotM3D(infiles, outfile):
+# def clusterSpikeInsPowerPlotM3D(infiles, outfile):
 #
 #    job_options = "-l mem_free=23G"
 #
 #    RRBS.spikeInClustersPlotM3D(infiles, outfile, groups=["Saline", "Dex"],
 #                                submit=True, job_options=job_options)
-    #P.touch(outfile)
+# P.touch(outfile)
 #
-#@transform(generateClusterSpikeIns,
+# @transform(generateClusterSpikeIns,
 #           suffix(".out"),
 #           ".Biseq_plot_list.out")
-#def clusterSpikeInsPowerPlotBiSeq(infiles, outfile):
+# def clusterSpikeInsPowerPlotBiSeq(infiles, outfile):
 #
 #    job_options = "-l mem_free=48G -pe dedicated 8"
 #
@@ -917,7 +917,7 @@ def clusterSpikeInsPowerAnalysis(infiles, outfile):
 ########################################################################
 # to do: utilise farm.py to split task up
 # will need to write a new iterator function for farm.py
-# to keep clusters together 
+# to keep clusters together
 
 @follows(mkdir("subframes.dir"))
 @split(subsetCpGsToCovered,

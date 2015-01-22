@@ -178,7 +178,7 @@ if TRACKS:
                                                                "attribute2"))
         TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute1",))
         CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("attribute2",))
-        
+
     elif len(TRACKS.getTracks()[0].asList()) == 3:
         EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",
                                                                "attribute1"))
@@ -278,7 +278,6 @@ if PARAMS["preprocessors"]:
         statement = m.build((infiles,), outfile)
         P.run()
 
-
     @jobs_limit(1, "db")
     @transform(runFastqcFinal, suffix(".fastqc"), "_fastqc.load")
     def loadFastqcFinal(infile, outfile):
@@ -288,7 +287,7 @@ if PARAMS["preprocessors"]:
             PARAMS["exportdir"], "fastqc",
             track + "*_fastqc", "fastqc_data.txt")
         PipelineReadqc.loadFastqc(filename)
-        #P.touch(outfile)
+        # P.touch(outfile)
 
 else:
     def processReads():
@@ -304,7 +303,7 @@ else:
 #########################################################################
 
 @follows(runFastqcFinal, runFastqc)
-#@merge(runFastqc, "status_summary.tsv.gz")
+# @merge(runFastqc, "status_summary.tsv.gz")
 @merge((runFastqcFinal, runFastqc), "status_summary.tsv.gz")
 def buildFastQCSummaryStatus(infiles, outfile):
     '''load fastqc status summaries into a single table.'''

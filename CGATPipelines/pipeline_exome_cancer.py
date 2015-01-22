@@ -673,6 +673,7 @@ def runMutect(infiles, outfile):
                           normal_panel, infile_matched=infile)
     P.run()
 
+
 # delete once above function checked
 @follows(mkdir("variants"), callControlVariants)
 @transform(realignMatchedSample,
@@ -731,7 +732,7 @@ def runMutect2(infiles, outfile):
     P.run()
 
 
-#@transform(realignMatchedSample,
+# @transform(realignMatchedSample,
 #           regex(r"bam/(\S+)-Control-(\S+).bqsr.bam"),
 @transform(splitMergedRealigned,
            regex(r"bam/(\S+)-Control-(\S).realigned.split.bqsr.bam"),
@@ -883,6 +884,7 @@ def runMutectOnDownsampled(infiles, outfile):
 # Variant Annotation and Recalibration
 ##############################################################################
 
+
 @collate(realignMatchedSample,
          regex(r"bam/(\S+)-(\S+)-(\S+).realigned.bqsr.bam"),
          r"bam/\1.list")
@@ -924,7 +926,6 @@ def annotateVariantsINDELsSNPeff(infile, outfile):
                    -c %(config)s -v %(snpeff_genome)s -o gatk
                    %(infile)s > %(outfile)s''' % locals()
     P.run()
-
 
 
 #########################################################################
@@ -1139,11 +1140,11 @@ def loadMutectExtendedOutput(infile, outfile):
 # Genes of interest
 # check this will run in the correct position if option selected
 
-#@active_if(PARAMS["annotation_add_genes_of_interest"] == 1)
-#@transform((annotateVariantsSNPsift),
+# @active_if(PARAMS["annotation_add_genes_of_interest"] == 1)
+# @transform((annotateVariantsSNPsift),
 #           regex(r"variants/(\S+).haplotypeCaller.snpsift.vcf"),
 #           r"variants/\1.genes.vcf")
-#def findGenes(infile, outfile):
+# def findGenes(infile, outfile):
 #    '''Adds expression "GENE_OF_INTEREST" to the FILTER column of the vcf
 #    if variant is within a gene of interest as defined in the ini
 #    file'''
@@ -1331,7 +1332,8 @@ def gatk():
          indelCaller)
 def callVariants():
     pass
-    
+
+
 @follows(loadVariantAnnotation)
 def tabulation():
     pass
