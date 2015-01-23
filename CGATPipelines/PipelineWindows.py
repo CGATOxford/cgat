@@ -479,6 +479,7 @@ def runDE(infiles, outfile, outdir,
               --deseq-fit-type=%(deseq_fit_type)s
               --deseq-dispersion-method=%(deseq_dispersion_method)s
               --deseq-sharing-mode=%(deseq_sharing_mode)s
+              --edger-dispersion=%(edger_dispersion)f
               --filter-min-counts-per-row=%(tags_filter_min_counts_per_row)i
               --filter-min-counts-per-sample=%(tags_filter_min_counts_per_sample)i
               --filter-percentile-rowsums=%(tags_filter_percentile_rowsums)i
@@ -633,6 +634,7 @@ def runMEDIPSDMR(design_file, outfile):
             --toolset=dmr
             --shift=%(medips_shift)s
             --extend=%(medips_extension)s
+            --window-size=%(medips_window_size)i
             --output-filename-pattern="%(outfile)s_%(pair1)s_vs_%(pair2)s_%%s"
             --fdr-threshold=%(medips_fdr)f
             --log=%(outfile)s.log
