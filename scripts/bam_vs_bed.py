@@ -243,26 +243,16 @@ def main(argv=None):
         options.stdout.write("category\talignments\n")
         options.stdout.write("total\t%i\n" % total)
         
-        infile = sys.stdin.readlines()
         counts_per_alignment = collections.defaultdict(int)
 
         take_columns = len(data._fields)
 
-        def iter(infile):
-            for line in infile:
-                if not line.strip():
-                    continue
-                yield data._make(line[:-1].split()[:take_columns])
-
-        #for read, overlaps in itertools.groupby(iter(infile), key=sort_key):
-        #    annotations = [x.name2 for x in overlaps]
-        #    for anno in annotations:
-        #        counts_per_alignment[anno] += 1
-
-        for entry in iter(infile):
+        for line in sys.stdin:
+            if not line.strip():
+                continue
+            entry = data._make(line[:-1].split()[:take_columns])
             counts_per_alignment[entry.name2] += 1
-
-        
+            
         for key, counts in counts_per_alignment.iteritems():
             options.stdout.write("%s\t%i\n" % (key, counts))
 
