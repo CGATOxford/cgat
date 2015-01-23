@@ -254,11 +254,15 @@ def main(argv=None):
                     continue
                 yield data._make(line[:-1].split()[:take_columns])
 
-        for read, overlaps in itertools.groupby(iter(infile), key=sort_key):
-            annotations = [x.name2 for x in overlaps]
-            for anno in annotations:
-                counts_per_alignment[anno] += 1
+        #for read, overlaps in itertools.groupby(iter(infile), key=sort_key):
+        #    annotations = [x.name2 for x in overlaps]
+        #    for anno in annotations:
+        #        counts_per_alignment[anno] += 1
 
+        for entry in iter(infile):
+            counts_per_alignment[entry.name2] += 1
+
+        
         for key, counts in counts_per_alignment.iteritems():
             options.stdout.write("%s\t%i\n" % (key, counts))
 
