@@ -204,11 +204,10 @@ def getMuTectOptions():
 @files(PARAMS["roi_bed"], "roi.load")
 def loadROI(infile, outfile):
     '''Import regions of interest bed file into SQLite.'''
-    scriptsdir = PARAMS["general_scriptsdir"]
     header = "chr,start,stop,feature"
     tablename = P.toTable(outfile)
     statement = '''cat %(infile)s
-            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+            | python %%(scriptsdir)s/csv2db.py %(csv2db_options)s
               --ignore-empty
               --retry
               --header-names=%(header)s
@@ -222,10 +221,9 @@ def loadROI(infile, outfile):
 @files(PARAMS["roi_to_gene"], "roi2gene.load")
 def loadROI2Gene(infile, outfile):
     '''Import genes mapping to regions of interest bed file into SQLite.'''
-    scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
     statement = '''cat %(infile)s
-            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+            | python %%(scriptsdir)s/csv2db.py %(csv2db_options)s
               --ignore-empty
               --retry
               --table=%(tablename)s
@@ -238,10 +236,9 @@ def loadROI2Gene(infile, outfile):
 @files(PARAMS["samples"], "samples.load")
 def loadSamples(infile, outfile):
     '''Import sample information into SQLite.'''
-    scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
     statement = '''cat %(infile)s
-            | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+            | python %%(scriptsdir)s/csv2db.py %(csv2db_options)s
               --ignore-empty
               --retry
               --table=%(tablename)s
@@ -333,7 +330,6 @@ def buildCoverageStats(infile, outfile):
 @merge(buildCoverageStats, "coverage_stats.load")
 def loadCoverageStats(infiles, outfile):
     '''Import coverage statistics into SQLite'''
-    scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
     outf = open('coverage.txt', 'w')
     first = True
@@ -348,7 +344,7 @@ def loadCoverageStats(infiles, outfile):
     outf.close()
     tmpfilename = outf.name
     statement = '''cat %(tmpfilename)s
-                   | python %(scriptsdir)s/csv2db.py
+                   | python %%(scriptsdir)s/csv2db.py
                       --add-index=track
                       --table=%(tablename)s
                       --ignore-empty
@@ -1108,10 +1104,9 @@ def loadVariantAnnotation(infile, outfile):
     print "index: " + index
 
     dbh = connect()
-    scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
     statement = '''cat %(infile)s |
-                   python %(scriptsdir)s/csv2db.py
+                   python %%(scriptsdir)s/csv2db.py
                    --table %(tablename)s --retry --ignore-empty
                    > %(outfile)s''' % locals()
     P.run()
@@ -1127,10 +1122,9 @@ def loadMutectExtendedOutput(infile, outfile):
     index = "CHROM, POS"
 
     dbh = connect()
-    scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
     statement = '''cat %(infile)s |
-                   python %(scriptsdir)s/csv2db.py
+                   python %%(scriptsdir)s/csv2db.py
                    --table %(tablename)s --retry --ignore-empty
                    > %(outfile)s''' % locals()
     P.run()
@@ -1180,15 +1174,14 @@ def buildVCFstats(infile, outfile):
 @merge(buildVCFstats, "vcf_stats.load")
 def loadVCFstats(infiles, outfile):
     '''Import variant statistics into SQLite'''
-    scriptsdir = PARAMS["general_scriptsdir"]
     filenames = " ".join(infiles)
     tablename = P.toTable(outfile)
     csv2db_options = PARAMS["csv2db_options"]
     E.info("Loading vcf stats...")
-    statement = '''python %(scriptsdir)s/vcfstats2db.py
+    statement = '''python %%(scriptsdir)s/vcfstats2db.py
                    %(filenames)s >> %(outfile)s; ''' % locals()
     statement += '''cat vcfstats.txt |
-                    python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+                    python %%(scriptsdir)s/csv2db.py %(csv2db_options)s
                     --allow-empty-file --add-index=track --table=vcf_stats
                     >> %(outfile)s; ''' % locals()
     P.run()
@@ -1210,10 +1203,9 @@ def loadMutectFilteringSummary(infile, outfile):
     '''Load mutect extended output into database'''
 
     dbh = connect()
-    scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
     statement = '''cat %(infile)s |
-                   python %(scriptsdir)s/csv2db.py
+                   python %%(scriptsdir)s/csv2db.py
                    --table %(tablename)s --retry --ignore-empty
                    > %(outfile)s''' % locals()
     P.run()
@@ -1233,10 +1225,9 @@ def loadNCG(outfile):
     infile = "../backup/NCG/cancergenes.tsv"
     index = "symbol"
     dbh = connect()
-    scriptsdir = PARAMS["general_scriptsdir"]
     tablename = P.toTable(outfile)
     statement = '''cat %(infile)s |
-                   python %(scriptsdir)s/csv2db.py
+                   python %%(scriptsdir)s/csv2db.py
                    --table %(tablename)s --retry --ignore-empty
                    > %(outfile)s''' % locals()
     P.run()
