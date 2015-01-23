@@ -1212,6 +1212,32 @@ def loadWindowComposition(infile, outfile):
 
 @transform(DIFFTARGETS,
            suffix(".tsv.gz"),
+           ".linear")
+def outputGWASFiles(infile, outfile):
+    '''output GWAS formatted files for viewing in the
+    IGV genome browser. The output files contain
+    chromosomal position and an associated P-Value.
+
+    See here for acceptable file formats:
+    http://www.broadinstitute.org/software/igv/GWAS
+
+    '''
+
+    statement = '''
+    zcat %(infile)s
+    | grep -v "^spike"
+    | awk 'BEGIN {printf("chr\\tpos\\tsnp\\tpvalue\\n")}
+    !/^test_id/ {split($1,a,":");
+    printf("%%s\\t%%i\\t%%s\\t%%s\\n", a[1], a[2], $1, $8)}'
+    | %(scriptsdir)s/hsort 1 -k1,1 -k2,2n
+    > %(outfile)s
+    '''
+
+    P.run()
+
+
+@transform(DIFFTARGETS,
+           suffix(".tsv.gz"),
            ".merged.tsv.gz")
 def mergeDMRWindows(infile, outfile):
     '''merge overlapping windows.
@@ -1230,9 +1256,9 @@ def mergeDMRWindows(infile, outfile):
     zcat %(infile)s
     | grep -v "^spike"
     | python %(scriptsdir)s/medip_merge_intervals.py
-          --log=%(outfile)s.log
-          --invert
-          --output-filename-pattern=%(prefix)s.%%s.bed.gz
+    --log=%(outfile)s.log
+    --invert
+    --output-filename-pattern=%(prefix)s.%%s.bed.gz
     | gzip
     > %(outfile)s
     '''
