@@ -90,13 +90,17 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
+    parser.add_option("-c", "--counting-mode", dest="counting_mode",
+                      action="store_true",
+                      help="execute script in counting mode ;) [%default]")
+   
     parser.add_option("-m", "--min-overlap", dest="min_overlap",
                       type="float",
                       help="minimum overlap [%default]")
 
-    parser.add_option("-k", "--keep-temp", dest="keep_temp",
+    parser.add_option("-s", "--sort-bed", dest="sort_bed",
                       action="store_true",
-                      help="do not delete temporary files [%default]")
+                      help="sort the bed file [%default]")
 
     parser.add_option("-a", "--bam-file", dest="filename_bam",
                       metavar="bam", type="string",
@@ -107,6 +111,8 @@ def main(argv=None):
                       help="bed-file to use (required) [%default]")
 
     parser.set_defaults(
+        counting_mode=False,
+        sort_bed=False,
         min_overlap=0.5,
         keep_temp=False,
         filename_bam=None,
@@ -114,8 +120,13 @@ def main(argv=None):
     )
 
     # add common options (-h/--help, ...) and parse command line
-    (options, args) = E.Start(parser, argv=argv)
 
+    if "-c" in argv:
+        (options, args) = E.Start(parser, argv=argv,quiet=True)
+    
+    else:
+        (options, args) = E.Start(parser, argv=argv)
+   
     filename_bam = options.filename_bam
     filename_bed = options.filename_bed
 
@@ -134,18 +145,14 @@ def main(argv=None):
 
     E.info("intersecting the two files")
 
-    tmpfile = tempfile.NamedTemporaryFile(delete=False)
-    tmpfile.close()
-    tmpfilename = tmpfile.name
-
     min_overlap = options.min_overlap
-
-    options.stdout.write("category\talignments\n")
 
     # get number of columns of reference bed file
     for bed in Bed.iterator(IOTools.openFile(filename_bed)):
         ncolumns_bed = bed.columns
         break
+
+
     E.info("assuming %s is bed%i format" % (filename_bed, ncolumns_bed))
 
     if ncolumns_bed < 4:
@@ -195,51 +202,69 @@ def main(argv=None):
 
     data = collections.namedtuple("data", data_fields)
 
-    options.stdout.write("total\t%i\n" % total)
-
     if total == 0:
-        E.warn("no data in %s" % filename_bam)
+        if not options.counting_mode:
+            E.warn("no data in %s" % filename_bam)
         return
 
     # IMS: newer versions of intersectBed have a very high memory
     #     requirement unless passed sorted bed files.
-    statement = """intersectBed %(format)s %(filename_bam)s
-    -b <( zcat %(filename_bed)s | sort -k1,1 -k2,2n)
-    -sorted -bed -wo -f %(min_overlap)f > %(tmpfilename)s""" % locals()
 
-    E.info("running %s" % statement)
-    retcode = E.run(statement)
+    if not options.counting_mode:
 
-    if retcode != 0:
-        raise ValueError("error while executing statement %s" % statement)
+        #SNS sorting optional, off by default
+        if options.sort_bed:
+            sort_stat = "| sort -k1,1 -k2,2n"
+        else:
+            sort_stat =""
 
-    infile = open(tmpfilename, "r")
-    counts_per_alignment = collections.defaultdict(int)
+        this_script = os.path.abspath(__file__)
+        bam_path = os.path.abspath(filename_bam)
+        bed_path = os.path.abspath(filename_bed)
+        
+        #note bedtools can handle gzipped files now.
+        E.info("counting")
+        statement = """intersectBed %(format)s %(filename_bam)s
+        -b %(filename_bed)s %(sort_stat)s 
+        -sorted -bed -wo -f %(min_overlap)f 
+        | python %(this_script)s -a %(filename_bam)s -b %(filename_bed)s 
+                 -c True
+        """ % locals()
 
-    E.info("counting")
+        E.info("running %s" % statement)
+        retcode = E.run(statement)
 
-    take_columns = len(data._fields)
+        if retcode != 0:
+            raise ValueError("error while executing statement %s" % statement)
 
-    def iter(infile):
-        for line in infile:
-            if not line.strip():
-                continue
-            yield data._make(line[:-1].split()[:take_columns])
+    else:
 
-    for read, overlaps in itertools.groupby(iter(infile), key=sort_key):
-        annotations = [x.name2 for x in overlaps]
-        for anno in annotations:
-            counts_per_alignment[anno] += 1
-    infile.close()
+        
+        options.stdout.write("category\talignments\n")
+        options.stdout.write("total\t%i\n" % total)
+        
+        infile = sys.stdin.readlines()
+        counts_per_alignment = collections.defaultdict(int)
 
-    for key, counts in counts_per_alignment.iteritems():
-        options.stdout.write("%s\t%i\n" % (key, counts))
+        take_columns = len(data._fields)
 
-    if not options.keep_temp:
-        os.unlink(tmpfilename)
+        def iter(infile):
+            for line in infile:
+                if not line.strip():
+                    continue
+                yield data._make(line[:-1].split()[:take_columns])
+
+        for read, overlaps in itertools.groupby(iter(infile), key=sort_key):
+            annotations = [x.name2 for x in overlaps]
+            for anno in annotations:
+                counts_per_alignment[anno] += 1
+
+        for key, counts in counts_per_alignment.iteritems():
+            options.stdout.write("%s\t%i\n" % (key, counts))
 
     # write footer and output benchmark information.
-    E.Stop()
+    if not options.counting_mode:
+        E.Stop()
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
