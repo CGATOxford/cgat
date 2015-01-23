@@ -410,9 +410,10 @@ class ResultBuilder:
 
             for l in infile:
                 nfields = l.count("\t")
+
                 if l[0] == "#":
                     options.stdlog.write(l)
-                elif nfields != self.nfields:
+                elif self.nfields is not None and nfields != self.nfields:
                     # validate number of fields in row, raise warning
                     # for those not matching and skip.
                     E.warn(
