@@ -662,8 +662,10 @@ def buildUnionIntersectionExons(infile, outfile):
     gunzip < %(infile)s
     | python %(scriptsdir)s/gtf2gtf.py --method=intersect-transcripts
     --with-utr --log=%(outfile)s.log
-    | python %(scriptsdir)s/gff2gff.py --is-gtf
-    --crop-unique  --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2gff.py
+    --is-gtf
+    --method=crop-unique
+    --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2bed.py --is-gtf --log=%(outfile)s.log
     | sort -k1,1 -k2,2n
     | gzip
@@ -692,11 +694,15 @@ def buildUnionExons(infile, outfile):
     statement = '''
     gunzip < %(infile)s
     | python %(scriptsdir)s/gtf2gtf.py
-         --method=merge-exons --log=%(outfile)s.log
+    --method=merge-exons
+    --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2gff.py
-         --is-gtf --crop-unique  --log=%(outfile)s.log
+    --is-gtf
+    --method=crop-unique
+    --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2bed.py
-         --is-gtf --log=%(outfile)s.log
+    --is-gtf
+    --log=%(outfile)s.log
     | sort -k1,1 -k2,2n
     | gzip
     > %(outfile)s
@@ -1212,7 +1218,6 @@ mapToQCTargets = {'cuffdiff': runCuffdiff,
 QCTARGETS = [mapToQCTargets[x] for x in P.asList(PARAMS["methods"])]
 
 
-@jobs_limit(1, "R")
 @transform(QCTARGETS,
            suffix(".tsv.gz"),
            ".plots")
