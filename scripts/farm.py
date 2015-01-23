@@ -681,7 +681,7 @@ def runDRMAA(data, environment):
             to_stdout = False
 
         cmd = " ".join(re.sub("\t+", " ", cmd).split("\n"))
-        E.debug("running statement:\n%s" % cmd)
+        E.info("running statement:\n%s" % cmd)
 
         tmpfile = tempfile.NamedTemporaryFile(dir=os.getcwd(), delete=False)
         tmpfile.write("#!/bin/bash\n")  # -l -O expand_aliases\n" )
