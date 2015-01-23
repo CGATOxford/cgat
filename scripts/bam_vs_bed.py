@@ -32,11 +32,6 @@ Options
     Using this option will only count reads if they overlap with a bed entry
     by a certain minimum fraction of the read.
 
--k, --keep-temp
-    As part of the process a temporary file contain each of the overlaps
-    is generated. Normally this file is deleted upon successful completion.
-    Use this option to retain this file.
-
 Example
 -------
 
@@ -49,7 +44,7 @@ Usage
 
 Type::
 
-   cgat bam_vs_bed BAM BED [OPTIONS] 
+   cgat bam_vs_bed BAM BED [OPTIONS]
    cgat bam_vs_bed --bam-file=BAM --bed-file=BED [OPTIONS]
 
 where BAM is either a bam or bed file and BED is a bed file.
@@ -93,7 +88,7 @@ def main(argv=None):
     parser.add_option("-c", "--counting-mode", dest="counting_mode",
                       action="store_true",
                       help="execute script in counting mode ;) [%default]")
-   
+
     parser.add_option("-m", "--min-overlap", dest="min_overlap",
                       type="float",
                       help="minimum overlap [%default]")
@@ -122,11 +117,11 @@ def main(argv=None):
     # add common options (-h/--help, ...) and parse command line
 
     if "-c" in argv:
-        (options, args) = E.Start(parser, argv=argv,quiet=True)
-    
+        (options, args) = E.Start(parser, argv=argv, quiet=True)
+
     else:
         (options, args) = E.Start(parser, argv=argv)
-   
+
     filename_bam = options.filename_bam
     filename_bed = options.filename_bed
 
@@ -151,7 +146,6 @@ def main(argv=None):
     for bed in Bed.iterator(IOTools.openFile(filename_bed)):
         ncolumns_bed = bed.columns
         break
-
 
     E.info("assuming %s is bed%i format" % (filename_bed, ncolumns_bed))
 
@@ -212,22 +206,22 @@ def main(argv=None):
 
     if not options.counting_mode:
 
-        #SNS sorting optional, off by default
+        # SNS sorting optional, off by default
         if options.sort_bed:
             sort_stat = "| sort -k1,1 -k2,2n"
         else:
-            sort_stat =""
+            sort_stat = ""
 
         this_script = os.path.abspath(__file__)
         bam_path = os.path.abspath(filename_bam)
         bed_path = os.path.abspath(filename_bed)
-        
-        #note bedtools can handle gzipped files now.
+
+        # note bedtools can handle gzipped files now.
         E.info("counting")
         statement = """intersectBed %(format)s %(filename_bam)s
-        -b %(filename_bed)s %(sort_stat)s 
-        -sorted -bed -wo -f %(min_overlap)f 
-        | python %(this_script)s -a %(filename_bam)s -b %(filename_bed)s 
+        -b %(filename_bed)s %(sort_stat)s
+        -sorted -bed -wo -f %(min_overlap)f
+        | python %(this_script)s -a %(filename_bam)s -b %(filename_bed)s
                  -c True
         """ % locals()
 
@@ -239,10 +233,9 @@ def main(argv=None):
 
     else:
 
-        
         options.stdout.write("category\talignments\n")
         options.stdout.write("total\t%i\n" % total)
-        
+
         counts_per_alignment = collections.defaultdict(int)
 
         take_columns = len(data._fields)
@@ -252,7 +245,7 @@ def main(argv=None):
                 continue
             entry = data._make(line[:-1].split()[:take_columns])
             counts_per_alignment[entry.name2] += 1
-            
+
         for key, counts in counts_per_alignment.iteritems():
             options.stdout.write("%s\t%i\n" % (key, counts))
 
