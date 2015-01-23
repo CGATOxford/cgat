@@ -505,7 +505,7 @@ def loadPeptideSequences(infile, outfile):
     statement = '''gunzip
     < %(infile)s
     | perl -p -e 'if ("^>") { s/ .*//};'
-    | python %(scriptsdir)s/fasta2fasta.py --output-min-length=1
+    | python %(scriptsdir)s/fasta2fasta.py --method=filter --filter-method=min-length=1
     | python %(scriptsdir)s/fasta2table.py --section=length --section=sequence
     | perl -p -e 's/id/protein_id/'
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
@@ -770,19 +770,21 @@ def loadProteinStats(infile, outfile):
 
     statement = '''
     gunzip < %(infile)s
-    | python %(scriptsdir)s/fasta2fasta.py --output-min-length=1
+    | python %(scriptsdir)s/fasta2fasta.py
+    --method=filter
+    --filter-method=min-length=1
     | python %(scriptsdir)s/fasta2table.py
-          --log=%(outfile)s
-          --sequence-type=aa
-          --section=length
-          --section=hid
-          --section=aa
-          --regex-identifier="(\S+)"
+    --log=%(outfile)s
+    --sequence-type=aa
+    --section=length
+    --section=hid
+    --section=aa
+    --regex-identifier="(\S+)"
     |sed "s/^id/protein_id/"
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --add-index=protein_id
-              --map=protein_id:str
-              --table=%(table)s
+    --add-index=protein_id
+    --map=protein_id:str
+    --table=%(table)s
     > %(outfile)s'''
 
     P.run()
