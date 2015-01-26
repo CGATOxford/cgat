@@ -126,6 +126,9 @@ software to be in the path:
 +---------+------------+------------------------------------------------+
 |bamstats_|>=1.22      |from CGR, Liverpool                             |
 +---------+------------+------------------------------------------------+
+|butter   |>=0.3.2     |read mapping                                    |
++---------+------------+------------------------------------------------+
+
 
 Merging bam files
 -----------------
@@ -171,11 +174,19 @@ Glossary
    star
       star_ - a read mapper for RNASEQ data
 
+   bismark
+      bismark_ - a read mapper for RRBS data
+
+   butter
+      butter_ - a read mapper for small RNA data (bowtie wrapper)
+
 .. _tophat: http://tophat.cbcb.umd.edu/
 .. _bowtie: http://bowtie-bio.sourceforge.net/index.shtml
 .. _gsnap: http://research-pub.gene.com/gmap/
 .. _bamstats: http://www.agf.liv.ac.uk/454/sabkea/samStats_13-01-2011
 .. _star: http://code.google.com/p/rna-star/
+.. _bismark: http://www.bioinformatics.babraham.ac.uk/projects/bismark/
+.. _butter: https://github.com/MikeAxtell/butter
 
 Code
 ====
@@ -1031,6 +1042,33 @@ def mapReadsWithStampy(infile, outfile):
     statement = m.build((infile,), outfile)
     P.run()
 
+###################################################################
+###################################################################
+###################################################################
+# Map reads with butter
+###################################################################
+
+
+@follows(mkdir("butter.dir"))
+@transform(SEQUENCEFILES,
+           SEQUENCEFILES_REGEX,
+           r"butter.dir/\1.butter.bam")
+def mapReadsWithButter(infile, outfile):
+    '''map reads with stampy'''
+
+    job_threads = PARAMS["butter_threads"]
+    job_options = "-l mem_free=%s" % PARAMS["butter_memory"]
+    m = PipelineMapping.Butter(strip_sequence=PARAMS["strip_sequence"])
+    statement = m.build((infile,), outfile)
+    print statement
+    P.run()
+
+###################################################################
+###################################################################
+###################################################################
+# Create map reads tasks
+###################################################################
+
 MAPPINGTARGETS = []
 mapToMappingTargets = {'tophat': (mapReadsWithTophat, loadTophatStats),
                        'tophat2': (mapReadsWithTophat2,),
@@ -1041,6 +1079,7 @@ mapToMappingTargets = {'tophat': (mapReadsWithTophat, loadTophatStats),
                        (mapReadsWithBowtieAgainstTranscriptome,),
                        'gsnap': (mapReadsWithGSNAP,),
                        'star': (mapReadsWithSTAR, loadSTARStats),
+                       'butter': (mapReadsWithButter,)
                        }
 
 for x in P.asList(PARAMS["mappers"]):
@@ -1774,6 +1813,11 @@ def views():
 
 @follows(mapping, qc, views, duplication)
 def full():
+    pass
+
+
+@follows(mapping)
+def map():
     pass
 
 
