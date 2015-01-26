@@ -1068,15 +1068,18 @@ class Bismark(Mapper):
         tmpdir_fastq = "."
         track = P.snip(os.path.basename(outfile), ".bam")
         infile = infiles[0]
+        base = os.path.basename(infile).split(".")[0]
         if infile.endswith(".fastq.gz"):
-            statement = '''samtools view -h %(tmpdir_fastq)s/%(track)s.bam|
+            statement = '''samtools view -h
+            %(tmpdir_fastq)s/%(base)s.fastq.gz_bismark_bt2.bam|
             awk -F" " '$14!~/^XM:Z:[zZhxUu\.]*[HX][zZhxUu\.]*[HX]/ ||
             $1=="@SQ" || $1=="@PG"' | samtools view -b - >
             %%(outdir)s/%(track)s.bam;
             mv %(tmpdir_fastq)s/%(track)s_SE_report.txt
             %%(outdir)s/%(track)s_SE_report.txt;''' % locals()
         elif infile.endswith(".fastq.1.gz"):
-            statement = '''samtools view -h %(tmpdir_fastq)s/%(track)s_pe.bam|
+            statement = '''samtools view -h
+            %(tmpdir_fastq)s/%(base)s.fastq.1.gz_bismark_bt2_pe.bam|
             awk -F" " '$14!~/^XM:Z:[zZhxUu\.]*[HX][zZhxUu\.]*[HX]/ ||
             $1=="@SQ" || $1=="@PG"' | samtools view -b - >
             %%(outdir)s/%(track)s.bam;

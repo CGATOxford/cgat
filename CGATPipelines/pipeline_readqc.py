@@ -257,7 +257,7 @@ if PARAMS["preprocessors"]:
 
         m = PipelinePreprocess.MasterProcessor(
             save=PARAMS["save"], summarise=PARAMS["summarise"],
-            threads=PARAMS["threads"], scriptsdir=PARAMS["scriptsdir"],
+            threads=PARAMS["threads"],
             trimgalore_options=PARAMS["trimgalore_options"],
             trimmomatic_options=trimmomatic_options,
             sickle_options=PARAMS["sickle_options"],
@@ -347,7 +347,7 @@ def combineExperimentLevelReadQualities(infiles, outfile):
     Combine summaries of read quality for different experiments
     """
     infiles = " ".join(infiles)
-    statement = ("python %(scriptsdir)s/combine_tables.py"
+    statement = ("python %%(scriptsdir)s/combine_tables.py"
                  "  --log=%(outfile)s.log"
                  "  --regex-filename='.+/(.+)_per_sequence_quality.tsv'"
                  " %(infiles)s"
