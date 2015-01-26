@@ -1209,15 +1209,19 @@ class Experiment:
         print "# valid long options are:", str(self.mLongOptions)
 
 
-def run(statement, return_stdout=False, **kwargs):
-    '''executed a command line statement.
+def run(statement,
+        return_stdout=False,
+        return_popen=False,
+        **kwargs):
+    '''execute a command line statement.
 
-    returns the return code.
+    By default this method returns the code returned by the executed
+    command. If *return_stdout* is True, the contents of stdout are
+    returned as a file object. If *return_popen*, the Popen object
+    is returned.
 
-    If *return_stdout* is True, the contents of stdout
-    are returned.
-
-    ``kwargs`` are passed on to subprocess.call or subprocess.check_output.
+    ``kwargs`` are passed on to subprocess.call,
+    subprocess.check_output or subprocess.Popen.
 
     raises OSError if process failed or was terminated.
     '''
@@ -1236,6 +1240,8 @@ def run(statement, return_stdout=False, **kwargs):
 
     if return_stdout:
         return subprocess.check_output(statement, shell=True, **kwargs)
+    elif return_popen:
+        return subprocess.Popen(statement, shell=True, **kwargs)
     else:
         retcode = subprocess.call(statement, shell=True, **kwargs)
         if retcode < 0:

@@ -44,7 +44,7 @@ Usage
 
 Type::
 
-   cgat bam_vs_bed BAM BED [OPTIONS]
+   cgat bam_vs_bed BAM BED [OPTIONS] 
    cgat bam_vs_bed --bam-file=BAM --bed-file=BED [OPTIONS]
 
 where BAM is either a bam or bed file and BED is a bed file.
@@ -65,6 +65,7 @@ import sys
 import tempfile
 import collections
 import itertools
+import subprocess
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
@@ -85,17 +86,9 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-c", "--counting-mode", dest="counting_mode",
-                      action="store_true",
-                      help="execute script in counting mode ;) [%default]")
-
     parser.add_option("-m", "--min-overlap", dest="min_overlap",
                       type="float",
                       help="minimum overlap [%default]")
-
-    parser.add_option("-s", "--sort-bed", dest="sort_bed",
-                      action="store_true",
-                      help="sort the bed file [%default]")
 
     parser.add_option("-a", "--bam-file", dest="filename_bam",
                       metavar="bam", type="string",
@@ -105,22 +98,22 @@ def main(argv=None):
                       metavar="bed", type="string",
                       help="bed-file to use (required) [%default]")
 
+    parser.add_option(
+        "-s", "--sort-bed", dest="sort_bed",
+        action="store_true",
+        help="sort the bed file by chromosomal location before "
+        "processing. By default the file is assumed to be sorted "
+        "[%default]")
+
     parser.set_defaults(
-        counting_mode=False,
-        sort_bed=False,
         min_overlap=0.5,
-        keep_temp=False,
         filename_bam=None,
         filename_bed=None,
+        sort_bed=False,
     )
 
     # add common options (-h/--help, ...) and parse command line
-
-    if "-c" in argv:
-        (options, args) = E.Start(parser, argv=argv, quiet=True)
-
-    else:
-        (options, args) = E.Start(parser, argv=argv)
+    (options, args) = E.Start(parser, argv=argv)
 
     filename_bam = options.filename_bam
     filename_bed = options.filename_bed
@@ -142,11 +135,12 @@ def main(argv=None):
 
     min_overlap = options.min_overlap
 
+    options.stdout.write("category\talignments\n")
+
     # get number of columns of reference bed file
     for bed in Bed.iterator(IOTools.openFile(filename_bed)):
         ncolumns_bed = bed.columns
         break
-
     E.info("assuming %s is bed%i format" % (filename_bed, ncolumns_bed))
 
     if ncolumns_bed < 4:
@@ -196,62 +190,48 @@ def main(argv=None):
 
     data = collections.namedtuple("data", data_fields)
 
+    options.stdout.write("total\t%i\n" % total)
+
     if total == 0:
-        if not options.counting_mode:
-            E.warn("no data in %s" % filename_bam)
+        E.warn("no data in %s" % filename_bam)
         return
 
-    # IMS: newer versions of intersectBed have a very high memory
-    #     requirement unless passed sorted bed files.
-
-    if not options.counting_mode:
-
-        # SNS sorting optional, off by default
-        if options.sort_bed:
-            sort_stat = "| sort -k1,1 -k2,2n"
-        else:
-            sort_stat = ""
-
-        this_script = os.path.abspath(__file__)
-        bam_path = os.path.abspath(filename_bam)
-        bed_path = os.path.abspath(filename_bed)
-
-        # note bedtools can handle gzipped files now.
-        E.info("counting")
-        statement = """intersectBed %(format)s %(filename_bam)s
-        -b %(filename_bed)s %(sort_stat)s
-        -sorted -bed -wo -f %(min_overlap)f
-        | python %(this_script)s -a %(filename_bam)s -b %(filename_bed)s
-                 -c True
-        """ % locals()
-
-        E.info("running %s" % statement)
-        retcode = E.run(statement)
-
-        if retcode != 0:
-            raise ValueError("error while executing statement %s" % statement)
-
+    # SNS: sorting optional, off by default
+    if options.sort_bed:
+        bedcmd = "<( zcat %s | sort -k1,1 -k2,2n)" % filename_bed
     else:
+        bedcmd = filename_bed
 
-        options.stdout.write("category\talignments\n")
-        options.stdout.write("total\t%i\n" % total)
+    # IMS: newer versions of intersectBed have a very high memory
+    #      requirement unless passed sorted bed files.
+    statement = """intersectBed %(format)s %(filename_bam)s
+    -b %(bedcmd)s
+    -sorted -bed -wo -f %(min_overlap)f""" % locals()
 
-        counts_per_alignment = collections.defaultdict(int)
+    E.info("starting counting process: %s" % statement)
+    proc = E.run(statement, return_popen=True,
+                 stdout=subprocess.PIPE)
 
-        take_columns = len(data._fields)
+    E.info("counting")
+    counts_per_alignment = collections.defaultdict(int)
+    take_columns = len(data._fields)
 
-        for line in sys.stdin:
+    def iter(infile):
+        for line in infile:
             if not line.strip():
                 continue
-            entry = data._make(line[:-1].split()[:take_columns])
-            counts_per_alignment[entry.name2] += 1
+            yield data._make(line[:-1].split()[:take_columns])
 
-        for key, counts in counts_per_alignment.iteritems():
-            options.stdout.write("%s\t%i\n" % (key, counts))
+    for read, overlaps in itertools.groupby(iter(proc.stdout), key=sort_key):
+        annotations = [x.name2 for x in overlaps]
+        for anno in annotations:
+            counts_per_alignment[anno] += 1
+
+    for key, counts in counts_per_alignment.iteritems():
+        options.stdout.write("%s\t%i\n" % (key, counts))
 
     # write footer and output benchmark information.
-    if not options.counting_mode:
-        E.Stop()
+    E.Stop()
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
