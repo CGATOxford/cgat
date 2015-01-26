@@ -32,11 +32,6 @@ Options
     Using this option will only count reads if they overlap with a bed entry
     by a certain minimum fraction of the read.
 
--k, --keep-temp
-    As part of the process a temporary file contain each of the overlaps
-    is generated. Normally this file is deleted upon successful completion.
-    Use this option to retain this file.
-
 Example
 -------
 
@@ -70,6 +65,7 @@ import sys
 import tempfile
 import collections
 import itertools
+import subprocess
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
@@ -94,10 +90,6 @@ def main(argv=None):
                       type="float",
                       help="minimum overlap [%default]")
 
-    parser.add_option("-k", "--keep-temp", dest="keep_temp",
-                      action="store_true",
-                      help="do not delete temporary files [%default]")
-
     parser.add_option("-a", "--bam-file", dest="filename_bam",
                       metavar="bam", type="string",
                       help="bam-file to use (required) [%default]")
@@ -106,11 +98,18 @@ def main(argv=None):
                       metavar="bed", type="string",
                       help="bed-file to use (required) [%default]")
 
+    parser.add_option(
+        "-s", "--sort-bed", dest="sort_bed",
+        action="store_true",
+        help="sort the bed file by chromosomal location before "
+        "processing. By default the file is assumed to be sorted "
+        "[%default]")
+
     parser.set_defaults(
         min_overlap=0.5,
-        keep_temp=False,
         filename_bam=None,
         filename_bed=None,
+        sort_bed=False,
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -133,10 +132,6 @@ def main(argv=None):
         raise ValueError("please supply a bam file to compare with.")
 
     E.info("intersecting the two files")
-
-    tmpfile = tempfile.NamedTemporaryFile(delete=False)
-    tmpfile.close()
-    tmpfilename = tmpfile.name
 
     min_overlap = options.min_overlap
 
@@ -201,23 +196,24 @@ def main(argv=None):
         E.warn("no data in %s" % filename_bam)
         return
 
+    # SNS: sorting optional, off by default
+    if options.sort_bed:
+        bedcmd = "<( zcat %s | sort -k1,1 -k2,2n)" % filename_bed
+    else:
+        bedcmd = filename_bed
+
     # IMS: newer versions of intersectBed have a very high memory
-    #     requirement unless passed sorted bed files.
+    #      requirement unless passed sorted bed files.
     statement = """intersectBed %(format)s %(filename_bam)s
-    -b <( zcat %(filename_bed)s | sort -k1,1 -k2,2n)
-    -sorted -bed -wo -f %(min_overlap)f > %(tmpfilename)s""" % locals()
+    -b %(bedcmd)s
+    -sorted -bed -wo -f %(min_overlap)f""" % locals()
 
-    E.info("running %s" % statement)
-    retcode = E.run(statement)
-
-    if retcode != 0:
-        raise ValueError("error while executing statement %s" % statement)
-
-    infile = open(tmpfilename, "r")
-    counts_per_alignment = collections.defaultdict(int)
+    E.info("starting counting process: %s" % statement)
+    proc = E.run(statement, return_popen=True,
+                 stdout=subprocess.PIPE)
 
     E.info("counting")
-
+    counts_per_alignment = collections.defaultdict(int)
     take_columns = len(data._fields)
 
     def iter(infile):
@@ -226,17 +222,13 @@ def main(argv=None):
                 continue
             yield data._make(line[:-1].split()[:take_columns])
 
-    for read, overlaps in itertools.groupby(iter(infile), key=sort_key):
+    for read, overlaps in itertools.groupby(iter(proc.stdout), key=sort_key):
         annotations = [x.name2 for x in overlaps]
         for anno in annotations:
             counts_per_alignment[anno] += 1
-    infile.close()
 
     for key, counts in counts_per_alignment.iteritems():
         options.stdout.write("%s\t%i\n" % (key, counts))
-
-    if not options.keep_temp:
-        os.unlink(tmpfilename)
 
     # write footer and output benchmark information.
     E.Stop()
