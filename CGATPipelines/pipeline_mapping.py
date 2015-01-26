@@ -532,7 +532,6 @@ def buildReferenceTranscriptome(infile, outfile):
         bowtie-build -f %(outfile)s %(prefix)s >> %(outfile)s.log 2>&1
         '''
         P.run()
-        
 
 #########################################################################
 #########################################################################

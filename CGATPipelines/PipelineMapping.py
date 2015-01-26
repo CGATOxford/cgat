@@ -1401,7 +1401,7 @@ class Butter(BWA):
             %(tmpdir)s/%(track)s.sam;
             rm -rf ./%(track)s.bam ./%(track)s.bam.bai;
             ''' % locals())
-            
+
         elif nfiles == 2:
             raise ValueError(
                 "Butter does not support paired end reads ")
