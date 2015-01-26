@@ -189,7 +189,6 @@ P.getParameters(
 PARAMS = P.PARAMS
 
 
-
 #########################################################################
 #########################################################################
 #########################################################################
@@ -345,7 +344,7 @@ def mapReadsWithBismark(infile, outfile):
     bismark_options = PARAMS["bismark_options"]
     m = PipelineMapping.Bismark()
     statement = m.build((infile,), outfile)
-    #print statement
+    # print statement
     P.run()
 
 #########################################################################
