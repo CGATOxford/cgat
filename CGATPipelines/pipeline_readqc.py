@@ -263,7 +263,7 @@ if PARAMS["preprocessors"]:
             sickle_options=PARAMS["sickle_options"],
             flash_options=PARAMS["flash_options"],
             fastx_trimmer_options=PARAMS["fastx_trimmer_options"],
-	    cutadapt_options=PARAMS["cutadapt_options"])
+            cutadapt_options=PARAMS["cutadapt_options"])
         statement = m.build((infile,), outfile, PREPROCESSTOOLS)
         P.run()
 

@@ -126,7 +126,7 @@ class MasterProcessor(Mapping.Mapper):
                  sickle_options=None,
                  flash_options=None,
                  fastx_trimmer_options=None,
-		 cutadapt_options=None,
+                 cutadapt_options=None,
                  *args, **kwargs):
         self.save = save
         self.summarise = summarise
@@ -608,7 +608,7 @@ class flash(process_tool):
             postprocess_cmd = "checkpoint ;"
 
         return postprocess_cmd
-      
+
 
 class cutadapt(process_tool):
     def process(self, infiles):
