@@ -634,8 +634,10 @@ def buildNonCodingExons(infile, outfile):
     '''build a collection of transcripts from the non-coding portion of
     the ENSEMBL gene set.
 
-    All exons are kept
+    Transcripts not marked as protein_coding are removed, all
+    others are kept.
 
+    All exons are kept
     '''
 
     statement = '''
@@ -659,7 +661,7 @@ def buildLincRNAExons(infile, outfile):
     statement = '''
     gunzip < %(infile)s
     | python %(scriptsdir)s/gtf2gtf.py
-    --method=filter --filter-method=lincrna --invert-filter
+    --method=filter --filter-method=lincrna
     --log=%(outfile)s.log
     | awk '$3 == "exon"'
     | python %(scriptsdir)s/gtf2gtf.py
@@ -681,7 +683,7 @@ def buildCDS(infile, outfile):
     statement = '''
     gunzip < %(infile)s
     | python %(scriptsdir)s/gtf2gtf.py
-    --method=filter --filter-method=proteincoding --invert-filter
+    --method=filter --filter-method=proteincoding
     --log=%(outfile)s.log
     | awk '$3 == "CDS"'
     | python %(scriptsdir)s/gtf2gtf.py
