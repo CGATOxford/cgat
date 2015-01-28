@@ -937,7 +937,8 @@ def main(argv=None):
                 assert False, "please supply either a filename "
                 "with ids to filter with (--map-tsv-file) or a sample-size."
 
-        elif options.filter_method in ("proteincoding", "lincrna", "processed-pseudogene"):
+        elif options.filter_method in ("proteincoding", "lincrna",
+                                       "processed-pseudogene"):
             # extract entries by transcript/gene biotype.
             # This filter uses a test on the source field (ENSEMBL pre v78)
             # a regular expression on the attributes (ENSEMBL >= v78).
