@@ -720,3 +720,155 @@ def plotDETagStats(infiles, outfile):
                             "length"))
 
     P.touch(outfile)
+
+
+@P.cluster_runnable
+def buildSpikeResults(infile, outfile):
+    '''build matrices with results from spike-in and upload
+    into database.
+
+    The method will output several files:
+
+    .spiked.gz: Number of intervals that have been spiked-in
+               for each bin of expression and fold-change
+
+    .power.gz: Global power analysis - aggregates over all
+        ranges of fold-change and expression and outputs the
+        power, the proportion of intervals overall that
+        could be detected as differentially methylated.
+
+        This is a table with the following columns:
+
+        fdr - fdr threshold
+        power - power level, number of intervals detectable
+        intervals - number of intervals in observed data at given
+                    level of fdr and power.
+        intervals_percent - percentage of intervals in observed data
+              at given level of fdr and power
+
+    '''
+
+    expression_nbins = 10
+    fold_nbins = 10
+
+    spikefile = P.snip(infile, '.tsv.gz') + '.spike.gz'
+
+    if not os.path.exists(spikefile):
+        E.warn('no spike data: %s' % spikefile)
+        P.touch(outfile)
+        return
+
+    ########################################
+    # output and load spiked results
+    tmpfile_name = P.getTempFilename(shared=True)
+
+    statement = '''zcat %(spikefile)s
+    | grep -e "^spike" -e "^test_id"
+    > %(tmpfile_name)s
+    '''
+    P.run()
+
+    E.debug("outputting spiked counts")
+    (spiked, spiked_d2hist_counts, xedges, yedges,
+     spiked_l10average, spiked_l2fold) = \
+        outputSpikeCounts(
+            outfile=P.snip(outfile, ".power.gz") + ".spiked.gz",
+            infile_name=tmpfile_name,
+            expression_nbins=expression_nbins,
+            fold_nbins=fold_nbins)
+
+    ########################################
+    # output and load unspiked results
+    statement = '''zcat %(infile)s
+    | grep -v -e "^spike"
+    > %(tmpfile_name)s
+    '''
+    P.run()
+    E.debug("outputting unspiked counts")
+
+    (unspiked, unspiked_d2hist_counts, unspiked_xedges,
+     unspiked_yedges, unspiked_l10average, unspiked_l2fold) = \
+        outputSpikeCounts(
+            outfile=P.snip(outfile, ".power.gz") + ".unspiked.gz",
+            infile_name=tmpfile_name,
+            expression_bins=xedges,
+            fold_bins=yedges)
+
+    E.debug("computing power")
+
+    assert xedges.all() == unspiked_xedges.all()
+
+    tmpfile = IOTools.openFile(tmpfile_name, "w")
+    tmpfile.write("\t".join(
+        ("expression",
+         "fold",
+         "fdr",
+         "counts",
+         "percent")) + "\n")
+
+    fdr_thresholds = [0.01, 0.05] + list(numpy.arange(0.1, 1.0, 0.1))
+    power_thresholds = numpy.arange(0.1, 1.1, 0.1)
+
+    spiked_total = float(spiked_d2hist_counts.sum().sum())
+    unspiked_total = float(unspiked_d2hist_counts.sum().sum())
+
+    outf = IOTools.openFile(outfile, "w")
+    outf.write("fdr\tpower\tintervals\tintervals_percent\n")
+
+    # significant results
+    for fdr in fdr_thresholds:
+        take = spiked['qvalue'] < fdr
+
+        # compute 2D histogram in spiked data below fdr threshold
+        spiked_d2hist_fdr, xedges, yedges = \
+            numpy.histogram2d(spiked_l10average[take],
+                              spiked_l2fold[take],
+                              bins=(xedges, yedges))
+
+        # convert to percentage of spike-ins per bin
+        spiked_d2hist_fdr_normed = spiked_d2hist_fdr / spiked_d2hist_counts
+        spiked_d2hist_fdr_normed = numpy.nan_to_num(spiked_d2hist_fdr_normed)
+
+        # set values without data to -1
+        spiked_d2hist_fdr_normed[spiked_d2hist_counts == 0] = -1.0
+
+        # output to table for database upload
+        for x, y in itertools.product(range(len(xedges) - 1),
+                                      range(len(yedges) - 1)):
+            tmpfile.write("\t".join(map(
+                str, (xedges[x], yedges[y],
+                      fdr,
+                      spiked_d2hist_fdr[x, y],
+                      100.0 * spiked_d2hist_fdr_normed[x, y]))) + "\n")
+
+        # take elements in spiked_hist_fdr above a certain threshold
+        for power in power_thresholds:
+            # select 2D bins at a given power level
+            power_take = spiked_d2hist_fdr_normed >= power
+
+            # select the counts in the unspiked data according
+            # to this level
+            power_counts = unspiked_d2hist_counts[power_take]
+
+            outf.write("\t".join(map(
+                str, (fdr, power,
+                      power_counts.sum().sum(),
+                      100.0 * power_counts.sum().sum()
+                      / unspiked_total))) + "\n")
+
+    tmpfile.close()
+    outf.close()
+
+    # upload into table
+    method = P.snip(os.path.dirname(outfile), ".dir")
+    tablename = P.toTable(
+        P.snip(outfile, "power.gz") + method + ".spike.load")
+
+    statement = '''cat %(tmpfile_name)s
+    | python %(scriptsdir)s/csv2db.py
+           --table=%(tablename)s
+           --add-index=fdr
+    > %(outfile)s.log'''
+
+    P.run()
+    os.unlink(tmpfile_name)
