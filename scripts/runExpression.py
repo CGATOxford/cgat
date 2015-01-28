@@ -162,6 +162,12 @@ def main(argv=None):
                       type="string",
                       help="input file with tag counts [default=%default].")
 
+    parser.add_option(
+        "--result-tsv-file", dest="input_filename_result",
+        type="string",
+        help="input file with results (for plotdetagstats) "
+        "[default=%default].")
+
     parser.add_option("-d", "--design-tsv-file", dest="input_filename_design",
                       type="string",
                       help="input file with experimental design "
@@ -174,8 +180,10 @@ def main(argv=None):
                       choices=(
                           "deseq", "edger",
                           "ttest",
-                          "mock", "summary", "dump", "spike",
-                          "plottagstats"),
+                          "mock", "summary",
+                          "dump", "spike",
+                          "plottagstats",
+                          "plotdetagstats"),
                       help="differential expression method to apply "
                       "[default=%default].")
 
@@ -238,6 +246,7 @@ def main(argv=None):
 
     parser.set_defaults(
         input_filename_tags="-",
+        input_filename_result=None,
         input_filename_design=None,
         output_filename=sys.stdout,
         method="deseq",
@@ -347,6 +356,13 @@ def main(argv=None):
             Expression.plotTagStats(
                 options.input_filename_tags,
                 options.input_filename_design,
+                outfile_prefix=options.output_filename_pattern)
+
+        elif options.method == "plotdetagstats":
+            assert options.input_filename_result and os.path.exists(
+                options.input_filename_result)
+            Expression.plotDETagStats(
+                options.input_filename_result,
                 outfile_prefix=options.output_filename_pattern)
 
         elif options.method == "spike":
