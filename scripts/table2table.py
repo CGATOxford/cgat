@@ -405,10 +405,6 @@ def readAndJoinTable(infile, options):
     for row in new_table:
         options.stdout.write("\t".join(row) + "\n")
 
-##########################################################
-##########################################################
-##########################################################
-
 
 def main(argv=None):
     """script main.
@@ -419,40 +415,47 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    parser = E.OptionParser(
-        version="%prog version: $Id: table2table.py 2782 2009-09-10 11:40:29Z andreas $")
+    parser = E.OptionParser(version="%prog version: $Id$",
+                            usage=globals()["__doc__"])
 
-    parser.add_option("-m", "--method", dest="methods", type="choice", action="append",
-                      choices=("transpose", "normalize-by-max", "normalize-by-value", "multiply-by-value",
-                               "percentile", "remove-header", "normalize-by-table",
-                               "upper-bound", "lower-bound", "kullback-leibler",
-                               "expand", "compress", "fdr", "grep"),
-                      help="""actions to perform on table.""")
+    parser.add_option(
+        "-m", "--method", dest="methods", type="choice", action="append",
+        choices=("transpose", "normalize-by-max", "normalize-by-value",
+                 "multiply-by-value",
+                 "percentile", "remove-header", "normalize-by-table",
+                 "upper-bound", "lower-bound", "kullback-leibler",
+                 "expand", "compress", "fdr", "grep"),
+        help="""actions to perform on table.""")
 
     parser.add_option("-s", "--scale", dest="scale", type="float",
                       help="factor to scale matrix by.")
 
     parser.add_option("-f", "--format", dest="format", type="string",
-                      help="output number format.")
+                      help="output number format [default]")
 
     parser.add_option("-p", "--parameters", dest="parameters", type="string",
                       help="Parameters for various functions.")
 
-    parser.add_option("-t", "--header-names", dest="has_headers", action="store_true",
-                      help="matrix has row/column headers.")
+    parser.add_option(
+        "-t", "--header-names", dest="has_headers", action="store_true",
+        help="matrix has row/column headers.")
 
     parser.add_option("--transpose", dest="transpose", action="store_true",
                       help="transpose table.")
 
-    parser.add_option("--set-transpose-field", dest="set_transpose_field", type="string",
-                      help="set first field (row 1 and col 1) to this value [%default].")
+    parser.add_option(
+        "--set-transpose-field", dest="set_transpose_field", type="string",
+        help="set first field (row 1 and col 1) to this value [%default].")
 
-    parser.add_option("--transpose-format", dest="transpose_format", type="choice",
-                      choices=("default", "separated", ),
-                      help="input format of un-transposed table")
+    parser.add_option(
+        "--transpose-format", dest="transpose_format", type="choice",
+        choices=("default", "separated", ),
+        help="input format of un-transposed table")
 
-    parser.add_option("--expand", dest="expand_table", action="store_true",
-                      help="expand table - multi-value cells with be expanded over several rows.")
+    parser.add_option(
+        "--expand", dest="expand_table", action="store_true",
+        help="expand table - multi-value cells with be expanded over "
+        "several rows.")
 
     parser.add_option("--no-headers", dest="has_headers", action="store_false",
                       help="matrix has no row/column headers.")
@@ -468,8 +471,10 @@ def main(argv=None):
                       help="delimiter of columns.",
                       metavar="DELIM")
 
-    parser.add_option("-V", "--invert-match", dest="invert_match", action="store_true",
-                      help="invert match.")
+    parser.add_option(
+        "-V", "--invert-match", dest="invert_match",
+        action="store_true",
+        help="invert match.")
 
     parser.add_option("--sort-by-rows", dest="sort_rows", type="string",
                       help="output order for rows.")
@@ -477,8 +482,10 @@ def main(argv=None):
     parser.add_option("-a", "--value", dest="value", type="float",
                       help="value to use for various algorithms.")
 
-    parser.add_option("--group", dest="group_column", type="int",
-                      help="group values by column. Supply an integer column [default=%default]")
+    parser.add_option(
+        "--group", dest="group_column", type="int",
+        help="group values by column. Supply an integer column "
+        "[default=%default]")
 
     parser.add_option("--group-function", dest="group_function", type="choice",
                       choices=(
@@ -488,49 +495,64 @@ def main(argv=None):
     parser.add_option("--join-table", dest="join_column", type="int",
                       help="join rows in a table by columns.")
 
-    parser.add_option("--collapse-table", dest="collapse_table", type="string",
-                      help="collapse a table. Value determines the missing variable [%default].")
+    parser.add_option(
+        "--collapse-table", dest="collapse_table", type="string",
+        help="collapse a table. Value determines the missing variable "
+        "[%default].")
 
-    parser.add_option("--join-column-name", dest="join_column_name", type="int",
-                      help="use this column as a prefix.")
+    parser.add_option(
+        "--join-column-name", dest="join_column_name", type="int",
+        help="use this column as a prefix.")
 
-    parser.add_option("--flatten-table", dest="flatten_table", action="store_true",
-                      help="flatten a table [%default].")
+    parser.add_option(
+        "--flatten-table", dest="flatten_table", action="store_true",
+        help="flatten a table [%default].")
 
     parser.add_option("--as-column", dest="as_column", action="store_true",
                       help="output table as a single column.")
 
-    parser.add_option("--split-fields", dest="split_fields", action="store_true",
-                      help="split fields.")
+    parser.add_option(
+        "--split-fields", dest="split_fields", action="store_true",
+        help="split fields.")
 
-    parser.add_option("--separator", dest="separator", type="string",
-                      help="separator for multi-valued fields [default=%default].")
+    parser.add_option(
+        "--separator", dest="separator", type="string",
+        help="separator for multi-valued fields [default=%default].")
 
-    parser.add_option("--fdr-method", dest="fdr_method", type="choice",
-                      choices=(
-                          "BH", "bonferroni", "holm", "hommel", "hochberg", "BY"),
-                      help="method to perform multiple testing correction by controlling the fdr [default=%default].")
+    parser.add_option(
+        "--fdr-method", dest="fdr_method", type="choice",
+        choices=(
+            "BH", "bonferroni", "holm", "hommel", "hochberg", "BY"),
+        help="method to perform multiple testing correction by controlling "
+        "the fdr [default=%default].")
 
-    parser.add_option("--fdr-add-column", dest="fdr_add_column", type="string",
-                      help="add new column instead of replacing existing columns. "
-                      "The value of the option will be used as prefix if there are multiple columns [%default]")
+    parser.add_option(
+        "--fdr-add-column", dest="fdr_add_column", type="string",
+        help="add new column instead of replacing existing columns. "
+        "The value of the option will be used as prefix if there are "
+        "multiple columns [%default]")
 
     # IMS: add option to use a column as the row id in flatten
-    parser.add_option("--id-column", dest="id_column", type="string",
-                      help="list of column(s) to use as the row id when flattening the table. "
-                      "If None, then row number is used. [default=%default].")
+    parser.add_option(
+        "--id-column", dest="id_column", type="string",
+        help="list of column(s) to use as the row id when flattening "
+        "the table. If None, then row number is used. [default=%default].")
 
-    parser.add_option("--variable-name", dest="variable_name", type="string",
-                      help="the column header for the 'variable' column when flattening [default=%default].")
+    parser.add_option(
+        "--variable-name", dest="variable_name", type="string",
+        help="the column header for the 'variable' column when flattening "
+        "[default=%default].")
 
-    parser.add_option("--value-name", dest="value_name", type="string",
-                      help="the column header for the 'value' column when flattening [default=%default].")
+    parser.add_option(
+        "--value-name", dest="value_name", type="string",
+        help="the column header for the 'value' column when flattening "
+        "[default=%default].")
 
     parser.set_defaults(
         methods=[],
         scale=1.0,
         has_headers=True,
-        format="%5.2f",
+        format=None,
         value=0.0,
         parameters="",
         columns="all",
@@ -588,8 +610,8 @@ def main(argv=None):
         readAndTransposeTable(options.stdin, options)
 
     elif options.flatten_table:
-        # IMS: bug fixed to make work. Also added options for keying on a particular
-        #     and adding custom column headings
+        # IMS: bug fixed to make work. Also added options for keying
+        # on a particular and adding custom column headings
 
         fields, table = CSV.ReadTable(
             options.stdin, with_header=options.has_headers, as_rows=True)
@@ -607,7 +629,8 @@ def main(argv=None):
             id_header = "row"
 
         options.stdout.write(
-            "%s\t%s\t%s\n" % (id_header, options.variable_name, options.value_name))
+            "%s\t%s\t%s\n" % (id_header, options.variable_name,
+                              options.value_name))
 
         for x, row in enumerate(table):
 
@@ -742,6 +765,10 @@ def main(argv=None):
 
             elif method == "kullback-leibler":
                 options.stdout.write("category1\tcategory2\tkl1\tkl2\tmean\n")
+                format = options.format
+                if format is None:
+                    format = "%f"
+                    
                 for x in range(0, len(options.columns) - 1):
                     for y in range(x + 1, len(options.columns)):
                         c1 = options.columns[x]
@@ -754,10 +781,11 @@ def main(argv=None):
                             e1 += p * math.log(p / q)
                             e2 += q * math.log(q / p)
 
-                        options.stdout.write("%s\t%s\t%s\t%s\t%s\n" % (fields[c1], fields[c2],
-                                                                       options.format % e1,
-                                                                       options.format % e2,
-                                                                       options.format % ((e1 + e2) / 2)))
+                        options.stdout.write("%s\t%s\t%s\t%s\t%s\n" % (
+                            fields[c1], fields[c2],
+                            format % e1,
+                            format % e2,
+                            format % ((e1 + e2) / 2)))
                 E.Stop()
                 sys.exit(0)
 
@@ -795,14 +823,15 @@ def main(argv=None):
                 for c in options.columns:
                     pvalues.extend(table[c])
 
-                assert max(pvalues) <= 1.0, "pvalues > 1 in table: max=%s" % str(
-                    max(pvalues))
-                assert min(pvalues) >= 0, "pvalue < 0 in table: min=%s" % str(
-                    min(pvalues))
+                assert max(pvalues) <= 1.0, "pvalues > 1 in table: max=%s" % \
+                    str(max(pvalues))
+                assert min(pvalues) >= 0, "pvalue < 0 in table: min=%s" % \
+                    str(min(pvalues))
 
                 # convert to str to avoid test for float downstream
                 qvalues = map(
-                    str, Stats.adjustPValues(pvalues, method=options.fdr_method))
+                    str, Stats.adjustPValues(pvalues,
+                                             method=options.fdr_method))
 
                 if options.fdr_add_column is None:
                     x = 0
@@ -811,7 +840,6 @@ def main(argv=None):
                         x += nrows
                 else:
                     # add new column headers
-
                     if len(options.columns) == 1:
                         fields.append(options.fdr_add_column)
                     else:
@@ -853,10 +881,11 @@ def main(argv=None):
                             table[c][r] = options.missing_value
 
         # convert back
-        for c in options.columns:
-            for r in range(nrows):
-                if isinstance(table[c][r], float):
-                    table[c][r] = options.format % table[c][r]
+        if options.format is not None:
+            for c in options.columns:
+                for r in range(nrows):
+                    if isinstance(table[c][r], float):
+                        table[c][r] = format % table[c][r]
 
         options.stdout.write("\t".join(fields) + "\n")
         if options.sort_rows:
@@ -868,11 +897,13 @@ def main(argv=None):
                     continue
                 r = old2new[x]
                 options.stdout.write(
-                    "\t".join([table[c][r] for c in range(ncols)]) + "\n")
+                    "\t".join(map(str,
+                                  [table[c][r] for c in range(ncols)])) + "\n")
         else:
             for r in range(nrows):
                 options.stdout.write(
-                    "\t".join([table[c][r] for c in range(ncols)]) + "\n")
+                    "\t".join(map(str,
+                                  [table[c][r] for c in range(ncols)])) + "\n")
 
     E.Stop()
 

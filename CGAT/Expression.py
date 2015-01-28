@@ -1053,7 +1053,7 @@ def deseqPlotGeneHeatmap(outfile,
 
     # do not print if not enough values in one
     # direction (single row or column)
-    if min(data.shape) < 2:
+    if min(R.dim(data)) < 2:
         return
 
     R.png(outfile, width=500, height=2000)
@@ -1365,15 +1365,16 @@ def runDESeq(outfile,
 
     # plot gene heatmap for all genes - order by average expression
     # subtract one to get numpy indices
-    select = R.order(R.rowMeans(R.counts(cds)), decreasing=True) - 1
+    select = R.order(R.rowMeans(R.counts(cds)), decreasing=True)
+    # the following uses R-based indexing
     deseqPlotGeneHeatmap(
         '%sgene_heatmap.png' % outfile_prefix,
-        R['as.matrix'](R.exprs(vsd)[select]))
+        R['as.matrix'](R.exprs(vsd).rx(select)))
 
     # plot heatmap of top 200 expressed genes
     deseqPlotGeneHeatmap(
         '%sgene_heatmap_top200.png' % outfile_prefix,
-        R['as.matrix'](R.exprs(vsd)[select[:200]]))
+        R['as.matrix'](R.exprs(vsd).rx(select[:200])))
 
     # Call diffential expression for all pairings of groups included in the
     # design
@@ -1389,27 +1390,30 @@ def runDESeq(outfile,
                (control, treatment))
         res = R('''res = nbinomTest(cds, '%s', '%s')''' % (control, treatment))
 
-        # Plot significance
+        # plot significance
         R.png('''%(outfile_groups_prefix)ssignificance.png''' % locals())
-        R('''plot( res$baseMean, res$log2FoldChange, log="x",
+        R('''plot(
+        res$baseMean,
+        res$log2FoldChange,
+        log="x",
         pch=20, cex=.1,
-        col = ifelse( res$padj < %(fdr)s, "red", "black" ) )''' % locals())
+        col = ifelse( res$padj < %(fdr)s, "red", "black"))''' % locals())
         R['dev.off']()
 
-        # Plot pvalues against rowsums
+        # plot pvalues against rowsums
         deseqPlotPvaluesAgainstRowsums(
             '%(outfile_groups_prefix)spvalue_rowsums.png' % locals())
 
         E.info("Generating output (%s vs %s)" % (control, treatment))
 
-        # Get variance stabilized fold changes - note the reversal of
+        # get variance stabilized fold changes - note the reversal of
         # treatment/control
         R('''vsd_l2f =
         (rowMeans(exprs(vsd)[,conditions(cds) == '%s', drop=FALSE])
         - rowMeans( exprs(vsd)[,conditions(cds) == '%s', drop=FALSE]))''' %
           (treatment, control))
 
-        # Plot vsd correlation, see Figure 14 in the DESeq manual
+        # plot vsd correlation, see Figure 14 in the DESeq manual
         # if you also want to colour by expression level
         R.png('''%(outfile_groups_prefix)sfold_transformation.png''' %
               locals())
@@ -1422,13 +1426,15 @@ def runDESeq(outfile,
         # plot heatmap of differentially expressed genes
         # plot gene heatmap for all genes - order by average expression
         padj_column = list(res.colnames).index('padj')
-        select = res[padj_column] < fdr
-        if len(select) > 0:
+        select = R('''select = res['padj'] < %f''' % fdr)
+
+        if R('''sum(select)''')[0] > 0:
             E.info('%s vs %s: plotting %i genes in heatmap' %
                    (treatment, control, len(select)))
-            data = R.exprs(vsd)[select]
+            data = R.exprs(vsd).rx(select)
+
             if not isinstance(data, rpy2.robjects.vectors.FloatVector):
-                order = R.order(R.rowMeans(data), decreasing=True) - 1
+                order = R.order(R.rowMeans(data), decreasing=True)
                 deseqPlotGeneHeatmap(
                     '%sgene_heatmap.png' % outfile_groups_prefix,
                     R['as.matrix'](data[order]),
@@ -1566,11 +1572,6 @@ def plotDETagStats(infile, outfile_prefix,
     columns will be output as well.
     '''
 
-    # import rpy2.robjects.lib.ggplot2 as ggplot2
-
-    R('''suppressMessages(library('ggplot2'))''')
-    R('''suppressMessages(library('grid'))''')
-
     table = pandas.read_csv(IOTools.openFile(infile),
                             sep="\t")
 
@@ -1606,7 +1607,10 @@ def plotDETagStats(infile, outfile_prefix,
             data=table) + \
             ggplot.geom_density(alpha=0.5)
 
-        ggplot.ggsave(filename=outfile, plot=plot)
+        try:
+            ggplot.ggsave(filename=outfile, plot=plot)
+        except ValueError, msg:
+            E.warn(msg)
 
     def _bplot(table, outfile, column):
 
@@ -1615,7 +1619,12 @@ def plotDETagStats(infile, outfile_prefix,
             data=table) + \
             ggplot.geom_boxplot()
 
-        ggplot.ggsave(filename=outfile, plot=plot)
+        try:
+            ggplot.ggsave(filename=outfile, plot=plot)
+        except ValueError, msg:
+            # boxplot fails if all values are the same
+            # see https://github.com/yhat/ggplot/issues/393
+            E.warn(msg)
 
     _dplot(table,
            outfile_prefix + ".densities_tags_control.png",
@@ -1630,13 +1639,14 @@ def plotDETagStats(infile, outfile_prefix,
            outfile_prefix + ".boxplot_tags_treatment.png",
            "log10_treatment_mean")
 
-    for column in additional_columns:
-        _dplot(table,
-               outfile_prefix + ".densities_%s.png" % column,
-               column)
-        _bplot(table,
-               outfile_prefix + ".boxplot_%s.png" % column,
-               column)
+    if additional_columns:
+        for column in additional_columns:
+            _dplot(table,
+                   outfile_prefix + ".densities_%s.png" % column,
+                   column)
+            _bplot(table,
+                   outfile_prefix + ".boxplot_%s.png" % column,
+                   column)
     return
 
 
@@ -2153,7 +2163,10 @@ def outputTagSummary(filename_tags,
     outfilename = output_filename_pattern + "mds.svg"
     E.info("outputting mds plot to %s" % outfilename)
     R.svg(outfilename)
-    R('''plotMDS( countsTable )''')
+    try:
+        R('''plotMDS(countsTable)''')
+    except rpy2.rinterface.RRuntimeError, msg:
+        E.warn("can not plot mds: %s" % msg)
     R['dev.off']()
 
 

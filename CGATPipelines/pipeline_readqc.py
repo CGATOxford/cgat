@@ -256,7 +256,8 @@ if PARAMS["preprocessors"]:
         job_options = "-l mem_free=%s" % PARAMS["general_memory"]
 
         m = PipelinePreprocess.MasterProcessor(
-            save=PARAMS["save"], summarise=PARAMS["summarise"],
+            save=PARAMS["save"],
+            summarise=PARAMS["summarise"],
             threads=PARAMS["threads"],
             trimgalore_options=PARAMS["trimgalore_options"],
             trimmomatic_options=trimmomatic_options,

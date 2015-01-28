@@ -175,7 +175,7 @@ To check if the dependencies within a particular pipeline are satisfied, type::
 
 To check all external dependencies, type::
 
-   python cgat/cgat_list_extensions.py
+   python scripts/cgat_list_dependencies.py
 
 The dependencies are tracked through the module
 :doc:`modules/Requirements`. Dependency tracking works by adding a

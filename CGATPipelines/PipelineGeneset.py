@@ -505,7 +505,7 @@ def loadPeptideSequences(infile, outfile):
     statement = '''gunzip
     < %(infile)s
     | perl -p -e 'if ("^>") { s/ .*//};'
-    | python %(scriptsdir)s/fasta2fasta.py --output-min-length=1
+    | python %(scriptsdir)s/fasta2fasta.py --method=filter --filter-method=min-length=1
     | python %(scriptsdir)s/fasta2table.py --section=length --section=sequence
     | perl -p -e 's/id/protein_id/'
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
@@ -634,8 +634,10 @@ def buildNonCodingExons(infile, outfile):
     '''build a collection of transcripts from the non-coding portion of
     the ENSEMBL gene set.
 
-    All exons are kept
+    Transcripts not marked as protein_coding are removed, all
+    others are kept.
 
+    All exons are kept
     '''
 
     statement = '''
@@ -659,7 +661,7 @@ def buildLincRNAExons(infile, outfile):
     statement = '''
     gunzip < %(infile)s
     | python %(scriptsdir)s/gtf2gtf.py
-    --method=filter --filter-method=lincrna --invert-filter
+    --method=filter --filter-method=lincrna
     --log=%(outfile)s.log
     | awk '$3 == "exon"'
     | python %(scriptsdir)s/gtf2gtf.py
@@ -681,7 +683,7 @@ def buildCDS(infile, outfile):
     statement = '''
     gunzip < %(infile)s
     | python %(scriptsdir)s/gtf2gtf.py
-    --method=filter --filter-method=proteincoding --invert-filter
+    --method=filter --filter-method=proteincoding
     --log=%(outfile)s.log
     | awk '$3 == "CDS"'
     | python %(scriptsdir)s/gtf2gtf.py
@@ -770,19 +772,21 @@ def loadProteinStats(infile, outfile):
 
     statement = '''
     gunzip < %(infile)s
-    | python %(scriptsdir)s/fasta2fasta.py --output-min-length=1
+    | python %(scriptsdir)s/fasta2fasta.py
+    --method=filter
+    --filter-method=min-length=1
     | python %(scriptsdir)s/fasta2table.py
-          --log=%(outfile)s
-          --sequence-type=aa
-          --section=length
-          --section=hid
-          --section=aa
-          --regex-identifier="(\S+)"
+    --log=%(outfile)s
+    --sequence-type=aa
+    --section=length
+    --section=hid
+    --section=aa
+    --regex-identifier="(\S+)"
     |sed "s/^id/protein_id/"
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --add-index=protein_id
-              --map=protein_id:str
-              --table=%(table)s
+    --add-index=protein_id
+    --map=protein_id:str
+    --table=%(table)s
     > %(outfile)s'''
 
     P.run()
