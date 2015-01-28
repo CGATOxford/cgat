@@ -47,6 +47,7 @@ Requirements:
 * star >= 2.3.0e (optional)
 * bismark >= 0.12.5 (optional)
 * stampy >= 1.0.23 (optional)
+* butter >= 0.3.2 (optional)
 
 Code
 ----
@@ -903,6 +904,7 @@ class BWA(Mapper):
 
     def postprocess(self, infiles, outfile):
         '''collect output data and postprocess.'''
+        # note, this postprocess method is inherited by multiple mappers
 
         track = P.snip(os.path.basename(outfile), ".bam")
         outf = P.snip(outfile, ".bam")
@@ -910,10 +912,10 @@ class BWA(Mapper):
 
         strip_cmd, unique_cmd = "", ""
 
-        if self.remove_unique:
+        if self.remove_non_unique:
             unique_cmd = '''| python %%(scriptsdir)s/bam2bam.py
             --method=filter
-            --filter-method=unique
+            --filter-method=unique, mapped
             --log=%(outfile)s.log''' % locals()
 
         if self.strip_sequence:
@@ -1024,15 +1026,18 @@ class Bismark(Mapper):
         nfiles = max(num_files)
 
         tmpdir = os.path.join(self.tmpdir_fastq + "bwa")
+        tmpdir = "."
 
         bismark_index = "%(bismark_index_dir)s/%(bismark_genome)s"
 
         tmpdir_fastq = self.tmpdir_fastq
+        tmpdir_fastq = "."
 
         if nfiles == 1:
             infiles = infiles[0][0]
             statement = '''
-            bismark %%(bismark_options)s -q --bowtie2 --output_dir %%(outdir)s
+            bismark %%(bismark_options)s -q --bowtie2
+            --output_dir %(tmpdir_fastq)s
             -p %%(bismark_threads)s --bam --phred33-quals %(bismark_index)s
             %(infiles)s;
             ''' % locals()
@@ -1042,7 +1047,8 @@ class Bismark(Mapper):
             infiles2 = infiles[0][1]
 
             statement = '''
-            bismark %%(bismark_options)s -q --bowtie2 --output_dir %%(outdir)s
+            bismark %%(bismark_options)s -q --bowtie2
+            --output_dir %(tmpdir_fastq)s
             -p %%(bismark_threads)s --bam --non_directional
             --phred33-quals %(bismark_index)s -1 %(infiles1)s -2 %(infiles2)s;
             ''' % locals()
@@ -1055,15 +1061,79 @@ class Bismark(Mapper):
 
         return statement
 
-    # what should the post processing be?
-    def postprocess(self, infiles, outfile):
+    # Postprocessing can identify .sra input from the infiles, the use
+    # mapfiles to identify whether the input was single or paired end, then
+    # remove reads with low CHH/CHG conversions (i.e more than one unconverted)
+    # and rename the bismark outfile to fit ruffus expectations.
+    def postprocess(self, infiles, mapfiles, outfile):
+        tmpdir_fastq = self.tmpdir_fastq
+        tmpdir_fastq = "."
         track = P.snip(os.path.basename(outfile), ".bam")
-        for infile in infiles:
-            if infile.endswith(".fastq.gz"):
-                statement = ""
-            elif infile.endswith(".fastq.1.gz"):
-                statement = '''mv %%(outdir)s/%(track)s_pe.bam
-                           %%(outdir)s/%(track)s.bam;''' % locals()
+        infile = infiles[0]
+        base = os.path.basename(infile).split(".")[0]
+        if infile.endswith(".fastq.gz"):
+            statement = '''samtools view -h
+            %(tmpdir_fastq)s/%(base)s.fastq.gz_bismark_bt2.bam|
+            awk -F" " '$14!~/^XM:Z:[zZhxUu\.]*[HX][zZhxUu\.]*[HX]/ ||
+            $1=="@SQ" || $1=="@PG"' | samtools view -b - >
+            %%(outdir)s/%(track)s.bam;
+            mv %(tmpdir_fastq)s/%(base)s.fastq.gz_SE_report.txt
+            %%(outdir)s/%(track)s_SE_report.txt;''' % locals()
+        elif infile.endswith(".fastq.1.gz"):
+            statement = '''samtools view -h
+            %(tmpdir_fastq)s/%(base)s.fastq.1.gz_bismark_bt2_pe.bam|
+            awk -F" " '$14!~/^XM:Z:[zZhxUu\.]*[HX][zZhxUu\.]*[HX]/ ||
+            $1=="@SQ" || $1=="@PG"' | samtools view -b - >
+            %%(outdir)s/%(track)s.bam;
+            mv %(tmpdir_fastq)s/%(base)s.fastq.gz_PE_report.txt
+            %%(outdir)s/%(track)s_PE_report.txt;''' % locals()
+        elif infile.endswith(".sra"):
+            for mapfile in mapfiles:
+                mapfile = os.path.basename(mapfile[0])
+                if mapfile.endswith(".fastq.1.gz"):
+                    statement = '''samtools view -h
+                    %(tmpdir_fastq)s/%(mapfile)s_bismark_bt2_pe.bam|
+                    awk -F" " '$14!~/^XM:Z:[zZhxUu\.]*[HX][zZhxUu\.]*[HX]/ ||
+                    $1=="@SQ" || $1=="@PG"' | samtools view -b - >
+                    %%(outdir)s/%(track)s.bam;
+                    mv %(tmpdir_fastq)s/%(mapfile)s_bismark_bt2_PE_report.txt
+                    %%(outdir)s/%(track)s_PE_report.txt;''' % locals()
+                else:
+                    statement = '''samtools view -h
+                    %(tmpdir_fastq)s/%(mapfile)s_bismark_bt2.bam|
+                    awk -F" " '$14!~/^XM:Z:[zZhxUu\.]*[HX][zZhxUu\.]*[HX]/||
+                    $1=="@SQ" || $1=="@PG"' | samtools view -b - >
+                    %%(outdir)s/%(track)s.bam;
+                    mv %(tmpdir_fastq)s/%(mapfile)s_bismark_bt2_SE_report.txt
+                    %%(outdir)s/%(track)s_SE_report.txt;''' % locals()
+        else:
+            # shouldn't arrive here
+            statement = "checkpoint;"
+
+        return statement
+
+    # redefine build method so that mapfiles are
+    # also passed to postprocess method
+    # this is neccessary for the reasons explained above
+    def build(self, infiles, outfile):
+        '''run mapper.'''
+
+        cmd_preprocess, mapfiles = self.preprocess(infiles, outfile)
+        cmd_mapper = self.mapper(mapfiles, outfile)
+        cmd_postprocess = self.postprocess(infiles, mapfiles, outfile)
+        cmd_clean = self.cleanup(outfile)
+
+        assert cmd_preprocess.strip().endswith(";")
+        assert cmd_mapper.strip().endswith(";")
+        if cmd_postprocess:
+            assert cmd_postprocess.strip().endswith(";")
+        if cmd_clean:
+            assert cmd_clean.strip().endswith(";")
+
+        statement = " checkpoint; ".join((cmd_preprocess,
+                                          cmd_mapper,
+                                          cmd_postprocess,
+                                          cmd_clean))
 
         return statement
 
@@ -1139,6 +1209,215 @@ class Stampy(BWA):
         self.tmpdir = tmpdir
 
         return " ".join(statement)
+
+
+class Butter(BWA):
+
+    '''map reads against genome using Butter.
+    '''
+
+    def preprocess(self, infiles, outfile):
+        '''build preprocessing statement
+
+        Build a command line statement that extracts/converts
+        various input formats to fastq formatted files.
+
+        Mapping qualities are changed to solexa format.
+
+        returns the statement and the fastq files to map.
+        '''
+
+        assert len(infiles) > 0, "no input files for mapping"
+
+        tmpdir_fastq = P.getTempDir()
+
+        # create temporary directory again for nodes
+        statement = ["mkdir -p %s" % tmpdir_fastq]
+        fastqfiles = []
+
+        # get track by extension of outfile
+        track = os.path.splitext(os.path.basename(outfile))[0]
+
+        for infile in infiles:
+
+            if infile.endswith(".export.txt.gz"):
+                # single end illumina export
+                statement.append("""gunzip < %(infile)s
+                | awk '$11 != "QC" || $10 ~ /(\d+):(\d+):(\d+)/ \
+                {if ($1 != "")
+                {readname=sprintf("%%%%s_%%%%s:%%%%s:%%%%s:%%%%s:%%%%s",
+                $1, $2, $3, $4, $5, $6);}
+                else {readname=sprintf("%%%%s:%%%%s:%%%%s:%%%%s:%%%%s",
+                $1, $3, $4, $5, $6);}
+                printf("@%%%%s\\n%%%%s\\n+\\n%%%%s\\n",readname,$9,$10);}'
+                > %(tmpdir_fastq)s/%(track)s.fastq""" % locals())
+                fastqfiles.append(
+                    ("%s/%s.fastq%s" % (tmpdir_fastq, track, extension),))
+            elif infile.endswith(".fa.gz"):
+                statement.append(
+                    '''gunzip < %(infile)s > %(tmpdir_fastq)s/%(track)s.fa
+                    ''' % locals())
+                fastqfiles.append(("%s/%s.fa" % (tmpdir_fastq, track),))
+                self.datatype = "fasta"
+
+            elif infile.endswith(".sra"):
+                # sneak preview to determine if paired end or single end
+                outdir = P.getTempDir()
+                # --split-files is present in fastq-dump 2.1.7
+                P.execute(
+                    """fastq-dump --split-files --gzip -X 1000
+                    --outdir %(outdir)s %(infile)s""" % locals())
+                # --split-files will create files called prefix_#.fastq.gz
+                # where # is the read number.
+                # The following cases are:
+
+                # * file cotains paired end data:
+                #      output = prefix_1.fastq.gz, prefix_2.fastq.gz
+                #
+                #    * special case: unpaired reads in a paired end
+                #                    run end up in prefix.fastq.gz
+                #    * special case: if paired reads are stored in
+                #                    a single read, fastq-dump will split.
+                #       There might be a joining sequence. The output
+                #                 would thus be:
+                #       prefix_1.fastq.gz, prefix_2.fastq.gz, prefix_3.fastq.gz
+                #
+                #      You want files 1 and 3.
+                f = sorted(glob.glob(os.path.join(outdir, "*.fastq.gz")))
+                ff = [os.path.basename(x) for x in f]
+                if len(f) == 1:
+                    # sra file contains one read: output = prefix.fastq.gz
+                    pass
+                elif len(f) == 2:
+                    raise ValueError(
+                        "Butter does not support paired end reads ")
+                E.info("sra file contains the following files: %s" % f)
+                shutil.rmtree(outdir)
+                fastqfiles.append(
+                    ["%s/%s" % (tmpdir_fastq, os.path.basename(x))
+                     for x in sorted(f)])
+                statement.append(
+                    """fastq-dump --split-files --outdir
+                    %(tmpdir_fastq)s %(infile)s""" % locals())
+
+            elif infile.endswith(".fastq.gz"):
+                format = Fastq.guessFormat(
+                    IOTools.openFile(infile, "r"), raises=False)
+                if 'sanger' not in format and self.convert:
+                    statement.append("""gunzip < %(infile)s
+                    | python %%(scriptsdir)s/fastq2fastq.py
+                    --method=change-format --target-format=sanger
+                    --guess-format=phred64
+                    --log=%(outfile)s.log
+                    > %(tmpdir_fastq)s/%(track)s.fastq""" %
+                                     locals())
+                else:
+                    statement.append("""gunzip < %(infile)s
+                    > %(tmpdir_fastq)s/%(track)s.fastq""" %
+                                     locals())
+                    E.debug("%s: assuming quality score format %s" %
+                            (infile, format))
+                fastqfiles.append(("%s/%s.fastq" % (tmpdir_fastq, track),))
+
+            elif infile.endswith(".csfasta.gz"):
+                # single end SOLiD data
+                if self.preserve_colourspace:
+                    quality = P.snip(infile, ".csfasta.gz") + ".qual.gz"
+                    if not os.path.exists(quality):
+                        raise ValueError("no quality file for %s" % infile)
+                    statement.append("""gunzip < %(infile)s
+                    > %(tmpdir_fastq)s/%(track)s.csfasta""" %
+                                     locals())
+                    statement.append("""gunzip < %(quality)s
+                    > %(tmpdir_fastq)s/%(track)s.qual""" %
+                                     locals())
+                    fastqfiles.append(("%s/%s.csfasta" %
+                                       (tmpdir_fastq, track),
+                                       "%s/%s.qual" %
+                                       (tmpdir_fastq, track)))
+                    self.datatype = "solid"
+                else:
+                    quality = P.snip(infile, ".csfasta.gz") + ".qual.gz"
+
+                    statement.append("""solid2fastq
+                    <(gunzip < %(infile)s) <(gunzip < %(quality)s)
+                    > %(tmpdir_fastq)s/%(track)s.fastq""" %
+                                     locals())
+                    fastqfiles.append(
+                        ("%s/%s.fastq" % (tmpdir_fastq, track),))
+
+            elif infile.endswith(".csfasta.F3.gz"):
+                # paired end SOLiD data
+                raise ValueError(
+                    "Butter does not support paired end reads ")
+
+            elif infile.endswith(".fastq.1.gz"):
+                raise ValueError(
+                    "Butter does not support paired end reads ")
+
+            else:
+                raise NotImplementedError("unknown file format %s" % infile)
+
+        self.tmpdir_fastq = tmpdir_fastq
+
+        assert len(fastqfiles) > 0, "no fastq files for mapping"
+
+        return "; ".join(statement) + ";", fastqfiles
+
+    def mapper(self, infiles, outfile):
+        '''build mapping statement on infiles.'''
+
+        if len(infiles) > 1:
+            raise ValueError(
+                "butter can only operate on one fastq file at a time")
+
+        num_files = [len(x) for x in infiles]
+
+        if max(num_files) != min(num_files):
+            raise ValueError(
+                "mixing single and paired-ended data not possible.")
+
+        nfiles = max(num_files)
+
+        tmpdir = os.path.join(self.tmpdir_fastq + "butter")
+        statement = ["mkdir -p %s;" % tmpdir]
+        tmpdir_fastq = self.tmpdir_fastq
+
+        track = P.snip(os.path.basename(outfile), ".bam")
+
+        if nfiles == 1:
+            infiles = infiles[0][0]
+            track_infile = ".".join(infiles.split(".")[:-1])
+# %(tmpdir)s/%(track)s.sam
+
+            statement.append('''
+            butter %%(butter_options)s
+            %(infiles)s
+            %%(butter_index_dir)s/%%(genome)s.fa
+            --aln_cores=%%(job_threads)s
+            --bam2wig=none
+            >%(outfile)s.log;
+            samtools view -h %(track_infile)s.bam >
+            %(tmpdir)s/%(track)s.sam;
+            rm -rf ./%(track)s.bam ./%(track)s.bam.bai;
+            ''' % locals())
+
+        elif nfiles == 2:
+            raise ValueError(
+                "Butter does not support paired end reads ")
+        else:
+            raise ValueError(
+                "unexpected number of read files to map: %i " % nfiles)
+
+        self.tmpdir = tmpdir
+
+        return " ".join(statement)
+
+    def cleanup(self, outfile):
+        '''clean up.'''
+        statement = '''rm -rf %s %s;''' % (self.tmpdir_fastq, self.tmpdir)
+
+        return statement
 
 
 class Tophat(Mapper):

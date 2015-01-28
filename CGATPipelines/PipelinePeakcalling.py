@@ -1548,7 +1548,7 @@ def loadMACS(infile, outfile, bamfile, controlfile=None):
                            --offset=%(shift)i
                            %(control)s
                            --output-all-fields
-                           --bed-header=%(headers)s
+                           --output-bed-headers=%(headers)s
                            --log=%(outfile)s
                 < %(tmpfilename)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
@@ -1583,7 +1583,7 @@ def loadMACS(infile, outfile, bamfile, controlfile=None):
                                --offset=%(shift)i
                                %(control)s
                                --output-all-fields
-                               --bed-header=%(headers)s
+                               --output-bed-headers=%(headers)s
                                --log=%(outfile)s
                     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
                            --add-index=contig,start
@@ -1740,7 +1740,7 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
                            --offset=%(shift)i
                            %(control)s
                            --output-all-fields
-                           --bed-header=%(headers)s
+                           --output-bed-headers=%(headers)s
                            --log=%(outfile)s
                 < %(tmpfilename)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
@@ -1775,7 +1775,7 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
                                --offset=%(shift)i
                                %(control)s
                                --output-all-fields 
-                               --bed-header=%(headers)s
+                               --output-bed-headers=%(headers)s
                                --log=%(outfile)s
                     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                            --add-index=contig,start
@@ -1806,7 +1806,7 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
                                --offset=%(shift)i
                                %(control)s
                                --output-all-fields 
-                               --bed-header=%(headers)s
+                               --output-bed-headers=%(headers)s
                                --log=%(outfile)s
                     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
                            --add-index=contig,start
@@ -1888,7 +1888,7 @@ def loadZinba(infile, outfile, bamfile,
         --offset=%(offset)i
         %(control)s
         --output-all-fields
-        --bed-header=%(headers)s
+        --output-bed-headers=%(headers)s
         --log=%(outfile)s
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
         --add-index=contig,start
@@ -1912,7 +1912,7 @@ def loadZinba(infile, outfile, bamfile,
         --offset=%(offset)i
         %(control)s
         --output-all-fields
-        --bed-header=%(headers)s
+        --output-bed-headers=%(headers)s
         --log=%(outfile)s
         | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
         --add-index=contig,start
@@ -2040,7 +2040,7 @@ def loadSICER(infile, outfile, bamfile, controlfile=None, mode="narrow"):
     --offset=%(offset)i
     %(control)s
     --output-all-fields
-    --bed-header=%(headers)s
+    --output-bed-headers=%(headers)s
     --log=%(outfile)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
     --add-index=contig,start
@@ -2191,7 +2191,7 @@ def loadPeakRanger(infile, outfile, bamfile, controlfile=None, table_suffix="pea
     --offset=%(offset)i
     %(control)s
     --output-all-fields
-    --bed-header=%(headers)s
+    --output-bed-headers=%(headers)s
     --log=%(outfile)s
     < <( grep -v "fdrFailed" %(bedfile)s )
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
@@ -2211,7 +2211,7 @@ def loadPeakRanger(infile, outfile, bamfile, controlfile=None, table_suffix="pea
     --offset=%(offset)i
     %(control)s
     --output-all-fields
-    --bed-header=%(headers)s
+    --output-bed-headers=%(headers)s
     --log=%(outfile)s
     < <( grep -v "fdrFailed" %(bedfile)s )
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
@@ -2398,7 +2398,7 @@ def loadSPP(infile, outfile, bamfile, controlfile=None):
                            --offset=%(offset)i
                            %(control)s
                            --output-all-fields
-                           --bed-header=%(headers)s
+                           --output-bed-headers=%(headers)s
                            --log=%(outfile)s
                 | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
                        --add-index=contig,start
@@ -3044,7 +3044,7 @@ def loadScripture(infile, outfile, bamfile, controlfile=None):
     --offset=%(offset)i
     %(control)s
     --output-all-fields
-    --bed-header=%(headers)s
+    --output-bed-headers=%(headers)s
     --log=%(outfile)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
     --add-index=contig,start

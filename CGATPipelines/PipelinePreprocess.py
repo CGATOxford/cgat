@@ -120,7 +120,7 @@ class MasterProcessor(Mapping.Mapper):
     convert = False
 
     def __init__(self, save=True, summarise=False,
-                 threads=1, scriptsdir=None,
+                 threads=1,
                  trimgalore_options=None,
                  trimmomatic_options=None,
                  sickle_options=None,
@@ -130,7 +130,6 @@ class MasterProcessor(Mapping.Mapper):
         self.save = save
         self.summarise = summarise
         self.threads = threads
-        self.scriptsdir = scriptsdir
         self.trimgalore_opt = trimgalore_options
         self.trimmomatic_opt = trimmomatic_options
         self.sickle_opt = sickle_options
@@ -207,8 +206,7 @@ class MasterProcessor(Mapping.Mapper):
                     final=end, f_format=f_format, num_files=num_files,
                     first=first, outdir=self.outdir, infiles=infile,
                     prefix="fastx_trimmer-", summarise=self.summarise,
-                    options=self.fastx_trimmer_opt, threads=self.threads,
-                    scriptsdir=self.scriptsdir)
+                    options=self.fastx_trimmer_opt, threads=self.threads)
                 tool_cmd, post_cmd, infile, f_format, num_files = (
                     fastx_trimmer_object.build(infile))
             elif tool == "trimmomatic":
@@ -217,8 +215,7 @@ class MasterProcessor(Mapping.Mapper):
                     final=end, f_format=f_format, num_files=num_files,
                     first=first, outdir=self.outdir, infiles=infile,
                     prefix="trimmomatic-", summarise=self.summarise,
-                    options=self.trimmomatic_opt, threads=self.threads,
-                    scriptsdir=self.scriptsdir)
+                    options=self.trimmomatic_opt, threads=self.threads)
                 tool_cmd, post_cmd, infile, f_format, num_files = (
                     trimmomatic_object.build(infile))
             elif tool == "sickle":
@@ -227,8 +224,7 @@ class MasterProcessor(Mapping.Mapper):
                     final=end, f_format=f_format, num_files=num_files,
                     first=first, outdir=self.outdir, infiles=infile,
                     prefix="sickle-", summarise=self.summarise,
-                    options=self.sickle_opt, threads=self.threads,
-                    scriptsdir=self.scriptsdir)
+                    options=self.sickle_opt, threads=self.threads)
                 tool_cmd, post_cmd, infile,  f_format, num_files = (
                     sickle_object.build(infile))
             elif tool == "trimgalore":
@@ -237,8 +233,7 @@ class MasterProcessor(Mapping.Mapper):
                     final=end, f_format=f_format, num_files=num_files,
                     first=first, outdir=self.outdir, infiles=infile,
                     prefix="trimgalore-", summarise=self.summarise,
-                    options=self.trimgalore_opt, threads=self.threads,
-                    scriptsdir=self.scriptsdir)
+                    options=self.trimgalore_opt, threads=self.threads)
                 tool_cmd, post_cmd, infile, f_format, num_files = (
                     trimgalore_object.build(infile))
             elif tool == "flash":
@@ -247,8 +242,7 @@ class MasterProcessor(Mapping.Mapper):
                     final=end, f_format=f_format, num_files=num_files,
                     first=first, outdir=self.outdir, infiles=infile,
                     prefix="flash-", summarise=self.summarise,
-                    options=self.flash_opt, threads=self.threads,
-                    scriptsdir=self.scriptsdir)
+                    options=self.flash_opt, threads=self.threads)
                 tool_cmd, post_cmd, infile, f_format, num_files = (
                     flash_object.build(infile))
             else:
@@ -293,7 +287,7 @@ class process_tool(object):
     def __init__(self, first=True, final=True, compress=False,
                  save=True, f_format="", num_files="", prefix="",
                  outdir="", infiles=(), summarise=False, options=None,
-                 threads=1, scriptsdir=None, *args, **kwargs):
+                 threads=1, *args, **kwargs):
         self.final = final
         self.compress = compress
         self.first = first
@@ -303,7 +297,6 @@ class process_tool(object):
         self.summarise = summarise
         self.processing_options = options
         self.threads = threads
-        self.scriptsdir = scriptsdir
         if self.final:
             self.save = True
             self.outdir = "processed.dir"
@@ -337,13 +330,12 @@ class process_tool(object):
 
         outdir = self.outdir
         prefix = self.prefix
-        scriptsdir = self.scriptsdir
         if self.summarise:
             if self.num_files == 1:
                 infile = infiles[0]
                 infile_base = os.path.basename(infile)
                 postprocess_cmd = '''zcat %(infile)s |
-                python %(scriptsdir)s/fastq2summary.py
+                python %%(scriptsdir)s/fastq2summary.py
                 --guess-format=illumina-1.8 -v0
                 > summary.dir/%(infile_base)s.summary;
                 ''' % locals()
@@ -353,11 +345,11 @@ class process_tool(object):
                 infile_base1, infile_base2, = [
                     os.path.basename(x) for x in infiles]
                 postprocess_cmd = '''zcat %(infile1)s |
-                python %(scriptsdir)s/fastq2summary.py
+                python %%(scriptsdir)s/fastq2summary.py
                 --guess-format=illumina-1.8 -v0
                 > summary.dir/%(infile_base1)s.summary;
                 zcat %(infile2)s |
-                python %(scriptsdir)s/fastq2summary.py
+                python %%(scriptsdir)s/fastq2summary.py
                 --guess-format=illumina-1.8 -v0
                 > summary.dir/%(infile_base2)s.summary
                 ;''' % locals()
@@ -585,7 +577,6 @@ class flash(process_tool):
         # both initial paired end files. if a further single end step
         # is included after flash, currently, it will break at the
         # summarise function in pipeline_preprocess
-        scriptsdir = self.scriptsdir
 
         if self.summarise:
             outdir = self.outdir
@@ -595,11 +586,11 @@ class flash(process_tool):
             infile_base2 = re.sub(".1.fastq.gz", ".2.fastq.gz", infile_base1)
             infile = re.sub(".fastq.1.gz", ".fastq.gz", infile1)
             postprocess_cmd = '''zcat %(infile)s |
-            python %(scriptsdir)s/fastq2summary.py
+            python %%(scriptsdir)s/fastq2summary.py
             --guess-format=illumina-1.8 -v0
             > summary.dir/%(infile_base1)s.summary;
             zcat %(infile)s |
-            python %(scriptsdir)s/fastq2summary.py
+            python %%(scriptsdir)s/fastq2summary.py
             --guess-format=illumina-1.8 -v0
             > summary.dir/%(infile_base2)s.summary
             ;''' % locals()
