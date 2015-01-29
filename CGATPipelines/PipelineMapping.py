@@ -1077,16 +1077,16 @@ class Bismark(Mapper):
             awk -F" " '$14!~/^XM:Z:[zZhxUu\.]*[HX][zZhxUu\.]*[HX]/ ||
             $1=="@SQ" || $1=="@PG"' | samtools view -b - >
             %%(outdir)s/%(track)s.bam;
-            mv %(tmpdir_fastq)s/%(base)s.fastq.gz_SE_report.txt
-            %%(outdir)s/%(track)s_SE_report.txt;''' % locals()
+            mv %(tmpdir_fastq)s/%(base)s.fastq.gz_bismark_bt2_SE_report.txt
+            %%(outdir)s/%(track)s_bismark_bt2_SE_report.txt;''' % locals()
         elif infile.endswith(".fastq.1.gz"):
             statement = '''samtools view -h
             %(tmpdir_fastq)s/%(base)s.fastq.1.gz_bismark_bt2_pe.bam|
             awk -F" " '$14!~/^XM:Z:[zZhxUu\.]*[HX][zZhxUu\.]*[HX]/ ||
             $1=="@SQ" || $1=="@PG"' | samtools view -b - >
             %%(outdir)s/%(track)s.bam;
-            mv %(tmpdir_fastq)s/%(base)s.fastq.gz_PE_report.txt
-            %%(outdir)s/%(track)s_PE_report.txt;''' % locals()
+            mv %(tmpdir_fastq)s/%(base)s.fastq.gz_bismark_bt2_PE_report.txt
+            %%(outdir)s/%(track)s_bismark_bt2_SE_report.txt;''' % locals()
         elif infile.endswith(".sra"):
             for mapfile in mapfiles:
                 mapfile = os.path.basename(mapfile[0])
