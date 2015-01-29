@@ -201,49 +201,49 @@ def getMuTectOptions():
 # These haven't been fully implemented yet
 
 
-@files(PARAMS["roi_bed"], "roi.load")
-def loadROI(infile, outfile):
-    '''Import regions of interest bed file into SQLite.'''
-    header = "chr,start,stop,feature"
-    tablename = P.toTable(outfile)
-    statement = '''cat %(infile)s
-            | python %%(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --ignore-empty
-              --retry
-              --header-names=%(header)s
-              --table=%(tablename)s
-            > %(outfile)s  '''
-    P.run()
+# @files(PARAMS["roi_bed"], "roi.load")
+# def loadROI(infile, outfile):
+#    '''Import regions of interest bed file into SQLite.'''
+#    header = "chr,start,stop,feature"
+#    tablename = P.toTable(outfile)
+#    statement = '''cat %(infile)s
+#            | python %%(scriptsdir)s/csv2db.py %(csv2db_options)s
+#              --ignore-empty
+#              --retry
+#              --header-names=%(header)s
+#              --table=%(tablename)s
+#            > %(outfile)s  '''
+#    P.run()
 
 #########################################################################
 
 
-@files(PARAMS["roi_to_gene"], "roi2gene.load")
-def loadROI2Gene(infile, outfile):
-    '''Import genes mapping to regions of interest bed file into SQLite.'''
-    tablename = P.toTable(outfile)
-    statement = '''cat %(infile)s
-            | python %%(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --ignore-empty
-              --retry
-              --table=%(tablename)s
-            > %(outfile)s  '''
-    P.run()
+# @files(PARAMS["roi_to_gene"], "roi2gene.load")
+# def loadROI2Gene(infile, outfile):
+#    '''Import genes mapping to regions of interest bed file into SQLite.'''
+#    tablename = P.toTable(outfile)
+#    statement = '''cat %(infile)s
+#            | python %%(scriptsdir)s/csv2db.py %(csv2db_options)s
+#              --ignore-empty
+#              --retry
+#              --table=%(tablename)s
+#            > %(outfile)s  '''
+#    P.run()
 
 #########################################################################
 
-
-@files(PARAMS["samples"], "samples.load")
-def loadSamples(infile, outfile):
-    '''Import sample information into SQLite.'''
-    tablename = P.toTable(outfile)
-    statement = '''cat %(infile)s
-            | python %%(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --ignore-empty
-              --retry
-              --table=%(tablename)s
-            > %(outfile)s  '''
-    P.run()
+# not currently implemented
+# @files(PARAMS["samples"], "samples.load")
+# def loadSamples(infile, outfile):
+#    '''Import sample information into SQLite.'''
+#    tablename = P.toTable(outfile)
+#    statement = '''cat %(infile)s
+#            | python %%(scriptsdir)s/csv2db.py %(csv2db_options)s
+#              --ignore-empty
+#              --retry
+#              --table=%(tablename)s
+#            > %(outfile)s  '''
+#    P.run()
 
 #########################################################################
 #########################################################################
@@ -1294,8 +1294,7 @@ def TestMutect():
 
 
 @follows(loadROI,
-         loadROI2Gene,
-         loadSamples)
+         loadROI2Gene)
 def loadMetadata():
     pass
 
