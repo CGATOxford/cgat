@@ -410,9 +410,10 @@ class ResultBuilder:
 
             for l in infile:
                 nfields = l.count("\t")
+
                 if l[0] == "#":
                     options.stdlog.write(l)
-                elif nfields != self.nfields:
+                elif self.nfields is not None and nfields != self.nfields:
                     # validate number of fields in row, raise warning
                     # for those not matching and skip.
                     E.warn(
@@ -680,7 +681,7 @@ def runDRMAA(data, environment):
             to_stdout = False
 
         cmd = " ".join(re.sub("\t+", " ", cmd).split("\n"))
-        E.debug("running statement:\n%s" % cmd)
+        E.info("running statement:\n%s" % cmd)
 
         tmpfile = tempfile.NamedTemporaryFile(dir=os.getcwd(), delete=False)
         tmpfile.write("#!/bin/bash\n")  # -l -O expand_aliases\n" )

@@ -256,14 +256,15 @@ if PARAMS["preprocessors"]:
         job_options = "-l mem_free=%s" % PARAMS["general_memory"]
 
         m = PipelinePreprocess.MasterProcessor(
-            save=PARAMS["save"], summarise=PARAMS["summarise"],
+            save=PARAMS["save"],
+            summarise=PARAMS["summarise"],
             threads=PARAMS["threads"],
             trimgalore_options=PARAMS["trimgalore_options"],
             trimmomatic_options=trimmomatic_options,
             sickle_options=PARAMS["sickle_options"],
             flash_options=PARAMS["flash_options"],
-            fastx_trimmer_options=PARAMS["fastx_trimmer_options"])
-
+            fastx_trimmer_options=PARAMS["fastx_trimmer_options"],
+            cutadapt_options=PARAMS["cutadapt_options"])
         statement = m.build((infile,), outfile, PREPROCESSTOOLS)
         P.run()
 

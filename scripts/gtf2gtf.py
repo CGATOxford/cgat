@@ -184,16 +184,18 @@ Options for altering fields within :term:`gtf`.
     not appearing in the tsv file is discarded.
 
 ``renumber-genes``
-    Renumber genes from 1 using the pattern provided in ``--pattern-identifier``.
+    Renumber genes from 1 using the pattern provided in
+    ``--pattern-identifier``.
 
 ``renumber-transcripts``
     Renumber transcripts from 1 using the pattern provided in
     ``--pattern-identifier``.
 
 ``unset-genes``
-    Renumber genes from 1 using the pattern provided in ``--pattern-identifier``.
-    Transcripts with the same gene-id in the input :term:`gtf` file will
-    have different gene-ids in the output :term:`gtf` file.
+    Renumber genes from 1 using the pattern provided in
+    ``--pattern-identifier``. Transcripts with the same gene-id in the
+    input :term:`gtf` file will have different gene-ids in the output
+    :term:`gtf` file.
 
 ``set-transcript-to-gene``
     Will set the transcript-id to the gene-id for each feature.
@@ -935,7 +937,8 @@ def main(argv=None):
                 assert False, "please supply either a filename "
                 "with ids to filter with (--map-tsv-file) or a sample-size."
 
-        elif options.filter_method in ("proteincoding", "lincrna", "processed-pseudogene"):
+        elif options.filter_method in ("proteincoding", "lincrna",
+                                       "processed-pseudogene"):
             # extract entries by transcript/gene biotype.
             # This filter uses a test on the source field (ENSEMBL pre v78)
             # a regular expression on the attributes (ENSEMBL >= v78).
