@@ -264,6 +264,50 @@ import CGAT.IOTools as IOTools
 # ------------------------------------------------------------
 
 
+def find_retained_introns(gene):
+    '''Given a bundle of transcripts, find intervals matching retained
+    introns. A retained intron is defined as an interval from an exon/intron
+    boundary to the next where both boundaries are in the same exon of another
+    transcript'''
+
+    intron_intervals = [GTF.toIntronIntervals(transcript)
+                        for transcript in gene]
+    intron_intervals = list(set(
+        itertools.chain.from_iterable(intron_intervals)))
+    intron_intervals.sort()
+    
+    for transcript in gene:
+        exons = iter(sorted(GTF.asRanges(transcript)))
+        introns = iter(intron_intervals)
+        retained_introns = []
+        try:
+            intron = introns.next()
+            exon = exons.next()
+            while True:
+
+                if exon[1] < intron[0]:
+
+                    exon = exons.next()
+                    continue
+
+                if intron[0] >= exon[0] and intron[1] <= exon[1]:
+                    E.debug("exon %s of transcript %s contains intron %s" %
+                            (exon, transcript[0].transcript_id, intron))
+                    retained_introns.append(intron)
+                intron = introns.next()
+        except StopIteration:
+            pass
+
+        retained_introns = Intervals.combine(retained_introns)
+
+        for intron in retained_introns:
+            entry = GTF.Entry()
+            entry = entry.copy(transcript[0])
+            entry.start = intron[0]
+            entry.end = intron[1]
+            yield entry
+
+
 def main(argv=None):
 
     if not argv:
@@ -394,6 +438,7 @@ def main(argv=None):
                           "add-protein-id",
                           "exons2introns",
                           "filter",
+                          "find-retained-introns",
                           "intersect-transcripts",
                           "join-exons",
                           "merge-exons",
@@ -1231,6 +1276,18 @@ def main(argv=None):
                 options.stdout.write("%s\n" % str(x))
                 nfeatures += 1
             noutput += 1
+    elif options.method == "find-retained-introns":
+
+        for gene in GTF.gene_iterator(GTF.iterator(options.stdin)):
+            ninput += 1
+            found_any = False
+            for intron in find_retained_introns(gene):
+                found_any = True
+                options.stdout.write("%s\n" % str(intron))
+                nfeatures += 1
+            if found_any:
+                noutput += 1
+
     else:
         raise ValueError("unknown method '%s'" % options.method)
 
