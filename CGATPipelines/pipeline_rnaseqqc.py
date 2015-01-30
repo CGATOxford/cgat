@@ -201,8 +201,6 @@ REGEX_FORMATS = regex(r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
 # bias analysis
 ####################################################
 
-if PARAMS["sailfish_transcripts"].endswith(".gz"):
-    zipped = True
 
 
 @transform(PARAMS["sailfish_transcripts"],
@@ -215,7 +213,7 @@ def indexForSailfish(infile, outfile):
     kmer = int(PARAMS["sailfish_kmer_size"])
     tmp = P.getTempFilename()
 
-    if zipped:
+    if infile.endswith(".gz"):
         statement = '''gunzip -c %(infile)s > %(tmp)s;
                        checkpoint; sailfish index -t %(tmp)s'''
     else:
@@ -246,9 +244,9 @@ def runSailfish(infiles, outfile):
     m = PipelineMapping.Sailfish(strand=PARAMS["sailfish_strandedness"],
                                  orient=PARAMS["sailfish_orientation"],
                                  threads=PARAMS["sailfish_threads"])
-
+    
     statement = m.build((infile,), outfile)
-
+    print statement
     P.run()
 
 
@@ -277,7 +275,7 @@ else:
 # take multifasta transcripts file and output file of attributes
 def characteriseTranscripts(infile, outfile):
 
-    if zipped:
+    if infile.endswith(".gz"):
         statement = '''zcat %(infile)s'''
     else:
         statement = '''cat %(infile)s'''
@@ -388,6 +386,11 @@ def loadBiasSummary(infiles, outfiles):
 
 @follows(loadBiasSummary)
 def full():
+    pass
+
+
+@follows(runSailfish)
+def sail():
     pass
 
 
