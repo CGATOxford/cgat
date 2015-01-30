@@ -63,6 +63,18 @@ Input gtfs need to be sorted so that features for a gene or transcript
 appear consecutively within the file. This can be achevied using
 ``--method=sort``.
 
+
+``find-retained-introns``
+    Finds intervals within a transcript that represent retained-introns,
+    here a retained intron is considered to be an intron in one transcript
+    that is entirely contianed within the exon of another. The retained
+    intron will be assigned to the transcript with the containing exon. Where
+    multiple, overlapping introns are contained within a single exon of a
+    transcript, the union of the introns will be output. Thus when considering
+    an indevidual transcript, outputs will be non-overlapping. However,
+    overlapping, or even identical feature can be output if they belong to
+    different transcripts.
+
 ``merge-exons``
     Merges overlapping exons for all transcripts of a gene, outputting the
     merged exons. Can be used in conjunction with ``merge-exons-distance``
