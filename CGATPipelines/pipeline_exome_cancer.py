@@ -1293,10 +1293,10 @@ def TestMutect():
     pass
 
 
-@follows(loadROI,
-         loadROI2Gene)
-def loadMetadata():
-    pass
+# @follows(loadROI,
+#         loadROI2Gene)
+# def loadMetadata():
+#    pass
 
 
 @follows(mapReads)
