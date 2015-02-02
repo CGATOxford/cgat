@@ -126,6 +126,7 @@ class MasterProcessor(Mapping.Mapper):
                  sickle_options=None,
                  flash_options=None,
                  fastx_trimmer_options=None,
+                 cutadapt_options=None,
                  *args, **kwargs):
         self.save = save
         self.summarise = summarise
@@ -135,7 +136,7 @@ class MasterProcessor(Mapping.Mapper):
         self.sickle_opt = sickle_options
         self.flash_opt = flash_options
         self.fastx_trimmer_opt = fastx_trimmer_options
-
+        self.cutadapt_opt = cutadapt_options
         if self.save:
             self.outdir = "processed.dir"
         else:
@@ -245,6 +246,15 @@ class MasterProcessor(Mapping.Mapper):
                     options=self.flash_opt, threads=self.threads)
                 tool_cmd, post_cmd, infile, f_format, num_files = (
                     flash_object.build(infile))
+            elif tool == "cutadapt":
+                cutadapt_object = cutadapt(
+                    compress=file_compress, save=save_intermediates,
+                    final=end, f_format=f_format, num_files=num_files,
+                    first=first, outdir=self.outdir, infiles=infile,
+                    prefix="cutadapt-", summarise=self.summarise,
+                    options=self.cutadapt_opt, threads=self.threads)
+                tool_cmd, post_cmd, infile, f_format, num_files = (
+                    cutadapt_object.build(infile))
             else:
                 E.info("%s is not a supported tool" % tool)
 
@@ -598,3 +608,25 @@ class flash(process_tool):
             postprocess_cmd = "checkpoint ;"
 
         return postprocess_cmd
+
+
+class cutadapt(process_tool):
+    def process(self, infiles):
+        prefix = self.prefix
+        offset = self.offset
+        outdir = self.outdir
+        threads = self.threads
+        processing_options = self.processing_options
+        if self.num_files == 1:
+            infile = infiles[0]
+            track = os.path.basename(infile)
+            logfile = "log.dir/" + track + ".cutadapt.log"
+            outfile = "%(outdir)s/%(prefix)s%(track)s" % locals()
+            trim_out = "%s/%s_trimmed.fq.gz" % (outdir,
+                                                P.snip(track, ".fastq.gz"))
+            cmd = '''zcat %(infile)s | cutadapt %(processing_options)s -
+            2> %(logfile)s | gzip > %(outfile)s;''' % locals()
+            outfiles = (outfile,)
+        else:
+            E.info("paired end reads not currently implemented for cutadapt")
+        return cmd, outfiles

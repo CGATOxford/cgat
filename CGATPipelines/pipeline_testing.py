@@ -414,6 +414,7 @@ def compareCheckSums(infiles, outfile):
         if regex_linecount:
             check_lines = [x for x in different
                            if regex_linecount.search(x)]
+
             dd = (cmp_data['nlines'][check_lines] !=
                   ref_data['nlines'][check_lines])
 

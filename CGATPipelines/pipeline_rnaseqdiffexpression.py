@@ -662,8 +662,10 @@ def buildUnionIntersectionExons(infile, outfile):
     gunzip < %(infile)s
     | python %(scriptsdir)s/gtf2gtf.py --method=intersect-transcripts
     --with-utr --log=%(outfile)s.log
-    | python %(scriptsdir)s/gff2gff.py --is-gtf
-    --crop-unique  --log=%(outfile)s.log
+    | python %(scriptsdir)s/gff2gff.py
+    --is-gtf
+    --method=crop-unique
+    --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2bed.py --is-gtf --log=%(outfile)s.log
     | sort -k1,1 -k2,2n
     | gzip
@@ -692,11 +694,15 @@ def buildUnionExons(infile, outfile):
     statement = '''
     gunzip < %(infile)s
     | python %(scriptsdir)s/gtf2gtf.py
-         --method=merge-exons --log=%(outfile)s.log
+    --method=merge-exons
+    --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2gff.py
-         --is-gtf --crop-unique  --log=%(outfile)s.log
+    --is-gtf
+    --method=crop-unique
+    --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2bed.py
-         --is-gtf --log=%(outfile)s.log
+    --is-gtf
+    --log=%(outfile)s.log
     | sort -k1,1 -k2,2n
     | gzip
     > %(outfile)s
@@ -866,10 +872,6 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
 
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @transform(buildTranscriptLevelReadCounts,
            suffix(".tsv.gz"),
@@ -878,9 +880,6 @@ def loadTranscriptLevelReadCounts(infile, outfile):
     P.load(infile, outfile, options="--add-index=transcript_id")
 
 
-#########################################################################
-#########################################################################
-#########################################################################
 @follows(mkdir("feature_counts.dir"))
 @files([(("%s.bam" % x.asFile(), "%s.gtf.gz" % y.asFile()),
          ("feature_counts.dir/%s_vs_%s.tsv.gz" % (x.asFile(), y.asFile())))
@@ -903,10 +902,6 @@ def buildFeatureCounts(infiles, outfile):
         nthreads=PARAMS['featurecounts_threads'],
         strand=PARAMS['featurecounts_strand'],
         options=PARAMS['featurecounts_options'])
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @collate(buildFeatureCounts,
@@ -989,10 +984,6 @@ def summarizeCountsPerDesign(infiles, outfile):
               > %(outfile)s'''
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @transform((summarizeCounts,
             summarizeCountsPerDesign),
@@ -1006,6 +997,7 @@ def loadTagCountSummary(infile, outfile):
 
 
 @follows(loadTagCountSummary,
+         loadFeatureCounts,
          loadFeatureCountsSummary,
          aggregateGeneLevelReadCounts,
          aggregateFeatureCounts)
@@ -1060,10 +1052,6 @@ def loadDESeq(infile, outfile):
     '''
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @follows(loadGeneSetGeneInformation)
 @merge(loadDESeq, "deseq_stats.tsv")
@@ -1074,20 +1062,12 @@ def buildDESeqStats(infiles, outfile):
         connect(),
         tablenames, "deseq", outfile, outdir)
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @transform(buildDESeqStats,
            suffix(".tsv"),
            ".load")
 def loadDESeqStats(infile, outfile):
     P.load(infile, outfile)
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @follows(counting, mkdir("edger.dir"))
@@ -1116,10 +1096,6 @@ def runEdgeR(infiles, outfile):
     > %(outfile)s.log '''
 
     P.run()
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @transform(runEdgeR, suffix(".tsv.gz"), "_edger.load")
@@ -1212,14 +1188,20 @@ mapToQCTargets = {'cuffdiff': runCuffdiff,
 QCTARGETS = [mapToQCTargets[x] for x in P.asList(PARAMS["methods"])]
 
 
-@jobs_limit(1, "R")
 @transform(QCTARGETS,
            suffix(".tsv.gz"),
            ".plots")
 def plotDETagStats(infile, outfile):
     '''plot differential expression stats'''
-    Expression.plotDETagStats(infile, outfile)
-    P.touch(outfile)
+
+    statement = '''
+    python %(scriptsdir)s/runExpression.py
+    --result-tsv-file=%(infile)s
+    --method=plotdetagstats
+    --output-filename-pattern=%(outfile)s
+    > %(outfile)s
+    '''
+    P.run()
 
 
 @follows(plotTagStats,
@@ -1229,18 +1211,10 @@ def plotDETagStats(infile, outfile):
 def qc():
     pass
 
-###################################################################
-###################################################################
-###################################################################
-
 
 @follows(expression, diff_expression, qc)
 def full():
     pass
-
-###################################################################
-###################################################################
-###################################################################
 
 
 @follows(mkdir("report"))
@@ -1249,10 +1223,6 @@ def build_report():
 
     E.info("starting documentation build process from scratch")
     P.run_report(clean=True)
-
-###################################################################
-###################################################################
-###################################################################
 
 
 @follows(mkdir("report"))
