@@ -1050,6 +1050,16 @@ def mapReadsWithStampy(infile, outfile):
            r"butter.dir/\1.butter.bam")
 def mapReadsWithButter(infile, outfile):
     '''map reads with stampy'''
+    # easier to check whether infiles arepaired reads here
+    if infile.endswith(".sra"):
+        outdir = P.getTempDir()
+        f = Sra.sneak(infile, outdir)
+        shutil.rmtree(outdir)
+        assert len(f) == 1, NotImplementedError('''The sra archive contains
+        paired end data,Butter does not support paired end reads''')
+    elif infile.endswith(".csfasta.F3.gz") or infile.endswith(".fastq.1.gz"):
+        raise NotImplementedError('''infiles are paired end: %(infile)s,
+        Butter does not support paired end reads''' % locals())
 
     job_threads = PARAMS["butter_threads"]
     job_options = "-l mem_free=%s" % PARAMS["butter_memory"]
