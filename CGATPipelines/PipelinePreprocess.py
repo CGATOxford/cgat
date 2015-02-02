@@ -142,20 +142,6 @@ class MasterProcessor(Mapping.Mapper):
         else:
             self.outdir = P.getTempDir("/ifs/scratch")
 
-    def getfastqAttr(self, infiles):
-        num_files = len(infiles)
-
-        if num_files > 1:
-            infile1, infile2 = infiles
-        else:
-            infile1 = infiles[0]
-
-        format = Fastq.guessFormat(IOTools.openFile(infile1), raises=False)
-        E.info("%s: format guess: %s" % (infile1, format))
-        offset = Fastq.getOffset(format, raises=False)
-
-        return num_files, offset
-
     def quoteFile(self, filename):
         '''add uncompression for compressed files.
         and programs that expect uncompressed files.
@@ -390,7 +376,7 @@ class trimgalore(process_tool):
             infile = infiles[0]
             track = os.path.basename(infile)
             outfile = "%(outdir)s/%(prefix)s%(track)s" % locals()
-            logfile = "log.dir/" + track + ".trim_galore.log"
+            logfile = "log.dir/%(track)s_trim_galore.log" % locals()
             trim_out = "%s/%s_trimmed.fq.gz" % (outdir,
                                                 P.snip(track, ".fastq.gz"))
             cmd = '''trim_galore %(processing_options)s
@@ -408,7 +394,7 @@ class trimgalore(process_tool):
             track2 = P.snip(track1, ".fastq.1.gz") + ".fastq.2.gz"
             outfile1 = "%(outdir)s/%(prefix)s%(track1)s" % locals()
             outfile2 = "%(outdir)s/%(prefix)s%(track2)s" % locals()
-            logfile = "log.dir/" + track1 + ".trim_galore.log"
+            logfile = "log.dir/%(track1)s_trim_galore.log" % locals()
 
             cmd = '''trim_galore %(processing_options)s
                      --paired
@@ -437,7 +423,7 @@ class sickle(process_tool):
             infile = infiles[0]
             track = os.path.basename(infile)
             outfile = "%(outdir)s/%(prefix)s%(track)s" % locals()
-            logfile = "log.dir/" + track + ".sickle.log"
+            logfile = "log.dir/%(track)s_sickle.log" % locals()
 
             cmd = '''sickle se -g %(processing_options)s
                      --qual-type %(quality)s
@@ -453,7 +439,7 @@ class sickle(process_tool):
             track2 = P.snip(track1, ".fastq.1.gz") + ".fastq.2.gz"
             outfile1 = "%(outdir)s/%(prefix)s%(track1)s" % locals()
             outfile2 = "%(outdir)s/%(prefix)s%(track2)s" % locals()
-            logfile = "log.dir/" + track1 + ".sickle.log"
+            logfile = "log.dir/%(track1)s_sickle.log" % locals()
 
             cmd = '''sickle pe -g -s %(processing_options)s
                      --qual-type %(quality)s
@@ -477,7 +463,7 @@ class trimmomatic(process_tool):
         if self.num_files == 1:
             infile = infiles[0]
             track = os.path.basename(infile)
-            logfile = "log.dir/" + track + ".trimmomatic.log"
+            logfile = "log.dir/%(track)s_trimmomatic.log" % locals()
             outfile = "%(outdir)s/%(prefix)s%(track)s" % locals()
             trim_out = "%s/%s_trimmed.fq.gz" % (
                 outdir, P.snip(track, ".fastq.gz"))
@@ -491,7 +477,7 @@ class trimmomatic(process_tool):
             infile1, infile2 = infiles
             track1 = os.path.basename(infile1)
             track2 = re.sub(".fastq.1.gz", ".fastq.2.gz", track1)
-            logfile = "log.dir/" + track1 + ".trimmomatic.log"
+            logfile = "log.dir/%(track1)s_trimmomatic.log" % locals()
             outfile1 = "%(outdir)s/%(prefix)s%(track1)s" % locals()
             outfile2 = "%(outdir)s/%(prefix)s%(track2)s" % locals()
 
@@ -517,7 +503,7 @@ class fastx_trimmer(process_tool):
         if self.num_files == 1:
             infile = infiles[0]
             track = os.path.basename(infile)
-            logfile = "log.dir/" + track + ".trimmomatic.log"
+            logfile = "log.dir/%(track)s_fastx_trimmer.log" % locals()
             outfile = "%(outdir)s/%(prefix)s%(track)s" % locals()
             trim_out = "%s/%s_trimmed.fq.gz" % (outdir,
                                                 P.snip(track, ".fastq.gz"))
@@ -552,7 +538,7 @@ class flash(process_tool):
             outfile1 = "%(outdir)s/%(prefix)s%(track1)s" % locals()
             outfile2 = "%(outdir)s/%(prefix)s%(track2)s" % locals()
 
-            logfile = "log.dir/" + track1 + ".sickle.log"
+            logfile = "log.dir/%(track)s)_flash.log" % locals()
 
             cmd = '''flash %(infile1)s %(infile2)s
             -p%(offset)s %(processing_options)s
@@ -574,7 +560,7 @@ class flash(process_tool):
             outfiles = (outfile_single,)
 
         else:
-            E.info("flash requires paired end reads")
+            raise NotImplementedError("flash requires paired end reads")
 
         self.num_files = 1
         # need to set num_file to 1 as only one outfile produced
@@ -620,7 +606,7 @@ class cutadapt(process_tool):
         if self.num_files == 1:
             infile = infiles[0]
             track = os.path.basename(infile)
-            logfile = "log.dir/" + track + ".cutadapt.log"
+            logfile = "log.dir/%(track)s_cutadapt.log" % locals()
             outfile = "%(outdir)s/%(prefix)s%(track)s" % locals()
             trim_out = "%s/%s_trimmed.fq.gz" % (outdir,
                                                 P.snip(track, ".fastq.gz"))
@@ -628,5 +614,6 @@ class cutadapt(process_tool):
             2> %(logfile)s | gzip > %(outfile)s;''' % locals()
             outfiles = (outfile,)
         else:
-            E.info("paired end reads not currently implemented for cutadapt")
+            NotImplementedError('''paired end reads not
+            currently implemented for cutadapt''')
         return cmd, outfiles
