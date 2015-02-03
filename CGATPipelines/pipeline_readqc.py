@@ -240,10 +240,20 @@ if PARAMS["preprocessors"]:
                SEQUENCEFILES_REGEX,
                r"processed.dir/%s\1.\g<suffix>" % preprocess_prefix)
     def processReads(infile, outfile):
-        '''process reads from .fastq files
-        .sra/csfasta not currently implemented
+        '''process reads from .fastq format files
         Tasks specified in PREPROCESSTOOLS are run in order
         '''
+        if ((infile.endswith(".csfasta.gz")
+             or infile.endswith(".csfasta.F3.gz")
+             or infile.endswith(".sra")
+             or infile.endswith(".export.txt.gz")
+             or infile.endswith(".fa.gz"))):
+            raise NotImplementedError('''preprocessing of ".sra", "csfasta" (solid)
+            ".export.txt.gz" or ".fa.gz" files is not currently implemented.
+            Infile: %(infile)s''' % locals())
+        else:
+            pass
+
         trimmomatic_options = PARAMS["trimmomatic_options"]
         if PARAMS["trimmomatic_adapter"]:
             adapter_options = " ILLUMINACLIP:%s:%s:%s:%s " % (
@@ -374,7 +384,7 @@ def full():
     pass
 
 
-@follows(buildFastQCSummaryBasicStatistics)
+@follows(processReads)
 def test():
     pass
 
