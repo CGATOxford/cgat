@@ -234,3 +234,9 @@ set_gene_to_transcript:
     outputs: [stdout]
     references: [hg19.small.sort_gene_set_gene_to_transcript.gtf.gz]
     options: --method=set-gene-to-transcript
+
+find_retained_introns:
+    stdin: ../data/hg19.chr19.gtf.gz
+    outputs: [stdout]
+    references: [retained_intron_test_out.gtf]
+    options: -m find-retained-introns -L /dev/null
