@@ -536,7 +536,7 @@ def mergeCoverage(infiles, outfile):
            add_inputs(make1basedCpgIslands),
            "_meth_cpgi.tsv")
 def addCpGIs(infiles, outfile):
-    infile, CpGI_load, CpGI = infiles
+    infile, CpGI = infiles
     # memory intensive!
     job_options = "-l mem_free=20G"
     job_threads = 2

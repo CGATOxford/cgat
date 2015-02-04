@@ -528,7 +528,7 @@ def loadTagData(tags_filename, design_filename):
 
     E.info("loading tag data from %s" % tags_filename)
 
-    R('''counts_table = read.delim( '%(tags_filename)s',
+    R('''counts_table = read.table( '%(tags_filename)s',
     header = TRUE,
     row.names = 1,
     stringsAsFactors = TRUE,

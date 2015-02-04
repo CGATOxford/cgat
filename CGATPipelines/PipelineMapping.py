@@ -70,6 +70,7 @@ import CGAT.Fastq as Fastq
 import CGAT.IndexedFasta as IndexedFasta
 import CGATPipelines.PipelineGeneset as PipelineGeneset
 import pysam
+import CGAT.Sra as Sra
 
 SequenceInformation = collections.namedtuple("SequenceInformation",
                                              """paired_end
@@ -469,49 +470,13 @@ class Mapper(object):
             elif infile.endswith(".sra"):
                 # sneak preview to determine if paired end or single end
                 outdir = P.getTempDir()
-                # --split-files is present in fastq-dump 2.1.7
-                P.execute(
-                    """fastq-dump --split-files --gzip -X 1000
-                    --outdir %(outdir)s %(infile)s""" % locals())
-                # --split-files will create files called prefix_#.fastq.gz
-                # where # is the read number.
-                # The following cases are:
-
-                # * file cotains paired end data:
-                #      output = prefix_1.fastq.gz, prefix_2.fastq.gz
-                #
-                #    * special case: unpaired reads in a paired end
-                #                    run end up in prefix.fastq.gz
-                #    * special case: if paired reads are stored in
-                #                    a single read, fastq-dump will split.
-                #       There might be a joining sequence. The output
-                #                 would thus be:
-                #       prefix_1.fastq.gz, prefix_2.fastq.gz, prefix_3.fastq.gz
-                #
-                #      You want files 1 and 3.
-                f = sorted(glob.glob(os.path.join(outdir, "*.fastq.gz")))
-                ff = [os.path.basename(x) for x in f]
-                if len(f) == 1:
-                    # sra file contains one read: output = prefix.fastq.gz
-                    pass
-                elif len(f) == 2:
-                    # sra file contains read pairs: output = prefix_1.fastq.gz,
-                    # prefix_2.fastq.gz
-                    assert ff[0].endswith(
-                        "_1.fastq.gz") and ff[1].endswith("_2.fastq.gz")
-                elif len(f) == 3:
-                    if ff[2].endswith("_3.fastq.gz"):
-                        f = glob.glob(os.path.join(outdir, "*_[13].fastq.gz"))
-                    else:
-                        f = glob.glob(os.path.join(outdir, "*_[13].fastq.gz"))
+                f = Sra.sneak(infile, outdir)
                 E.info("sra file contains the following files: %s" % f)
                 shutil.rmtree(outdir)
                 fastqfiles.append(
                     ["%s/%s" % (tmpdir_fastq, os.path.basename(x))
                      for x in sorted(f)])
-                statement.append(
-                    """fastq-dump --split-files --gzip --outdir
-                    %(tmpdir_fastq)s %(infile)s""" % locals())
+                Sra.exract(infile, tmpdir_fastq)
 
             elif infile.endswith(".fastq.gz"):
                 format = Fastq.guessFormat(
@@ -1061,7 +1026,7 @@ class Bismark(Mapper):
 
         return statement
 
-    # Postprocessing can identify .sra input from the infiles, the use
+    # Postprocessing can identify .sra input from the infiles, then use
     # mapfiles to identify whether the input was single or paired end, then
     # remove reads with low CHH/CHG conversions (i.e more than one unconverted)
     # and rename the bismark outfile to fit ruffus expectations.
@@ -1077,17 +1042,18 @@ class Bismark(Mapper):
             awk -F" " '$14!~/^XM:Z:[zZhxUu\.]*[HX][zZhxUu\.]*[HX]/ ||
             $1=="@SQ" || $1=="@PG"' | samtools view -b - >
             %%(outdir)s/%(track)s.bam;
-            mv %(tmpdir_fastq)s/%(base)s.fastq.gz_SE_report.txt
-            %%(outdir)s/%(track)s_SE_report.txt;''' % locals()
+            mv %(tmpdir_fastq)s/%(base)s.fastq.gz_bismark_bt2_SE_report.txt
+            %%(outdir)s/%(track)s_bismark_bt2_SE_report.txt;''' % locals()
         elif infile.endswith(".fastq.1.gz"):
             statement = '''samtools view -h
             %(tmpdir_fastq)s/%(base)s.fastq.1.gz_bismark_bt2_pe.bam|
             awk -F" " '$14!~/^XM:Z:[zZhxUu\.]*[HX][zZhxUu\.]*[HX]/ ||
             $1=="@SQ" || $1=="@PG"' | samtools view -b - >
             %%(outdir)s/%(track)s.bam;
-            mv %(tmpdir_fastq)s/%(base)s.fastq.gz_PE_report.txt
-            %%(outdir)s/%(track)s_PE_report.txt;''' % locals()
+            mv %(tmpdir_fastq)s/%(base)s.fastq.gz_bismark_bt2_PE_report.txt
+            %%(outdir)s/%(track)s_bismark_bt2_SE_report.txt;''' % locals()
         elif infile.endswith(".sra"):
+            # this should use Sra module to identify single or paired end
             for mapfile in mapfiles:
                 mapfile = os.path.basename(mapfile[0])
                 if mapfile.endswith(".fastq.1.gz"):
@@ -1216,154 +1182,6 @@ class Butter(BWA):
     '''map reads against genome using Butter.
     '''
 
-    def preprocess(self, infiles, outfile):
-        '''build preprocessing statement
-
-        Build a command line statement that extracts/converts
-        various input formats to fastq formatted files.
-
-        Mapping qualities are changed to solexa format.
-
-        returns the statement and the fastq files to map.
-        '''
-
-        assert len(infiles) > 0, "no input files for mapping"
-
-        tmpdir_fastq = P.getTempDir()
-
-        # create temporary directory again for nodes
-        statement = ["mkdir -p %s" % tmpdir_fastq]
-        fastqfiles = []
-
-        # get track by extension of outfile
-        track = os.path.splitext(os.path.basename(outfile))[0]
-
-        for infile in infiles:
-
-            if infile.endswith(".export.txt.gz"):
-                # single end illumina export
-                statement.append("""gunzip < %(infile)s
-                | awk '$11 != "QC" || $10 ~ /(\d+):(\d+):(\d+)/ \
-                {if ($1 != "")
-                {readname=sprintf("%%%%s_%%%%s:%%%%s:%%%%s:%%%%s:%%%%s",
-                $1, $2, $3, $4, $5, $6);}
-                else {readname=sprintf("%%%%s:%%%%s:%%%%s:%%%%s:%%%%s",
-                $1, $3, $4, $5, $6);}
-                printf("@%%%%s\\n%%%%s\\n+\\n%%%%s\\n",readname,$9,$10);}'
-                > %(tmpdir_fastq)s/%(track)s.fastq""" % locals())
-                fastqfiles.append(
-                    ("%s/%s.fastq%s" % (tmpdir_fastq, track, extension),))
-            elif infile.endswith(".fa.gz"):
-                statement.append(
-                    '''gunzip < %(infile)s > %(tmpdir_fastq)s/%(track)s.fa
-                    ''' % locals())
-                fastqfiles.append(("%s/%s.fa" % (tmpdir_fastq, track),))
-                self.datatype = "fasta"
-
-            elif infile.endswith(".sra"):
-                # sneak preview to determine if paired end or single end
-                outdir = P.getTempDir()
-                # --split-files is present in fastq-dump 2.1.7
-                P.execute(
-                    """fastq-dump --split-files --gzip -X 1000
-                    --outdir %(outdir)s %(infile)s""" % locals())
-                # --split-files will create files called prefix_#.fastq.gz
-                # where # is the read number.
-                # The following cases are:
-
-                # * file cotains paired end data:
-                #      output = prefix_1.fastq.gz, prefix_2.fastq.gz
-                #
-                #    * special case: unpaired reads in a paired end
-                #                    run end up in prefix.fastq.gz
-                #    * special case: if paired reads are stored in
-                #                    a single read, fastq-dump will split.
-                #       There might be a joining sequence. The output
-                #                 would thus be:
-                #       prefix_1.fastq.gz, prefix_2.fastq.gz, prefix_3.fastq.gz
-                #
-                #      You want files 1 and 3.
-                f = sorted(glob.glob(os.path.join(outdir, "*.fastq.gz")))
-                ff = [os.path.basename(x) for x in f]
-                if len(f) == 1:
-                    # sra file contains one read: output = prefix.fastq.gz
-                    pass
-                elif len(f) == 2:
-                    raise ValueError(
-                        "Butter does not support paired end reads ")
-                E.info("sra file contains the following files: %s" % f)
-                shutil.rmtree(outdir)
-                fastqfiles.append(
-                    ["%s/%s" % (tmpdir_fastq, os.path.basename(x))
-                     for x in sorted(f)])
-                statement.append(
-                    """fastq-dump --split-files --outdir
-                    %(tmpdir_fastq)s %(infile)s""" % locals())
-
-            elif infile.endswith(".fastq.gz"):
-                format = Fastq.guessFormat(
-                    IOTools.openFile(infile, "r"), raises=False)
-                if 'sanger' not in format and self.convert:
-                    statement.append("""gunzip < %(infile)s
-                    | python %%(scriptsdir)s/fastq2fastq.py
-                    --method=change-format --target-format=sanger
-                    --guess-format=phred64
-                    --log=%(outfile)s.log
-                    > %(tmpdir_fastq)s/%(track)s.fastq""" %
-                                     locals())
-                else:
-                    statement.append("""gunzip < %(infile)s
-                    > %(tmpdir_fastq)s/%(track)s.fastq""" %
-                                     locals())
-                    E.debug("%s: assuming quality score format %s" %
-                            (infile, format))
-                fastqfiles.append(("%s/%s.fastq" % (tmpdir_fastq, track),))
-
-            elif infile.endswith(".csfasta.gz"):
-                # single end SOLiD data
-                if self.preserve_colourspace:
-                    quality = P.snip(infile, ".csfasta.gz") + ".qual.gz"
-                    if not os.path.exists(quality):
-                        raise ValueError("no quality file for %s" % infile)
-                    statement.append("""gunzip < %(infile)s
-                    > %(tmpdir_fastq)s/%(track)s.csfasta""" %
-                                     locals())
-                    statement.append("""gunzip < %(quality)s
-                    > %(tmpdir_fastq)s/%(track)s.qual""" %
-                                     locals())
-                    fastqfiles.append(("%s/%s.csfasta" %
-                                       (tmpdir_fastq, track),
-                                       "%s/%s.qual" %
-                                       (tmpdir_fastq, track)))
-                    self.datatype = "solid"
-                else:
-                    quality = P.snip(infile, ".csfasta.gz") + ".qual.gz"
-
-                    statement.append("""solid2fastq
-                    <(gunzip < %(infile)s) <(gunzip < %(quality)s)
-                    > %(tmpdir_fastq)s/%(track)s.fastq""" %
-                                     locals())
-                    fastqfiles.append(
-                        ("%s/%s.fastq" % (tmpdir_fastq, track),))
-
-            elif infile.endswith(".csfasta.F3.gz"):
-                # paired end SOLiD data
-                raise ValueError(
-                    "Butter does not support paired end reads ")
-
-            elif infile.endswith(".fastq.1.gz"):
-                raise ValueError(
-                    "Butter does not support paired end reads ")
-
-            else:
-                raise NotImplementedError("unknown file format %s" % infile)
-
-        self.tmpdir_fastq = tmpdir_fastq
-
-        assert len(fastqfiles) > 0, "no fastq files for mapping"
-
-        return "; ".join(statement) + ";", fastqfiles
-
     def mapper(self, infiles, outfile):
         '''build mapping statement on infiles.'''
 
@@ -1388,7 +1206,6 @@ class Butter(BWA):
         if nfiles == 1:
             infiles = infiles[0][0]
             track_infile = ".".join(infiles.split(".")[:-1])
-# %(tmpdir)s/%(track)s.sam
 
             statement.append('''
             butter %%(butter_options)s
