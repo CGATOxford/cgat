@@ -323,10 +323,12 @@ class SAM(object):
         kwargs = {}
         # kwargs set to replicate excel SAM
         if use_excel_sam:
-            kwargs.update({"control":
-                           R('''samControl( lambda = 0.5, n.delta = %(ndelta)s ) ''' % locals()),
-                           "med": True,
-                           "var.equal": True})
+            kwargs.update(
+                {"control":
+                 R('''samControl( lambda = 0.5, n.delta = %(ndelta)s) ''' %
+                   locals()),
+                 "med": True,
+                 "var.equal": True})
         else:
             kwargs.update({"control":
                            R('''samControl( n.delta = %(ndelta)s ) ''' %
@@ -719,32 +721,35 @@ def plotPCA(groups=True):
         if nlevels > 2:
             R('''shape=mm[,2]''')
 
-    R('''p1 = ggplot(
-    as.data.frame(pca$x),
-    aes(x=PC1, y=PC2,
-    colour=colour,
-    shape=shape,
-    label=rownames(pca$x))) \
-    + geom_text(size=4, vjust=1) \
-    + geom_point()''')
-    R('''p2 = qplot(x=PC1, y=PC3,
-    data = as.data.frame(pca$x),
-    label=rownames(pca$x),
-    shape=shape,
-    colour=colour)''')
-    R('''p3 = qplot(x=PC2, y=PC3,
-    data = as.data.frame(pca$x),
-    label=rownames(pca$x),
-    shape=shape,
-    colour=colour)''')
-    # TODO: plot all in a multi-plot with proper scale
-    # the following squishes the plots
-    # R('''source('%s')''' %
-    #   os.path.join(os.path.dirname(E.__file__),
-    #                "../R",
-    #                "multiplot.R"))
-    # R('''multiplot(p1, p2, p3, cols=2)''')
-    R('''plot(p1)''')
+    try:
+        R('''p1 = ggplot(
+        as.data.frame(pca$x),
+        aes(x=PC1, y=PC2,
+        colour=colour,
+        shape=shape,
+        label=rownames(pca$x))) \
+        + geom_text(size=4, vjust=1) \
+        + geom_point()''')
+        R('''p2 = qplot(x=PC1, y=PC3,
+        data = as.data.frame(pca$x),
+        label=rownames(pca$x),
+        shape=shape,
+        colour=colour)''')
+        R('''p3 = qplot(x=PC2, y=PC3,
+        data = as.data.frame(pca$x),
+        label=rownames(pca$x),
+        shape=shape,
+        colour=colour)''')
+        # TODO: plot all in a multi-plot with proper scale
+        # the following squishes the plots
+        # R('''source('%s')''' %
+        #   os.path.join(os.path.dirname(E.__file__),
+        #                "../R",
+        #                "multiplot.R"))
+        # R('''multiplot(p1, p2, p3, cols=2)''')
+        R('''plot(p1)''')
+    except rpy2.rinterface.RRuntimeError, msg:
+        E.warn("could not plot in plotPCA(): %s" % msg)
 
 
 def runEdgeR(outfile,
