@@ -98,12 +98,9 @@ def getSequencingInformation(track):
                                       colour))
 
 
-class MasterProcessor(Mapping.Mapper):
+class MasterProcessor():
 
     '''Processes reads with tools specified.
-    inherits from PipelineMapping Mapper class as
-    converts the input data, calls processing tools
-
     All in a single statement to be send to the cluster.
     '''
 
@@ -152,7 +149,7 @@ class MasterProcessor(Mapping.Mapper):
             return filename
 
     def process(self, infile, list_of_preprocessers, outfile,
-                compress=False, save=True):
+                f_format, compress=False, save=True):
         '''build processing statement on infiles.  list of processing
         tools is used to build a command line statement in list order'''
 
@@ -162,7 +159,6 @@ class MasterProcessor(Mapping.Mapper):
         file_compress = compress
         save_intermediates = save
         first = 1
-        f_format = ""
         num_files = ""
         # initiate a dummy processer object with no prefix to summarise
         # the initial input files
@@ -257,19 +253,19 @@ class MasterProcessor(Mapping.Mapper):
 
     def build(self, infile, outfile, processer_list):
         '''run mapper.'''
-        cmd_preprocess, raw_file = self.preprocess(infile, outfile)
-        raw_file = raw_file[0]
+
+        f_format = Fastq.guessFormat(
+            IOTools.openFile(infile[0], "r"), raises=False)
+
         cmd_process, cmd_post, processed_files = self.process(
-            raw_file, processer_list, outfile, save=self.save)
+            infile, processer_list, outfile, f_format, save=self.save)
         cmd_clean = self.cleanup(outfile)
 
-        assert cmd_preprocess.strip().endswith(";")
         assert cmd_process.strip().endswith(";")
         assert cmd_post.strip().endswith(";")
         assert cmd_clean.strip().endswith(";")
 
-        statement = " checkpoint; ".join((cmd_preprocess,
-                                          cmd_process,
+        statement = " checkpoint; ".join((cmd_process,
                                           cmd_post,
                                           cmd_clean))
         return statement
@@ -303,8 +299,7 @@ class process_tool(object):
             self.num_files = len(infiles)
         else:
             pass
-        # format of reads set to "Sanger" prior to this step
-        self.offset = Fastq.getOffset(["sanger"], raises=False)
+        self.offset = Fastq.getOffset(self.f_format, raises=False)
 
     def process(self, infiles):
         return ("", infiles)
@@ -403,7 +398,7 @@ class sickle(process_tool):
         offset = self.offset
         outdir = self.outdir
         processing_options = self.processing_options
-        rRANGES = {33: 'sanger', 64: 'illumina-1.8', 59: 'solexa'}
+        rRANGES = {33: 'sanger', 64: 'illumina', 59: 'solexa'}
         quality = rRANGES[offset]
 
         if self.num_files == 1:
