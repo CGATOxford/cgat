@@ -16,7 +16,7 @@ might contain single end or paired end data or both).
 
 The module currently provides modules to perform:
     * hard-trimming (fastx_trimmer, trimmomatic)
-    * adapter trimming (trimgalore, trimmomatic)
+    * adapter trimming (trimgalore, trimmomatic, cutadapt)
     * read end quality trimming (trimgalore, trimmomatic)
     * sliding window quality trimming (sickle, trimmomatic)
     * RRBS-specific trimming (trimgalore)
@@ -25,9 +25,9 @@ It has been tested with:
    * .fastq: paired-end and single-end
 
 
+
 To do
 =====
-Check this will work with .sra files
 How to deal with flash?
 e.g this is the only tool that doesn't do one-to-one processing
 
@@ -53,10 +53,6 @@ SequenceInformation = collections.namedtuple("SequenceInformation",
                                                  readlength_first
                                                  readlength_second
                                                  is_colour""")
-
-
-def makeSecond(file1):
-    return(re.sub(".fastq.1.gz", ".fastq.2.gz", file1))
 
 
 def getReadLengthFromFastq(filename):
@@ -170,6 +166,8 @@ class MasterProcessor(Mapping.Mapper):
         num_files = ""
         # initiate a dummy processer object with no prefix to summarise
         # the initial input files
+        # this can probably be removed now summarising
+        # is being done with fastqc?
         initial_processer_object = process_tool(
             compress=file_compress, save=save_intermediates,
             final=0, f_format=f_format, num_files=num_files,
@@ -301,23 +299,12 @@ class process_tool(object):
             self.outdir = outdir
 
     def setfastqAttr(self, infiles):
-
         if self.first:
             self.num_files = len(infiles)
-
-        if self.num_files == 1:
-            infile1 = infiles[0]
-        elif self.num_files == 2:
-            infile1, infile2 = infiles
-
-        if self.first:
-            self.f_format = Fastq.guessFormat(IOTools.openFile(infile1),
-                                              raises=False)
-            E.info("%s: format guess: %s" % (infile1, self.f_format))
         else:
-            E.info("%s: format set as previous: %s" % (
-                infile1, self.f_format))
-        self.offset = Fastq.getOffset(self.f_format, raises=False)
+            pass
+        # format of reads set to "Sanger" prior to this step
+        self.offset = Fastq.getOffset(["sanger"], raises=False)
 
     def process(self, infiles):
         return ("", infiles)
@@ -391,7 +378,7 @@ class trimgalore(process_tool):
         elif self.num_files == 2:
             infile1, infile2 = infiles
             track1 = os.path.basename(infile1)
-            track2 = P.snip(track1, ".fastq.1.gz") + ".fastq.2.gz"
+            track2 = os.path.basename(infile2)
             outfile1 = "%(outdir)s/%(prefix)s%(track1)s" % locals()
             outfile2 = "%(outdir)s/%(prefix)s%(track2)s" % locals()
             logfile = "log.dir/%(track1)s_trim_galore.log" % locals()
@@ -436,7 +423,7 @@ class sickle(process_tool):
         elif self.num_files == 2:
             infile1, infile2 = infiles
             track1 = os.path.basename(infile1)
-            track2 = P.snip(track1, ".fastq.1.gz") + ".fastq.2.gz"
+            track2 = os.path.basename(infile2)
             outfile1 = "%(outdir)s/%(prefix)s%(track1)s" % locals()
             outfile2 = "%(outdir)s/%(prefix)s%(track2)s" % locals()
             logfile = "log.dir/%(track1)s_sickle.log" % locals()
@@ -448,6 +435,9 @@ class sickle(process_tool):
                      2>>%(logfile)s
                      ;''' % locals()
             outfiles = (outfile1, outfile2)
+
+        else:
+            raise ValueError("unexpected number of files: %s" % self.num_files)
 
         return cmd, outfiles
 
@@ -476,7 +466,7 @@ class trimmomatic(process_tool):
         elif self.num_files == 2:
             infile1, infile2 = infiles
             track1 = os.path.basename(infile1)
-            track2 = re.sub(".fastq.1.gz", ".fastq.2.gz", track1)
+            track2 = os.path.basename(infile2)
             logfile = "log.dir/%(track1)s_trimmomatic.log" % locals()
             outfile1 = "%(outdir)s/%(prefix)s%(track1)s" % locals()
             outfile2 = "%(outdir)s/%(prefix)s%(track2)s" % locals()
@@ -530,7 +520,7 @@ class flash(process_tool):
         if self.num_files == 2:
             infile1, infile2 = infiles
             track1 = os.path.basename(infile1)
-            track2 = makeSecond(track1)
+            track2 = os.path.basename(infile2)
             base_track = P.snip(track1, ".fastq.1.gz")
             track1_single = re.sub(".fastq.1.gz", ".fastq.gz", track1)
             outfile_single = ("%(outdir)s/%(prefix)s%(track1_single)s"
