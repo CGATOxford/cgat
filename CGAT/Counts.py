@@ -294,25 +294,35 @@ def shuffleRows(df, i_bins, c_bins, tracks_map,  groups,
                 prng = np.random.RandomState(seed + 1)
                 group2_rand = prng.permutation(df.index)
             else:
+                # remute the df index axes to get a random row order
                 group1_rand = np.random.permutation(df.index)
                 group2_rand = np.random.permutation(df.index)
 
+            # subset the dataframe rows in the first random order
+            # and by the column_ids in the first group
+            # and return means across columns. Repeat for group2
             group1_mean = df.ix[group1_rand,
                                 tracks_map[groups[0]]].apply(
                                     np.mean, axis=1).tolist()
             group2_mean = df.ix[group2_rand,
                                 tracks_map[groups[1]]].apply(
                                     np.mean, axis=1).tolist()
-
+            
+            # retrieve the index for the bin in which each index value falls
             change_idx, initial_idx = means2idxarrays(
                 group1_mean, group2_mean, i_bins, c_bins, difference)
-
+            
+            # for each initial and change value co-ordinate
             for idx, coord in enumerate(zip(initial_idx, change_idx)):
                 if coord in indices.keys():
+                    # if max fill of bin not reached
                     if counts[coord] < s_max:
                         counts[coord] += 1
+                        # ...append tuple of df indeces for groups
                         indices[coord].append((group1_rand[idx],
                                                group2_rand[idx]))
+
+            # find the minimum value in the counts array
             min_occup = min(counts.flatten())
 
     E.info("The largest bin has %i entries" % max(counts.flatten()))
