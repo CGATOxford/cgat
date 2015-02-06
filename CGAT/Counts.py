@@ -307,11 +307,11 @@ def shuffleRows(df, i_bins, c_bins, tracks_map,  groups,
             group2_mean = df.ix[group2_rand,
                                 tracks_map[groups[1]]].apply(
                                     np.mean, axis=1).tolist()
-            
+
             # retrieve the index for the bin in which each index value falls
             change_idx, initial_idx = means2idxarrays(
                 group1_mean, group2_mean, i_bins, c_bins, difference)
-            
+
             # for each initial and change value co-ordinate
             for idx, coord in enumerate(zip(initial_idx, change_idx)):
                 if coord in indices.keys():
