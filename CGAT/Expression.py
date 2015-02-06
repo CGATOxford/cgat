@@ -2229,7 +2229,7 @@ def loadTagDataPandas(tags_filename, design_filename):
     E.info("loading tag data from %s" % tags_filename)
 
     inf = IOTools.openFile(tags_filename)
-    counts_table = pandas.read_csv(inf, sep="\t", index_col=0)
+    counts_table = pandas.read_csv(inf, sep="\t", index_col=0, comment="#")
     inf.close()
 
     E.info("read data: %i observations for %i samples" % counts_table.shape)
@@ -2307,8 +2307,8 @@ def filterTagDataPandas(counts_table,
         take = sum_counts > sum_counts.quantile(percentile)
         E.info("percentile filtering at level %f: keep=%i, discard=%i" %
                (filter_percentile_rowsums,
-                sum(take is True),
-                sum(take=False)))
+                sum(take),
+                len(take) - sum(take)))
         counts_table = counts_table[take]
 
     return counts_table
