@@ -218,8 +218,12 @@ def means2idxarrays(g1, g2, i_bins, c_bins, difference):
 
     # note this currently returns a bin number for values
     # which fall outside of the bin. This is unwanted behaviour!
+    # one solution would be to make one more bin than required and
+    # throw it away at the end
 
     if difference == "relative":
+        # calculate difference between mean values for group1 and group2
+        # g1 and g2 always the same length
         change = [g2[x] - g1[x] for x in range(0, len(g1))]
         initial = g1
     elif difference == "logfold":
@@ -227,6 +231,8 @@ def means2idxarrays(g1, g2, i_bins, c_bins, difference):
                   for x in range(0, len(g1))]
         initial = [np.log2(g1[x]+1.0) for x in range(0, len(g1))]
 
+    # return arrays of len(change) with the index position in c_bins
+    # corresponding to the bin in which the value of change falls
     change_idx = np.digitize(change, c_bins)
     initial_idx = np.digitize(initial, i_bins)
 
@@ -413,7 +419,6 @@ def outputSpikes(df, id_column, indices, tracks_map, groups,
         keep_cols = printHeader(id_column, groups)
     elif spike_type == "cluster":
         keep_cols = printHeader(["contig", "position"], groups)
-
     if method == "append":
         df = df.ix[:, keep_cols]
         df.to_csv(sys.stdout, index=False, header=False, sep="\t",

@@ -431,6 +431,9 @@ def main(argv=None):
         initial_bins = np.arange(options.min_ibin, options.max_ibin,
                                  options.width_ibin)
 
+        E.info("Column boundaries are: %s" % str(change_bins))
+        E.info("Row boundaries are: %s" % str(initial_bins))
+
         # shuffle rows/clusters
         if options.spike_type == "cluster":
             E.info("looking for clusters...")
