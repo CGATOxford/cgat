@@ -121,12 +121,13 @@ def means2idxarrays(g1, g2, i_bins, c_bins, difference):
         change = [g2[x] - g1[x] for x in range(0, len(g1))]
         initial = g1
     elif difference == "logfold":
-        ## JJ bugfix list comprehension...
-        change = [np.log2((g2[x]+1.0) / (g1[x]+1.0)) for x in range(0, len(g1))]
+        # JJ bugfix list comprehension...
+        change = [np.log2((g2[x]+1.0) /
+                          (g1[x]+1.0)) for x in range(0, len(g1))]
         initial = [np.log2(g1[x]+1.0) for x in range(0, len(g1))]
 
-    # Returns an array of len(change) with the index position in c_bins corresponding
-    # to the bin in which that value of change falls. 
+    # Returns an array of len(change) with the index position in c_bins
+    # corresponding to the bin in which that value of change falls.
     change_idx = np.digitize(change, c_bins)
     initial_idx = np.digitize(initial, i_bins)
 
@@ -242,7 +243,7 @@ def shuffleRows(df, i_bins, c_bins, tracks_map,  groups,
                for key1 in np.digitize(i_bins, i_bins)
                for key2 in np.digitize(c_bins, c_bins)}
     # JJ
-    #E.info(indices)
+    # E.info(indices)
 
     # find min value in the counts ndarray
     min_occup = min(counts.flatten())
@@ -257,11 +258,11 @@ def shuffleRows(df, i_bins, c_bins, tracks_map,  groups,
 
             # subset the dataframe rows in the first random row order
             # subset the dataframe columns_ids in first group
-            # return a list of the means across columns in the random order. 
+            # return a list of the means across columns in the random order.
             group1_mean = df.ix[group1_rand,
                                 tracks_map[groups[0]]].apply(
                                     np.mean, axis=1).tolist()
-            # JJ 
+            # JJ
             # E.info( group1_mean )
 
             # same for second random order and column Ids in second group.
@@ -269,19 +270,19 @@ def shuffleRows(df, i_bins, c_bins, tracks_map,  groups,
                                 tracks_map[groups[1]]].apply(
                                     np.mean, axis=1).tolist()
 
-            # JJ 
+            # JJ
             # E.info( group2_mean )
 
-            # retrieve the index for the bin in which each of the index 
+            # retrieve the index for the bin in which each of the index
             # values falls.
             change_idx, initial_idx = means2idxarrays(
                 group1_mean, group2_mean, i_bins, c_bins, difference)
-            
+
             # JJ
-#            E.info( change_idx )
+            # E.info( change_idx )
             # E.info( initial_idx )
             # E.info( initial_idx.__class__ )
-            E.info( "Max %s" % str(initial_idx.max()) )
+            E.info("Max %s" % str(initial_idx.max()))
 
             # for each of the initial and change values co-ordinates...
             for idx, coord in enumerate(zip(initial_idx, change_idx)):
@@ -289,15 +290,15 @@ def shuffleRows(df, i_bins, c_bins, tracks_map,  groups,
                 if coord in indices.keys():
                     if counts[coord] < s_max:
                         counts[coord] += 1
-                        # ...append tuple of the expression values for each group.
+                        # ...append tuple of the expression val for each group
                         indices[coord].append((group1_rand[idx],
                                                group2_rand[idx]))
             min_occup = min(counts.flatten())
 
     # JJ
     E.info("Final count table:")
-    E.info( counts )
-    #E.info( indices )
+    E.info(counts)
+    # E.info( indices )
 
     return indices, counts
 
@@ -447,7 +448,7 @@ def main(argv=None):
     parser.add_option("-r", "--iterations", dest="iterations", type="int",
                       help="number of iterations [default=%default].")
 
-    parser.add_option("-a", "--id_columns", dest="id", action="append", # JJ is actually id_column
+    parser.add_option("-a", "--id_columns", dest="id", action="append",  # JJ is actually id_column
                       help="name of identification column(s)\
                       [default=%default].")
 
@@ -538,8 +539,8 @@ def main(argv=None):
         # THEREFORE MOVED
         df_sort = df.sort(columns=["contig", "position"])
         df_sort.set_index(df.index, inplace=True)
-        #print df_sort.head()
-    else: 
+        # print df_sort.head()
+    else:
         df_sort = df
 
     if not options.design_file:
@@ -582,15 +583,14 @@ def main(argv=None):
 
     change_bins = np.arange(options.min_cbin, options.max_cbin,
                             options.width_cbin)
-    #JJ
-    E.info("Column boundaries are: %s" % str( change_bins ))
-
+    # JJ
+    E.info("Column boundaries are: %s" % str(change_bins))
 
     initial_bins = np.arange(options.min_ibin, options.max_ibin,
                              options.width_ibin)
 
-    # JJ 
-    E.info("Row boundaries are: %s" % str( initial_bins ))
+    # JJ
+    E.info("Row boundaries are: %s" % str(initial_bins))
 
     if options.spike_type == "cluster":
         E.info("looking for clusters...")
