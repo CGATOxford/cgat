@@ -161,12 +161,16 @@ def pandasMerge(infile1, infile2, outfile, merge_type, left, right,
     left and right are the columns to merge on'''
 
     def pandasRead(infile):
-        return pd.io.parsers.read_csv(infile, sep=delim, comment=com)
+        return pd.read_csv(infile, sep=delim, comment=com)
 
     df1 = pandasRead(infile1)
+    df1.set_index(left, drop=False, append=False, inplace=True)
+
     df2 = pandasRead(infile2)
-    merged = df1.merge(df2, how=merge_type, left_on=left,
-                       right_on=right, sort=False)
+    df2.set_index(right, drop=False, append=False, inplace=True)
+
+    merged = df1.merge(df2, how=merge_type,
+                       left_index=True, right_index=True)
     merged.to_csv(outfile, sep="\t", index=False, na_rep="NA")
 
 
