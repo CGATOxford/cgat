@@ -537,9 +537,9 @@ def mergeCoverage(infiles, outfile):
            "_meth_cpgi.tsv")
 def addCpGIs(infiles, outfile):
     infile, CpGI = infiles
-    # memory intensive!
-    job_options = "-l mem_free=20G"
-    job_threads = 2
+    # still memory intensive even after supplying data types for all columns!
+    job_options = "-l mem_free=30G"
+    job_threads = 1
 
     RRBS.pandasMerge(infile, CpGI, outfile, merge_type="left",
                      left=['contig', 'position'],
@@ -547,6 +547,7 @@ def addCpGIs(infiles, outfile):
                      submit=True, job_options=job_options)
 
 
+# not currently in target full as table never queried from csvdb
 @transform(addCpGIs,
            suffix(".tsv"),
            ".load")
@@ -755,7 +756,7 @@ def subsetCpGsToCovered(infile, outfile):
     job_options = "-l mem_free=48G"
 
     RRBS.subsetToCovered(infile, outfile,
-                         submit=True, jobOptions=job_options)
+                         submit=True, job_options=job_options)
 
 
 @transform(subsetCpGsToCovered,
@@ -1059,7 +1060,6 @@ def startSummary():
          sortAndIndexBams,
          makeCpgIslandsBed,
          make1basedCpgIslands,
-         loadMergeCoverage,
          makeSummaryPlots,
          mergeCoverage,
          plotReadBias,
