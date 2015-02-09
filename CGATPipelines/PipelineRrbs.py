@@ -170,10 +170,10 @@ def pandasMerge(infile1, infile2, outfile, merge_type, left, right,
         dtype_dict = {}
 
         for column in columns:
-            if (column.endswith("-unmeth")
-                or column.endswith("-meth")
-                or column.endswith("-perc")
-                or column == "read_position"):
+            if ((column.endswith("-unmeth")
+                 or column.endswith("-meth")
+                 or column.endswith("-perc")
+                 or column == "read_position")):
                 dtype_dict[column] = float
             elif (column == "strand"
                   or column == "contig"
