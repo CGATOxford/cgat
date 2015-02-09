@@ -580,6 +580,7 @@ class trimmomatic(process_tool):
         outdir = self.outdir
         threads = self.threads
         processing_options = self.processing_options
+        adapter_file = self.adapters
         if self.num_files == 1:
             infile = infiles[0]
             track = os.path.basename(infile)

@@ -293,9 +293,16 @@ if PARAMS["preprocessors"]:
         Tasks specified in PREPROCESSTOOLS are run in order
         '''
         trimmomatic_options = PARAMS["trimmomatic_options"]
-        if PARAMS["trimmomatic_adapter"]:
+        # NB: adapter_file overrides trimmomatic_adapter
+
+        if PARAMS["adapter_file"] or PARAMS["trimmomatic_adapter"]:
+            if PARAMS["adapter_file"]:
+                adapter_file = PARAMS["adapter_file"]
+            else:
+                adapter_file = PARAMS["trimmomatic_adapter"]
+
             adapter_options = " ILLUMINACLIP:%s:%s:%s:%s " % (
-                PARAMS["trimmomatic_adapter"],
+                adapter_file,
                 PARAMS["trimmomatic_mismatches"],
                 PARAMS["trimmomatic_p_thresh"], PARAMS["trimmomatic_c_thresh"])
             trimmomatic_options = adapter_options + trimmomatic_options
@@ -314,6 +321,7 @@ if PARAMS["preprocessors"]:
             fastx_trimmer_options=PARAMS["fastx_trimmer_options"],
             cutadapt_options=PARAMS["cutadapt_options"],
             adapter_file=PARAMS['adapter_file'])
+
         statement = m.build((infile,), outfile, PREPROCESSTOOLS)
         P.run()
 
