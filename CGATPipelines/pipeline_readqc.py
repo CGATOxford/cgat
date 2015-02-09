@@ -275,7 +275,7 @@ if PARAMS["preprocessors"]:
             flash_options=PARAMS["flash_options"],
             fastx_trimmer_options=PARAMS["fastx_trimmer_options"],
             cutadapt_options=PARAMS["cutadapt_options"])
-        statement = m.build((infile,), outfile, PREPROCESSTOOLS)
+        statement = m.build(infile, outfile, PREPROCESSTOOLS)
         P.run()
 
     @follows(runFastqc)
