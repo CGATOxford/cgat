@@ -1,0 +1,25 @@
+
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+filtering:
+    stdin: counts_small.tsv.gz
+    outputs: [stdout]
+    references: [counts_filtered.tsv]
+    options: --design-tsv-file=<DIR>/design.tsv --filter-min-counts-per-row=1000 --filter-min-counts-per-sample=400000 --filter-percentile-rowsums=25 -v0
+
+spikeRowsFoldChange:
+    stdin: counts_small.tsv.gz
+    outputs: [stdout]
+    references: [counts_rowspikes_logfold.tsv]
+    options: --design-tsv-file=<DIR>/design.tsv --method="spike" --spike-type="row" --spike-maximum=1 --spike-change-bin-width=1 --spike-initial-bin-width=10 --spike-change-bin-max=10 --spike-initial-bin-max=10 --seed=1 -v0
+
+spikeRowsRelative:
+    stdin: counts_small.tsv.gz
+    outputs: [stdout]
+    references: [counts_rowspikes_relative.tsv]
+    options: --design-tsv-file=<DIR>/design.tsv --method="spike" --spike-type="row" --spike-maximum=1 --spike-change-bin-width=100 --spike-initial-bin-width=10 --spike-change-bin-max=10000 --spike-initial-bin-max=10 --difference-method=relative --seed=1 -v0
+

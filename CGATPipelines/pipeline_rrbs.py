@@ -810,14 +810,19 @@ def generateClusterSpikeIns(infile, outfile):
     job_options = "-l mem_free=4G"
 
     statement = '''cat %(infile)s |
-    python %%(scriptsdir)s/data2spike.py --design-file-tsv=design.tsv
-    --shuffle-column-suffix=-perc --keep-column-suffix=-meth,-unmeth
-    --difference-method=relative --spike-minimum=100 --spike-maximum=100
-    --output-method=seperate --cluster-maximum-distance=150
-    --cluster-minimum-size=10 --iterations=50 --spike-type=cluster
-    --change-bin-min=-100 --change-bin-max=100 --change-bin-width=10
-    --initial-bin-min=0 --initial-bin-max=100 --initial-bin-width=100
-    --subcluster-min-size=1 --subcluster-max-size=9 --subcluster-bin-width=1
+    python %%(scriptsdir)s/data2spike.py --method=spike
+    --design-tsv-file=design.tsv --difference-method=relative
+    --spike-shuffle-column-suffix=-perc
+    --spike-keep-column-suffix=-meth,-unmeth
+    --spike-minimum=100 --spike-maximum=100
+    --spike-output-method=seperate
+    --spike-cluster-maximum-distance=150
+    --spike-cluster-minimum-size=10 --spike-iterations=50
+    --spike-type=cluster --spike-change-bin-min=-100
+    --spike-change-bin-max=100 --spike-change-bin-width=10
+    --spike-initial-bin-min=0 --spike-initial-bin-max=100
+    --spike-initial-bin-width=100 --spike-subcluster-min-size=1
+    --spike-subcluster-max-size=9 --spike-subcluster-bin-width=1
     > %(outfile)s_tmp; mv %(outfile)s_tmp %(outfile)s''' % locals()
     P.run()
 
