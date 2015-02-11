@@ -38,14 +38,11 @@ Code
 ----
 
 '''
-import CGAT.Pipeline as P
 import CGAT.Experiment as E
-import os
-import glob
 import CGAT.IOTools as IOTools
 import pandas as pd
-import re
 import numpy as np
+import numpy.ma as ma
 import copy
 import random
 import sys
@@ -484,3 +481,72 @@ def outputSpikes(df, id_column, indices, tracks_map, groups,
                                        header=False, sep="\t",
                                        dtype={'position': int})
                 n += 1
+
+
+def geometric_mean(array, axis=0):
+    '''return the geometric mean of an array removing all zero-values but
+    retaining total length
+    '''
+    non_zero = ma.masked_values(array, 0)
+    log_a = ma.log(non_zero)
+    return ma.exp(log_a.mean(axis=axis))
+
+
+def normalizeTagData(counts, method="deseq-size-factors"):
+    '''return a table with normalized count data.
+
+    Implemented methods are:
+
+    million-counts
+
+       Divide each value by the column total and multiply by 1,000,000
+
+    deseq-size-factors
+
+       Construct a "reference sample" by taking, for each row, the
+       geometric mean of the counts in all samples.
+
+       To get the sequencing depth of a column relative to the
+       reference, calculate for each row the quotient of the counts in
+       your column divided by the counts of the reference sample. Now
+       you have, for each row and column, an estimate of the depth
+       ratio.
+
+       Simply take the median of all the quotients in a column to get
+       the relative depth of the library.
+    
+       Divide all values in a column by the normalization factor.
+
+    This method returns the normalized counts and any normalization
+    factors that have been applied.
+
+    '''
+
+    if method == "deseq-size-factors":
+
+        # compute row-wise geometric means
+        geometric_means = geometric_mean(counts, axis=1)
+
+        # remove 0 geometric means
+        take = geometric_means > 0
+        geometric_means = geometric_means[take]
+        counts = counts[take]
+
+        normed = (counts.T / geometric_means).T
+
+        size_factors = normed.median(axis=0)
+
+        normed = counts / size_factors
+
+    elif method == "million-counts":
+        
+        size_factors = counts.sum(axis=0)
+        normed = counts * 1000000.0 / size_factors
+    else:
+        raise NotImplementedError(
+            "normalization method '%s' not implemented" % method)
+
+    # make sure we did not loose any rows or columns
+    assert normed.shape == counts.shape
+
+    return normed, size_factors
