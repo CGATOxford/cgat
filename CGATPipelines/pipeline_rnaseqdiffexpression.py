@@ -1131,6 +1131,44 @@ def loadEdgeRStats(infile, outfile):
     P.load(infile, outfile)
 
 
+###############################################################################
+# Run DESeq2
+###############################################################################
+
+
+@follows(mkdir("deseq2.dir"), counting)
+@product("design*.tsv",
+         formatter("(.*).tsv$"),
+         # (aggregateGeneLevelReadCounts,
+         aggregateFeatureCounts,
+         formatter("(.*).tsv.gz$"),
+         "deseq2.dir/{basename[0][0]}_vs_{basename[1][0]}.gz")
+def runDESeq2(infiles, outfile):
+    """
+    Perform differential expression analysis using DESeq2.
+    """
+
+    design_file, count_file = infiles
+    track = P.snip(outfile, ".tsv.gz")
+
+    statement = ("python %(scriptsdir)s/runExpression.py"
+                 " --method=deseq2"
+                 " --outfile=%(outfile)s"
+                 " --output-filename-pattern=%(track)s_"
+                 " --fdr=%(deseq2_fdr)f"
+                 " --tags-tsv-file=%(count_file)s"
+                 " --design-tsv-file=%(design_file)s"
+                 " --deseq2-design-formula=%(deseq2_model)s"
+                 " --deseq2-contrasts=%(deseq2_contrasts)s"
+                 " --filter-min-counts-per-row=%(tags_filter_min_counts_per_row)i"
+                 " --filter-min-counts-per-sample=%(tags_filter_min_counts_per_sample)i"
+                 " --filter-percentile-rowsums=%(deseq2_filter_percentile_rowsums)i"
+                 " > %(outfile)s.log")
+    P.run()
+
+###############################################################################
+
+
 @follows(loadCufflinks,
          loadCufflinksFPKM,
          loadGeneLevelReadCounts)
@@ -1139,7 +1177,8 @@ def expression():
 
 mapToTargets = {'cuffdiff': loadCuffdiffStats,
                 'deseq': loadDESeqStats,
-                'edger': loadEdgeRStats}
+                'edger': loadEdgeRStats,
+                'deseq2': runDESeq2}
 
 TARGETS_DIFFEXPRESSION = [mapToTargets[x] for x in
                           P.asList(PARAMS["methods"])]
@@ -1184,6 +1223,7 @@ def plotTagStats(infiles, outfile):
 mapToQCTargets = {'cuffdiff': runCuffdiff,
                   'deseq': runDESeq,
                   'edger': runEdgeR,
+                  'deseq2': None,
                   }
 QCTARGETS = [mapToQCTargets[x] for x in P.asList(PARAMS["methods"])]
 
