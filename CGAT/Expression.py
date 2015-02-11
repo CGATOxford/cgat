@@ -585,7 +585,7 @@ def filterTagData(filter_min_counts_per_row=1,
 
     # Remove windows with no data
     R('''max_counts = apply(countsTable,1,max)''')
-    R('''countsTable = countsTable[max_counts>%i,]''' %
+    R('''countsTable = countsTable[max_counts>=%i,]''' %
       filter_min_counts_per_row)
     E.info("removed %i empty rows" %
            tuple(R('''sum(max_counts == 0)''')))
