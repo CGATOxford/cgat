@@ -74,6 +74,9 @@ be performed. The design table has for columns::
       FM-CD4-R3       0       CD4     2
       FM-CD4-R4       0       CD4     2
 
+These files should be tab separated as this is enforced in downstream
+analyses and will cause the script to error.
+
 track
      name of track - should correspond to column header in the counts
      table.

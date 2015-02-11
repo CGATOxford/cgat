@@ -104,13 +104,10 @@ To run the example, simply unpack and untar::
 
 Requirements
 ==============
-+--------------------+---------------+---------------------------------+
-|*Program*           |*Version*      |*Purpose*                        |
-+--------------------+---------------+---------------------------------+
-|fastqc              |?              |read qc                          |
-+--------------------+---------------+---------------------------------+
-|sickle              |1.33           |Read trimming by quality score   |
-+--------------------+---------------+---------------------------------+
+
+* fastqc
+* sickle >= 1.33
+* cutadapt >= 1.7.1
 
 Code
 ====
@@ -130,6 +127,7 @@ from ruffus import *
 import sys
 import os
 import glob
+import sqlite3
 
 # import modules from the CGAT code collection
 import CGAT.Experiment as E
@@ -190,6 +188,18 @@ else:
     TISSUES = []
     CONDITIONS = []
     EXPERIMENTS = []
+#########################################################################
+#########################################################################
+#########################################################################
+
+
+def connect():
+    '''
+    Setup a connection to an sqlite database
+    '''
+
+    dbh = sqlite3.connect(PARAMS['database'])
+    return dbh
 
 #########################################################################
 #########################################################################
@@ -226,16 +236,54 @@ def loadFastqc(infile, outfile):
 
 #########################################################################
 # if preprocess tools are specified, process reads and run fastqc on output
-
-
 if PARAMS["preprocessors"]:
     PREPROCESSTOOLS = [tool for tool
                        in P.asList(PARAMS["preprocessors"])]
     preprocess_prefix = ("-".join(PREPROCESSTOOLS[::-1]) + "-")
 
+    if PARAMS["auto_remove"]:
+        @follows(loadFastqc,
+                 mkdir("fasta.dir"))
+        @transform(INPUT_FORMATS,
+                   SEQUENCEFILES_REGEX,
+                   r"fasta.dir/\1.fasta")
+        def makeAdaptorFasta(infile, outfile):
+            '''
+            Make a single fasta file for each sample of all contaminant adaptor
+            sequences for removal
+            '''
+            contams = PARAMS['contaminants']
+            PipelinePreprocess.makeAdaptorFasta(infile=infile,
+                                                dbh=connect(),
+                                                contaminants_file=contams,
+                                                outfile=outfile)
+
+        @follows(makeAdaptorFasta)
+        @collate(makeAdaptorFasta,
+                 regex("fasta.dir/(.+).fasta"),
+                 r"%s" % PARAMS['adapter_file'])
+        def aggregateAdaptors(infiles, outfile):
+            '''
+            Collate fasta files into a single contaminants file for
+            adapter removal.
+            '''
+
+            PipelinePreprocess.mergeAdaptorFasta(infiles, outfile)
+
+    else:
+        @follows(loadFastqc,
+                 mkdir("fasta.dir"))
+        @transform(INPUT_FORMATS,
+                   SEQUENCEFILES_REGEX,
+                   r"fasta.dir/\1.fasta")
+        def aggregateAdaptors(infile, outfile):
+
+            P.touch(outfile)
+
     @follows(mkdir("processed.dir"),
              mkdir("log.dir"),
-             mkdir("summary.dir"))
+             mkdir("summary.dir"),
+             aggregateAdaptors)
     @transform(INPUT_FORMATS,
                SEQUENCEFILES_REGEX,
                r"processed.dir/%s\1.\g<suffix>" % preprocess_prefix)
@@ -255,9 +303,16 @@ if PARAMS["preprocessors"]:
             pass
 
         trimmomatic_options = PARAMS["trimmomatic_options"]
-        if PARAMS["trimmomatic_adapter"]:
+        # NB: adapter_file overrides trimmomatic_adapter
+
+        if PARAMS["adapter_file"] or PARAMS["trimmomatic_adapter"]:
+            if PARAMS["adapter_file"]:
+                adapter_file = PARAMS["adapter_file"]
+            else:
+                adapter_file = PARAMS["trimmomatic_adapter"]
+
             adapter_options = " ILLUMINACLIP:%s:%s:%s:%s " % (
-                PARAMS["trimmomatic_adapter"],
+                adapter_file,
                 PARAMS["trimmomatic_mismatches"],
                 PARAMS["trimmomatic_p_thresh"], PARAMS["trimmomatic_c_thresh"])
             trimmomatic_options = adapter_options + trimmomatic_options
@@ -274,7 +329,9 @@ if PARAMS["preprocessors"]:
             sickle_options=PARAMS["sickle_options"],
             flash_options=PARAMS["flash_options"],
             fastx_trimmer_options=PARAMS["fastx_trimmer_options"],
-            cutadapt_options=PARAMS["cutadapt_options"])
+            cutadapt_options=PARAMS["cutadapt_options"],
+            adapter_file=PARAMS['adapter_file'])
+
         statement = m.build((infile,), outfile, PREPROCESSTOOLS)
         P.run()
 
@@ -313,7 +370,7 @@ else:
 
 #########################################################################
 
-@follows(runFastqcFinal, runFastqc)
+@follows(loadFastqcFinal, loadFastqc)
 # @merge(runFastqc, "status_summary.tsv.gz")
 @merge((runFastqcFinal, runFastqc), "status_summary.tsv.gz")
 def buildFastQCSummaryStatus(infiles, outfile):
@@ -324,7 +381,7 @@ def buildFastQCSummaryStatus(infiles, outfile):
 #########################################################################
 
 
-@follows(runFastqcFinal, runFastqc)
+@follows(loadFastqcFinal, loadFastqc)
 @merge((runFastqcFinal, runFastqc), "basic_statistics_summary.tsv.gz")
 def buildFastQCSummaryBasicStatistics(infiles, outfile):
     '''load fastqc summaries into a single table.'''
