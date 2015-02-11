@@ -78,9 +78,11 @@ import collections
 import itertools
 import re
 import pandas
+import pandas.rpy.common as com
 import ggplot
 
 from rpy2.robjects import r as R
+from rpy2.robjects import numpy2ri as rpyn
 import rpy2.robjects as ro
 import rpy2.robjects.numpy2ri
 
@@ -499,7 +501,7 @@ def loadTagData(tags_filename, design_filename):
     *Infile* is a tab-separated file with counts.
 
     *design_file* is a tab-separated file with the
-    experimental design with four columns::
+    experimental design with a minimum of four columns::
 
       track   include group   pair
       CW-CD14-R1      0       CD14    1
@@ -520,14 +522,20 @@ def loadTagData(tags_filename, design_filename):
     pair
         pair that sample belongs to (for paired tests)
 
+    Additional columns in design file are taken to contain levels for
+    additional factors and may be included for tests that allow multi-factor
+    model designs.
+
     This method creates various R objects:
 
     countsTable : data frame with counts.
     groups : vector with groups
     pairs  : vector with pairs
+    factors : df of additional factors for more complex model designs
 
     '''
 
+    # Load counts table
     E.info("loading tag data from %s" % tags_filename)
 
     R('''counts_table = read.table( '%(tags_filename)s',
@@ -564,7 +572,14 @@ def loadTagData(tags_filename, design_filename):
     R('''countsTable <- counts_table[ , includedSamples ]''')
     R('''groups <- factor(pheno2$group[ includedSamples ])''')
     R('''conds <- pheno2$group[ includedSamples ]''')
-    R('''pairs = factor(pheno2$pair[ includedSamples ])''')
+    R('''pairs <- factor(pheno2$pair[ includedSamples ])''')
+
+    # JJ if additional columns present, pass to 'factors'
+    R('''if (length(names(pheno2)) > 4) {
+           factors <- data.frame(pheno2[includedSamples,5:length(names(pheno2))])
+         } else {
+           factors <- NA
+         }''')
 
     E.info("filtered data: %i observations for %i samples" %
            tuple(R('''dim(countsTable)''')))
@@ -575,9 +590,9 @@ def filterTagData(filter_min_counts_per_row=1,
                   filter_percentile_rowsums=0):
     '''filter tag data.
 
-    * remove rows with at least x number of counts
+    * remove rows with fewer than x counts in most highly expressed sample
 
-    * remove samples with a maximum of *min_sample_counts*
+    * remove samples with fewer than x counts in most highly expressed row
 
     * remove the lowest percentile of rows in the table, sorted
        by total tags per row
@@ -585,7 +600,7 @@ def filterTagData(filter_min_counts_per_row=1,
 
     # Remove windows with no data
     R('''max_counts = apply(countsTable,1,max)''')
-    R('''countsTable = countsTable[max_counts>%i,]''' %
+    R('''countsTable = countsTable[max_counts>=%i,]''' %
       filter_min_counts_per_row)
     E.info("removed %i empty rows" %
            tuple(R('''sum(max_counts == 0)''')))
@@ -611,6 +626,8 @@ def filterTagData(filter_min_counts_per_row=1,
         R('''groups <- groups[max_counts >= %i]''' %
           filter_min_counts_per_sample)
         R('''pairs <- pairs[max_counts >= %i]''' %
+          filter_min_counts_per_sample)
+        R('''if (!is.na(factors)) {factors <- factors[max_counts >= %i,]}''' %
           filter_min_counts_per_sample)
         observations, samples = tuple(R('''dim(countsTable)'''))
 
@@ -640,6 +657,17 @@ def groupTagData(ref_group=None):
 
     groups = R('''levels(groups)''')
     pairs = R('''levels(pairs)''')
+    factors = R('''factors''')
+
+    # JJ - check whether there are additional factors in design file...
+    # warning... isintance(df, rpy.robjects.vectors.Vector) returns True
+    if isinstance(factors, rpy2.robjects.vectors.DataFrame):
+        E.warn("There are additional factors in design file that are ignored"
+               " by groupTagData: %s" % factors.r_repr())
+    else:
+        # Hack... must be a better way to evaluate r NA instance in python?
+        assert len(list(factors)) == 1 and bool(list(factors)[0]) is False, \
+            "factors must either be DataFrame or NA in R global namespace"
 
     # Test if replicates exist - at least one group must have multiple samples
     max_per_group = R('''max(table(groups)) ''')[0]
@@ -701,7 +729,7 @@ def plotPCA(groups=True):
     '''plot a PCA plot from countsTable using ggplot.
 
     If groups is *True*, the variable ``groups`` is
-    used for colouring. If *False*, the groups are 
+    used for colouring. If *False*, the groups are
     determined by sample labels.
     '''
     R('''suppressMessages(library(ggplot2))''')
@@ -1499,6 +1527,126 @@ def runDESeq(outfile,
 
     writeExpressionResults(outfile, all_results)
 
+
+def runDESeq2(outfile,
+              outfile_prefix="deseq2.",
+              fdr=0.1,
+              ref_group=None,
+              model=None,
+              contrasts=None
+              ):
+    """
+    Run DESeq2 on counts table.
+
+    If no model is passed, then defaults to the group column in design file
+
+    Does not make use of group tag data bc function doesn't accomodate
+    multi-factor designs
+
+    To Do: Parse results into standard output format.
+    """
+
+    # load libraries
+    R('''suppressMessages(library('DESeq2'))''')
+
+    # Create metadata... this will eventually be a pandas dataframe
+    if isinstance(R('''factors'''), rpy2.robjects.vectors.DataFrame):
+        E.info("DESeq2: Merging additional factors in design file to"
+               "create metadata table")
+        R('''mdata <- cbind(groups, factors)''')
+        mdata = tuple(R('''names(mdata)'''))
+    else:
+        R('''mdata <- data.frame(group=groups)''')
+        mdata = "group"
+    E.info("DESeq2 colData headers are: %s" % mdata)
+
+    R('''design="~ group"''')
+
+    # Check for model and that model terms are in metadata table
+    if model:
+        assert contrasts, "Must specifiy contrasts is model design provided"
+        terms = set([x for x in re.split("\W", model) if x != ''])
+        assert terms.issubset(mdata), \
+            "DESeq2: design formula has terms not present in colData"
+    else:
+        if mdata != "group":
+            E.warn("DESeq2 model specified, with no metadata in design file")
+        terms = ["group", ]
+        model = "~ group"
+    E.info("DESeq2 design formula is: %s" % model)
+
+    # Create DESeqDataSet, using countsTable, mdata, model
+    R('''dds <- DESeqDataSetFromMatrix(countData=countsTable,
+                                       colData=mdata,
+                                       design=%(model)s)''' % locals())
+    # WARNING: This is not done automatically
+    R('''colnames(dds) <- colnames(countsTable)''')
+    E.info("Combined colData, design formula and counts table to create"
+           " DESeqDataSet instance")
+
+    # Run DESeq2
+    R('''dds <- DESeq(dds)''')
+    E.info("Completed DESeq2 differential expression analysis")
+
+    # Extract contrasts...
+    if contrasts:
+        contrasts = (x.split(":") for x in contrasts.split(","))
+    else:
+        # created by loadTagData...
+        groups = R('''levels(groups)''')
+        contrasts = (("group",) + x for x in itertools.combinations(groups, 2))
+
+    df_final = pandas.DataFrame()
+    for combination in contrasts:
+        variable, control, treatment = combination
+
+        # Fetch results
+        gfix = "%s_%s_vs_%s_" % (variable, control, treatment)
+        outfile_groups_prefix = outfile_prefix + gfix + "MAplot.png"
+        R('''res <- results(dds, contrast=c("%(variable)s",
+                                            "%(treatment)s",
+                                            "%(control)s"))''' % locals())
+        E.info("Extracting contrast for levels %s (treatment) vs %s (control)"
+               " for factor %s" % (treatment, control, variable))
+
+        # plot MA plot
+        R('''png("%(outfile_groups_prefix)s")''' % locals())
+        R('''plotMA(res)''')
+        R('''dev.off()''')
+        E.info("Plotted MA plot for levels %s (treatment) vs %s (control)"
+               " for factor %s" % (treatment, control, variable))
+
+        # write data to outfile
+        res_df = R('''res_df <- as.data.frame(res)''')
+        df_out = com.load_data("res_df")
+        df_out["treatment"] = [treatment, ]*len(df_out.index)
+        df_out["control"] = [control, ]*len(df_out.index)
+        df_out["variable"] = [variable, ]*len(df_out.index)
+        df_out.to_csv(IOTools.openFile(outfile_groups_prefix + "tsv.gz", "w"),
+                      sep="\t",
+                      index_label="gene_id")
+        E.info("Extracted results table for contrast  '%s' (treatment) vs '%s'"
+               " (control) for factor '%s'" % (treatment, control, variable))
+
+        # append to final dataframe
+        df_out.reset_index(inplace=True)
+        df_out.rename(columns={"index": "gene_id"}, inplace=True)
+        df_final = df_final.append(df_out, ignore_index=True)
+
+    # Extract rlog transformed count data...
+    rld = R('''rld <- rlog(dds)''')
+    R('''saveRDS(rld, "Rlog.rds")''')
+
+    # Plot PCA of rlog transformed count data for top 500
+    for factor in terms:
+        outf = outfile_prefix + factor + "_PCAplot500.png"
+        R('''png("%s")''' % outf)
+        R('''plotPCA(rld, intgroup="%(factor)s")''' % locals())
+        R('''dev.off()''')
+
+    # write final dataframe
+    df_final.to_csv(IOTools.openFile(outfile, "w"), sep="\t", index=False)
+
 Design = collections.namedtuple("Design", ("include", "group", "pair"))
 
 
@@ -1510,7 +1658,7 @@ def readDesignFile(design_file):
         for line in inf:
             if line.startswith("track"):
                 continue
-            track, include, group, pair = line[:-1].split("\t")
+            track, include, group, pair = line.split("\t")[:4]
             if track in design:
                 raise ValueError("duplicate track '%s'" % track)
             design[track] = Design._make((int(include), group, pair))
@@ -2234,7 +2382,7 @@ def loadTagDataPandas(tags_filename, design_filename):
     E.info("loading tag data from %s" % tags_filename)
 
     inf = IOTools.openFile(tags_filename)
-    counts_table = pandas.read_csv(inf, sep="\t", index_col=0)
+    counts_table = pandas.read_csv(inf, sep="\t", index_col=0, comment="#")
     inf.close()
 
     E.info("read data: %i observations for %i samples" % counts_table.shape)
@@ -2312,8 +2460,8 @@ def filterTagDataPandas(counts_table,
         take = sum_counts > sum_counts.quantile(percentile)
         E.info("percentile filtering at level %f: keep=%i, discard=%i" %
                (filter_percentile_rowsums,
-                sum(take is True),
-                sum(take=False)))
+                sum(take),
+                len(take) - sum(take)))
         counts_table = counts_table[take]
 
     return counts_table

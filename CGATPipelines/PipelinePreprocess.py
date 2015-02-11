@@ -1,6 +1,6 @@
 '''
 PipelinePreprocess.py - Utility functions for processing short reads
-==============================================================
+====================================================================
 
 :Author: Tom smith
 :Release: $Id$
@@ -28,9 +28,9 @@ It has been tested with:
 
 To do
 =====
+
 How to deal with flash?
 e.g this is the only tool that doesn't do one-to-one processing
-
 
 Code
 ----
@@ -45,6 +45,7 @@ import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Fastq as Fastq
 import CGATPipelines.PipelineMapping as Mapping
+import pandas.io.sql as pdsql
 
 SequenceInformation = collections.namedtuple("SequenceInformation",
                                              """paired_end
@@ -67,6 +68,107 @@ def getReadLengthFromFastq(filename):
         record = iterate(infile).next()
         readlength = len(record.seq)
         return readlength
+
+
+def reverseComplement(sequence):
+    '''
+    Reverse complement a sequence
+    '''
+    sequence = sequence.upper()
+    rev_seq = ''
+    for nt in sequence:
+        if nt == 'A':
+            rev_seq += 'T'
+        elif nt == 'T':
+            rev_seq += 'A'
+        elif nt == 'C':
+            rev_seq += 'G'
+        elif nt == 'G':
+            rev_seq += 'C'
+        elif nt == 'N':
+            rev_seq = 'N'
+
+    rev_seq = rev_seq[::-1]
+
+    return rev_seq
+
+
+def makeAdaptorFasta(infile, dbh, contaminants_file, outfile):
+    '''
+    Generate a .fasta file of adaptor sequences that are overrepresented
+    in the reads from a sample.
+    Requires cutadapt >= 1.7
+    '''
+
+    sample = infile.split("/")[-1].rstrip(".gz")
+    sample = sample.replace(".fastq", "")
+    # replace '-'  and '.' with '_'
+    sample = sample.replace("-", "_")
+    sample = sample.replace(".", "_")
+    query = "SELECT * FROM %s_fastqc_Overrepresented_sequences;" % sample
+
+    df = pdsql.read_sql(query, dbh, index_col=None)
+    # if there are no over represented sequences break here
+    if not len(df):
+        return None
+
+    overreps = set(df['Possible_Source'])
+    # pull out suspected adaptor contamination name
+    ids = [x.split(" (")[0] for x in overreps if not re.search("No Hit", x)]
+    ids = [h.replace(",", "") for h in ids]
+    ids = [g.replace(" ", "_") for g in ids]
+
+    # line comments begin with '#'
+    # adaptor name and sequence are split with tabs and end with both newline
+    # and carriage returns.  Put these in a reference dictionary
+
+    with IOTools.openFile(contaminants_file, "r") as cfile:
+        lines = cfile.readlines()
+    adapt_list = [l for l in lines if not re.search("#", l)]
+    adapt_dict = {}
+
+    for each in adapt_list:
+        # source of bugs - 'each' contains whitespace
+        # that may interfere with down stream processing of fasta file
+        # remove extraneous ','
+        each = each.split("\t")
+        each = [k.rstrip("\r\n") for k in each]
+        each = [h for h in each if len(h)]
+        if len(each):
+            seq_id = each[0].replace(",", "")
+            seq_id = seq_id.replace(" ", "_")
+            adapt_dict[seq_id] = each[1]
+        else:
+            pass
+
+    with IOTools.openFile(outfile, "w") as ofile:
+        for ad in ids:
+            ofile.write(">%s\n%s\n" % (ad, adapt_dict[ad]))
+
+
+def mergeAdaptorFasta(infiles, outfile):
+    '''
+    Merge fasta files of adapter contamination,
+    include reverse complement, remove duplicate sequences
+    '''
+
+    fasta_dict = {}
+    for each in infiles:
+        with IOTools.openFile(each, "r") as infle:
+            for line in infle:
+                if line[0] == '>':
+                    adapt = line.lstrip(">").rstrip("\n")
+                    fasta_dict[adapt] = set()
+                    fasta_dict[adapt + "_R"] = set()
+                else:
+                    seq = line.rstrip("\n")
+                    rev_seq = reverseComplement(seq)
+                    fasta_dict[adapt].add(seq)
+                    fasta_dict[adapt + "_R"].add(rev_seq)
+
+    with IOTools.openFile(outfile, "w") as outfle:
+        for key, value in fasta_dict.items():
+            outfle.write(">%s\n%s\n" % (key, list(value)[0]))
 
 
 def getSequencingInformation(track):
@@ -120,6 +222,7 @@ class MasterProcessor():
                  flash_options=None,
                  fastx_trimmer_options=None,
                  cutadapt_options=None,
+                 adapter_file=None,
                  *args, **kwargs):
         self.save = save
         self.summarise = summarise
@@ -130,6 +233,7 @@ class MasterProcessor():
         self.flash_opt = flash_options
         self.fastx_trimmer_opt = fastx_trimmer_options
         self.cutadapt_opt = cutadapt_options
+        self.adapters = adapter_file
         if self.save:
             self.outdir = "processed.dir"
         else:
@@ -231,9 +335,10 @@ class MasterProcessor():
                     final=end, f_format=f_format, num_files=num_files,
                     first=first, outdir=self.outdir,
                     prefix="cutadapt-", summarise=self.summarise,
-                    options=self.cutadapt_opt, threads=self.threads)
-                tool_cmd, post_cmd, infiles, f_format, num_files = (
-                    cutadapt_object.build(infiles))
+                    options=self.cutadapt_opt, threads=self.threads,
+                    adapters=self.adapters)
+                tool_cmd, post_cmd, infile, f_format, num_files = (
+                    cutadapt_object.build(infile))
             else:
                 E.info("%s is not a supported tool" % tool)
 
@@ -275,8 +380,8 @@ class process_tool(object):
 
     def __init__(self, first=True, final=True, compress=False,
                  save=True, f_format="", num_files="", prefix="",
-                 outdir="", summarise=False, options=None,
-                 threads=1, *args, **kwargs):
+                 outdir="", infiles=(), summarise=False, options=None,
+                 threads=1, adapters=None, *args, **kwargs):
         self.final = final
         self.compress = compress
         self.first = first
@@ -286,6 +391,7 @@ class process_tool(object):
         self.summarise = summarise
         self.processing_options = options
         self.threads = threads
+        self.adapters = adapters
         if self.final:
             self.save = True
             self.outdir = "processed.dir"
@@ -439,6 +545,7 @@ class trimmomatic(process_tool):
         outdir = self.outdir
         threads = self.threads
         processing_options = self.processing_options
+        adapter_file = self.adapters
         if self.num_files == 1:
             infile = infiles[0]
             track = os.path.basename(infile)
@@ -582,6 +689,7 @@ class cutadapt(process_tool):
         outdir = self.outdir
         threads = self.threads
         processing_options = self.processing_options
+        adapter_file = self.adapters
         if self.num_files == 1:
             infile = infiles[0]
             track = os.path.basename(infile)
@@ -589,6 +697,10 @@ class cutadapt(process_tool):
             outfile = "%(outdir)s/%(prefix)s%(track)s" % locals()
             trim_out = "%s/%s_trimmed.fq.gz" % (outdir,
                                                 P.snip(track, ".fastq.gz"))
+            if adapter_file:
+                processing_options += " -a file:%(adapter_file)s "
+            else:
+                pass
             cmd = '''zcat %(infile)s | cutadapt %(processing_options)s -
             2> %(logfile)s | gzip > %(outfile)s;''' % locals()
             outfiles = (outfile,)
