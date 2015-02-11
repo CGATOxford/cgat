@@ -160,17 +160,46 @@ def pandasMerge(infile1, infile2, outfile, merge_type, left, right,
     '''function to merge two tsv files using pandas
     left and right are the columns to merge on'''
 
-    def pandasRead(infile):
-        return pd.read_csv(infile, sep=delim, comment=com)
+    def columnsPeak(infile):
+        '''peak at columns to identify data type'''
+        top = pd.read_csv(infile, sep=delim, comment=com, nrows=1)
+        columns = top.columns.tolist()
 
-    df1 = pandasRead(infile1)
+        # strand, contig and cpgi are all strings, hence object
+        # all other columns encoded as floats
+        dtype_dict = {}
+
+        for column in columns:
+            if ((column.endswith("-unmeth")
+                 or column.endswith("-meth")
+                 or column.endswith("-perc")
+                 or column == "read_position")):
+                dtype_dict[column] = float
+            elif (column == "strand"
+                  or column == "contig"
+                  or column == "cpgi"):
+                dtype_dict[column] = object
+            elif column == "position":
+                dtype_dict[column] = float
+
+        return dtype_dict
+
+    def pandasRead(infile, peak=False):
+        if peak:
+            col_dtype = columnsPeak(infile)
+            print col_dtype
+            return pd.read_csv(infile, sep=delim, comment=com,
+                               dtype=col_dtype, na_values="NA")
+        else:
+            return pd.read_csv(infile, sep=delim, comment=com)
+
+    df1 = pandasRead(infile1, peak=True)
+    df2 = pandasRead(infile2, peak=True)
     df1.set_index(left, drop=False, append=False, inplace=True)
-
-    df2 = pandasRead(infile2)
     df2.set_index(right, drop=False, append=False, inplace=True)
 
-    merged = df1.merge(df2, how=merge_type,
-                       left_index=True, right_index=True)
+    merged = df1.merge(df2, how=merge_type, left_index=True,
+                       right_index=True, sort=False)
     merged.to_csv(outfile, sep="\t", index=False, na_rep="NA")
 
 

@@ -1,6 +1,6 @@
 '''
 PipelinePreprocess.py - Utility functions for processing short reads
-==============================================================
+====================================================================
 
 :Author: Tom smith
 :Release: $Id$
@@ -28,9 +28,9 @@ It has been tested with:
 
 To do
 =====
+
 How to deal with flash?
 e.g this is the only tool that doesn't do one-to-one processing
-
 
 Code
 ----
@@ -263,20 +263,19 @@ class MasterProcessor():
         file_compress = compress
         save_intermediates = save
         first = 1
-        num_files = ""
-        # initiate a dummy processer object with no prefix to summarise
-        # the initial input files
-        # this can probably be removed now summarising
-        # is being done with fastqc?
-        initial_processer_object = process_tool(
-            compress=file_compress, save=save_intermediates,
-            final=0, f_format=f_format, num_files=num_files,
-            first=first, outdir=self.outdir, infiles=infile,
-            prefix="")
-        tool_cmd, post_cmd, null_infile, null_f_format, null_num_files = (
-            initial_processer_object.build(infile))
-        total_post_cmd += post_cmd
 
+        if infile.endswith(".fastq.1.gz"):
+            bn = P.snip(infile, ".fastq.1.gz")
+            infile2 = "%s.fastq.2.gz" % bn
+            if not os.path.exists(infile2):
+                raise ValueError("can not find paired ended file "
+                                 "'%s' for '%s'" % (infile2, infile))
+            infiles = (infile, infile2)
+        elif infile.endswith(".fastq.gz"):
+            infiles = (infile,)
+
+        num_files = len(infiles,)
+        
         for idx, tool in enumerate(list_of_preprocessers):
             if idx == len(list_of_preprocessers)-1:
                 end = True
@@ -289,52 +288,52 @@ class MasterProcessor():
                 fastx_trimmer_object = fastx_trimmer(
                     compress=file_compress, save=save_intermediates,
                     final=end, f_format=f_format, num_files=num_files,
-                    first=first, outdir=self.outdir, infiles=infile,
+                    first=first, outdir=self.outdir,
                     prefix="fastx_trimmer-", summarise=self.summarise,
                     options=self.fastx_trimmer_opt, threads=self.threads)
-                tool_cmd, post_cmd, infile, f_format, num_files = (
-                    fastx_trimmer_object.build(infile))
+                tool_cmd, post_cmd, infiles, f_format, num_files = (
+                    fastx_trimmer_object.build(infiles))
             elif tool == "trimmomatic":
                 trimmomatic_object = trimmomatic(
                     compress=file_compress, save=save_intermediates,
                     final=end, f_format=f_format, num_files=num_files,
-                    first=first, outdir=self.outdir, infiles=infile,
+                    first=first, outdir=self.outdir,
                     prefix="trimmomatic-", summarise=self.summarise,
                     options=self.trimmomatic_opt, threads=self.threads)
-                tool_cmd, post_cmd, infile, f_format, num_files = (
-                    trimmomatic_object.build(infile))
+                tool_cmd, post_cmd, infiles, f_format, num_files = (
+                    trimmomatic_object.build(infiles))
             elif tool == "sickle":
                 sickle_object = sickle(
                     compress=file_compress, save=save_intermediates,
                     final=end, f_format=f_format, num_files=num_files,
-                    first=first, outdir=self.outdir, infiles=infile,
+                    first=first, outdir=self.outdir,
                     prefix="sickle-", summarise=self.summarise,
                     options=self.sickle_opt, threads=self.threads)
-                tool_cmd, post_cmd, infile,  f_format, num_files = (
-                    sickle_object.build(infile))
+                tool_cmd, post_cmd, infiles,  f_format, num_files = (
+                    sickle_object.build(infiles))
             elif tool == "trimgalore":
                 trimgalore_object = trimgalore(
                     compress=file_compress, save=save_intermediates,
                     final=end, f_format=f_format, num_files=num_files,
-                    first=first, outdir=self.outdir, infiles=infile,
+                    first=first, outdir=self.outdir,
                     prefix="trimgalore-", summarise=self.summarise,
                     options=self.trimgalore_opt, threads=self.threads)
-                tool_cmd, post_cmd, infile, f_format, num_files = (
-                    trimgalore_object.build(infile))
+                tool_cmd, post_cmd, infiles, f_format, num_files = (
+                    trimgalore_object.build(infiles))
             elif tool == "flash":
                 flash_object = flash(
                     compress=file_compress, save=save_intermediates,
                     final=end, f_format=f_format, num_files=num_files,
-                    first=first, outdir=self.outdir, infiles=infile,
+                    first=first, outdir=self.outdir,
                     prefix="flash-", summarise=self.summarise,
                     options=self.flash_opt, threads=self.threads)
-                tool_cmd, post_cmd, infile, f_format, num_files = (
-                    flash_object.build(infile))
+                tool_cmd, post_cmd, infiles, f_format, num_files = (
+                    flash_object.build(infiles))
             elif tool == "cutadapt":
                 cutadapt_object = cutadapt(
                     compress=file_compress, save=save_intermediates,
                     final=end, f_format=f_format, num_files=num_files,
-                    first=first, outdir=self.outdir, infiles=infile,
+                    first=first, outdir=self.outdir,
                     prefix="cutadapt-", summarise=self.summarise,
                     options=self.cutadapt_opt, threads=self.threads,
                     adapters=self.adapters)
@@ -360,7 +359,7 @@ class MasterProcessor():
         '''run mapper.'''
 
         f_format = Fastq.guessFormat(
-            IOTools.openFile(infile[0], "r"), raises=False)
+            IOTools.openFile(infile, "r"), raises=False)
 
         cmd_process, cmd_post, processed_files = self.process(
             infile, processer_list, outfile, f_format, save=self.save)
@@ -401,10 +400,6 @@ class process_tool(object):
             self.outdir = outdir
 
     def setfastqAttr(self, infiles):
-        if self.first:
-            self.num_files = len(infiles)
-        else:
-            pass
         self.offset = Fastq.getOffset(self.f_format, raises=False)
 
     def process(self, infiles):
@@ -443,7 +438,6 @@ class process_tool(object):
 
     def build(self, infiles):
         self.setfastqAttr(infiles)
-
         process_cmd, fastq_outfiles = self.process(infiles)
         post_cmd = self.postprocess(fastq_outfiles)
 
@@ -506,7 +500,7 @@ class sickle(process_tool):
         processing_options = self.processing_options
         rRANGES = {33: 'sanger', 64: 'illumina', 59: 'solexa'}
         quality = rRANGES[offset]
-
+        
         if self.num_files == 1:
             infile = infiles[0]
             track = os.path.basename(infile)

@@ -333,6 +333,7 @@ if PARAMS["preprocessors"]:
             adapter_file=PARAMS['adapter_file'])
 
         statement = m.build((infile,), outfile, PREPROCESSTOOLS)
+
         P.run()
 
     @follows(runFastqc)
