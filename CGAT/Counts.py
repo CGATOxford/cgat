@@ -272,7 +272,7 @@ def findClusters(df, distance, size, tracks_map, groups):
 
 
 def shuffleRows(df, i_bins, c_bins, tracks_map,  groups,
-                difference, s_max=100, i=1, seed=None):
+                difference, s_max=100, i=1):
     '''take a dataframe and shuffle the rows to obtain spike in rows.
     return the indices to obtain the rows from the original dataframe'''
     counts = np.zeros((len(i_bins) + 1, len(c_bins) + 1))
@@ -286,17 +286,10 @@ def shuffleRows(df, i_bins, c_bins, tracks_map,  groups,
     for iteration in range(0,  i):
         E.info("performing shuffling iteration number %i.." % (iteration + 1))
         if min_occup < s_max:
-            if seed:
-                # this is included for testing purposes
-                E.info("The random seed has been set as: %s" % seed)
-                prng = np.random.RandomState(seed)
-                group1_rand = prng.permutation(df.index)
-                prng = np.random.RandomState(seed + 1)
-                group2_rand = prng.permutation(df.index)
-            else:
-                # remute the df index axes to get a random row order
-                group1_rand = np.random.permutation(df.index)
-                group2_rand = np.random.permutation(df.index)
+            group1_rand = copy.copy(df.index.tolist())
+            group2_rand = copy.copy(df.index.tolist())
+            random.shuffle(group1_rand)
+            random.shuffle(group2_rand)
 
             # subset the dataframe rows in the first random order
             # and by the column_ids in the first group

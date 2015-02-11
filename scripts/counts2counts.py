@@ -155,11 +155,6 @@ The generation of spike-ins is extensively parameterised:
     containing the percentage methylation (0-100) and retain additional
     columns containing the counts of methylated/unmethylated
 
---seed=[int]
-
-    Sets seed for maintaining consistent random shuffling. Note, this is
-    currently implemented for row-based shuffling only
-
 '''
 
 import sys
@@ -316,10 +311,6 @@ def main(argv=None):
                       help="a list of suffixes for the columns which are to be\
                       keep along with the shuffled columns[default=%default].")
 
-    parser.add_option("--seed",
-                      dest="seed", type="int",
-                      help="seed for random shuffling [default=%default].")
-
     parser.set_defaults(
         method="filter",
         filter_min_counts_per_row=1,
@@ -345,13 +336,11 @@ def main(argv=None):
         width_sbin=1,
         id_column=None,
         shuffle_suffix=None,
-        keep_suffix=None,
-        seed=None
+        keep_suffix=None
     )
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
-
     assert options.input_filename_design and os.path.exists(
         options.input_filename_design)
 
@@ -456,7 +445,7 @@ def main(argv=None):
             output_indices, counts = Counts.shuffleRows(
                 counts_sort, initial_bins, change_bins,
                 g_to_spike_tracks, groups, options.difference,
-                options.max_spike, options.iterations, options.seed)
+                options.max_spike, options.iterations)
 
         filled_bins = Counts.thresholdBins(output_indices, counts,
                                            options.min_spike)
