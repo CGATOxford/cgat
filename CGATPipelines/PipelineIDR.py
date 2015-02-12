@@ -234,7 +234,7 @@ class macs2IDRPeaks(callerIDRPeaks):
         # add additional parameters
         # currently the input read format has to be bam bc of ruffus regex
         statement.append("--format BAM")
-        statement.append("--set-name %s" % outfile_stub)
+        statement.append("--name %s" % outfile_stub)
         # require genome size, if it is not specified try to take from genome
         if not re.search("-g\s|--gsize",
                          self.PARAMS_PEAKCALLER["macs2_options_parameters"]):

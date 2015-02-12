@@ -157,23 +157,14 @@ import os
 import re
 import itertools
 import glob
-import cStringIO
 import sqlite3
 import CGAT.Experiment as E
-import string
 import CGAT.IOTools as IOTools
-import CGAT.FastaIterator as FastaIterator
 import CGATPipelines.PipelineMapping as PipelineMapping
 import CGAT.Pipeline as P
-import CGAT.Fastq as Fastq
-import CGAT.CSV2DB as CSV2DB
-import CGAT.Fasta as Fa
 import CGATPipelines.PipelineRrbs as RRBS
 import pandas as pd
-from rpy2.robjects import r
-from rpy2.robjects.packages import importr
 import CGATPipelines.PipelineTracks as PipelineTracks
-import warnings
 
 ###################################################
 ###################################################
@@ -435,8 +426,8 @@ def sortAndIndexBams(infile, outfile):
 @originate("coverage.dir/cpgIslands.bed")
 def makeCpgIslandsBed(outfile):
     infile = PARAMS["methylation_summary_cpgislands"]
-    out = open(outfile, "w")
-    with open(infile, "r") as f:
+    out = IOTools.openFile(outfile, "w")
+    with IOTools.openFile(infile, "r") as f:
         for line in f.readlines():
             # this assumes location of req. values
             contig, start, end = line.split()[1:4]
@@ -457,10 +448,10 @@ def make1basedCpgIslands(infile, outfile):
 
     # outfile, loadfile = outfiles
 
-    out = open(outfile, "w")
+    out = IOTools.openFile(outfile, "w")
     out.write("%s\t%s\t%s\n" % ("contig", "position", "cpgi"))
 
-    with open(infile, "r") as f:
+    with IOTools.openFile(infile, "r") as f:
         lines = f.readlines()
         for line in lines:
             contig, start, stop = line.split()
@@ -537,9 +528,9 @@ def mergeCoverage(infiles, outfile):
            "_meth_cpgi.tsv")
 def addCpGIs(infiles, outfile):
     infile, CpGI = infiles
-    # memory intensive!
-    job_options = "-l mem_free=20G"
-    job_threads = 2
+    # still memory intensive even after supplying data types for all columns!
+    job_options = "-l mem_free=30G"
+    job_threads = 1
 
     RRBS.pandasMerge(infile, CpGI, outfile, merge_type="left",
                      left=['contig', 'position'],
@@ -547,6 +538,7 @@ def addCpGIs(infiles, outfile):
                      submit=True, job_options=job_options)
 
 
+# not currently in target full as table never queried from csvdb
 @transform(addCpGIs,
            suffix(".tsv"),
            ".load")
@@ -755,7 +747,7 @@ def subsetCpGsToCovered(infile, outfile):
     job_options = "-l mem_free=48G"
 
     RRBS.subsetToCovered(infile, outfile,
-                         submit=True, jobOptions=job_options)
+                         submit=True, job_options=job_options)
 
 
 @transform(subsetCpGsToCovered,
@@ -810,14 +802,19 @@ def generateClusterSpikeIns(infile, outfile):
     job_options = "-l mem_free=4G"
 
     statement = '''cat %(infile)s |
-    python %%(scriptsdir)s/data2spike.py --design-file-tsv=design.tsv
-    --shuffle-column-suffix=-perc --keep-column-suffix=-meth,-unmeth
-    --difference-method=relative --spike-minimum=100 --spike-maximum=100
-    --output-method=seperate --cluster-maximum-distance=150
-    --cluster-minimum-size=10 --iterations=50 --spike-type=cluster
-    --change-bin-min=-100 --change-bin-max=100 --change-bin-width=10
-    --initial-bin-min=0 --initial-bin-max=100 --initial-bin-width=100
-    --subcluster-min-size=1 --subcluster-max-size=9 --subcluster-bin-width=1
+    python %%(scriptsdir)s/data2spike.py --method=spike
+    --design-tsv-file=design.tsv --difference-method=relative
+    --spike-shuffle-column-suffix=-perc
+    --spike-keep-column-suffix=-meth,-unmeth
+    --spike-minimum=100 --spike-maximum=100
+    --spike-output-method=seperate
+    --spike-cluster-maximum-distance=150
+    --spike-cluster-minimum-size=10 --spike-iterations=50
+    --spike-type=cluster --spike-change-bin-min=-100
+    --spike-change-bin-max=100 --spike-change-bin-width=10
+    --spike-initial-bin-min=0 --spike-initial-bin-max=100
+    --spike-initial-bin-width=100 --spike-subcluster-min-size=1
+    --spike-subcluster-max-size=9 --spike-subcluster-bin-width=1
     > %(outfile)s_tmp; mv %(outfile)s_tmp %(outfile)s''' % locals()
     P.run()
 
@@ -1059,7 +1056,6 @@ def startSummary():
          sortAndIndexBams,
          makeCpgIslandsBed,
          make1basedCpgIslands,
-         loadMergeCoverage,
          makeSummaryPlots,
          mergeCoverage,
          plotReadBias,

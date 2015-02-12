@@ -1,6 +1,6 @@
 '''
 PipelinePreprocess.py - Utility functions for processing short reads
-==============================================================
+====================================================================
 
 :Author: Tom smith
 :Release: $Id$
@@ -16,7 +16,7 @@ might contain single end or paired end data or both).
 
 The module currently provides modules to perform:
     * hard-trimming (fastx_trimmer, trimmomatic)
-    * adapter trimming (trimgalore, trimmomatic)
+    * adapter trimming (trimgalore, trimmomatic, cutadapt)
     * read end quality trimming (trimgalore, trimmomatic)
     * sliding window quality trimming (sickle, trimmomatic)
     * RRBS-specific trimming (trimgalore)
@@ -25,12 +25,12 @@ It has been tested with:
    * .fastq: paired-end and single-end
 
 
+
 To do
 =====
-Check this will work with .sra files
+
 How to deal with flash?
 e.g this is the only tool that doesn't do one-to-one processing
-
 
 Code
 ----
@@ -45,6 +45,7 @@ import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Fastq as Fastq
 import CGATPipelines.PipelineMapping as Mapping
+import pandas.io.sql as pdsql
 
 SequenceInformation = collections.namedtuple("SequenceInformation",
                                              """paired_end
@@ -53,10 +54,6 @@ SequenceInformation = collections.namedtuple("SequenceInformation",
                                                  readlength_first
                                                  readlength_second
                                                  is_colour""")
-
-
-def makeSecond(file1):
-    return(re.sub(".fastq.1.gz", ".fastq.2.gz", file1))
 
 
 def getReadLengthFromFastq(filename):
@@ -71,6 +68,107 @@ def getReadLengthFromFastq(filename):
         record = iterate(infile).next()
         readlength = len(record.seq)
         return readlength
+
+
+def reverseComplement(sequence):
+    '''
+    Reverse complement a sequence
+    '''
+    sequence = sequence.upper()
+    rev_seq = ''
+    for nt in sequence:
+        if nt == 'A':
+            rev_seq += 'T'
+        elif nt == 'T':
+            rev_seq += 'A'
+        elif nt == 'C':
+            rev_seq += 'G'
+        elif nt == 'G':
+            rev_seq += 'C'
+        elif nt == 'N':
+            rev_seq = 'N'
+
+    rev_seq = rev_seq[::-1]
+
+    return rev_seq
+
+
+def makeAdaptorFasta(infile, dbh, contaminants_file, outfile):
+    '''
+    Generate a .fasta file of adaptor sequences that are overrepresented
+    in the reads from a sample.
+    Requires cutadapt >= 1.7
+    '''
+
+    sample = infile.split("/")[-1].rstrip(".gz")
+    sample = sample.replace(".fastq", "")
+    # replace '-'  and '.' with '_'
+    sample = sample.replace("-", "_")
+    sample = sample.replace(".", "_")
+    query = "SELECT * FROM %s_fastqc_Overrepresented_sequences;" % sample
+
+    df = pdsql.read_sql(query, dbh, index_col=None)
+    # if there are no over represented sequences break here
+    if not len(df):
+        return None
+
+    overreps = set(df['Possible_Source'])
+    # pull out suspected adaptor contamination name
+    ids = [x.split(" (")[0] for x in overreps if not re.search("No Hit", x)]
+    ids = [h.replace(",", "") for h in ids]
+    ids = [g.replace(" ", "_") for g in ids]
+
+    # line comments begin with '#'
+    # adaptor name and sequence are split with tabs and end with both newline
+    # and carriage returns.  Put these in a reference dictionary
+
+    with IOTools.openFile(contaminants_file, "r") as cfile:
+        lines = cfile.readlines()
+    adapt_list = [l for l in lines if not re.search("#", l)]
+    adapt_dict = {}
+
+    for each in adapt_list:
+        # source of bugs - 'each' contains whitespace
+        # that may interfere with down stream processing of fasta file
+        # remove extraneous ','
+        each = each.split("\t")
+        each = [k.rstrip("\r\n") for k in each]
+        each = [h for h in each if len(h)]
+        if len(each):
+            seq_id = each[0].replace(",", "")
+            seq_id = seq_id.replace(" ", "_")
+            adapt_dict[seq_id] = each[1]
+        else:
+            pass
+
+    with IOTools.openFile(outfile, "w") as ofile:
+        for ad in ids:
+            ofile.write(">%s\n%s\n" % (ad, adapt_dict[ad]))
+
+
+def mergeAdaptorFasta(infiles, outfile):
+    '''
+    Merge fasta files of adapter contamination,
+    include reverse complement, remove duplicate sequences
+    '''
+
+    fasta_dict = {}
+    for each in infiles:
+        with IOTools.openFile(each, "r") as infle:
+            for line in infle:
+                if line[0] == '>':
+                    adapt = line.lstrip(">").rstrip("\n")
+                    fasta_dict[adapt] = set()
+                    fasta_dict[adapt + "_R"] = set()
+                else:
+                    seq = line.rstrip("\n")
+                    rev_seq = reverseComplement(seq)
+                    fasta_dict[adapt].add(seq)
+                    fasta_dict[adapt + "_R"].add(rev_seq)
+
+    with IOTools.openFile(outfile, "w") as outfle:
+        for key, value in fasta_dict.items():
+            outfle.write(">%s\n%s\n" % (key, list(value)[0]))
 
 
 def getSequencingInformation(track):
@@ -102,12 +200,9 @@ def getSequencingInformation(track):
                                       colour))
 
 
-class MasterProcessor(Mapping.Mapper):
+class MasterProcessor():
 
     '''Processes reads with tools specified.
-    inherits from PipelineMapping Mapper class as
-    converts the input data, calls processing tools
-
     All in a single statement to be send to the cluster.
     '''
 
@@ -127,6 +222,7 @@ class MasterProcessor(Mapping.Mapper):
                  flash_options=None,
                  fastx_trimmer_options=None,
                  cutadapt_options=None,
+                 adapter_file=None,
                  *args, **kwargs):
         self.save = save
         self.summarise = summarise
@@ -137,6 +233,7 @@ class MasterProcessor(Mapping.Mapper):
         self.flash_opt = flash_options
         self.fastx_trimmer_opt = fastx_trimmer_options
         self.cutadapt_opt = cutadapt_options
+        self.adapters = adapter_file
         if self.save:
             self.outdir = "processed.dir"
         else:
@@ -156,7 +253,7 @@ class MasterProcessor(Mapping.Mapper):
             return filename
 
     def process(self, infile, list_of_preprocessers, outfile,
-                compress=False, save=True):
+                f_format, compress=False, save=True):
         '''build processing statement on infiles.  list of processing
         tools is used to build a command line statement in list order'''
 
@@ -166,19 +263,19 @@ class MasterProcessor(Mapping.Mapper):
         file_compress = compress
         save_intermediates = save
         first = 1
-        f_format = ""
-        num_files = ""
-        # initiate a dummy processer object with no prefix to summarise
-        # the initial input files
-        initial_processer_object = process_tool(
-            compress=file_compress, save=save_intermediates,
-            final=0, f_format=f_format, num_files=num_files,
-            first=first, outdir=self.outdir, infiles=infile,
-            prefix="")
-        tool_cmd, post_cmd, null_infile, null_f_format, null_num_files = (
-            initial_processer_object.build(infile))
-        total_post_cmd += post_cmd
 
+        if infile.endswith(".fastq.1.gz"):
+            bn = P.snip(infile, ".fastq.1.gz")
+            infile2 = "%s.fastq.2.gz" % bn
+            if not os.path.exists(infile2):
+                raise ValueError("can not find paired ended file "
+                                 "'%s' for '%s'" % (infile2, infile))
+            infiles = (infile, infile2)
+        elif infile.endswith(".fastq.gz"):
+            infiles = (infile,)
+
+        num_files = len(infiles,)
+        
         for idx, tool in enumerate(list_of_preprocessers):
             if idx == len(list_of_preprocessers)-1:
                 end = True
@@ -191,54 +288,55 @@ class MasterProcessor(Mapping.Mapper):
                 fastx_trimmer_object = fastx_trimmer(
                     compress=file_compress, save=save_intermediates,
                     final=end, f_format=f_format, num_files=num_files,
-                    first=first, outdir=self.outdir, infiles=infile,
+                    first=first, outdir=self.outdir,
                     prefix="fastx_trimmer-", summarise=self.summarise,
                     options=self.fastx_trimmer_opt, threads=self.threads)
-                tool_cmd, post_cmd, infile, f_format, num_files = (
-                    fastx_trimmer_object.build(infile))
+                tool_cmd, post_cmd, infiles, f_format, num_files = (
+                    fastx_trimmer_object.build(infiles))
             elif tool == "trimmomatic":
                 trimmomatic_object = trimmomatic(
                     compress=file_compress, save=save_intermediates,
                     final=end, f_format=f_format, num_files=num_files,
-                    first=first, outdir=self.outdir, infiles=infile,
+                    first=first, outdir=self.outdir,
                     prefix="trimmomatic-", summarise=self.summarise,
                     options=self.trimmomatic_opt, threads=self.threads)
-                tool_cmd, post_cmd, infile, f_format, num_files = (
-                    trimmomatic_object.build(infile))
+                tool_cmd, post_cmd, infiles, f_format, num_files = (
+                    trimmomatic_object.build(infiles))
             elif tool == "sickle":
                 sickle_object = sickle(
                     compress=file_compress, save=save_intermediates,
                     final=end, f_format=f_format, num_files=num_files,
-                    first=first, outdir=self.outdir, infiles=infile,
+                    first=first, outdir=self.outdir,
                     prefix="sickle-", summarise=self.summarise,
                     options=self.sickle_opt, threads=self.threads)
-                tool_cmd, post_cmd, infile,  f_format, num_files = (
-                    sickle_object.build(infile))
+                tool_cmd, post_cmd, infiles,  f_format, num_files = (
+                    sickle_object.build(infiles))
             elif tool == "trimgalore":
                 trimgalore_object = trimgalore(
                     compress=file_compress, save=save_intermediates,
                     final=end, f_format=f_format, num_files=num_files,
-                    first=first, outdir=self.outdir, infiles=infile,
+                    first=first, outdir=self.outdir,
                     prefix="trimgalore-", summarise=self.summarise,
                     options=self.trimgalore_opt, threads=self.threads)
-                tool_cmd, post_cmd, infile, f_format, num_files = (
-                    trimgalore_object.build(infile))
+                tool_cmd, post_cmd, infiles, f_format, num_files = (
+                    trimgalore_object.build(infiles))
             elif tool == "flash":
                 flash_object = flash(
                     compress=file_compress, save=save_intermediates,
                     final=end, f_format=f_format, num_files=num_files,
-                    first=first, outdir=self.outdir, infiles=infile,
+                    first=first, outdir=self.outdir,
                     prefix="flash-", summarise=self.summarise,
                     options=self.flash_opt, threads=self.threads)
-                tool_cmd, post_cmd, infile, f_format, num_files = (
-                    flash_object.build(infile))
+                tool_cmd, post_cmd, infiles, f_format, num_files = (
+                    flash_object.build(infiles))
             elif tool == "cutadapt":
                 cutadapt_object = cutadapt(
                     compress=file_compress, save=save_intermediates,
                     final=end, f_format=f_format, num_files=num_files,
-                    first=first, outdir=self.outdir, infiles=infile,
+                    first=first, outdir=self.outdir,
                     prefix="cutadapt-", summarise=self.summarise,
-                    options=self.cutadapt_opt, threads=self.threads)
+                    options=self.cutadapt_opt, threads=self.threads,
+                    adapters=self.adapters)
                 tool_cmd, post_cmd, infile, f_format, num_files = (
                     cutadapt_object.build(infile))
             else:
@@ -259,19 +357,19 @@ class MasterProcessor(Mapping.Mapper):
 
     def build(self, infile, outfile, processer_list):
         '''run mapper.'''
-        cmd_preprocess, raw_file = self.preprocess(infile, outfile)
-        raw_file = raw_file[0]
+
+        f_format = Fastq.guessFormat(
+            IOTools.openFile(infile, "r"), raises=False)
+
         cmd_process, cmd_post, processed_files = self.process(
-            raw_file, processer_list, outfile, save=self.save)
+            infile, processer_list, outfile, f_format, save=self.save)
         cmd_clean = self.cleanup(outfile)
 
-        assert cmd_preprocess.strip().endswith(";")
         assert cmd_process.strip().endswith(";")
         assert cmd_post.strip().endswith(";")
         assert cmd_clean.strip().endswith(";")
 
-        statement = " checkpoint; ".join((cmd_preprocess,
-                                          cmd_process,
+        statement = " checkpoint; ".join((cmd_process,
                                           cmd_post,
                                           cmd_clean))
         return statement
@@ -283,7 +381,7 @@ class process_tool(object):
     def __init__(self, first=True, final=True, compress=False,
                  save=True, f_format="", num_files="", prefix="",
                  outdir="", infiles=(), summarise=False, options=None,
-                 threads=1, *args, **kwargs):
+                 threads=1, adapters=None, *args, **kwargs):
         self.final = final
         self.compress = compress
         self.first = first
@@ -293,6 +391,7 @@ class process_tool(object):
         self.summarise = summarise
         self.processing_options = options
         self.threads = threads
+        self.adapters = adapters
         if self.final:
             self.save = True
             self.outdir = "processed.dir"
@@ -301,22 +400,6 @@ class process_tool(object):
             self.outdir = outdir
 
     def setfastqAttr(self, infiles):
-
-        if self.first:
-            self.num_files = len(infiles)
-
-        if self.num_files == 1:
-            infile1 = infiles[0]
-        elif self.num_files == 2:
-            infile1, infile2 = infiles
-
-        if self.first:
-            self.f_format = Fastq.guessFormat(IOTools.openFile(infile1),
-                                              raises=False)
-            E.info("%s: format guess: %s" % (infile1, self.f_format))
-        else:
-            E.info("%s: format set as previous: %s" % (
-                infile1, self.f_format))
         self.offset = Fastq.getOffset(self.f_format, raises=False)
 
     def process(self, infiles):
@@ -355,7 +438,6 @@ class process_tool(object):
 
     def build(self, infiles):
         self.setfastqAttr(infiles)
-
         process_cmd, fastq_outfiles = self.process(infiles)
         post_cmd = self.postprocess(fastq_outfiles)
 
@@ -391,7 +473,7 @@ class trimgalore(process_tool):
         elif self.num_files == 2:
             infile1, infile2 = infiles
             track1 = os.path.basename(infile1)
-            track2 = P.snip(track1, ".fastq.1.gz") + ".fastq.2.gz"
+            track2 = os.path.basename(infile2)
             outfile1 = "%(outdir)s/%(prefix)s%(track1)s" % locals()
             outfile2 = "%(outdir)s/%(prefix)s%(track2)s" % locals()
             logfile = "log.dir/%(track1)s_trim_galore.log" % locals()
@@ -416,9 +498,9 @@ class sickle(process_tool):
         offset = self.offset
         outdir = self.outdir
         processing_options = self.processing_options
-        rRANGES = {33: 'sanger', 64: 'illumina-1.8', 59: 'solexa'}
+        rRANGES = {33: 'sanger', 64: 'illumina', 59: 'solexa'}
         quality = rRANGES[offset]
-
+        
         if self.num_files == 1:
             infile = infiles[0]
             track = os.path.basename(infile)
@@ -436,7 +518,7 @@ class sickle(process_tool):
         elif self.num_files == 2:
             infile1, infile2 = infiles
             track1 = os.path.basename(infile1)
-            track2 = P.snip(track1, ".fastq.1.gz") + ".fastq.2.gz"
+            track2 = os.path.basename(infile2)
             outfile1 = "%(outdir)s/%(prefix)s%(track1)s" % locals()
             outfile2 = "%(outdir)s/%(prefix)s%(track2)s" % locals()
             logfile = "log.dir/%(track1)s_sickle.log" % locals()
@@ -449,6 +531,9 @@ class sickle(process_tool):
                      ;''' % locals()
             outfiles = (outfile1, outfile2)
 
+        else:
+            raise ValueError("unexpected number of files: %s" % self.num_files)
+
         return cmd, outfiles
 
 
@@ -460,6 +545,7 @@ class trimmomatic(process_tool):
         outdir = self.outdir
         threads = self.threads
         processing_options = self.processing_options
+        adapter_file = self.adapters
         if self.num_files == 1:
             infile = infiles[0]
             track = os.path.basename(infile)
@@ -476,7 +562,7 @@ class trimmomatic(process_tool):
         elif self.num_files == 2:
             infile1, infile2 = infiles
             track1 = os.path.basename(infile1)
-            track2 = re.sub(".fastq.1.gz", ".fastq.2.gz", track1)
+            track2 = os.path.basename(infile2)
             logfile = "log.dir/%(track1)s_trimmomatic.log" % locals()
             outfile1 = "%(outdir)s/%(prefix)s%(track1)s" % locals()
             outfile2 = "%(outdir)s/%(prefix)s%(track2)s" % locals()
@@ -530,7 +616,7 @@ class flash(process_tool):
         if self.num_files == 2:
             infile1, infile2 = infiles
             track1 = os.path.basename(infile1)
-            track2 = makeSecond(track1)
+            track2 = os.path.basename(infile2)
             base_track = P.snip(track1, ".fastq.1.gz")
             track1_single = re.sub(".fastq.1.gz", ".fastq.gz", track1)
             outfile_single = ("%(outdir)s/%(prefix)s%(track1_single)s"
@@ -603,6 +689,7 @@ class cutadapt(process_tool):
         outdir = self.outdir
         threads = self.threads
         processing_options = self.processing_options
+        adapter_file = self.adapters
         if self.num_files == 1:
             infile = infiles[0]
             track = os.path.basename(infile)
@@ -610,6 +697,10 @@ class cutadapt(process_tool):
             outfile = "%(outdir)s/%(prefix)s%(track)s" % locals()
             trim_out = "%s/%s_trimmed.fq.gz" % (outdir,
                                                 P.snip(track, ".fastq.gz"))
+            if adapter_file:
+                processing_options += " -a file:%(adapter_file)s "
+            else:
+                pass
             cmd = '''zcat %(infile)s | cutadapt %(processing_options)s -
             2> %(logfile)s | gzip > %(outfile)s;''' % locals()
             outfiles = (outfile,)

@@ -13,13 +13,15 @@
        		      		      '_static/jquery.min.js',
 				      '_static/jquery.dataTables.min.js',
 				      '_static/notebook.js',
+				      '_static/jssor.js',
+				      '_static/jssor.slider.js',
 				      ] %}
 
 {% block extrahead %}
    <script type="text/javascript" charset="utf-8">
         $(document).ready(function() {
-        $('.scrollable').dataTable({
-              "sScrollY":"200px",
+        $('.scrollable').DataTable({
+               "sScrollY":"200px",
                "sScrollX":"100%",
                "bAutoWidth":false,
                "bPaginate":false });
