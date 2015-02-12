@@ -363,11 +363,20 @@ def main(argv=None):
 
     if options.method == "filter":
         # filter
-        counts = Counts.filterTagDataPandas(
+        nobservations, nsamples, counts, design = Counts.filterTagDataPandas(
             counts, design,
             options.filter_min_counts_per_row,
             options.filter_min_counts_per_sample,
             options.filter_percentile_rowsums)
+
+        if nobservations == 0:
+            E.warn("no observations - no output")
+            return
+
+        if nsamples == 0:
+            E.warn("no samples remain after filtering - no output")
+            return
+
         # write out
         counts.to_csv(sys.stdout, sep="\t", header=True)
 

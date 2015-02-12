@@ -80,11 +80,14 @@ import re
 import pandas
 import pandas.rpy.common as com
 import ggplot
+from scipy.stats import ttest_ind
 
 from rpy2.robjects import r as R
 from rpy2.robjects import numpy2ri as rpyn
 import rpy2.robjects as ro
 import rpy2.robjects.numpy2ri
+from rpy2.robjects.packages import importr
+from rpy2.robjects.vectors import FloatVector
 
 try:
     import CGAT.Experiment as E
@@ -2478,6 +2481,7 @@ def runTTest(outfile,
     '''
     groups, pairs, has_replicates, has_pairs = groupTagData(ref_group)
 
+    results = []
     for combination in itertools.combinations(groups, 2):
         control, treatment = combination
         r = R('''r = apply(countsTable, 1,
@@ -2486,9 +2490,9 @@ def runTTest(outfile,
         x[groups == '%(control)s']) } )
         ''' % locals())
 
-        results = []
         for test_id, ttest in zip(r.names, r):
-            control_mean, treatment_mean = tuple(ttest.rx2('estimate'))
+            # TS, swapped order below as assignment was incorrect
+            treatment_mean, control_mean = tuple(ttest.rx2('estimate'))
             fold_change = treatment_mean / control_mean
             pvalue = tuple(ttest.rx2('p.value'))[0]
             significant = (0, 1)[pvalue < fdr]
@@ -2508,6 +2512,148 @@ def runTTest(outfile,
                                                        "OK")))
 
     writeExpressionResults(outfile, results)
+
+
+def identifyVariablesPandas(design_table):
+
+    # design table should have been processed by loadTagDataPandas already
+    # just in case, re-filter for not included samples here
+    design_table = design_table[design_table["include"] != 0]
+    conds = design_table['group'].tolist()
+    pairs = design_table['pair'].tolist()
+    groups = list(set(conds))
+
+    # TS, adapted from JJ code for DESeq2 design tables:
+    # if additional columns present, pass to 'factors'
+    if len(design_table.columns) > 3:
+        factors = design_table.iloc[:, 3:]
+    else:
+        factors = None
+
+    return conds, pairs, groups, factors
+
+
+def checkTagGroupsPandas(design_table, ref_group=None):
+    '''compute groups and pairs from tag data table.'''
+
+    conds, pairs, groups, factors = identifyVariablesPandas(design_table)
+
+    # Relevel the groups so that the reference comes first
+    # how to do this with python?
+    #if ref_group is not None:
+    #    R('''groups <- relevel(groups, ref = "%s")''' % ref_group)
+
+    # check this works, will need to make factors from normal df
+    # TS adapted from JJ code for DESeq2 -
+    # check whether there are additional factors in design file...
+    if factors:
+        E.warn("There are additional factors in design file that are ignored"
+               " by groupTagData: ", factors)
+    else:
+        pass
+        
+    # Test if replicates exist - at least one group must have multiple samples
+    max_per_group = max([conds.count(x) for x in groups])
+
+    has_replicates = max_per_group >= 2
+
+    # Test if pairs exist:
+    npairs = len(set(pairs))
+    has_pairs = npairs == 2
+
+    # ..if so, at least two samples are required per pair
+    if has_pairs:
+        min_per_pair = min([pairs.count(x) for x in set(pairs)])
+        has_pairs = min_per_pair >= 2
+
+    pairs = list(set(pairs))
+
+    return groups, pairs, conds, has_replicates, has_pairs
+
+
+ResultColumns = ["test_id", "treatment_name", "treatment_mean",
+                 "treatment_std", "control_name", "control_mean",
+                 "control_std", "p_value", "p_value_adj", "l2fold", "fold",
+                 "transformed_l2fold", "significant", "status"]
+
+ResultColumns_dtype = {"test_id": object, "treatment_name": object,
+                       "treatment_mean": float, "treatment_std":
+                       float, "control_name": object, "control_mean":
+                       float, "control_std": float, "p_value": float,
+                       "p_value_adj": float, "l2fold": float, "fold":
+                       float, "transformed_l2fold": float,
+                       "significant": int, "status": object}
+
+
+def makeEmptyDataFrameDict():
+    return {key: [] for key in ResultColumns}
+
+
+def runTTestPandas(counts_table,
+                   design_table,
+                   outfile,
+                   outfile_prefix,
+                   fdr,
+                   ref_group=None):
+    '''apply a ttest on the data.
+
+    For the T-test it is best to use FPKM values as
+    this method does not perform any library normalization.
+    Alternatively, perform normalisation on counts table using Counts.py
+    '''
+    stats = importr('stats')
+
+    groups, pairs, conds, has_replicates, has_pairs = checkTagGroupsPandas(
+        design_table, ref_group)
+
+    DF_Dict = makeEmptyDataFrameDict()
+
+    for combination in itertools.combinations(groups, 2):
+        # as each combination may have different numbers of samples in control
+        # and treatment, calculations have to be performed on a per
+        # combination basis
+
+        control, treatment = combination
+        n_rows = counts_table.shape[0]
+        DF_Dict["control_name"].extend((control,)*n_rows)
+        DF_Dict["treatment_name"].extend((treatment,)*n_rows)
+        DF_Dict["test_id"].extend(counts_table.index.tolist())        
+
+        # subset counts table for each combination
+        c_keep = [x == control for x in conds]
+        control_counts = counts_table.iloc[:, c_keep]
+        t_keep = [x == treatment for x in conds]
+        treatment_counts = counts_table.iloc[:, t_keep]
+    
+        c_mean = control_counts.mean(axis=1)
+        DF_Dict["control_mean"].extend(c_mean)
+        DF_Dict["control_std"].extend(control_counts.std(axis=1))
+
+        t_mean = treatment_counts.mean(axis=1)
+        DF_Dict["treatment_mean"].extend(t_mean)
+        DF_Dict["treatment_std"].extend(treatment_counts.std(axis=1))
+
+        t, prob = ttest_ind(control_counts, treatment_counts, axis=1)
+        DF_Dict["p_value"].extend(prob)
+        # what about zero values?!
+        DF_Dict["fold"].extend(t_mean / c_mean)
+
+    DF_Dict["p_value_adj"].extend(
+        list(stats.p_adjust(FloatVector(DF_Dict["p_value"]), method='BH')))
+
+    DF_Dict["significant"].extend(
+        [int(x < fdr) for x in DF_Dict["p_value_adj"]])
+
+    DF_Dict["l2fold"].extend(list(numpy.log2(DF_Dict["fold"])))
+    # note: the transformed log2 fold change is not transformed!
+    DF_Dict["transformed_l2fold"].extend(list(numpy.log2(DF_Dict["fold"])))
+
+    # set all status values to "OK"
+    DF_Dict["status"].extend(("OK",)*len(DF_Dict["test_id"]))
+
+    results = pandas.DataFrame(DF_Dict)
+    results.set_index("test_id", inplace=True)
+    results.to_csv(outfile, sep="\t", header=True, index=True)
 
 
 def outputSpikeIns(filename_tags,

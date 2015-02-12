@@ -86,7 +86,8 @@ def loadTagDataPandas(tags_filename, design_filename):
 
     '''
 
-    counts_table = pd.read_table(sys.stdin, sep="\t", index_col=0, comment="#")
+    counts_table = pd.read_table(tags_filename, sep="\t",
+                                 index_col=0, comment="#")
 
     E.info("read data: %i observations for %i samples" % counts_table.shape)
 
@@ -164,7 +165,14 @@ def filterTagDataPandas(counts_table,
                 len(take) - sum(take)))
         counts_table = counts_table[take]
 
-    return counts_table
+    # need to return altered design table based on filtering
+    # in case samples are removed!
+
+    design_table = design_table.ix[high_samples]
+        
+    nobservations, nsamples = counts_table.shape
+        
+    return nobservations, nsamples, counts_table, design_table
 
 
 def mapGroups(design_table):
