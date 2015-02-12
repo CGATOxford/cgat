@@ -734,7 +734,7 @@ def main(argv=None):
             if options.contig_pattern:
                 to_remove = [re.compile(x)
                              for x in options.contig_pattern.split(",")]
-                if any([x.match(gff.contig) for x in to_remove]):
+                if any([x.search(gff.contig) for x in to_remove]):
                     filtered_contigs[gff.contig] += 1
                     continue
 
