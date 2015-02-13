@@ -32,14 +32,15 @@ EXPRESSIONS = (
     ('CGATPipelines', 'CGATPipelines/*.py'),
     ('trackers', 'CGATPipelines/pipeline_docs/*/trackers/*.py'))
 
-# Counters to ignore in the pep8 BaseReport
-IGNORE = set(('E101',
-              'E201',
-              'E202',
-              'E122',
-              'E265',
-              'E501',
-              'E502',
+# Codes to ignore in the pep8 BaseReport
+IGNORE = set(('E101',  # indentation contains mixed spaces and tabs
+              'E201',  # whitespace after '('
+              'E202',  # whitespace before ')'
+              'E122',  # continuation line missing indentation or outdented
+              'E265',  # block comment should start with '# '
+              'E501',  # line too long (82 > 79 characters)
+              'E502',  # the backslash is redundant between brackets
+              'E731',  # do not assign a lambda expression, use a def
               'W191',
               'W291',
               'W293',

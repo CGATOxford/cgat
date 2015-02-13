@@ -29,19 +29,11 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
 import re
-import getopt
-import time
-import optparse
-import math
-import tempfile
 import random
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
-import Bio
 import CGAT.FastaIterator as FastaIterator
 import CGAT.IOTools as IOTools
 
@@ -80,7 +72,7 @@ def main(argv=None):
         filename_biased_codon_usage=None,
         filename_bulk_codon_usage=None,
         stop_codons=("TAG", "TAA", "TGA"),
-        precision = 10000,
+        precision=10000,
     )
 
     (options, args) = E.Start(parser, add_pipe_options=True)
@@ -90,17 +82,21 @@ def main(argv=None):
     # get map of amino acids to codons
     map_aa2codons = Genomics.GetMapAA2Codons()
 
-    # for codon based shuffling: build ranges based on strength of bias and on reference codon usage
-    # Bias switches from completely biased to unbiased. Unbiased is uniform
-    # usage.
+    # for codon based shuffling: build ranges based on strength of
+    # bias and on reference codon usage Bias switches from completely
+    # biased to unbiased. Unbiased is uniform usage.
     if options.filename_biased_codon_usage:
 
         map_codon2frequency = IOTools.ReadMap(
-            open(options.filename_biased_codon_usage, "r"), map_functions=(str, float), has_header = True)
+            open(options.filename_biased_codon_usage, "r"),
+            map_functions=(str, float),
+            has_header=True)
 
         if options.filename_bulk_codon_usage:
             map_codon2frequency_bulk = IOTools.ReadMap(
-                open(options.filename_bulk_codon_usage, "r"), map_functions=(str, float), has_header = True)
+                open(options.fileneame_bulk_codon_usage, "r"),
+                map_functions=(str, float),
+                has_header=True)
 
         codon_ranges = {}
         for aa in map_aa2codons.keys():

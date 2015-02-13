@@ -344,7 +344,7 @@ def main(argv=None):
                                "separateexonprofile",
                                "separateexonprofilewithintrons",
                                ),
-                      help = 'counters to use. Counters describe the '
+                      help='counters to use. Counters describe the '
                       'meta-gene structure to use. '
                       'Note using geneprofilewithintrons, or '
                       'geneprofileabsolutedistancefromthreeprimeend will '
@@ -375,7 +375,7 @@ def main(argv=None):
         dest="transcript_normalization",
         type="choice",
         choices=("none", "max", "sum", "total-max", "total-sum"),
-        help = "normalization to apply on each transcript "
+        help="normalization to apply on each transcript "
         "profile before adding to meta-gene profile. "
         "[%default]")
 
@@ -384,14 +384,14 @@ def main(argv=None):
         dest="profile_normalizations",
         type="choice", action="append",
         choices=("all", "none", "area", "counts", "background"),
-        help = "normalization to apply on meta-gene "
+        help="normalization to apply on meta-gene "
         "profile normalization. "
         "[%default]")
 
     parser.add_option(
         "-r", "--reporter", dest="reporter", type="choice",
         choices=("gene", "transcript"),
-        help = "report results for genes or transcripts."
+        help="report results for genes or transcripts."
         " When 'genes` is chosen, exons across all transcripts for"
         " a gene are merged. When 'transcript' is chosen, counts are"
         " computed for each transcript separately with each transcript"

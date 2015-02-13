@@ -36,19 +36,13 @@ import sys
 import string
 import re
 import tempfile
-import subprocess
-import optparse
-import time
 import math
 import code
 import CGAT.Experiment as E
 import CGAT.MatlabTools as MatlabTools
 import numpy
 import CGAT.Stats as Stats
-
 from rpy2.robjects import r as R
-import rpy2.robjects as ro
-import rpy2.robjects.numpy2ri
 
 
 def readTable(lines,
@@ -61,7 +55,7 @@ def readTable(lines,
               colours=None,
               ):
     """read a matrix. There probably is a routine for this in Numpy, which
-    I haven't found yet. 
+    I haven't found yet.
 
     The advantage of using rpy's mechanism is to allow for 
     missing values.
@@ -123,16 +117,17 @@ def readTable(lines,
     outfile.close()
 
     # rpy.set_default_mode(rpy.NO_CONVERSION)
-    # note that the conversion is not perfect. Some missing values are assigned to "nan", while some
-    # are -2147483648. They seem to treated correctly, though, within R, but note that when computing
-    # something like sum(), the result in python after conversion might be
-    # -2147483648.
+    # note that the conversion
+    # is not perfect. Some missing values are assigned to "nan", while
+    # some are -2147483648. They seem to treated correctly, though,
+    # within R, but note that when computing something like sum(), the
+    # result in python after conversion might be -2147483648.
     if headers:
         matrix = R("""%s <- read.table( '%s', na.string = c("NA", "na", 'nan', 'NaN'), col.names=c('%s'), sep="\t" )""" %
                    (assign, name, "','".join(headers)))
     else:
         matrix = R(
-            """%s <- read.table( '%s', na.string = c("NA", "na", 'nan', 'NaN'), col.names=headers, sep="\t" )""" % (assign, name) )
+            """%s <- read.table( '%s', na.string = c("NA", "na", 'nan', 'NaN'), col.names=headers, sep="\t" )""" % (assign, name))
 
     # rpy.set_default_mode(rpy.BASIC_CONVERSION)
     os.remove(name)
@@ -197,14 +192,14 @@ def main(argv=None):
     parser.add_option("-s", "--stats", dest="statistics", type="choice",
                       choices=("correlation", "spearman", "pearson", "count"),
                       help="statistical quantities to compute [default=%default]",
-                      action = "append")
+                      action="append")
 
     parser.add_option("-p", "--plot", dest="plot", type="choice",
                       choices=("scatter", "pairs", "panel", "bar", "bar-stacked",
                                "bar-besides", "1_vs_x", "matched", "boxplot", "scatter+marginal",
                                "scatter-regression"),
                       help="plots to plot [default=%default]",
-                      action = "append")
+                      action="append")
 
     parser.add_option("-t", "--threshold", dest="threshold", type="float",
                       help="min threshold to use for counting method [default=%default].")
@@ -305,15 +300,17 @@ def main(argv=None):
 
     if options.input_filename2:
         # read another matrix (should be of the same format.
-        matrix2, headers2, colours2, legend2 = readTable(lines,
-                                                         "matrix2",
-                                                         take_columns=options.columns,
-                                                         headers=True,
-                                                         colours=options.colours,
-                                                         row_names=options.legend)
+        matrix2, headers2, colours2, legend2 = readTable(
+            lines,
+            "matrix2",
+            take_columns=options.columns,
+            headers=True,
+            colours=options.colours,
+            row_names=options.legend)
+
     R.assign("headers", headers)
 
-    ndata = R( """length( matrix[,1] )""" )[0]
+    ndata = R("""length( matrix[,1] )""")[0]
 
     if options.loglevel >= 1:
         options.stdlog.write("# read matrix: %ix%i\n" % (len(headers), ndata))
@@ -354,17 +351,18 @@ def main(argv=None):
                                               "na"))
 
                     else:
-                        options.stdout.write("%s\t%s\t%6.4f\t%s\t%e\t%i\t%s\t%s\n" %
-                                             (headers[x], headers[y],
-                                              result.rx2('estimate').rx2(
-                                                  'cor')[0],
-                                              Stats.getSignificance(
-                                                  float(result.rx2('p.value')[0])),
-                                              result.rx2('p.value')[0],
-                                              result.rx2('parameter').rx2(
-                                                  'df')[0],
-                                              result.rx2('method')[0],
-                                              result.rx2('alternative')[0]))
+                        options.stdout.write(
+                            "%s\t%s\t%6.4f\t%s\t%e\t%i\t%s\t%s\n" %
+                            (headers[x], headers[y],
+                             result.rx2('estimate').rx2(
+                                 'cor')[0],
+                             Stats.getSignificance(
+                                 float(result.rx2('p.value')[0])),
+                             result.rx2('p.value')[0],
+                             result.rx2('parameter').rx2(
+                                 'df')[0],
+                             result.rx2('method')[0],
+                             result.rx2('alternative')[0]))
 
         elif method == "spearman":
             options.stdout.write("\t".join(("var1", "var2",
@@ -376,16 +374,16 @@ def main(argv=None):
             for x in range(len(headers) - 1):
                 for y in range(x + 1, len(headers)):
                     result = R(
-                        """cor.test( matrix[,%i], matrix[,%i], method='spearman' )""" % (x + 1, y + 1))
-                    options.stdout.write("%s\t%s\t%6.4f\t%s\t%e\t%i\t%s\t%s\n" %
-                                         (headers[x], headers[y],
-                                          result['estimate']['rho'],
-                                          Stats.getSignificance(
-                                              float(result['p.value'])),
-                                          result['p.value'],
-                                          result['parameter']['df'],
-                                          result['method'],
-                                          result['alternative']))
+                        """cor.test( matrix[,%i], matrix[,%i], method='spearman')""" % (x + 1, y + 1))
+                    options.stdout.write(
+                        "%s\t%s\t%6.4f\t%s\t%e\t%i\t%s\t%s\n" %
+                        (headers[x], headers[y],
+                         result['estimate']['rho'],
+                         Stats.getSignificance(float(result['p.value'])),
+                         result['p.value'],
+                         result['parameter']['df'],
+                         result['method'],
+                         result['alternative']))
 
         elif method == "count":
             # number of shared elements > threshold
@@ -405,7 +403,7 @@ def main(argv=None):
             if take:
                 E.warn("removing empty columns %s before plotting" % str(take))
                 matrix = R.subset(matrix, select=[x + 1 for x in take])
-                R.assign("""matrix""", matrix )
+                R.assign("""matrix""", matrix)
                 headers = [headers[x] for x in take]
                 if legend:
                     legend = [headers[x] for x in take]
@@ -431,12 +429,12 @@ def main(argv=None):
             extra_options += ", log='%s'" % options.logscale
 
         if options.xrange:
-            extra_options += ", xlim=c(%f,%f)" % tuple(map(float,
-                                                           options.xrange.split(",")))
+            extra_options += ", xlim=c(%f,%f)" % tuple(
+                map(float, options.xrange.split(",")))
 
         if options.yrange:
-            extra_options += ", ylim=c(%f,%f)" % tuple(map(float,
-                                                           options.yrange.split(",")))
+            extra_options += ", ylim=c(%f,%f)" % tuple(
+                map(float, options.yrange.split(",")))
 
         if options.hardcopy:
             if options.hardcopy.endswith(".eps"):
@@ -487,16 +485,18 @@ def main(argv=None):
             elif method == "pairs":
                 if options.add_diagonal:
                     R(
-                        """panel.hist <- function( x,y,...  ) { points(x,y,...); abline(0,1); }""" )
+                        """panel.hist <- function( x,y,...  ) { points(x,y,...); abline(0,1); }""")
                 else:
                     R(
-                        """panel.hist <- function( x,y,...  ) { points(x,y,...); }""" )
+                        """panel.hist <- function( x,y,...  ) { points(x,y,...); }""")
 
-                # There used to be a argument na_action="na.omit", but removed this
-                # as there appeared error messages saying "na.action is not a graphical parameter"
-                # and the plots showed occasionally the wrong scale.
-                # cex=point_size also caused trouble (error message: "X11 used
-                # font size 8 when 2 was requested" or similar)
+                # There used to be a argument na_action="na.omit", but
+                # removed this as there appeared error messages saying
+                # "na.action is not a graphical parameter" and the
+                # plots showed occasionally the wrong scale.
+                # cex=point_size also caused trouble (error message:
+                # "X11 used font size 8 when 2 was requested" or
+                # similar)
                 if options.colours:
                     R.pairs(matrix,
                             pch=pch,
@@ -562,8 +562,8 @@ def main(argv=None):
                     # after plots have been created
                     R.par(oma=R.c(0, 0, 4, 0))
 
-                R( """matrix""" )
-                R( """
+                R("""matrix""")
+                R("""
 x <- matrix[,1];
 y <- matrix[,2];
 xhist <- hist(x, breaks=20, plot=FALSE);
@@ -613,8 +613,8 @@ title(main='%s');
 
                 xlabel, ylabel = options.labels.split(",")
 
-                R( """layout(matrix(seq(1,%i), %i, %i, byrow = TRUE))""" %
-                   (w * h, w, h))
+                R("""layout(matrix(seq(1,%i), %i, %i, byrow = TRUE))""" %
+                  (w * h, w, h))
                 for a, b in pairs:
                     new_matrix = filter(lambda x:
                                         x[0] not in (float("nan"), PosInf, NegInf) and
@@ -622,7 +622,7 @@ title(main='%s');
                                             float("nan"), PosInf, NegInf),
                                         zip(matrix[a].values()[0], matrix[b].values()[0]))
                     try:
-                        R( """plot(matrix[,%i], matrix[,%i], main='%s versus %s', cex=0.5, pch=".", xlab='%s', ylab='%s' )""" % (
+                        R("""plot(matrix[,%i], matrix[,%i], main='%s versus %s', cex=0.5, pch=".", xlab='%s', ylab='%s' )""" % (
                             a + 1, b + 1, headers[b], headers[a], xlabel, ylabel))
                     except rpy.RException, msg:
                         print "could not plot %s versus %s: %s" % (headers[b], headers[a], msg)

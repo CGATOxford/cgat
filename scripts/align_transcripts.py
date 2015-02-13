@@ -24,7 +24,7 @@ After alignment, the pseudo-transcripts are split into separate
 parts again.
 
 If the peptide sequence contains at least one character ``U``, the
-sequence is assumed to be selonoprotein. 
+sequence is assumed to be selonoprotein.
 
 
 Usage
@@ -87,9 +87,6 @@ class Segment:
     def __init__(self):
         pass
 
-#---------------------------------------------------------
-#---------------------------------------------------------
-#---------------------------------------------------------
 # Note: maps are in one-based coordinates, but residue
 # return values are in zero-based coordinates
 # The calling functions have to deal with this
@@ -133,10 +130,6 @@ def MapP2CLeft(map_p2c, residue):
         residue -= 1
 
     return -1
-
-#---------------------------------------------------------
-#---------------------------------------------------------
-#---------------------------------------------------------
 
 
 def buildFragments(exons, input, pseudogenes, options, coordinate_factor=3,
@@ -431,19 +424,19 @@ def buildFragments(exons, input, pseudogenes, options, coordinate_factor=3,
                     # thread each sequence through the peptide alignment
                     if segment.mCds:
 
-                        ##                         muscle = WrapperMuscle.Muscle()
-                        ##                         mali = Mali.Mali()
+                        #                         muscle = WrapperMuscle.Muscle()
+                        #                         mali = Mali.Mali()
                         # for x in range(len(segment.mCds)):
-                        ##                             mali.addSequence( segment.mMembers[x], 0, 0, segment.mCds[x] )
+                        #                             mali.addSequence( segment.mMembers[x], 0, 0, segment.mCds[x] )
 
-                        ##                         aligned = muscle.Run( mali )
+                        #                         aligned = muscle.Run( mali )
 
-                        ##                         cds_consensus = aligned.getConsensus( mark_with_gaps = True )
+                        #                         cds_consensus = aligned.getConsensus( mark_with_gaps = True )
 
                         # if options.loglevel >= 6:
                         # options.stdlog.write("# consensus cds alignment:\n")
-                        ##                             aligned.writeToFile( options.stdlog )
-                        ##                             options.stdlog.write( cds_consensus + "\n" )
+                        #                             aligned.writeToFile( options.stdlog )
+                        #                             options.stdlog.write( cds_consensus + "\n" )
                         # options.stdlog.flush()
 
                         cds_consensus = ["-"] * len(pep_consensus) * 3
@@ -512,8 +505,6 @@ def buildFragments(exons, input, pseudogenes, options, coordinate_factor=3,
 
     return segments
 
-# ------------------------------------------------------------
-
 
 def writeToFile(mali, section, options, is_aligned=True):
     """write mali to file."""
@@ -527,8 +518,6 @@ def writeToFile(mali, section, options, is_aligned=True):
     if is_aligned and not mali.checkLength():
         raise "mali in file %s has entries of different lengths" % (
             options.output_filename_pattern % section)
-
-# ------------------------------------------------------------
 
 
 def main(argv=None):

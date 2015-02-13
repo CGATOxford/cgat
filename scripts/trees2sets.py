@@ -60,24 +60,11 @@ Command line options
 
 """
 
-import os
 import sys
-import string
 import re
-import getopt
-import optparse
-
-import CGAT.Orthologs as Orthologs
-
-USAGE = """python trees2sets.py < stdin 
-
-
-"""
-
 import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 import CGAT.SetTools as SetTools
-import CGAT.IOTools as IOTools
 
 
 def buildPattern(nspecies, s, members=None):
@@ -106,8 +93,6 @@ def parseIdentifier(id, options):
         t = g
         q = "UK"
         return s, t, g, q
-
-# ------------------------------------------------------------------------
 
 
 def getOrthologNodes(tree, positive_set, options, selector="strict", outgroups=None):

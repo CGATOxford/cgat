@@ -1,5 +1,4 @@
-"""
-===========================
+"""===========================
 Variant annotation pipeline
 ===========================
 
@@ -21,16 +20,17 @@ Overview
 Usage
 =====
 
-See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information how to use CGAT pipelines.
+See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general
+information how to use CGAT pipelines.
 
 Configuration
 -------------
 
-The pipeline requires a configured :file:`pipeline.ini` file. 
+The pipeline requires a configured :file:`pipeline.ini` file.
 
-The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
-(see :ref:`PipelineReporting`). To start with, use the files supplied with the
-Example_ data.
+The sphinxreport report requires a :file:`conf.py` and
+:file:`sphinxreport.ini` file (see :ref:`PipelineReporting`). To start
+with, use the files supplied with the Example_ data.
 
 Input
 -----
@@ -38,15 +38,15 @@ Input
 Variants
 ++++++++
 
-Variants are read from a :term:`vcf` formatted file called :file:`variants.vcf.gz`. 
-The file is assumed to have been compressed with :file:`bgzip` and compressed with
-tabix.
+Variants are read from a :term:`vcf` formatted file called
+:file:`variants.vcf.gz`.  The file is assumed to have been compressed
+with :file:`bgzip` and compressed with tabix.
 
-The tracks are taken from the headers in the :term:`vcf` file. Please avoid any special
-characters like ``_][*.+-``  within strain names.
+The tracks are taken from the headers in the :term:`vcf` file. Please
+avoid any special characters like ``_][*.+-`` within strain names.
 
-The pipeline expects the following information within the genotype field in 
-the :term:`vcf` file:
+The pipeline expects the following information within the genotype
+field in the :term:`vcf` file:
 
 GT
    The genotype
@@ -63,11 +63,12 @@ Optional inputs
 Requirements
 ------------
 
-The pipeline requires the results from :doc:`pipeline_annotations`. Set the configuration variable 
+The pipeline requires the results from
+:doc:`pipeline_annotations`. Set the configuration variable
 :py:data:`annotations_database` and :py:data:`annotations_dir`.
 
-On top of the default CGAT setup, the pipeline requires the following software to be in the 
-path:
+On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:
 
 +--------------------+-------------------+------------------------------------------------+
 |*Program*           |*Version*          |*Purpose*                                       |
@@ -83,8 +84,9 @@ The major output is in the database file :file:`csvdb`.
 Example
 =======
 
-Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_variants.tgz.
-To run the example, simply unpack and untar::
+Example data is available at
+http://www.cgat.org/~andreas/sample_data/pipeline_variants.tgz.  To
+run the example, simply unpack and untar::
 
    wget http://www.cgat.org/~andreas/sample_data/pipeline_variants.tgz
    tar -xvzf pipeline_variants.tgz
@@ -137,17 +139,16 @@ import pysam
 # only update R if called as pipeline
 # otherwise - failure with sphinx
 from rpy2.robjects import r as R
-import rpy2.robjects as ro
-import rpy2.robjects.numpy2ri
+import CGAT.Pipeline as P
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 ###################################################
 ###################################################
 ###################################################
 # Pipeline configuration
 ###################################################
-
 # load options from the config file
-import CGAT.Pipeline as P
+
 P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
@@ -167,7 +168,7 @@ PipelineUCSC.PARAMS = PARAMS
 ###################################################################
 # Helper functions mapping tracks to conditions, etc
 ###################################################################
-import CGATPipelines.PipelineTracks as PipelineTracks
+
 
 # need to be refactored
 
@@ -177,7 +178,6 @@ SEPARATOR = "|"
 ###################################################################
 # Helper functions mapping tracks to conditions, etc
 ###################################################################
-import CGATPipelines.PipelineTracks as PipelineTracks
 
 
 class TracksVCF (PipelineTracks.Tracks):

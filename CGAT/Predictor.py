@@ -37,10 +37,20 @@ import os
 import sys
 import string
 import re
-import optparse
 import tempfile
-import time
 import subprocess
+from CGAT import Experiment as E
+from CGAT import Genomics as Genomics
+from CGAT import IndexedFasta as IndexedFasta
+from CGAT import Prediction as Prediction
+from CGAT import PredictionParser as PredictionParser
+try:
+    import alignlib_lite
+except ImportError:
+    pass
+from CGAT import Cluster as Cluster
+from CGAT import GTF as GTF
+
 
 USAGE = """python %s [OPTIONS] peptide genome
 
@@ -64,19 +74,6 @@ chr1    pseudogene.org  pseudogene (Duplicated) 33226224        33226423        
 
 The file has to be sorted appropriately so that all the regions belonging to a group are adjacent.
 """
-
-from CGAT import Experiment as E
-from CGAT import Genomics as Genomics
-from CGAT import IndexedFasta as IndexedFasta
-from CGAT import Prediction as Prediction
-from CGAT import PredictionParser as PredictionParser
-try:
-    import alignlib_lite
-except ImportError:
-    pass
-from CGAT import Cluster as Cluster
-from CGAT import GTF as GTF
-import threading
 
 
 class Error(Exception):

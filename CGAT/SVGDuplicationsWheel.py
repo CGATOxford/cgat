@@ -36,13 +36,13 @@ Code
 import os
 import sys
 import string
-import re
-import getopt
-import time
-import optparse
 import math
 import tempfile
 import bisect
+from CGAT import Experiment as Experiment
+from CGAT import IOTools as IOTools
+from CGAT import SVGdraw as SVGdraw
+from CGAT import TreeTools as TreeTools
 
 USAGE = """python optic/plot_duplications.py [OPTIONS] < stdin > stdout
 
@@ -57,15 +57,17 @@ chr1    1000
 chr2    1000
 chr3    1000
 
-The duplications are input via standard input as a tab-separated table containing
-the following three fields:
+The duplications are input via standard input as a tab-separated table
+containing the following three fields:
 
    1. cluster_id: an identifier for the cluster
-   2. locations: a ';' separated list of duplicated genes with their locations. Each
-        entry is of the following format:
+   2. locations: a ';' separated list of duplicated genes with their
+      locations. Each entry is of the following format:
         gene_id:chr:strand:start:end
-   3. tree: the tree of duplicated genes. This is used to color arcs by tree height.
-   The trees are in newick format.
+   3. tree: the tree of duplicated genes. This is used to color arcs
+      by tree height.
+
+The trees are in newick format.
 
 Example for standard input:
 
@@ -76,10 +78,6 @@ Output: the svg formatted file is writtent to standard output. Comment lines
 start with a '#'. You can remove this by setting -v 0 or --verbose=0.
 """
 
-from CGAT import Experiment as Experiment
-from CGAT import IOTools as IOTools
-from CGAT import SVGdraw as SVGdraw
-from CGAT import TreeTools as TreeTools
 
 # some definitions for the layout of the picture
 BLACK = (0, 0, 0)
@@ -330,7 +328,8 @@ class DuplicationPlot:
     def buildColourMap(self):
         """build map of heights to colours.
 
-        If self.mMiddleColour is defined, the gradient will be built in two steps:
+        If self.mMiddleColour is defined, the gradient will be built in
+        two steps:
         1: first half: start to middle
         2: second half: middle to end
 
@@ -811,8 +810,9 @@ class DuplicationPlot:
                 # assumes that path starts with a move
                 path = element.attributes['d'].split(" ")
                 if path[0] != "M":
-                    raise "don't know what to do with paths not starting with 'M': %s" % (
-                        " ".join(path))
+                    raise ValueError(
+                        "don't know what to do with paths not starting with 'M': %s" %
+                        (" ".join(path)))
                 path[1] = str(float(path[1]) + shiftx)
                 path[2] = str(float(path[2]) + shifty)
                 element.attributes['d'] = " ".join(path)
@@ -917,20 +917,27 @@ class DuplicationPlot:
 if __name__ == "__main__":
 
     parser = E.OptionParser(
-        version="%prog version: $Id: SVGDuplicationsWheel.py 2784 2009-09-10 11:41:14Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    parser.add_option("-e", "--header-names", dest="headers", action="store_true",
-                      help="first row is a header [ignored].")
-    parser.add_option("-t", "--title", dest="title", type="string",
-                      help="page title.")
-    parser.add_option("-f", "--footer", dest="footer", type="string",
-                      help="page footer.")
-    parser.add_option("-c", "--contigs-tsv-file", dest="filename_contig_sizes", type="string",
-                      help="filname with contig sizes.")
-    parser.add_option("-r", "--territory-extension", dest="radius", type="int",
-                      help="radius.")
-    parser.add_option("-i", "--flank-increment-size", dest="radius_increment", type="int",
-                      help="radius increment.")
+    parser.add_option(
+        "-e", "--header-names", dest="headers", action="store_true",
+        help="first row is a header [ignored].")
+    parser.add_option(
+        "-t", "--title", dest="title", type="string",
+        help="page title.")
+    parser.add_option(
+        "-f", "--footer", dest="footer", type="string",
+        help="page footer.")
+    parser.add_option(
+        "-c", "--contigs-tsv-file", dest="filename_contig_sizes", type="string",
+        help="filname with contig sizes.")
+    parser.add_option(
+        "-r", "--territory-extension", dest="radius", type="int",
+        help="radius.")
+    parser.add_option(
+        "-i", "--flank-increment-size", dest="radius_increment", type="int",
+        help="radius increment.")
     parser.add_option("-u", "--url", dest="url", type="string",
                       help="string to build url for annotation.")
     parser.add_option("--min-contig", dest="min_contig_size", type="string",
@@ -958,16 +965,18 @@ if __name__ == "__main__":
         separator="|",
         quality2symbol={'CG': "circle", 'PG': "circle", 'SG': "circle"},
         quality2mask=(
-            "RG", "CP", "PP", "SP", "RP", "CF", "PF", "SF", "UG", "UP", "UF", "BF", "UK"),
-        sort_by_size = True,
-        input_format = "pairwise",
+            "RG", "CP", "PP", "SP", "RP", "CF", "PF",
+            "SF", "UG", "UP", "UF", "BF", "UK"),
+        sort_by_size=True,
+        input_format="pairwise",
     )
 
     (options, args) = Experiment.Start(parser, add_pipe_options=True)
 
     if options.filename_contig_sizes:
-        map_contig2size = IOTools.ReadMap(open(options.filename_contig_sizes, "r"),
-                                          map_functions=(str, int))
+        map_contig2size = IOTools.ReadMap(
+            open(options.filename_contig_sizes, "r"),
+            map_functions=(str, int))
 
     # read data and get contigs that are used (i.e.: remove empty contigs)
     chrs = {}

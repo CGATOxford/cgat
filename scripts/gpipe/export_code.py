@@ -58,21 +58,18 @@ Code
 
 '''
 import sys
-import string
 import re
-import optparse
-import time
 import os
 import shutil
 import tempfile
-
 import CGAT.Experiment as E
+from CGAT.Local import getMakefiles, getScripts, getModules
 
 USAGE = """python %s
 """ % sys.argv[0]
 
 PREAMBL = """################################################################################
-#   Gene prediction pipeline 
+#   Gene prediction pipeline
 #
 #   Copyright (C) 2007 Andreas Heger
 #
@@ -117,22 +114,20 @@ connection details to the postgres database).
 README_GENERIC = """
 DISCLAIMER:
 
-This pipeline was developed for the resources and setup we have here. Though the scripts
-(python and perl) and makefiles should be portable thanks to the widespread distribution of
-perl, python and make, you might have to dig into code if your setup varies from the one we
-have.
-"""
+This pipeline was developed for the resources and setup we have
+here. Though the scripts (python and perl) and makefiles should be
+portable thanks to the widespread distribution of perl, python and
+make, you might have to dig into code if your setup varies from the
+one we have.  """
 
 README_GPIPE = """
 SETUP
 
-Documentation can be found at 
+Documentation can be found at
 
 http://wwwfgu.anat.ox.ac.uk/~andreas/documentation/cgat/pipelines/Gpipe.html
 
 """
-
-from CGAT.Local import getMakefiles, getScripts, getModules
 
 
 def main(argv=None):
@@ -161,10 +156,10 @@ def main(argv=None):
     parser.set_defaults(
         tool_set="geneprediction",
         libdirs=("/home/andreas/cgat/", ),
-        scriptdirs = ("/home/andreas/cgat/", ),
-        name = None,
-        version = "0.0.1",
-        test = False,
+        scriptdirs=("/home/andreas/cgat/",),
+        name=None,
+        version="0.0.1",
+        test=False,
     )
 
     (options, args) = E.Start(parser)

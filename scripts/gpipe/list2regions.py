@@ -64,14 +64,13 @@ Code
 ----
 
 '''
-import os
 import sys
 import string
 import re
 import getopt
-
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
+from CGAT.Predictor2 import PredictorExonerate
 
 param_long_options = ["verbose=", "help", "max-percent-overlap=",
                       "min-coverage-query=", "min-score=", "min-percent-identity=",
@@ -89,8 +88,6 @@ param_options = "--subopt FALSE"
 param_loglevel = 2
 
 param_border = 100
-
-from CGAT.Predictor2 import PredictorExonerate
 
 
 def main(argv=None):

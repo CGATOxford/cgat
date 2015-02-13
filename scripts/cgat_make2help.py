@@ -10,9 +10,7 @@ cgat_make2help.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+extract help text from a makefile
 
 Usage
 -----
@@ -33,16 +31,9 @@ Command line options
 '''
 import os
 import sys
-import string
 import re
-import optparse
-import time
-
-"""extract help test from a makefile
-"""
-
 import CGAT.Experiment as E
-from CGAT.Local import getMakefiles, getScripts, getModules
+from CGAT.Local import getMakefiles, getScripts
 
 
 class Parameter:
@@ -50,7 +41,7 @@ class Parameter:
     def __init__(self, name, comment, default_value="na"):
         self.mName = name
         self.mComment = comment
-        self.mDefaultValue = value
+        self.mDefaultValue = default_value
         self.mValue = None
 
     def printPretty(self):

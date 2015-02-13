@@ -39,14 +39,9 @@ import string
 import re
 import tempfile
 import subprocess
-import optparse
 import shutil
 
 from types import *
-
-"""Wrapper for NJTree
-"""
-
 from CGAT import Experiment as E
 from CGAT import Mali as Mali
 from CGAT import IOTools as IOTools

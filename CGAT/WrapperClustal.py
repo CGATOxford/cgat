@@ -34,9 +34,6 @@ Code
 
 '''
 import os
-import sys
-import string
-import re
 import tempfile
 
 try:
@@ -47,8 +44,6 @@ except ImportError:
     pass
 """Wrapper for Clustal based on Biopython
 """
-
-from CGAT import Genomics as Genomics
 
 
 class Clustal:

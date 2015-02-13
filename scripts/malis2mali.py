@@ -60,15 +60,10 @@ Command line options
 '''
 import sys
 import re
-
-
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Mali as Mali
 import CGAT.Malis as Malis
-
-
-# ------------------------------------------------------------
 
 
 def main(argv=None):
@@ -111,7 +106,7 @@ def main(argv=None):
 
     parser.add_option("-m", "--method", dest="methods", type="choice",
                       choices=("filter-variants", ),
-                      help = "methods to apply")
+                      help="methods to apply")
 
     parser.add_option("-p", "--parameters", dest="parameters", type="string",
                       help="parameter stack for methods that require one.")
@@ -323,8 +318,8 @@ def main(argv=None):
     elif options.output_format == "codeml":
 
         # Codeml output with G option. The format is
-        ## "nseqs nnucleotides"
-        ## "G ngenes genelengths in codons"
+        # "nseqs nnucleotides"
+        # "G ngenes genelengths in codons"
 
         options.stdout.write("%i %i G\n" % (nseqs, nnucleotides))
         options.stdout.write("G %i %s\n" % (
