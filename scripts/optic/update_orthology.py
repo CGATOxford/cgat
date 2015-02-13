@@ -58,22 +58,15 @@ Code
 '''
 import os
 import sys
-import string
 import re
-import getopt
-import time
-import sets
-import optparse
-import math
-import tempfile
 import glob
+import CGAT.Experiment as E
 
 """ program $Id: optic/update_orthology.py 2781 2009-09-10 11:33:14Z andreas $
 
 update orthology assignments.
 
 """
-import CGAT.Experiment as E
 
 
 def createLink(old_fn, new_fn):

@@ -56,20 +56,9 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
-import re
-import tempfile
-import subprocess
-import optparse
-import time
-import math
 import csv
-
 import pgdb
-"""get statistics from an exons file.
-"""
 import CGAT.Experiment as E
 import CGAT.Exons as Exons
 

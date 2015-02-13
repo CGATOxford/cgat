@@ -31,12 +31,11 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
 import string
-import re
 import getopt
-import math
+import CGAT.Experiment as E
+import CGAT.MaliIO as MaliIO
 
 USAGE = """python %s [OPTIONS] < mali > filtered
 
@@ -62,11 +61,6 @@ param_mask_char = "x"
 
 param_subset = None
 param_filename_components = None
-
-import CGAT.Experiment as E
-import CGAT.MaliIO as MaliIO
-
-# ------------------------------------------------------------
 
 
 def main(argv=None):

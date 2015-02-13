@@ -288,7 +288,6 @@ import os
 import re
 import itertools
 import glob
-import collections
 import sqlite3
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
@@ -299,6 +298,8 @@ import CGAT.Expression as Expression
 import CGAT.BamTools as BamTools
 import CGATPipelines.PipelineGeneset as PipelineGeneset
 import CGATPipelines.PipelineRnaseq as PipelineRnaseq
+import CGAT.Pipeline as P
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 # levels of cuffdiff analysis
 # (no promotor and splice -> no lfold column)
@@ -311,7 +312,6 @@ CUFFDIFF_LEVELS = ("gene", "cds", "isoform", "tss")
 ###################################################
 
 # load options from the config file
-import CGAT.Pipeline as P
 P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
@@ -327,8 +327,6 @@ PARAMS.update(P.peekParameters(
 
 PipelineGeneset.PARAMS = PARAMS
 PipelineRnaseq.PARAMS = PARAMS
-
-import CGATPipelines.PipelineTracks as PipelineTracks
 
 Sample = PipelineTracks.AutoSample
 

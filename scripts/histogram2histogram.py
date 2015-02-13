@@ -32,10 +32,10 @@ Command line options
 
 '''
 import sys
-import re
 import string
-import os
-import optparse
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import numpy
 
 USAGE = """python %s < stdin > stdout
 
@@ -47,10 +47,6 @@ read in data and append columns to a density histogram
 '#' at start of line is a comment
 
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
-import numpy
 
 
 def main(argv=None):

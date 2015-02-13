@@ -38,12 +38,7 @@ import sys
 import string
 import re
 import tempfile
-import optparse
 import subprocess
-
-"""Wrapper for BlastZ.
-"""
-
 from CGAT import Genomics as Genomics
 from CGAT import Experiment as E
 

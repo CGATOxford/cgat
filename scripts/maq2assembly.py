@@ -11,7 +11,7 @@ Purpose
 -------
 
 .. todo::
-   
+
    describe purpose of the script.
 
 Usage
@@ -32,9 +32,9 @@ Command line options
 
 '''
 import sys
-import string
-import re
-import optparse
+import CGAT.Experiment as E
+import CGAT.GTF as GTF
+import CGAT.Stats as Stats
 
 USAGE = """python %s [OPTIONS] input1 input2
 
@@ -43,10 +43,6 @@ a gff file.
 
 Version: $Id: maq2assembly.py 2781 2009-09-10 11:33:14Z andreas $
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import CGAT.GTF as GTF
-import CGAT.Stats as Stats
 
 
 def reader(infile):

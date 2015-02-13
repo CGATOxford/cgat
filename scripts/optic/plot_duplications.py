@@ -59,13 +59,13 @@ Code
 import os
 import sys
 import string
-import re
-import getopt
-import time
-import optparse
 import math
 import tempfile
 import bisect
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.SVGdraw as SVGdraw
+import CGAT.TreeTools as TreeTools
 
 USAGE = """python optic/plot_duplications.py [OPTIONS] < stdin > stdout
 
@@ -76,25 +76,23 @@ The script requirse the following input files:
 --contig-sizes: a filename with contig sizes to output. This is a tab-separated
     file with contig<tab>size on each line.
 
-In standard input the duplications are listed as a tab-separated file containing
-the following three fields:
+In standard input the duplications are listed as a tab-separated file
+containing the following three fields:
 
-   1. cluster_id: a numerical identifier for the cluster
-   2. locations: a ";" separated list of duplicated genes with their locations. Each
-        entry is of the following format:
-        gene_id:chr:strand:start:end
-   3. tree: the tree of duplicated genes. This is used to color arcs by tree height.
-   The trees are in newick format.
+1. cluster_id: a numerical identifier for the cluster
+
+2. locations: a ";" separated list of duplicated genes with their
+   locations. Each entry is of the following format:
+   gene_id:chr:strand:start:end
+
+3. tree: the tree of duplicated genes. This is used to color arcs by
+   tree height.
+
+The trees are in newick format.
 
 Output: the svg formatted file is writtent to standard output. Comment lines
 start with a "#". You can remove this by setting -v 0 or --verbose=0.
 """
-
-
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
-import CGAT.SVGdraw as SVGdraw
-import CGAT.TreeTools as TreeTools
 
 # some definitions for the layout of the picture
 BLACK = (0, 0, 0)
@@ -113,7 +111,6 @@ GREY_COLORS = map(lambda x: (x, x, x), range(0, MAX_GREY))
 DEFAULT_XWIDTH = 500
 DEFAULT_YWIDTH = 500
 DEFAULT_LINE_DISTANCE = 10
-1
 DEFAULT_OFFSET_Y = 20
 DEFAULT_BOX_WIDTH = 15
 DEFAULT_LINE_SPACING = 40
@@ -823,8 +820,8 @@ def main(argv=None):
         quality2symbol={'CG': "circle", 'PG': "circle", 'SG': "circle"},
         quality2mask=(
             "RG", "CP", "PP", "SP", "RP", "CF", "PF", "SF", "UG", "UP", "UF", "BF", "UK"),
-        sort_by_size = True,
-        input_format = "pairwise",
+        sort_by_size=True,
+        input_format="pairwise",
     )
 
     (options, args) = E.Start(parser, add_pipe_options=True)

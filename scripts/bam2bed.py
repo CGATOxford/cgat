@@ -38,7 +38,7 @@ Usage
 ::
 
    cgat bam2bed BAMFILE [--merge-pairs] [options]
-   
+
 operates on the file BAMFILE::
 
    cgat bam2bed [--merge-pairs] [options]
@@ -152,7 +152,7 @@ def main(argv=None):
 
     parser.add_option("--bed-format", dest="bed_format", type="choice",
                       choices=('3', '4', '5', '6'),
-                      help = "bed format to output. "
+                      help="bed format to output. "
                       " [default=%default]")
 
     parser.set_defaults(

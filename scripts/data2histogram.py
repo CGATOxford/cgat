@@ -30,17 +30,8 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
 import string
-import re
-import getopt
-import time
-import optparse
-import math
-import tempfile
-import types
-
 import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
 import numpy
@@ -99,21 +90,21 @@ def main(argv=None):
         titles=True,
         columns="all",
         append=(),
-        no_empty_bins = True,
-        min_value = None,
-        max_value = None,
-        normalize = False,
-        cumulative = False,
-        reverse_cumulative = False,
-        nonull = None,
-        ignore_out_of_range = False,
-        min_data = 1,
-        headers = None,
-        missing_value = "na",
-        dynamic_bins = False,
-        on_the_fly = False,
-        bin_format = "%.2f",
-        value_format = "%6.4f",
+        no_empty_bins=True,
+        min_value=None,
+        max_value=None,
+        normalize=False,
+        cumulative=False,
+        reverse_cumulative=False,
+        nonull=None,
+        ignore_out_of_range=False,
+        min_data=1,
+        headers=None,
+        missing_value="na",
+        dynamic_bins=False,
+        on_the_fly=False,
+        bin_format="%.2f",
+        value_format="%6.4f",
     )
 
     (options, args) = E.Start(parser)

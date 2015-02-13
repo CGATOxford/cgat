@@ -56,16 +56,9 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
-import re
-import getopt
-import time
-import sets
-import optparse
-import math
-import tempfile
+import CGAT.Experiment as E
+import pgdb
 
 """ program $Id: optic/analyze_genes.py 2781 2009-09-10 11:33:14Z andreas $
 
@@ -73,10 +66,6 @@ count number of matches found in gene prediction pipeline.
 
 Count by category and by gene.
 """
-import CGAT.Experiment as E
-import CGAT.Exons as Exons
-
-import pgdb
 
 parser = E.OptionParser(
     version="%prog version: $Id: optic/analyze_genes.py 2781 2009-09-10 11:33:14Z andreas $")

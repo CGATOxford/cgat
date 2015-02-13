@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-optic/analyze_sites_slr.py - 
+optic/analyze_sites_slr.py -
 ======================================================
 
 :Author: Andreas Heger
@@ -58,13 +58,15 @@ Code
 '''
 import os
 import sys
-import string
 import re
-import tempfile
-import subprocess
-import optparse
-
 from types import *
+import CGAT.Genomics as Genomics
+import CGAT.Experiment as E
+import scipy
+import scipy.stats
+import CGAT.WrapperSlr as WrapperSlr
+import CGAT.Mali as Mali
+import CGAT.CSV as CSV
 
 USAGE = """analyze results from site-specific codeml run.
 
@@ -73,15 +75,6 @@ The input is either:
    * filenames with a set of files of related codeml runs
 
 """
-
-import CGAT.Genomics as Genomics
-import CGAT.Experiment as E
-import scipy
-import scipy.stats
-import CGAT.WrapperSlr as WrapperSlr
-import CGAT.Mali as Mali
-import CGAT.IOTools as IOTools
-import CGAT.CSV as CSV
 
 
 class Result:

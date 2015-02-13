@@ -33,18 +33,13 @@ Command line options
 '''
 import sys
 import re
-import string
-import os
-import time
-import optparse
+import CGAT.Experiment as E
 
 USAGE = """python %s [token1 [token2 [...]]] < stdin > stdout
 
 filter lines where pattern matches
 
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
 
 
 def main(argv=None):

@@ -1,21 +1,9 @@
-import os
-import sys
-import re
-import types
 import itertools
 import glob
-import matplotlib.pyplot as plt
-import numpy
-import numpy.ma
-import sqlalchemy
-import collections
-from collections import OrderedDict as odict
-
-import CGAT.Stats as Stats
-import CGAT.IOTools as IOTools
 from CGATReport.Tracker import *
 from CGATReport.Utils import PARAMS as P
-
+import CGAT.Pipeline as Pipeline
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 ###################################################################
 ###################################################################
@@ -29,11 +17,9 @@ DATABASE = P['chipseq_backend']
 # cf. pipeline_chipseq.py
 # This should be automatically gleaned from pipeline_chipseq.py
 ###################################################################
-import CGAT.Pipeline as Pipeline
+
 PARAMS_PIPELINE = Pipeline.peekParameters(".",
                                           "pipeline_chipseq.py")
-
-import CGATPipelines.PipelineTracks as PipelineTracks
 
 Sample = PipelineTracks.Sample3
 

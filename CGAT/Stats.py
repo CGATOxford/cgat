@@ -178,10 +178,6 @@ def doLogLikelihoodTest(complex_ll, complex_np,
 
     return l
 
-#################################################################
-#################################################################
-#################################################################
-
 
 class BinomialTest:
 
@@ -190,16 +186,12 @@ class BinomialTest:
 
 
 def doBinomialTest(p, sample_size, observed, significance_threshold=0.05):
-    """perform a binomial test. 
+    """perform a binomial test.
 
     Given are p: the probability of the NULL hypothesis, the sample_size
     and the number of observed counts.
     """
     pass
-
-#################################################################
-#################################################################
-#################################################################
 
 
 class ChiSquaredTest:
@@ -211,8 +203,8 @@ class ChiSquaredTest:
 def doChiSquaredTest(matrix, significance_threshold=0.05):
     '''perform chi-squared test on a matrix.
 
-    The observed/expected values are in rows, the categories are in columns, for
-    example:
+    The observed/expected values are in rows, the categories are in
+    columns, for example:
 
     +---------+--------------+--------+----------+
     |set      |protein_coding|intronic|intergenic|
@@ -222,12 +214,17 @@ def doChiSquaredTest(matrix, significance_threshold=0.05):
     |expected |91            |10      |15        |
     +---------+--------------+--------+----------+
 
-    If there are only two categories (one degrees of freedom) the Yates correction is applied.
-    For each entry (observed-expected), the value 0.5 is subtracted ignoring the sign of the difference.
+    If there are only two categories (one degrees of freedom) the
+    Yates correction is applied.  For each entry (observed-expected),
+    the value 0.5 is subtracted ignoring the sign of the difference.
 
     The test throws an exception if
-    1. one or more expected categories are less than 1 (it does not matter what the observed values are)
+
+    1. one or more expected categories are less than 1 (it does not
+    matter what the observed values are)
+
     2. more than one-fifth of expected categories are less than 5
+
     '''
 
     nrows, ncols = matrix.shape
@@ -277,7 +274,8 @@ def doChiSquaredTest(matrix, significance_threshold=0.05):
     return result
 
 
-def doPearsonChiSquaredTest(p, sample_size, observed, significance_threshold=0.05):
+def doPearsonChiSquaredTest(p, sample_size, observed,
+                            significance_threshold=0.05):
     """perform a pearson chi squared test.
 
     Given are p: the probability of the NULL hypothesis, the sample_size
@@ -383,7 +381,8 @@ class DistributionalParameters:
 
     def getHeaders(self):
         """returns header of column separated values."""
-        return ("nval", "min", "max", "mean", "median", "stddev", "sum", "q1", "q3")
+        return ("nval", "min", "max", "mean", "median",
+                "stddev", "sum", "q1", "q3")
 
     def getHeader(self):
         """returns header of column separated values."""
@@ -528,7 +527,7 @@ class Summary(Result):
                           ))
 
 
-def adjustPValues(pvalues, method):
+def adjustPValuesR(pvalues, method):
     '''adjust P-Values for multiple testing using
     the p.adjust() method in R.
 
@@ -549,7 +548,8 @@ def smoothPValues(pvalues,
 
     if len(vlambda) > 1 and len(vlambda) < 4:
         raise ValueError(
-            " If length of vlambda greater than 1, you need at least 4 values.")
+            "if length of vlambda greater than 1, you need "
+            "at least 4 values.")
 
     if len(vlambda) > 1 and (min(vlambda) < 0 or max(vlambda) >= 1):
         raise ValueError("vlambda must be within [0, 1).")
@@ -593,7 +593,8 @@ def getPi0(pvalues,
 
     if len(vlambda) > 1 and len(vlambda) < 4:
         raise ValueError(
-            " If length of vlambda greater than 1, you need at least 4 values.")
+            "if length of vlambda greater than 1, you "
+            "need at least 4 values.")
 
     if len(vlambda) > 1 and (min(vlambda) < 0 or max(vlambda) >= 1):
         raise ValueError("vlambda must be within [0, 1).")
@@ -646,10 +647,10 @@ def getPi0(pvalues,
             minpi0 <- min(pi0)
             mse <- rep(0,length(vlambda))
             pi0_boot <- rep(0,length(vlambda))
-            for(i in 1:100) 
+            for(i in 1:100)
             {
                 pvalues_boot <- sample(pvalues,size=m,replace=TRUE)
-                for(i in 1:length(vlambda)) 
+                for(i in 1:length(vlambda))
                 {
                     pi0_boot[i] <- mean(pvalues_boot>vlambda[i])/(1-vlambda[i])
                 }
@@ -664,7 +665,8 @@ def getPi0(pvalues,
 
     if pi0 <= 0:
         raise ValueError(
-            "The estimated pi0 <= 0. Check that you have valid p-values or use another vlambda method.")
+            "The estimated pi0 <= 0. Check that you have valid p-values "
+            "or use another vlambda method.")
 
     return pi0
 
@@ -703,11 +705,13 @@ def doFDR(pvalues,
           smooth_df=3,
           smooth_log_pi0=False,
           plot=False):
-    """modeled after code taken from http://genomics.princeton.edu/storeylab/qvalue/linux.html.
+    """modeled after code taken from
+http://genomics.princeton.edu/storeylab/qvalue/linux.html.
 
     I did not like the error handling so I translated most to python.
 
     Compute FDR after method by Storey et al. (2002).
+
     """
 
     # set to default of qvalue method
@@ -722,7 +726,8 @@ def doFDR(pvalues,
 
     if len(vlambda) > 1 and len(vlambda) < 4:
         raise ValueError(
-            " If length of vlambda greater than 1, you need at least 4 values.")
+            "if length of vlambda greater than 1, "
+            "you need at least 4 values.")
 
     if len(vlambda) > 1 and (min(vlambda) < 0 or max(vlambda) >= 1):
         raise ValueError("vlambda must be within [0, 1).")
@@ -782,10 +787,10 @@ def doFDR(pvalues,
             minpi0 <- min(pi0)
             mse <- rep(0,length(vlambda))
             pi0_boot <- rep(0,length(vlambda))
-            for(i in 1:100) 
+            for(i in 1:100)
             {
                 pvalues_boot <- sample(pvalues,size=m,replace=TRUE)
-                for(i in 1:length(vlambda)) 
+                for(i in 1:length(vlambda))
                 {
                     pi0_boot[i] <- mean(pvalues_boot>vlambda[i])/(1-vlambda[i])
                 }
@@ -801,7 +806,8 @@ def doFDR(pvalues,
 
     if pi0 <= 0:
         raise ValueError(
-            "The estimated pi0 (%f) <= 0. Check that you have valid p-values or use another vlambda method." % pi0)
+            "The estimated pi0 (%f) <= 0. Check that you have valid p-values "
+            "or use another vlambda method." % pi0)
 
     if fdr_level is not None and (fdr_level <= 0 or fdr_level > 1):
         raise ValueError("'fdr_level' must be within (0, 1].")
@@ -834,14 +840,14 @@ v <- qvalues.rank(pvalues)
 m <- length(pvalues)
 qvalues <- pi0 * m * pvalues / v
 
-if(robust) 
+if(robust)
 {
         qvalues <- pi0*m*pvalues/(v*(1-(1-pvalues)^m))
 }
 qvalues[u[m]] <- min(qvalues[u[m]],1)
 
 rqvalues <- qvalues
-for(i in (m-1):1) 
+for(i in (m-1):1)
 {
    qvalues[u[i]] <- min(qvalues[u[i]],qvalues[u[i+1]],1)
 }
@@ -874,11 +880,13 @@ def doFDRPython(pvalues,
                 smooth_log_pi0=False,
                 pi0=None,
                 plot=False):
-    """modeled after code taken from http://genomics.princeton.edu/storeylab/qvalue/linux.html.
+    """modeled after code taken from
+    http://genomics.princeton.edu/storeylab/qvalue/linux.html.
 
     I did not like the error handling so I translated most to python.
 
     Compute FDR after method by Storey et al. (2002).
+
     """
 
     if min(pvalues) < 0 or max(pvalues) > 1:
@@ -897,7 +905,7 @@ def doFDRPython(pvalues,
 
         if len(vlambda) > 1 and len(vlambda) < 4:
             raise ValueError(
-                " if length of vlambda greater than 1, you need at least 4 values.")
+                "if length of vlambda greater than 1, you need at least 4 values.")
 
         if len(vlambda) > 1 and (min(vlambda) < 0 or max(vlambda) >= 1):
             raise ValueError("vlambda must be within [0, 1).")
@@ -967,7 +975,8 @@ def doFDRPython(pvalues,
 
     if pi0 <= 0:
         raise ValueError(
-            "The estimated pi0 <= 0. Check that you have valid p-values or use another vlambda method.")
+            "The estimated pi0 <= 0. Check that you have valid p-values "
+            "or use another vlambda method.")
 
     if fdr_level is not None and (fdr_level <= 0 or fdr_level > 1):
         raise ValueError("'fdr_level' must be within (0, 1].")
@@ -1013,10 +1022,6 @@ def doFDRPython(pvalues,
     result.xvalues = qvalues
 
     return result
-
-#################################################################
-#################################################################
-#################################################################
 
 
 class CorrelationTest:
@@ -1066,16 +1071,20 @@ class CorrelationTest:
 
     @classmethod
     def getHeaders(cls):
-        return ("coeff", "pvalue", "significance", "observations", "method", "alternative")
+        return ("coeff", "pvalue", "significance", "observations",
+                "method", "alternative")
 
 
-def filterMasked(xvals, yvals, missing=("na", "Nan", None, ""), dtype = numpy.float):
+def filterMasked(xvals, yvals, missing=("na", "Nan", None, ""),
+                 dtype=numpy.float):
     """convert xvals and yvals to numpy array skipping pairs with
     one or more missing values."""
     xmask = [i in missing for i in xvals]
     ymask = [i in missing for i in yvals]
-    return (numpy.array([xvals[i] for i in range(len(xvals)) if not xmask[i]], dtype=dtype),
-            numpy.array([yvals[i] for i in range(len(yvals)) if not ymask[i]], dtype=dtype))
+    return (numpy.array([xvals[i] for i in range(len(xvals))
+                         if not xmask[i]], dtype=dtype),
+            numpy.array([yvals[i] for i in range(len(yvals))
+                         if not ymask[i]], dtype=dtype))
 
 
 def doCorrelationTest(xvals, yvals):
@@ -1088,11 +1097,6 @@ def doCorrelationTest(xvals, yvals):
         raise ValueError("can not compute correlation with no data")
     if len(xvals) != len(yvals):
         raise ValueError("data vectors have unequal length")
-
-#     try:
-#         result = CorrelationTest( r_result = R.cor_test( xvals, yvals, na_action="na_omit" ) )
-#     except rpy.RPyException, msg:
-#         raise ValueError( msg )
 
     x, y = filterMasked(xvals, yvals)
 
@@ -1115,12 +1119,6 @@ def getPooledVariance(data):
     assert t > len(data), "sample size smaller than samples combined"
 
     return var / float(t - len(data))
-
-###################################################################
-###################################################################
-###################################################################
-# compute ROC curves from sorted values
-###################################################################
 
 
 def computeROC(values):
@@ -1333,10 +1331,10 @@ def getPerformance(values,
     '''compute performance estimates for a list of ``(score, flag)``
     tuples in *values*.
 
-    Values is a sorted list of (value, bool) pairs.    
+    Values is a sorted list of (value, bool) pairs.
 
-    If the option *false-negative* is set, the input is +/- or 1/0 for a 
-    true positive or false negative, respectively.
+    If the option *false-negative* is set, the input is +/- or 1/0 for
+    a true positive or false negative, respectively.
 
     TP: true positives
     FP: false positives
@@ -1344,7 +1342,6 @@ def getPerformance(values,
     P: predicted
     FPR: false positive rate = false positives  / predicted
     value: value
-
 
     '''
 

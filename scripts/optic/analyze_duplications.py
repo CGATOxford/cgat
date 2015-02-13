@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-optic/analyze_duplications.py - 
+optic/analyze_duplications.py -
 ======================================================
 
 :Author: Andreas Heger
@@ -32,9 +32,13 @@ optic/analyze_duplications.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+Analyse duplications in various species
+
+The file expects a file of duplication events:
+
+species1 species2 location function height
+
+is for a duplication of species2 in species.
 
 Usage
 -----
@@ -56,24 +60,7 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
-import re
-import tempfile
-import subprocess
-import optparse
-import math
-
-"""Analyse duplications in various species
-
-The file expects a file of duplication events:
-
-species1 species2 location function height
-
-is for a duplication of species2 in species.
-"""
-
 import CGAT.Experiment as E
 import pgdb
 import numpy
@@ -134,7 +121,8 @@ def fit(histogram, parameters, fresiduals=residuals_decay):
 
     try:
         result = scipy.optimize.leastsq(
-            fresiduals, parameters, args=(in_y, in_x), full_output = True)
+            fresiduals, parameters, args=(in_y, in_x),
+            full_output=True)
     except scipy.optimize.minpack.error:
         return None
 

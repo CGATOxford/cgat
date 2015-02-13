@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-optic/plot_multiple_synteny.py - 
+optic/plot_multiple_synteny.py -
 ======================================================
 
 :Author: Andreas Heger
@@ -59,20 +59,10 @@ Code
 import os
 import sys
 import string
-import re
-import time
-import optparse
 import math
-import random
 import tempfile
-
-""" program $Id: optic/plot_multiple_synteny.py 2781 2009-09-10 11:33:14Z andreas $
-
-"""
 import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
 import CGAT.SVGdraw as SVGdraw
-import numpy
 import CGAT.Synteny as Synteny
 import pgdb
 
@@ -916,11 +906,11 @@ def main(argv=None):
         quality2symbol={'CG': "circle", 'PG': "circle", 'SG': "circle"},
         quality2mask=(
             "RG", "CP", "PP", "SP", "RP", "CF", "PF", "SF", "UG", "UP", "UF", "BF", "UK"),
-        sort_by_size = True,
-        groups = [],
-        table_name_synteny = "synteny",
+        sort_by_size=True,
+        groups=[],
+        table_name_synteny="synteny",
         schema=None,
-        synteny_radius = 5,
+        synteny_radius=5,
         orientation="local",
     )
 
