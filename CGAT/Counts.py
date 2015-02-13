@@ -514,7 +514,7 @@ def normalizeTagData(counts, method="deseq-size-factors"):
 
        Simply take the median of all the quotients in a column to get
        the relative depth of the library.
-    
+
        Divide all values in a column by the normalization factor.
 
     This method returns the normalized counts and any normalization
@@ -539,7 +539,6 @@ def normalizeTagData(counts, method="deseq-size-factors"):
         normed = counts / size_factors
 
     elif method == "million-counts":
-        
         size_factors = counts.sum(axis=0)
         normed = counts * 1000000.0 / size_factors
     else:
