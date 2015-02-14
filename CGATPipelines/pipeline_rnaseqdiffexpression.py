@@ -289,10 +289,14 @@ import re
 import itertools
 import glob
 import collections
+import numpy
+import pandas
 import sqlite3
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
 from rpy2.robjects import r as R
+from rpy2.robjects import numpy2ri as rpyn
+from rpy2.robjects.packages import importr
 import rpy2.robjects as ro
 
 import CGAT.Expression as Expression
@@ -1165,6 +1169,43 @@ def runDESeq2(infiles, outfile):
                  " --filter-percentile-rowsums=%(deseq2_filter_percentile_rowsums)i"
                  " > %(outfile)s.log")
     P.run()
+
+
+@transform(runDESeq2, suffix(".tsv.gz"), "_deseq2.load")
+def loadDESeq2(infile, outfile):
+    """
+    Generate globally adjusted pvalue for all contrasts in a design. 
+    To avoid confusion, drop the DESeq2 generated padj, which is for single contrast.
+    Load table
+    NB. Empty pvalues are due to DESeq2's default outlier detection
+    """
+    # get R p.adjust
+    rstats = importr("stats")
+
+    # Read dataframe, extract pvalues, perform global padjust
+    df = pandas.read_table(infile, index_col=0, compression="gzip")
+    padj = ro.FloatVector(df["pvalue"].tolist())
+    padj = rstats.p_adjust(padj, method="BH")
+    # padj = rpyn.ri2numpy(padj)
+    assert isinstance(padj, numpy.ndarray), \
+        "Script assumes pipeline imports module calling numpy2ri.activate()"
+
+    # drop DESeq adjusted pvalues, add instead globally adjusted pvalues
+    df.drop("padj", axis=1, inplace=True)
+    df["padj_global"] = padj
+
+    # load table containing adjusted pvalues
+    tmpf = P.getTempFilename("/ifs/scratch")
+    df.to_csv(tmpf, sep="\t")
+    tablename= P.toTable(outfile) + "_gene_diff"
+    statement = ("cat %(tmpf)s |"
+                 "python %(scriptsdir)s/csv2db.py %(csv2db_options)s"
+                 " --add-index=gene_id"
+                 " --table=%(tablename)s"
+                 " > %(outfile)s")
+    P.run()
+
+    os.unlink(tmpf)
 
 ###############################################################################
 
