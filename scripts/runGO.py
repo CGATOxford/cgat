@@ -160,13 +160,10 @@ Command line options
 '''
 import sys
 import collections
-import scipy
 import CGAT.Database as Database
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 from CGAT.GO import *
-
-# ---------------------------------------------------------------------------
 
 
 def main(argv=None):
@@ -522,8 +519,8 @@ def main(argv=None):
             #############################################################
             # sanity checks:
             # are all of the foreground genes in the dataset
-            ## missing = set(genes).difference( set(gene2go.keys()) )
-            ## assert len(missing) == 0, "%i genes in foreground set without GO annotation: %s" % (len(missing), str(missing))
+            # missing = set(genes).difference( set(gene2go.keys()) )
+            # assert len(missing) == 0, "%i genes in foreground set without GO annotation: %s" % (len(missing), str(missing))
 
             #############################################################
             # read GO slims and map GO categories to GO slim categories

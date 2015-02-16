@@ -170,7 +170,7 @@ def main(argv=None):
 
     parser.add_option("--strip-method", dest="strip_method", type="choice",
                       choices=("all", "match"),
-                      help = "define which sequences/qualities to strip. "
+                      help="define which sequences/qualities to strip. "
                       "match means that stripping only applies to entries "
                       "without mismatches (requires NM tag to be present). "
                       "[%default]")
@@ -178,7 +178,7 @@ def main(argv=None):
     parser.add_option("--filter-method", dest="filter_methods",
                       action="append", type="choice",
                       choices=('NM', 'CM', 'mapped', 'unique', "non-unique"),
-                      help = "filter method to apply to remove alignments "
+                      help="filter method to apply to remove alignments "
                       "from a bam file. Multiple methods can be supplied "
                       "[%default]")
 

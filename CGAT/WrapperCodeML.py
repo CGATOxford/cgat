@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-WrapperCodeML.py - 
+WrapperCodeML.py -
 ======================================================
 
 :Author: Andreas Heger
@@ -33,24 +33,16 @@ Code
 ----
 
 '''
-import os
 import sys
 import string
 import re
 import tempfile
 import subprocess
-import optparse
 import shutil
 import random
 import traceback
-
-"""Wrapper for CodeML
-"""
-
 from types import *
-
 from CGAT import Experiment as Experiment
-import Bio.Nexus.Trees
 from CGAT import TreeTools as TreeTools
 from CGAT import IOTools as IOTools
 from CGAT import Tree as Tree
@@ -163,11 +155,13 @@ class CodeMLResult:
                 if type(m) in (ListType, TupleType):
                     for x in range(len(m)):
                         s.append(
-                            ("%-40s: %s" % (key, self.truncateLine(str(m[x])))))
+                            ("%-40s: %s" % (key,
+                                            self.truncateLine(str(m[x])))))
                 elif type(m) in (DictType,):
                     for x, y in m.items():
                         s.append(
-                            ("%-40s: %s: %s" % (key, str(x), self.truncateLine(str(y)))))
+                            ("%-40s: %s: %s" % (key, str(x),
+                                                self.truncateLine(str(y)))))
                 else:
                     s.append(("%-40s: %s" % (key, self.truncateLine(str(m)))))
 
@@ -585,7 +579,7 @@ class CodeML:
         for key, vv in options.items():
 
             if key not in self.mOptions:
-                raise IndexError, "illegal option %s" % key
+                raise IndexError("illegal option %s" % key)
 
             values = vv.strip().split(" ")
 
@@ -597,12 +591,13 @@ class CodeML:
                     try:
                         v = float(value)
                     except ValueError:
-                        raise ValueError, "not a number: %s for option %s" % (
-                            value, key)
+                        raise ValueError("not a number: %s for option %s" %
+                                         (value, key))
                     descriptions.append(self.mOptions[key]["#"])
                 else:
-                    raise ValueError, "illegal value %s for option %s: possible values are: %s" % (value, key,
-                                                                                                   " ".join(self.mOptions[key].keys()))
+                    raise ValueError(
+                        "illegal value %s for option %s: possible values are: %s" %
+                        (value, key, " ".join(self.mOptions[key].keys())))
 
             written_options[key] = 1
             description = ";".join(descriptions)
@@ -615,7 +610,7 @@ class CodeML:
                 continue
 
             if key not in self.mOptions:
-                raise IndexError, "illegal option %s" % key
+                raise IndexError("illegal option %s" % key)
 
             values = vv.strip().split(" ")
 
@@ -627,12 +622,14 @@ class CodeML:
                     try:
                         v = float(value)
                     except ValueError:
-                        raise ValueError, "not a number: %s for option %s" % (
-                            value, key)
+                        raise ValueError(
+                            "not a number: %s for option %s" %
+                            (value, key))
                     descriptions.append(self.mOptions[key]["#"])
                 else:
-                    raise ValueError, "illegal value %s for option %s: possible values are: %s" % (value, key,
-                                                                                                   " ".join(self.mOptions[key].keys()))
+                    raise ValueError(
+                        "illegal value %s for option %s: possible values are: %s" %
+                        (value, key, " ".join(self.mOptions[key].keys())))
 
             written_options[key] = 1
             description = ";".join(descriptions)
@@ -701,8 +698,8 @@ class CodeML:
         (out, err) = s.communicate()
 
         if s.returncode != 0:
-            raise UsageError, "Error in running %s \n%s\n%s\nTemporary directory in %s" % (
-                self.mExecutable, err, out, self.mTempdir)
+            raise UsageError("Error in running %s \n%s\n%s\nTemporary directory in %s" %
+                             (self.mExecutable, err, out, self.mTempdir))
 
         lines = open("%s/%s" %
                      (self.mTempdir, self.mFilenameOutput), "r").readlines()
@@ -713,8 +710,8 @@ class CodeML:
             rst_lines = None
 
         if len(lines) == 0:
-            raise UsageError, "Empty result from %s \n%s\n%s\nTemporary directory in %s" % (
-                self.mExecutable, err, out, self.mTempdir)
+            raise UsageError("Empty result from %s \n%s\n%s\nTemporary directory in %s" %
+                             (self.mExecutable, err, out, self.mTempdir))
 
         if dump:
             print "############################### CONTROL FILE ############################"
@@ -778,19 +775,20 @@ class CodeML:
 
         for x in range(len(ancestral_sequences)):
             id, sequence = ancestral_sequences[x]
-            result.mAncestralSequences[id] = CodeMLAncestralSequence(sequence,
-                                                                     accuracy_per_site[
-                                                                         x],
-                                                                     accuracy_per_sequence[x])
+            result.mAncestralSequences[id] = CodeMLAncestralSequence(
+                sequence,
+                accuracy_per_site[x],
+                accuracy_per_sequence[x])
 
-        result.mAncestralTree = TreeTools.Graph2Tree(map(lambda x: (x.mBranch1, x.mBranch2, 1.0), result.mBranchInfo),
-                                                     label_ancestral_nodes=True)
+        result.mAncestralTree = TreeTools.Graph2Tree(
+            map(lambda x: (x.mBranch1, x.mBranch2, 1.0), result.mBranchInfo),
+            label_ancestral_nodes=True)
 
     def parseSequences(self, lines, result):
 
         # read sequences
         # start from the top and read until line start not with
-        ## "seed used"
+        # "seed used"
         while len(lines) and (lines[0] == "" or lines[0] == " " or lines[0].startswith("seed used")):
             del lines[0]
 
@@ -878,7 +876,7 @@ class CodeML:
             raise ValueError("unknown paml version '%s'" % result.mVersion)
 
 # if result.mModel not in ("free dN/dS Ratios for branches", "One dN/dS ratio", "several dN/dS ratios for branches"):
-##             raise "parsing for model '%s' not implemented" % result.mModel
+#             raise "parsing for model '%s' not implemented" % result.mModel
 
     def parseSitePatterns(self, inlines, result):
         # read site patterns
@@ -920,11 +918,13 @@ class CodeML:
                     return lines[x:]
         else:
             raise ParsingError(
-                "section error - can't find section starting with '%s'" % str(args))
+                "section error - can't find section starting with '%s'" %
+                str(args))
 
     def parseNeiGojobori(self, inlines, result):
 
-        lines = self.getSection(inlines, "Nei & Gojobori 1986. dN/dS (dN, dS)")
+        lines = self.getSection(inlines,
+                                "Nei & Gojobori 1986. dN/dS (dN, dS)")
 
     def parseResultsKaks(self, inlines, result):
 
@@ -1107,8 +1107,10 @@ class CodeML:
                     float, x.groups())
 
     def parseOutput(self, lines, lines_log=None, rst_lines=None):
-        """parse CodeML output. This is rather tricky, as paml output is as freeformat as it can get.
-        Also, there is a log file and an output file. Proceed sequentially through file.
+        """parse CodeML output. This is rather tricky, as paml output is as
+        freeformat as it can get.  Also, there is a log file and an
+        output file. Proceed sequentially through file.
+
         """
 
         result = CodeMLResult()
@@ -1181,8 +1183,9 @@ class CodeMLSites (CodeML):
             self.skipSection(lines)
 
             if id not in result.mSites:
-                result.mSites[id] = CodeMLResultSites(num_sequences=result.mNumSequences,
-                                                      model=result.mModel)
+                result.mSites[id] = CodeMLResultSites(
+                    num_sequences=result.mNumSequences,
+                    model=result.mModel)
 
             r = result.mSites[id]
             r.mSiteModelId, r.mSiteModelName = id, name
@@ -1228,7 +1231,8 @@ class CodeMLSites (CodeML):
                     "(\d+)\s+(\S)\s+([0-9.]+)[*]{0,2}\s+([0-9.]+) \+\- ([0-9.]+)", lines[0]).groups()
             del lines[0]
             result.mPositiveSites.append(
-                CodeMLResultPositiveSite(int(residue), aa, float(p), float(w), float(stderr)))
+                CodeMLResultPositiveSite(int(residue), aa, float(p),
+                                         float(w), float(stderr)))
 
         self.nextSection(lines)
 
@@ -1336,7 +1340,7 @@ class CodeMLPairwise (CodeML):
 
         self.saveSummary(result, lines, lines_log)
 
-        ## chop and strip
+        # chop and strip
         lines = map(
             lambda x: x[:-1].strip(), filter(lambda x: x[0] != "#", lines))
 
@@ -1370,8 +1374,8 @@ class CodeMLPairwise (CodeML):
                 re.match("lnL =\s*(\S+)", lines[0]).groups()[0])
             del lines[0]
 
-            # the next values are tau, kappa and omega (this might change, if some of
-            # these are fixed?)
+            # the next values are tau, kappa and omega (this might
+            # change, if some of these are fixed?)
             values = map(float, re.split("\s+", lines[0].strip()))
             del lines[0]
 
@@ -1625,8 +1629,10 @@ class BaseML(CodeML):
             raise "unknown model for baseml: %s" % options.baseml_model
 
     def parseOutput(self, lines, lines_log=None, rst_lines=None):
-        """parse BASEML output. This is rather tricky, as paml output is as freeformat as it can get.
-        Also, there is a log file and an output file. Proceed sequentially through file.
+        """parse BASEML output. This is rather tricky, as paml output is as
+        freeformat as it can get.  Also, there is a log file and an
+        output file. Proceed sequentially through file.
+
         """
 
         result = BaseMLResult()
@@ -1826,11 +1832,6 @@ class BaseML(CodeML):
         for x in range(result.mNumGammaBins):
             result.mGammaBins.append({"r": float(r[x]), "f": float(f[x])})
 
-# --------------------------------------------------------------------
-# --------------------------------------------------------------------
-# --------------------------------------------------------------------
-# --------------------------------------------------------------------
-
 
 class Evolver:
 
@@ -1889,9 +1890,10 @@ class Evolver:
 
         outfile.write("0          * paml format output\n")
         outfile.write("%i         * random number seed\n" % self.mSeed)
-        outfile.write("%i %i %i   * nsequences nnucleotides nreplicates\n\n" % (self.mNSequences,
-                                                                                self.mNucleotides,
-                                                                                self.mReplicates))
+        outfile.write("%i %i %i   * nsequences nnucleotides nreplicates\n\n" %
+                      (self.mNSequences,
+                       self.mNucleotides,
+                       self.mReplicates))
 
         outfile.write(
             "%f          * tree length (-1 = unscaled)\n" % self.mScale)
@@ -2007,12 +2009,13 @@ class Evolver:
             open(self.mTempdir + "/" + self.mFilenameControl, "w"))
 
         if dump:
-            print "############################### control file input  ############################"
+            print "################### control file input  ########"
             infile = open(self.mTempdir + "/" + self.mFilenameControl, "r")
             print "".join(infile.readlines())
             infile.close()
 
-        s = subprocess.Popen("%s %i %s" % (self.mExecutable, self.mRunMode, self.mFilenameControl),
+        s = subprocess.Popen("%s %i %s" %
+                             (self.mExecutable, self.mRunMode, self.mFilenameControl),
                              shell=True,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,
@@ -2022,15 +2025,17 @@ class Evolver:
         (out, err) = s.communicate()
 
         if s.returncode != 0:
-            raise UsageError, "Error in running %s \n%s\n%s\nTemporary directory in %s" % (
-                self.mExecutable, err, out, self.mTempdir)
+            raise UsageError(
+                "Error in running %s \n%s\n%s\nTemporary directory in %s" %
+                (self.mExecutable, err, out, self.mTempdir))
 
         lines = open("%s/%s" %
                      (self.mTempdir, self.mFilenameOutput), "r").readlines()
 
         if len(lines) == 0:
-            raise UsageError, "Empty result from %s \n%s\n%s\nTemporary directory in %s" % (
-                self.mExecutable, err, out, self.mTempdir)
+            raise UsageError(
+                "Empty result from %s \n%s\n%s\nTemporary directory in %s" %
+                (self.mExecutable, err, out, self.mTempdir))
 
         if dump:
             print "# result output of %s:\n%s\n######################################" % (self.mExecutable, "".join(lines))
@@ -2075,11 +2080,6 @@ class Evolver:
             for codon in codons:
                 outfile.write("# %s\t%6.4f\n" %
                               (codon, self.mCodonTable[codon]))
-
-# --------------------------------------------------------------------
-# --------------------------------------------------------------------
-# --------------------------------------------------------------------
-# --------------------------------------------------------------------
 
 
 class EvolverBaseml(Evolver):
@@ -2184,9 +2184,10 @@ class EvolverBaseml(Evolver):
 
         outfile.write("0          * paml format output\n")
         outfile.write("%i         * random number seed\n" % self.mSeed)
-        outfile.write("%i %i %i   * nsequences nnucleotides nreplicates\n\n" % (self.mNSequences,
-                                                                                self.mNucleotides,
-                                                                                self.mReplicates))
+        outfile.write("%i %i %i   * nsequences nnucleotides nreplicates\n\n" % 
+                      (self.mNSequences,
+                       self.mNucleotides,
+                       self.mReplicates))
 
         outfile.write("%f          * tree length (-1 = unscaled)\n" % self.mDs)
         outfile.write(self.mTree + "\n\n")
@@ -2234,9 +2235,11 @@ def getOptions(options):
         codeml_options["seqtype"] = "1"
         codeml_options["model"] = "2"
         if not tree:
-            raise "please supply a tree for this mode."
+            raise ValueError("please supply a tree for this mode.")
         if not options.filename_output_tree:
-            raise "please speficy filename-output-tree as location (relative to this script) for trees."
+            raise ValueError(
+                "please speficy filename-output-tree as location "
+                "(relative to this script) for trees.")
 
     elif options.analysis == "site-specific-kaks":
         codeml_options["ncatG"] = "10"
@@ -2357,60 +2360,84 @@ def runEvolver(options):
 
     if options.loglevel >= 2:
         options.stdlog.write("# Parameters used for evolver\n")
-        options.stdlog.write("# dS=%f t=%f kappa=%f omega=%f\n" % (evolver.mDs,
-                                                                   evolver.mScale,
-                                                                   evolver.mKappa,
-                                                                   evolver.mOmega))
+        options.stdlog.write("# dS=%f t=%f kappa=%f omega=%f\n" % 
+                             (evolver.mDs,
+                              evolver.mScale,
+                              evolver.mKappa,
+                              evolver.mOmega))
         options.stdlog.write("# tree: %s\n" % evolver.mTree)
 
 if __name__ == "__main__":
 
     parser = E.OptionParser(
-        version="%prog version: $Id: WrapperCodeML.py 2781 2009-09-10 11:33:14Z andreas $")
+        version="%prog version: $Id$")
 
-    parser.add_option("--write-control-file", dest="write_control_file", action="store_true",
-                      help="write a control file.")
+    parser.add_option(
+        "--write-control-file", dest="write_control_file", action="store_true",
+        help="write a control file.")
 
-    parser.add_option("--flavour", dest="flavour", type="choice",
-                      choices=("codeml", "baseml", "evolver"),
-                      help="codeml or baseml or evolver, that is the question.")
+    parser.add_option(
+        "--flavour", dest="flavour", type="choice",
+        choices=("codeml", "baseml", "evolver"),
+        help="codeml or baseml or evolver, that is the question.")
 
-    parser.add_option("--analysis", dest="analysis", type="choice",
-                      choices=("branch-specific-kaks", "branch-fixed-kaks",
-                               "branch-all-but-one-fixed-kaks", "site-specific-kaks", "pairwise"),
-                      help="choose an analysis scenario.")
+    parser.add_option(
+        "--analysis", dest="analysis", type="choice",
+        choices=("branch-specific-kaks", "branch-fixed-kaks",
+                 "branch-all-but-one-fixed-kaks", "site-specific-kaks",
+                 "pairwise"),
+        help="choose an analysis scenario.")
 
-    parser.add_option("--multiple-genes", dest="multiple_genes", action="store_true",
-                      help="analyse multiple genes.")
-    parser.add_option("-t", "--tree-nh-file", dest="filename_tree", type="string",
-                      help="filename with tree information. Evolver: tree and number of sequences.")
-    parser.add_option("-i", "--filename-sequences", dest="filename_sequences", type="string",
-                      help="filename with sequences. Evolver: determines codon frequencies.")
-    parser.add_option("-o", "--filename-output", dest="filename_output", type="string",
-                      help="filename for output information.")
-    parser.add_option("--filename-clusters", dest="filename_clusters", type="string",
-                      help="filename for cluster information.")
-    parser.add_option("--filename-output-tree", dest="filename_output_tree", type="string",
-                      help="filename pattern for trees to be output.")
-    parser.add_option("-l", "--filename-log", dest="filename_log", type="string",
-                      help="filename for logging information.")
-    parser.add_option("--filename-pattern-control", dest="filename_pattern_control", type="string",
-                      help="filename with pattern for control files to create.")
-    parser.add_option("--output-pattern-id", dest="output_pattern_id", type="string",
-                      help="output pattern for id.")
-    parser.add_option("-p", "--parse-output", dest="parse_output", type="choice",
-                      choices=("none", "all", "terminal-nodes", "likelihood", "ancestral-sequence",
-                               "ks-tree", "ka-tree", "kaks-tree", "sds-tree", "ndn-tree", "s-tree", "n-tree",
-                               "mali", "sequences"),
-                      help="parse output")
-    parser.add_option("-b", "--parse-batch", dest="parse_batch", type="string",
-                      help="""supply a batch file for output parsing. The batch file contains the following (tab-separated):
-1. name, 2. output-filename, 3. logfile-filename, 4. rst-filename, 5. mali filename(fasta) (all options after the second are optional and can be empty.)""")
+    parser.add_option(
+        "--multiple-genes", dest="multiple_genes", action="store_true",
+        help="analyse multiple genes.")
+    parser.add_option(
+        "-t", "--tree-nh-file", dest="filename_tree", type="string",
+        help="filename with tree information. Evolver: tree and number of sequences.")
+    parser.add_option(
+        "-i", "--filename-sequences", dest="filename_sequences", type="string",
+        help="filename with sequences. Evolver: determines codon frequencies.")
+    parser.add_option(
+        "-o", "--filename-output", dest="filename_output", type="string",
+        help="filename for output information.")
+    parser.add_option(
+        "--filename-clusters", dest="filename_clusters", type="string",
+        help="filename for cluster information.")
+    parser.add_option(
+        "--filename-output-tree", dest="filename_output_tree", type="string",
+        help="filename pattern for trees to be output.")
+    parser.add_option(
+        "-l", "--filename-log", dest="filename_log", type="string",
+        help="filename for logging information.")
+    parser.add_option(
+        "--filename-pattern-control", dest="filename_pattern_control",
+        type="string",
+        help="filename with pattern for control files to create.")
+    parser.add_option(
+        "--output-pattern-id", dest="output_pattern_id", type="string",
+        help="output pattern for id.")
+    parser.add_option(
+        "-p", "--parse-output", dest="parse_output", type="choice",
+        choices=("none", "all", "terminal-nodes", "likelihood",
+                 "ancestral-sequence",
+                 "ks-tree", "ka-tree", "kaks-tree", "sds-tree",
+                 "ndn-tree", "s-tree", "n-tree",
+                 "mali", "sequences"),
+        help="parse output")
+    parser.add_option(
+        "-b", "--parse-batch", dest="parse_batch", type="string",
+        help="""supply a batch file for output parsing. The batch "
+        "file contains the following (tab-separated): "
+        "1. name, 2. output-filename, 3. logfile-filename, "
+        "4. rst-filename, 5. mali filename(fasta) (all options "
+        "after the second are optional and can be empty.)""")
 
-    parser.add_option("--parse-tabular", dest="parse_tabular", action="store_true",
-                      help="""output parsing results in tabular format (default = fasta-like format).""" )
-    parser.add_option("--filename-rst", dest="filename_rst", type="string",
-                      help="filename with ancestral data. Needed for parsing ancestral sequences.")
+    parser.add_option(
+        "--parse-tabular", dest="parse_tabular", action="store_true",
+        help="""output parsing results in tabular format (default = fasta-like format).""")
+    parser.add_option(
+        "--filename-rst", dest="filename_rst", type="string",
+        help="filename with ancestral data. Needed for parsing ancestral sequences.")
     parser.add_option("--set-omega", dest="omega", type="float",
                       help="initial omega value. Evolver: omega values used for simulation.")
     parser.add_option("--set-kappa", dest="kappa", type="float",

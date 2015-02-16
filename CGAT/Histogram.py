@@ -18,7 +18,7 @@
 Histogram.py - Various functions to deal with histograms
 ===========================================================
 
-:Author: 
+:Author:
 :Release: $Id$
 :Date: |today|
 :Tags: Python
@@ -30,7 +30,6 @@ of the format [(bin1,value1), (bin2,value2), ...].
 """
 
 import sys
-import os
 import string
 import re
 import math
@@ -39,8 +38,6 @@ import scipy
 import scipy.stats
 import bisect
 import numpy
-
-#-------------------------------------------------------------------------
 
 
 def CalculateFromTable(dbhandle,
@@ -87,8 +84,6 @@ def CalculateFromTable(dbhandle,
 
     return Convert(dbhandle.Execute(statement).fetchall(), intervals)
 
-#-------------------------------------------------------------------------
-
 
 def CalculateConst(values,
                    num_bins=None,
@@ -125,8 +120,6 @@ def CalculateConst(values,
             histogram[i] += 1
 
     return intervals, histogram
-
-#-------------------------------------------------------------------------
 
 
 def Calculate(values,
@@ -185,8 +178,6 @@ def Calculate(values,
 
     return Convert(scipy.stats.histogram2(values, intervals), intervals, no_empty_bins)
 
-#-------------------------------------------------------------------------
-
 
 def Scale(h, scale=1.0):
     """rescale bins in histogram.
@@ -195,8 +186,6 @@ def Scale(h, scale=1.0):
     for b, v in h:
         n.append((b * scale, v))
     return n
-
-#-------------------------------------------------------------------------
 
 
 def Convert(h, i, no_empty_bins=0):
@@ -208,8 +197,6 @@ def Convert(h, i, no_empty_bins=0):
             continue
         n.append((i[x], h[x]))
     return n
-
-#-------------------------------------------------------------------------
 
 
 def Combine(source_histograms, missing_value=0):
@@ -256,8 +243,6 @@ def Combine(source_histograms, missing_value=0):
 
     return __ConvertToList(new_bins)
 
-#-------------------------------------------------------------------------
-
 
 def Print(h, intervalls=None, format=0, nonull=None, format_value=None, format_bin=None):
     """print a histogram.
@@ -275,8 +260,6 @@ def Print(h, intervalls=None, format=0, nonull=None, format_value=None, format_b
 
     Write(sys.stdout, h, intervalls, format, nonull, format_value, format_bin)
 
-#-------------------------------------------------------------------------
-
 
 def Write(outfile, h, intervalls=None, format=0, nonull=None,
           format_value=None, format_bin=None):
@@ -287,7 +270,7 @@ def Write(outfile, h, intervalls=None, format=0, nonull=None,
     the bin and second contains the values (which can again be
     a list/tuple).
 
-    :param format: output format. 
+    :param format: output format.
         0 = print histogram in several lines,
         1 = print histogram on single line
 
@@ -344,7 +327,6 @@ def Write(outfile, h, intervalls=None, format=0, nonull=None,
         outfile.write(string.join(lines, "\n") + "\n")
 
 
-#-------------------------------------------------------------------------
 def Fill(h):
     """fill every empty value in histogram with
     previous value.
@@ -376,8 +358,6 @@ def Fill(h):
         new_h.append((x, v))
 
     return new_h
-
-#-------------------------------------------------------------------------
 
 
 def Normalize(h):
@@ -420,8 +400,6 @@ def Normalize(h):
 
     return new_histogram
 
-#-------------------------------------------------------------------------
-
 
 def Add(h1, h2):
     """adds values of histogram h1 and h2 and
@@ -442,8 +420,6 @@ def Add(h1, h2):
 
     return __ConvertToList(new_bins)
 
-#-------------------------------------------------------------------------
-
 
 def __ConvertToList(new_bins):
     """converts a hash to a histogram.
@@ -460,7 +436,6 @@ def __ConvertToList(new_bins):
     return new_histogram
 
 
-#-------------------------------------------------------------------------
 def SmoothWrap(histogram, window_size):
     """smooth histogram by sliding window-method, where
     the window is wrapped around the borders. The sum of
@@ -496,19 +471,13 @@ def SmoothWrap(histogram, window_size):
 
     return new_histogram
 
-#-------------------------------------------------------------------------
-
 
 def GetMaximumIndex(histogram):
     return histogram.index(max(histogram))
 
-#-------------------------------------------------------------------------
-
 
 def GetMinimumIndex(histogram):
     return histogram.index(min(histogram))
-
-#-------------------------------------------------------------------------
 
 
 def PrintAscii(histogram, step_size=1):
@@ -532,7 +501,6 @@ def PrintAscii(histogram, step_size=1):
         print "%5i" % x, s
 
 
-#-------------------------------------------------------------------------
 def Count(data):
     """count categorized data. Returns a list
     of tuples with (count, token).
@@ -555,7 +523,6 @@ def Count(data):
     return counts
 
 
-#-------------------------------------------------------------------------
 def Accumulate(h, num_bins=2, direction=1):
     """add successive counts in histogram.
     Bins are labelled by group average.
@@ -616,8 +583,6 @@ def Accumulate(h, num_bins=2, direction=1):
         new_histogram.reverse()
 
     return new_histogram
-
-#-------------------------------------------------------------------------
 
 
 def Cumulate(h, direction=1):
@@ -704,8 +669,6 @@ def histogram(values, mode=0, bin_function=None):
         else:
             return sort(bins.items())
 
-#-------------------------------------------------------------------------
-
 
 def cumulate(histogram):
     """cumulate histogram in place.
@@ -728,8 +691,6 @@ def cumulate(histogram):
         for x in range(len(histogram)):
             histogram[x] = (histogram[x][0], histogram[x][1] + l)
             l = histogram[x][1]
-
-#-------------------------------------------------------------------------
 
 
 def normalize(histogram):
@@ -758,7 +719,6 @@ def normalize(histogram):
                 histogram[x] = (histogram[x][0], histogram[x][1] / m)
 
 
-#-------------------------------------------------------------------------
 def fill(iterator, bins):
     """fill a histogram from bins. 
 
@@ -792,8 +752,6 @@ def fill(iterator, bins):
         h[i] += 1
 
     return h
-
-#-------------------------------------------------------------------------
 
 
 def fillHistograms(infile, columns, bins):

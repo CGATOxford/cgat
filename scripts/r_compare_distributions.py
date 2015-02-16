@@ -16,6 +16,15 @@ compared the normal distribution.
 
 The tests are implemented in ``R``.
 
+Input: two sets of values. These can be either given
+as values directly or as categories, which will be mapped to
+values.
+
+Question: is the distribution of values different?
+
+See http://www.graphpad.com/library/BiostatsSpecial/article_197.htm
+for an interesting article about normality tests.
+
 Usage
 -----
 
@@ -33,32 +42,9 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import optparse
-import time
 import random
-import rpy2
 from rpy2.robjects import r as R
-
-"""Tests to compare distribution of values
-
-Input: two sets of values. These can be either given
-as values directly or as categories, which will be mapped to
-values.
-
-Question: is the distribution of values different?
-
-Implementation: uses R 
-
-See http://www.graphpad.com/library/BiostatsSpecial/article_197.htm
-for an interesting article about normality tests.
-
-
-"""
-
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Stats as Stats

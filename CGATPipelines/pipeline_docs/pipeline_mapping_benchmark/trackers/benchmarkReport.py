@@ -1,12 +1,5 @@
-import os
-import sys
-import re
-import types
-import itertools
-import glob
-
 from CGATReport.Tracker import *
-from CGATReport.odict import OrderedDict as odict
+from CGATReport.Utils import PARAMS as P
 
 # get from config file
 UCSC_DATABASE = "mm9"
@@ -16,9 +9,6 @@ EXPORTDIR = "export"
 ###################################################################
 ###################################################################
 ###################################################################
-# Run configuration script
-
-from CGATReport.Utils import PARAMS as P
 EXPORTDIR = P['mapping_benchmark_exportdir']
 DATADIR = P['mapping_benchmark_datadir']
 DATABASE = P['mapping_benchmark_backend']

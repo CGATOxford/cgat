@@ -123,43 +123,43 @@ def filterTree(tree, options, map_id2location=None):
                              (tree.name, len(otus), len(to_remove), len(new_otus), len(TreeTools.GetTaxa(tree))))
         options.stdlog.flush()
 
-##         quality_codes = MAP_FILTER2QUALITY[options.filter_quality]
-##         remove_otus1 = filter( lambda x: x.split(options.separator)[3] not in quality_codes, otus )
+#         quality_codes = MAP_FILTER2QUALITY[options.filter_quality]
+#         remove_otus1 = filter( lambda x: x.split(options.separator)[3] not in quality_codes, otus )
 
 # if options.loglevel >= 3:
 # options.stdlog.write("# tree %s: removing because of quality: %s\n" % \
 # (tree.name, ";".join(remove_otus1)))
 
-##         remove_otus = remove_otus.union(remove_otus1)
+#         remove_otus = remove_otus.union(remove_otus1)
 
 # remove_otus2=set()
 # if options.filter_location != "all":
-##         remove_otus2 = []
+#         remove_otus2 = []
 # for id in otus:
 # if id not in map_id2location:
 # if options.loglevel >= 1:
 # options.stdlog.write("# WARNING: unknown location for id %s.\n" % id )
 # continue
 # if map_id2location[id] not in MAP_CONTIG2JUNK:
-##                 remove_otus2.append( id )
+#                 remove_otus2.append( id )
 
 # if options.loglevel >= 3:
 # options.stdlog.write("# tree %s: removing because of location: %s\n" % \
 # (tree.name, ";".join(remove_otus2)))
 
-##         remove_otus = remove_otus.union(remove_otus2)
+#         remove_otus = remove_otus.union(remove_otus2)
 
 # removing outgroup species from removal list
 # if options.outgroup_species:
 
 # find monophyletic trees of outgroup_species
-##         outgroup_taxa = filter( lambda x: extract_species(x) in options.outgroup_species, otus)
-##         remove_otus = remove_otus.difference( outgroup_taxa )
+#         outgroup_taxa = filter( lambda x: extract_species(x) in options.outgroup_species, otus)
+#         remove_otus = remove_otus.difference( outgroup_taxa )
 
-##     new_otus = list(set(otus).difference(remove_otus))
+#     new_otus = list(set(otus).difference(remove_otus))
 
 # if len(new_otus) != len(otus):
-##         TreeTools.PruneTree( tree, new_otus )
+#         TreeTools.PruneTree( tree, new_otus )
 
 # if options.loglevel >= 1:
 # options.stdlog.write("# tree %s: filtering: before=%i, quality=%i, location=%i, new=%i, final=%i\n" % \

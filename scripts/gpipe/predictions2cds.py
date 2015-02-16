@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-gpipe/predictions2cds.py - 
+gpipe/predictions2cds.py -
 ======================================================
 
 :Author: Andreas Heger
@@ -56,11 +56,13 @@ Code
 ----
 
 '''
-import os
 import sys
 import string
-import re
-import optparse
+import alignlib_lite
+import CGAT.Experiment as E
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Exons as Exons
+import CGAT.PredictionParser as PredictionParser
 
 USAGE = """python %s < predictions > genes
 
@@ -75,15 +77,6 @@ exons:        exon table output
 
 """ % sys.argv[0]
 
-import alignlib_lite
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.IndexedFasta as IndexedFasta
-import CGAT.Exons as Exons
-import CGAT.PredictionParser as PredictionParser
-
-# ------------------------------------------------------------
-
 
 def main(argv=None):
     """script main.
@@ -94,22 +87,27 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    parser = E.OptionParser(version="%prog version: $Id: gpipe/predictions2cds.py 1858 2008-05-13 15:07:05Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="filename with genome.")
+    parser.add_option(
+        "-g", "--genome-file", dest="genome_file", type="string",
+        help="filename with genome.")
 
-    parser.add_option("-o", "--is-forward-coordinates", dest="forward_coordinates", action="store_true",
-                      help="input uses forward coordinates.")
+    parser.add_option(
+        "-o", "--is-forward-coordinates", dest="forward_coordinates",
+        action="store_true",
+        help="input uses forward coordinates.")
 
-    parser.add_option("-f", "--format", dest="format", type="choice",
-                      choices=(
-                          "default", "cds", "cdnas", "map", "gff", "intron-fasta", "exons"),
-                      help = "output format.")
+    parser.add_option(
+        "-f", "--format", dest="format", type="choice",
+        choices=(
+            "default", "cds", "cdnas", "map", "gff", "intron-fasta", "exons"),
+        help="output format.")
 
-    parser.add_option("-r", "--reset-to-start", dest="reset_to_start", action="store_true",
-                      help="move genomic coordinates to begin from 0.")
+    parser.add_option(
+        "-r", "--reset-to-start", dest="reset_to_start", action="store_true",
+        help="move genomic coordinates to begin from 0.")
 
     parser.add_option("--reset-query", dest="reset_query", action="store_true",
                       help="move peptide coordinates to begin from 0.")

@@ -57,10 +57,11 @@ Code
 
 '''
 import sys
-import string
-import re
-import optparse
 import time
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import pgdb
+import CGAT.IndexedFasta as IndexedFasta
 
 USAGE = """python %s [OPTIONS] < in > out
 
@@ -73,10 +74,6 @@ Options:
 -v, --verbose=                  loglevel.
 """ % sys.argv[0]
 
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
-import pgdb
-import CGAT.IndexedFasta as IndexedFasta
 
 ##########################################################################
 ##########################################################################

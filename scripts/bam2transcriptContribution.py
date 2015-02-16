@@ -31,13 +31,8 @@ Command line options
 
 '''
 
-import os
 import sys
-import re
-import optparse
 import collections
-import tempfile
-import numpy
 # importing pybedtools within sphinx does not work
 try:
     import pybedtools
@@ -46,16 +41,10 @@ except ImportError:
 
 import pysam
 import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
-import CGAT.GTF as GTF
+import CGAT.Pipeline as P
 
 import pyximport
 pyximport.install(build_in_temp=False)
-import CGAT.Pipeline as P
-
-#########################################################
-#########################################################
-#########################################################
 
 
 def main(argv=None):
@@ -68,7 +57,7 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
     parser.add_option("-b", "--bam-file", dest="bam_file", type="string",
@@ -80,8 +69,9 @@ def main(argv=None):
     parser.add_option("-o", "--outfile", dest="outfile", type="string",
                       help="supply output file name")
 
-    parser.add_option("-G", "--reference-gtf-file", dest="reference_gtf", type="string",
-                      help="supply reference gtf for context of reads not contributing to transcripts")
+    parser.add_option(
+        "-G", "--reference-gtf-file", dest="reference_gtf", type="string",
+        help="supply reference gtf for context of reads not contributing to transcripts")
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
@@ -170,8 +160,9 @@ def main(argv=None):
     # read in the spliced reads as a BedTool object
     splicedbam = pybedtools.BedTool(spliced_bamname)
 
-    # perform coverage of spliced reads over intervals - will be twice as many as there should be
-    # due to counting both exons overlapping
+    # perform coverage of spliced reads over intervals - will be twice
+    # as many as there should be due to counting both exons
+    # overlapping
     spliced_coverage = splicedbam.coverage(gtffile)
 
     # avoid double counting exons
@@ -191,7 +182,7 @@ def main(argv=None):
         spliced_coverage_in_transcripts) / 2
 
     ###########################
-    ## write out the results ##
+    # write out the results
     ###########################
 
     outf.write(str(int(total_alignments)) + "\t")

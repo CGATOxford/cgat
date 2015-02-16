@@ -33,13 +33,8 @@ Command line options
 '''
 import os
 import sys
-import string
-import re
-import getopt
-import time
-import optparse
-import math
-import tempfile
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 
 # patch for old python installations
 if sys.version_info < (2, 4):
@@ -53,8 +48,6 @@ python graph_check.py < graph.in
 Check graph for completeness.
 
 """
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
 
 
 def writeSet(outfile, outset):

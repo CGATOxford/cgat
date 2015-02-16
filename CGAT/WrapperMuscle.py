@@ -34,19 +34,11 @@ Code
 
 '''
 import os
-import sys
-import string
-import re
 import tempfile
 import subprocess
-import optparse
 import shutil
 
 from types import *
-
-"""Wrapper for Muscle
-"""
-
 from CGAT import Experiment as Experiment
 from CGAT import Mali as Mali
 

@@ -27,14 +27,14 @@ Usage
 filtering
 +++++++++
 
-    zcat counts.tsv.gz | python counts2counts.py --design-tsv-file=design.tsv
+    zcat counts.tsv.gz | cgat counts2counts --design-tsv-file=design.tsv
     --filter-min-counts-per-row=1000 --filter-min-counts-per-sample=10000
     --filter-percentile-rowsums=25 > filtered_counts.tsv
 
 spike-ins by row
 ++++++++++++++++
 
-    zcat counts.tsv.gz | python counts2counts.py
+    zcat counts.tsv.gz | cgat counts2counts
     --design-tsv-file=design.tsv --method="spike" --spike-type="row"
     --spike-maximum=100 --spike-change-bin-width=1
     --spike-initial-bin-width=10 --spike-change-bin-max=10
@@ -43,13 +43,20 @@ spike-ins by row
 spike-ins by cluster
 ++++++++++++++++
 
-    zcat counts.tsv.gz | python counts2counts.py
+    zcat counts.tsv.gz | cgat counts2counts
     --design-tsv-file=design.tsv --method="spike" --spike-type="row"
     --spike-maximum=100 --spike-change-bin-width=1
     --spike-initial-bin-width=10 --spike-change-bin-max=10
     --spike-initial-bin-max=10 --spike-cluster-minimum-size=1
     --spike-cluster-maximum-size=10 --spike-cluster-maximum-width=1
 
+
+normalize
++++++++++
+
+   zcat counts.tsv.gz | cgat counts2counts.py --method="normalize"
+   --normalization-method=deseq-size-factors
+   | gzip > normalized.tsv.gz
 
 Input
 -----
@@ -191,7 +198,7 @@ def main(argv=None):
                       "[default=%default].")
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices=("filter", "spike"),
+                      choices=("filter", "spike", "normalize"),
                       help="differential expression method to apply "
                       "[default=%default].")
 
@@ -311,6 +318,12 @@ def main(argv=None):
                       help="a list of suffixes for the columns which are to be\
                       keep along with the shuffled columns[default=%default].")
 
+    parser.add_option(
+        "--normalization-method",
+        dest="normalization_method", type="choice",
+        choices=("deseq-size-factors", "million-counts"),
+        help="normalization method to apply [%default]")
+
     parser.set_defaults(
         method="filter",
         filter_min_counts_per_row=1,
@@ -337,10 +350,13 @@ def main(argv=None):
         id_column=None,
         shuffle_suffix=None,
         keep_suffix=None
+        keep_suffix=None,
+        normalization_method="deseq-size-factors",
     )
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
+
     assert options.input_filename_design and os.path.exists(
         options.input_filename_design)
 
@@ -357,9 +373,32 @@ def main(argv=None):
         design = design[design["include"] != 0]
         print design
 
+    if options.method in ("filter", "spike"):
+        if options.input_filename_design is None:
+            raise ValueError("method '%s' requires a design file" %
+                             options.method)
+
+    if options.input_filename_design:
+        assert os.path.exists(options.input_filename_design)
+
+        # load
+        if options.keep_suffix:
+            # if using suffix, loadTagDataPandas will throw an error as it
+            # looks for column names which exactly match the design
+            # "tracks" need to write function in Counts.py to handle
+            # counts table and design table + suffix
+            counts = pd.read_csv(options.stdin, sep="\t",  comment="#")
+            inf = IOTools.openFile(options.input_filename_design)
+            design = pd.read_csv(inf, sep="\t", index_col=0)
+            inf.close()
+            design = design[design["include"] != 0]
+        else:
+            counts, design = Counts.loadTagDataPandas(
+                options.stdin, options.input_filename_design)
     else:
-        counts, design = Counts.loadTagDataPandas(
-            sys.stdin, options.input_filename_design)
+        counts = pd.read_table(options.stdin, sep="\t",
+                               index_col=0, comment="#")
+        design = None
 
     if options.method == "filter":
         # filter
@@ -378,7 +417,16 @@ def main(argv=None):
             return
 
         # write out
-        counts.to_csv(sys.stdout, sep="\t", header=True)
+        counts.to_csv(options.stdout, sep="\t", header=True)
+        
+    elif options.method == "normalize":
+        normed, factors = Counts.normalizeTagData(
+            counts,
+            method=options.normalization_method)
+
+        E.info("normalization-data:\n%s" % str(factors))
+        # write out
+        normed.to_csv(options.stdout, sep="\t", header=True)
 
     elif options.method == "spike":
         # check parameters are sensible and set parameters where they
