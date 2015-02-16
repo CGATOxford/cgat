@@ -118,6 +118,69 @@ except IOError:
     pass
 
 
+def runDETest(raw_DataFrame,
+              design_file,
+              outfile,
+              de_caller,
+              **kwargs):
+    if caller.lower() == "deseq":
+        caller = DESeqCaller
+    else:
+        raise ValueError("Unknown caller")
+
+    caller.run(raw_DataFrame, design_file, outfile)
+
+
+class DECaller(object):
+    """
+    Base
+    """
+
+    def __call__(self, *args, **kwargs):
+        pass
+
+    def __init__(self):
+        pass
+
+    def parseDesignFile(self):
+        """
+        Replacement for loadTagData...
+        """
+        pass
+
+    def filterCountTable(self):
+        """
+        Replacement for filterTagData
+        """
+        pass
+
+    def plotDiagnostics(self):
+        """
+        All plotting that should be as faithful to published protocol as
+        possible. Gallery plot stuff! 
+        """ 
+        pass
+
+    def callDifferentialExpression(self, *, **):
+        """
+        Custom DE functions
+        """
+        pass
+
+    def postProcessDEResults(self):
+        """
+        """
+        pass
+
+    def run(self, df, design_file, outfile):
+        """
+        """
+        groups, conditions, pairs  = self.parseDesignFile(design_file)
+        counts = self.filterCountTable(df, groups, conditions, pairs)          
+        self.postProcess(self.callDifferentialExpression())
+        pass
+
+
 def buildProbeset2Gene(infile,
                        outfile,
                        database="hgu133plus2.db",
