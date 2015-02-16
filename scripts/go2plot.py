@@ -31,20 +31,13 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import getopt
-import time
-import optparse
 import math
-import tempfile
+import CGAT.Experiment as E
 
 """ program $Id: go2plot.py 2782 2009-09-10 11:40:29Z andreas $
 
 """
-import CGAT.Experiment as E
 
 # generate eps instead of ps (but make sure it's just one page!)
 doEps = True

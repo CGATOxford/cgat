@@ -403,8 +403,6 @@ from ruffus import *
 import CGAT.Experiment as E
 import logging as L
 import CGAT.Database as Database
-import CGAT.CSV as CSV
-
 import sys
 import os
 import re
@@ -423,7 +421,6 @@ import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Tophat as Tophat
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
-import rpy2.robjects.vectors as rovectors
 from rpy2.rinterface import RRuntimeError
 
 import CGAT.Expression as Expression
@@ -433,7 +430,8 @@ import CGATPipelines.PipelineMapping as PipelineMapping
 import CGATPipelines.PipelineRnaseq as PipelineRnaseq
 import CGATPipelines.PipelineMappingQC as PipelineMappingQC
 import CGAT.Stats as Stats
-
+import CGAT.Pipeline as P
+import CGATPipelines.PipelineTracks as PipelineTracks
 # levels of cuffdiff analysis
 # (no promotor and splice -> no lfold column)
 CUFFDIFF_LEVELS = ("gene", "cds", "isoform", "tss")
@@ -443,9 +441,7 @@ CUFFDIFF_LEVELS = ("gene", "cds", "isoform", "tss")
 ###################################################
 # Pipeline configuration
 ###################################################
-
 # load options from the config file
-import CGAT.Pipeline as P
 P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
@@ -466,8 +462,6 @@ PipelineGeneset.PARAMS = PARAMS
 ###################################################################
 # Helper functions mapping tracks to conditions, etc
 ###################################################################
-import CGATPipelines.PipelineTracks as PipelineTracks
-
 # collect sra nd fastq.gz tracks
 TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample3).loadFromDirectory(
     glob.glob("*.sra"), "(\S+).sra") +\

@@ -77,7 +77,7 @@ def main(argv=None):
         output_format="alignment",
         filename_map=None,
         stop_codons=("TAG", "TAA", "TGA"),
-        output_identifier = "peptide",
+        output_identifier="peptide",
     )
 
     (options, args) = E.Start(parser, add_pipe_options=True)

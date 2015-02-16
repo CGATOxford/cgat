@@ -279,15 +279,15 @@ from rpy2.rinterface import RRuntimeError
 import CGATPipelines.PipelineGeneset as PipelineGeneset
 import CGATPipelines.PipelineRnaseq as PipelineRnaseq
 import CGAT.Stats as Stats
+import CGAT.Pipeline as P
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 ###################################################
 ###################################################
 ###################################################
 # Pipeline configuration
 ###################################################
-
 # load options from the config file
-import CGAT.Pipeline as P
 P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
@@ -309,8 +309,6 @@ PipelineGeneset.PARAMS = PARAMS
 ###################################################################
 # Helper functions mapping tracks to conditions, etc
 ###################################################################
-import CGATPipelines.PipelineTracks as PipelineTracks
-
 # collect sra nd fastq.gz tracks
 TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample3).loadFromDirectory(
     glob.glob("*.bam"), "(\S+).bam")

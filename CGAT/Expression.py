@@ -81,10 +81,21 @@ import pandas
 import pandas.rpy.common as com
 import ggplot
 
+import numpy as np
+from scipy.stats import ttest_ind
+
+import matplotlib
+import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
+import pylab
+
 from rpy2.robjects import r as R
 from rpy2.robjects import numpy2ri as rpyn
 import rpy2.robjects as ro
 import rpy2.robjects.numpy2ri
+from rpy2.robjects.packages import importr
+from rpy2.robjects.vectors import FloatVector
+
 
 try:
     import CGAT.Experiment as E
@@ -811,6 +822,9 @@ def runEdgeR(outfile,
     groups, pairs, has_replicates, has_pairs = groupTagData(ref_group)
 
     # output heatmap plot
+    print "outfile_prefix:"
+    print outfile_prefix
+    print '%(outfile_prefix)sheatmap.png' % locals()
     R.png('%(outfile_prefix)sheatmap.png' % locals())
     plotCorrelationHeatmap()
     R['dev.off']()
@@ -2352,6 +2366,54 @@ def dumpTagData(filename_tags, filename_design, outfile):
                       quote=FALSE)''' % locals())
 
 
+def runTTest(outfile,
+             outfile_prefix,
+             fdr,
+             ref_group=None):
+    '''apply a ttest on the data.
+
+    For the T-test it is best to use FPKM values as
+    this method does not perform any library normalization.
+    '''
+    groups, pairs, has_replicates, has_pairs = groupTagData(ref_group)
+
+    results = []
+    for combination in itertools.combinations(groups, 2):
+        control, treatment = combination
+        r = R('''r = apply(countsTable, 1,
+        function(x) { t.test(
+        x[groups == '%(treatment)s'],
+        x[groups == '%(control)s']) } )
+        ''' % locals())
+
+        for test_id, ttest in zip(r.names, r):
+            # TS, swapped order below as assignment was incorrect
+            treatment_mean, control_mean = tuple(ttest.rx2('estimate'))
+            fold_change = treatment_mean / control_mean
+            pvalue = tuple(ttest.rx2('p.value'))[0]
+            significant = (0, 1)[pvalue < fdr]
+            results.append(GeneExpressionResult._make((test_id,
+                                                       treatment,
+                                                       treatment_mean,
+                                                       0,
+                                                       control,
+                                                       control_mean,
+                                                       0,
+                                                       pvalue,
+                                                       pvalue,
+                                                       numpy.log2(fold_change),
+                                                       fold_change,
+                                                       numpy.log2(fold_change),
+                                                       significant,
+                                                       "OK")))
+
+    writeExpressionResults(outfile, results)
+
+
+#####################################################################
+# Pandas-based functions and matplotlib-based plotting functions ####
+#####################################################################
+
 def loadTagDataPandas(tags_filename, design_filename):
     '''load tag data for deseq/edger analysis.
 
@@ -2475,47 +2537,462 @@ def filterTagDataPandas(counts_table,
     return counts_table
 
 
-def runTTest(outfile,
-             outfile_prefix,
-             fdr,
-             ref_group=None):
+def identifyVariablesPandas(design_table):
+
+    # design table should have been processed by loadTagDataPandas already
+    # just in case, re-filter for not included samples here
+
+    design_table = design_table[design_table["include"] != 0]
+    conds = design_table['group'].tolist()
+    pairs = design_table['pair'].tolist()
+
+    # TS, adapted from JJ code for DESeq2 design tables:
+    # if additional columns present, pass to 'factors'
+    if len(design_table.columns) > 3:
+        factors = design_table.iloc[:, 3:]
+    else:
+        factors = None
+
+    return conds, pairs, factors
+
+
+def checkTagGroupsPandas(design_table, ref_group=None):
+    '''compute groups and pairs from tag data table.'''
+
+    conds, pairs, factors = identifyVariablesPandas(design_table)
+    groups = list(set(conds))
+
+    # Relevel the groups so that the reference comes first
+    # how to do this in python?
+    #if ref_group is not None:
+    #    R('''groups <- relevel(groups, ref = "%s")''' % ref_group)
+
+    # check this works, will need to make factors from normal df
+    # TS adapted from JJ code for DESeq2 -
+    # check whether there are additional factors in design file...
+    if factors:
+        E.warn("There are additional factors in design file that are ignored"
+               " by groupTagData: ", factors)
+    else:
+        pass
+        
+    # Test if replicates exist - at least one group must have multiple samples
+    max_per_group = max([conds.count(x) for x in groups])
+
+    has_replicates = max_per_group >= 2
+
+    # Test if pairs exist:
+    npairs = len(set(pairs))
+    has_pairs = npairs == 2
+
+    # ..if so, at least two samples are required per pair
+    if has_pairs:
+        min_per_pair = min([pairs.count(x) for x in set(pairs)])
+        has_pairs = min_per_pair >= 2
+
+    return groups, pairs, conds, factors, has_replicates, has_pairs
+
+
+ResultColumns = ["test_id", "treatment_name", "treatment_mean",
+                 "treatment_std", "control_name", "control_mean",
+                 "control_std", "p_value", "p_value_adj", "l2fold", "fold",
+                 "transformed_l2fold", "significant", "status"]
+
+ResultColumns_dtype = {"test_id": object, "treatment_name": object,
+                       "treatment_mean": float, "treatment_std":
+                       float, "control_name": object, "control_mean":
+                       float, "control_std": float, "p_value": float,
+                       "p_value_adj": float, "l2fold": float, "fold":
+                       float, "transformed_l2fold": float,
+                       "significant": int, "status": object}
+
+
+def makeEmptyDataFrameDict():
+    return {key: [] for key in ResultColumns}
+
+
+def runTTestPandas(counts_table,
+                   design_table,
+                   outfile,
+                   outfile_prefix,
+                   fdr,
+                   ref_group=None):
     '''apply a ttest on the data.
 
     For the T-test it is best to use FPKM values as
     this method does not perform any library normalization.
+    Alternatively, perform normalisation on counts table using Counts.py
     '''
-    groups, pairs, has_replicates, has_pairs = groupTagData(ref_group)
+    stats = importr('stats')
+
+    (groups, pairs, conds, factors, has_replicates,
+     has_pairs) = checkTagGroupsPandas(design_table, ref_group)
+
+    DF_Dict = makeEmptyDataFrameDict()
 
     for combination in itertools.combinations(groups, 2):
+        # as each combination may have different numbers of samples in control
+        # and treatment, calculations have to be performed on a per
+        # combination basis
+
         control, treatment = combination
-        r = R('''r = apply(countsTable, 1,
-        function(x) { t.test(
-        x[groups == '%(treatment)s'],
-        x[groups == '%(control)s']) } )
+        n_rows = counts_table.shape[0]
+        DF_Dict["control_name"].extend((control,)*n_rows)
+        DF_Dict["treatment_name"].extend((treatment,)*n_rows)
+        DF_Dict["test_id"].extend(counts_table.index.tolist())
+
+        # subset counts table for each combination
+        c_keep = [x == control for x in conds]
+        control_counts = counts_table.iloc[:, c_keep]
+        t_keep = [x == treatment for x in conds]
+        treatment_counts = counts_table.iloc[:, t_keep]
+
+        c_mean = control_counts.mean(axis=1)
+        DF_Dict["control_mean"].extend(c_mean)
+        DF_Dict["control_std"].extend(control_counts.std(axis=1))
+
+        t_mean = treatment_counts.mean(axis=1)
+        DF_Dict["treatment_mean"].extend(t_mean)
+        DF_Dict["treatment_std"].extend(treatment_counts.std(axis=1))
+
+        t, prob = ttest_ind(control_counts, treatment_counts, axis=1)
+        DF_Dict["p_value"].extend(prob)
+        # what about zero values?!
+        DF_Dict["fold"].extend(t_mean / c_mean)
+
+    DF_Dict["p_value_adj"].extend(
+        list(stats.p_adjust(FloatVector(DF_Dict["p_value"]), method='BH')))
+
+    DF_Dict["significant"].extend(
+        [int(x < fdr) for x in DF_Dict["p_value_adj"]])
+
+    DF_Dict["l2fold"].extend(list(numpy.log2(DF_Dict["fold"])))
+    # note: the transformed log2 fold change is not transformed!
+    DF_Dict["transformed_l2fold"].extend(list(numpy.log2(DF_Dict["fold"])))
+
+    # set all status values to "OK"
+    DF_Dict["status"].extend(("OK",)*len(DF_Dict["test_id"]))
+
+    results = pandas.DataFrame(DF_Dict)
+    results.set_index("test_id", inplace=True)
+    results.to_csv(outfile, sep="\t", header=True, index=True)
+
+
+def plotCorrelationHeatmapMatplot(counts, outfile, method="correlation",
+                                  cor_method="pearson"):
+    '''plot a heatmap of correlations derived from
+    countsTable.
+    '''
+    # to do: add other methods?
+
+    # define outside function? - Will we reuse?
+    heatmap_cdict_b_to_y = {
+        'red': ((0.0, 0.4, .4), (0.01, .4, .4), (1., .95, .95)),
+        'green': ((0.0, 0.4, 0.4), (0.01, .4, .4), (1., .95, .95)),
+        'blue': ((0.0, .9, .9), (0.01, .9, .9), (1., 0.4, 0.4))}
+
+    cm = matplotlib.colors.LinearSegmentedColormap(
+        '', heatmap_cdict_b_to_y, 256)
+
+    df = counts.corr(method=cor_method)
+    plt.pcolor(np.array(df), cmap=cm)
+    plt.colorbar()
+    plt.title("%(cor_method)s correlation heatmap" % locals())
+    plt.yticks(np.arange(0.5, len(df.index), 1), df.index)
+    plt.xticks(np.arange(0.5, len(df.columns), 1), df.columns, rotation=90)
+    plt.tight_layout()
+    pylab.savefig(outfile)
+
+
+def runEdgeRPandas(counts,
+                   design_table,
+                   outfile,
+                   outfile_prefix="edger.",
+                   fdr=0.1,
+                   prefix="",
+                   dispersion=None,
+                   ref_group=None):
+    '''run EdgeR on countsTable.
+
+    Results are stored in *outfile* and files prefixed by *outfile_prefix*.
+
+    The dispersion is usually measuered from replicates. If there are no
+    replicates, you need to set the *dispersion* explicitely.
+
+    See page 13 of the EdgeR user guide::
+
+       2. Simply pick a reasonable dispersion value, based on your
+       experience with similar data, and use that. Although
+       subjective, this is still more defensible than assuming Poisson
+       variation. Typical values are dispersion=0.4 for human data,
+       dispersion=0.1 for data on genetically identical model
+       organisms or dispersion=0.01 for technical replicates.
+
+    '''
+
+    # load library
+    R('''suppressMessages(library('edgeR'))''')
+
+    (groups, pairs, conds, factors, has_replicates,
+     has_pairs) = checkTagGroupsPandas(design_table, ref_group)
+
+    # output heatmap plot
+    plotCorrelationHeatmapMatplot(counts,
+                                  '%(outfile_prefix)sheatmap.png' % locals(),
+                                  cor_method="spearman")
+
+    E.info('running EdgeR: groups=%s, pairs=%s, replicates=%s, pairs=%s' %
+           (groups, pairs, has_replicates, has_pairs))
+
+    r_counts = com.convert_to_r_dataframe(counts)
+
+    passDFtoRGlobalEnvironment = R('''function(df){
+    countsTable <<- df}''')
+    passDFtoRGlobalEnvironment(r_counts)
+
+    if has_pairs:
+        # output difference between groups
+        # note: this is performed on non-normalised data?
+        # also, this isn't edgeR specific, should this be moved?
+        # yes make this a function to call on any count dataframe
+        first = True
+        pairs_df = pandas.DataFrame()
+        nrows = len(counts.index)
+        n = 0
+        for g1, g2 in itertools.combinations(groups, 2):
+            print g1, g2
+            keep_a = [x == g1 for x in conds]
+            counts_a = counts.iloc[:, keep_a]
+            keep_b = [x == g2 for x in conds]
+            counts_b = counts.iloc[:, keep_b]
+            index = range(n, n+nrows)
+            n += nrows
+            a = counts_a.sum(axis=1)
+            b = counts_b.sum(axis=1)
+            diff = a-b
+            diff.sort()
+            temp_df = pandas.DataFrame({"cumsum": np.cumsum(diff).tolist(),
+                                        "comb": "_vs_".join([g1, g2]),
+                                        "id": range(0, nrows)},
+                                       index=index)
+            pairs_df = pairs_df.append(temp_df)
+        plot_pairs = R('''function(df, outfile){
+        suppressMessages(library('ggplot2'))
+        p = ggplot(df, aes(y=cumsum, x=id)) +
+        geom_line(aes(col=factor(comb))) +
+        scale_color_discrete(name="Comparison") +
+        xlab("index") + ylab("Cumulative sum")
+        ggsave("%(outfile_prefix)sbalance_groups.png", plot = p)}
         ''' % locals())
 
-        results = []
-        for test_id, ttest in zip(r.names, r):
-            control_mean, treatment_mean = tuple(ttest.rx2('estimate'))
-            fold_change = treatment_mean / control_mean
-            pvalue = tuple(ttest.rx2('p.value'))[0]
-            significant = (0, 1)[pvalue < fdr]
-            results.append(GeneExpressionResult._make((test_id,
-                                                       treatment,
-                                                       treatment_mean,
-                                                       0,
-                                                       control,
-                                                       control_mean,
-                                                       0,
-                                                       pvalue,
-                                                       pvalue,
-                                                       numpy.log2(fold_change),
-                                                       fold_change,
-                                                       numpy.log2(fold_change),
-                                                       significant,
-                                                       "OK")))
+        r_pairs_df = com.convert_to_r_dataframe(pairs_df)
+        plot_pairs(r_pairs_df)
+
+        # output difference between pairs within groups
+        first = True
+        legend = []
+        n = 0
+        pairs_in_groups_df = pandas.DataFrame()
+        for pair in set(pairs):
+            for g1, g2 in itertools.combinations(groups, 2):
+                print pair, g1, g2
+                key = "pair-%s-%s-vs-%s" % (pair, g1, g2)
+                legend.append(key)
+                keep_a = [x == pair and y == g1 for x, y in zip(pairs, conds)]
+                keep_b = [x == pair and y == g2 for x, y in zip(pairs, conds)]
+
+                # check pair and group combination actually exists
+                if sum(keep_a) > 0 and sum(keep_b) > 0:
+                    counts_a = counts.iloc[:, keep_a]
+                    counts_b = counts.iloc[:, keep_b]
+                    index = range(n, n+nrows)
+                    n += nrows
+                    a = counts_a.sum(axis=1)
+                    b = counts_b.sum(axis=1)
+                    diff = a-b
+                    diff.sort()
+                    comparison = "pair-%s-%s-vs-%s" % (pair, g1, g2)
+                    temp_df = pandas.DataFrame({"cumsum": np.cumsum(diff).tolist(),
+                                                "comb": comparison,
+                                                "id": range(0, nrows)},
+                                               index=index)
+                    pairs_in_groups_df = pairs_in_groups_df.append(temp_df)
+
+        plot_pairs_in_groups = R('''function(df, outfile){
+        suppressMessages(library('ggplot2'))
+        p = ggplot(df, aes(y=cumsum, x=id)) +
+        geom_line(aes(col=factor(comb))) +
+        scale_color_discrete(name="Comparison") +
+        xlab("index") + ylab("Cumulative sum")
+        ggsave("%(outfile_prefix)sbalance_pairs.png", plot = p)}
+        ''' % locals())
+
+        r_pairs_in_groups_df = com.convert_to_r_dataframe(pairs_in_groups_df)
+        plot_pairs(r_pairs_in_groups_df)
+
+    # build DGEList object
+    if ref_group is not None:
+        r_ref_group = ro.default_py2ri(ref_group)
+    else:
+        r_ref_group = ro.default_py2ri(groups[0])
+
+    r_counts = com.convert_to_r_dataframe(counts)
+    r_groups = ro.StrVector(conds)
+
+    buildDGEList = R('''
+    suppressMessages(library('edgeR'))
+    function(counts, groups, ref_group){
+    print(head(counts))
+    print(groups)
+    countsTable = DGEList(counts, group=groups)
+    countsTable$samples$group <- relevel(countsTable$samples$group,
+    ref = ref_group)
+    countsTable = calcNormFactors(countsTable)
+    print(countsTable)
+    }''')
+
+    buildDGEList(r_counts, r_groups, r_ref_group)
+
+
+def restOfEdgeRfunction():
+
+    # output MDS plot
+    R.png('''%(outfile_prefix)smds.png''' % locals())
+    try:
+        R('''plotMDS( countsTable )''')
+    except rpy2.rinterface.RRuntimeError, msg:
+        E.warn("can not plot mds: %s" % msg)
+    R['dev.off']()
+
+    # build design matrix
+    if has_pairs:
+        R('''design = model.matrix(~pairs + countsTable$samples$group)''')
+    else:
+        R('''design = model.matrix(~countsTable$samples$group)''')
+
+    # R('''rownames(design) = rownames( countsTable$samples )''')
+    # R('''colnames(design)[length(colnames(design))] = "CD4" ''' )
+
+    # fitting model to each tag
+    if has_replicates:
+        # estimate common dispersion
+        R('''countsTable = estimateGLMCommonDisp(countsTable, design)''')
+        # estimate tagwise dispersion
+        R('''countsTable = estimateGLMTagwiseDisp(countsTable, design)''')
+        # fitting model to each tag
+        R('''fit = glmFit(countsTable, design)''')
+    else:
+        # fitting model to each tag
+        if dispersion is None:
+            raise ValueError("no replicates and no dispersion")
+        E.warn("no replicates - using a fixed dispersion value")
+        R('''fit = glmFit(countsTable, design, dispersion=%f)''' %
+          dispersion)
+
+    # perform LR test
+    R('''lrt = glmLRT(fit)''')
+
+    E.info("Generating output")
+
+    # output cpm table
+    R('''suppressMessages(library(reshape2))''')
+    R('''countsTable.cpm <- cpm(countsTable, normalized.lib.sizes=TRUE)''')
+    R('''melted <- melt(countsTable.cpm)''')
+    R('''names(melted) <- c("test_id", "sample", "ncpm")''')
+    # melt columns are factors - convert to string for sorting
+    R('''melted$test_id = levels(melted$test_id)[as.numeric(melted$test_id)]''')
+    R('''melted$sample = levels(melted$sample)[as.numeric(melted$sample)]''')
+    # sort cpm table by test_id and sample
+    R('''sorted = melted[with(melted, order(test_id, sample)),]''')
+    R('''gz = gzfile("%(outfile_prefix)scpm.tsv.gz", "w" )''' % locals())
+    R('''write.table(sorted, file=gz, sep = "\t",
+                     row.names=FALSE, quote=FALSE)''')
+    R('''close(gz)''')
+
+    # compute adjusted P-Values
+    R('''padj = p.adjust(lrt$table$PValue, 'BH')''')
+
+    rtype = collections.namedtuple("rtype", "lfold logCPM LR pvalue")
+
+    # output differences between pairs
+    if len(groups) == 2:
+        R.png('''%(outfile_prefix)smaplot.png''' % locals())
+        R('''plotSmear(countsTable, pair=c('%s'))''' % "','".join(groups))
+        R('''abline(h=c(-2, 2), col='dodgerblue') ''')
+        R['dev.off']()
+
+    # I am assuming that logFC is the base 2 logarithm foldchange.
+    # Parse results and parse to file
+    results = []
+    counts = E.Counter()
+
+    for interval, data, padj in zip(
+            R('''rownames(lrt$table)'''),
+            zip(*R('''lrt$table''')),
+            R('''padj''')):
+        d = rtype._make(data)
+
+        counts.input += 1
+
+        # set significant flag
+        if padj <= fdr:
+            signif = 1
+            counts.significant += 1
+            if d.lfold > 0:
+                counts.significant_over += 1
+            else:
+                counts.significant_under += 1
+        else:
+            signif = 0
+            counts.insignificant += 1
+
+        if d.lfold > 0:
+            counts.all_over += 1
+        else:
+            counts.all_under += 1
+
+        # is.na failed in rpy2 2.4.2
+        if d.pvalue != R('''NA'''):
+            status = "OK"
+        else:
+            status = "FAIL"
+
+        counts[status] += 1
+
+        try:
+            fold = math.pow(2.0, d.lfold)
+        except OverflowError:
+            E.warn("%s: fold change out of range: lfold=%f" %
+                   (interval, d.lfold))
+            # if out of range set to 0
+            fold = 0
+
+        # fold change is determined by the alphabetical order of the factors.
+        # Is the following correct?
+        results.append(GeneExpressionResult._make((
+            interval,
+            groups[1],
+            d.logCPM,
+            0,
+            groups[0],
+            d.logCPM,
+            0,
+            d.pvalue,
+            padj,
+            d.lfold,
+            fold,
+            d.lfold,  # no transform of lfold
+            str(signif),
+            status)))
 
     writeExpressionResults(outfile, results)
+
+    outf = IOTools.openFile("%(outfile_prefix)ssummary.tsv" % locals(), "w")
+    outf.write("category\tcounts\n%s\n" % counts.asTable())
+    outf.close()
+
+# needs to put into class
+##
 
 
 def outputSpikeIns(filename_tags,

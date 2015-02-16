@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-SVGTree.py - 
+SVGTree.py -
 ======================================================
 
 :Author: Andreas Heger
@@ -37,18 +37,9 @@ import os
 import sys
 import string
 import re
-import getopt
-import time
-import optparse
 import math
 import tempfile
-import bisect
-
-""" program $Id: SVGTree.py 2784 2009-09-10 11:41:14Z andreas $
-class to plot a phylogenetic tree as an SVG file.
-"""
-from CGAT import Experiment as Experiment
-from CGAT import IOTools as IOTools
+from CGAT import Experiment as E
 from CGAT import SVGdraw as SVGdraw
 from CGAT import TreeTools as TreeTools
 from CGAT import Tree as Tree
@@ -74,8 +65,6 @@ COLOURS = (BLACK, RED, GREEN, BLUE, YELLOW, CYAN, PURPLE, GREY, ORANGE, PINK,
 
 MAX_GREY = 240
 GREY_COLORS = map(lambda x: (x, x, x), range(0, MAX_GREY))
-
-###################################################################
 
 
 class BorderDecorator:
@@ -272,9 +261,12 @@ class BorderDecoratorClusters(BorderDecorator):
                     len(self.mMapCluster2Colour) % len(COLOURS)]
 
             colour = self.mMapCluster2Colour[cluster]
-            elements.append(SVGdraw.rect(x, y + map_node2height[n] - self.mBoxWidth / 2, self.mBoxWidth, self.mBoxWidth,
-                                         stroke="rgb(%i,%i,%i)" % colour,
-                                         fill="rgb(%i,%i,%i)" % colour))
+            elements.append(SVGdraw.rect(
+                x,
+                y + map_node2height[n] - self.mBoxWidth / 2, self.mBoxWidth,
+                self.mBoxWidth,
+                stroke="rgb(%i,%i,%i)" % colour,
+                fill="rgb(%i,%i,%i)" % colour))
 
         return elements
 
@@ -393,7 +385,8 @@ class BranchDecoratorHorizontalBranchLengthError(BranchDecoratorHorizontalBranch
 
     def getText(self, node_id):
         """return text."""
-        return BranchDecoratorHorizontalBranchLength.getText(self, node_id ) +\
+        return BranchDecoratorHorizontalBranchLength.getText(
+            self, node_id) +\
             "+/-" + \
             self.mBranchErrorFormat % self.mErrorTree.node(
                 node_id).data.branchlength
@@ -531,8 +524,6 @@ class NodeDecorator:
     def setFontStyle(self, style):
         self.mFontStyle = style
 
-###################################################################
-
 
 class NodeDecoratorExternal(NodeDecorator):
 
@@ -569,8 +560,6 @@ class NodeDecoratorExternal(NodeDecorator):
         else:
             l = 0
         return max(l, m)
-
-###################################################################
 
 
 class NodeDecoratorBySpecies(NodeDecorator):
@@ -682,8 +671,6 @@ class NodeDecoratorBySpecies(NodeDecorator):
 
         return max(m, l)
 
-
-###################################################################
 
 class SVGTree:
 
@@ -867,7 +854,7 @@ class SVGTree:
 
         # patch: white background
 # self.addElement( SVGdraw.rect( 0, 0, self.mPageWidth, self.mPageHeight,
-##                                        stroke = "rgb(%i,%i,%i)" % WHITE,
+#                                        stroke = "rgb(%i,%i,%i)" % WHITE,
 # fill = "rgb(%i,%i,%i)" % WHITE) )
 
     #####################################################################
@@ -929,7 +916,7 @@ class SVGTree:
                 # set node height for external node
                 self.mNodeHeights[node_id] = counter[0]
                 counter[0] += max(self.mDecoratorExternalNodes.getHeight(node_id),
-                                  self.mDecoratorHorizontalBranches.getHeight( node_id) ) \
+                                  self.mDecoratorHorizontalBranches.getHeight(node_id)) \
                     * self.mHeightScaleFactor + self.mTerminalLabelSeparator
 
         TreeTools.TreeDFS(self.mTree, self.mTree.root,
@@ -1325,7 +1312,7 @@ if __name__ == "__main__":
         height_scale=0,
     )
 
-    (options, args) = Experiment.Start(parser, add_pipe_options=True)
+    (options, args) = E.Start(parser, add_pipe_options=True)
 
     if options.filename_tree:
         tree_lines = open(options.filename_tree, "r").readlines()
@@ -1356,4 +1343,4 @@ if __name__ == "__main__":
 
     plot.writeToFile(sys.stdout)
 
-    Experiment.Stop()
+    E.Stop()

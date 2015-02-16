@@ -10,9 +10,12 @@ graph_check_transitivity.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+python graph_check_transitivity < graph.in
+
+check whether all edges in a graph are transitive, i.e.,
+for every two edges A->B and B->C check whether A->C exists.
+
+Edges are taken to be undirected.
 
 Usage
 -----
@@ -31,27 +34,8 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import getopt
-import time
-import optparse
-import math
-import tempfile
-
-""" program $Id: graph_check_transitivity.py 2782 2009-09-10 11:40:29Z andreas $
-
-python graph_check_transitivity < graph.in
-
-check whether all edges in a graph are transitive, i.e.,
-for every two edges A->B and B->C check whether A->C exists.
-
-Edges are taken to be undirected.
-"""
 import CGAT.Experiment as E
-import CGAT.Histogram as Histogram
 
 
 def main(argv=None):

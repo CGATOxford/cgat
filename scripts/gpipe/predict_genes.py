@@ -60,10 +60,19 @@ import os
 import sys
 import string
 import re
-import optparse
 import tempfile
 import time
 import subprocess
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.IndexedFasta as IndexedFasta
+import alignlib_lite
+import CGAT.PredictionParser as PredictionParser
+import CGAT.Exons as Exons
+
+# import all, sort out names later
+from CGAT.Predictor2 import *
+
 
 USAGE = """python %s [OPTIONS] peptide genome
 
@@ -121,17 +130,6 @@ HEADER = """# QUERY:        1  query id
 # NERROR:       26 number of errors in genewise parsing"""
 
 SHORT_HEADER = """# QUERY\tSBJCT\tSCORE\tQFROM\tQTO\tSBJCT\tSFROM\tSTO\tSALI\tQLEN\tCQUERY\tNGAPS\tNFR\tNINTRON\tNPHASE0\tNPHAS1\tNPHASE2\tNSTOP\tPIDE\tPSIM\tPEP\tSGFROM\tSGTO\tGALI\tNERROR"""
-
-
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.IndexedFasta as IndexedFasta
-import alignlib_lite
-import CGAT.PredictionParser as PredictionParser
-import CGAT.Exons as Exons
-
-# import all, sort out names later
-from CGAT.Predictor2 import *
 
 global_options = {}
 

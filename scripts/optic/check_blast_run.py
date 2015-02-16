@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-optic/check_blast_run.py - 
+optic/check_blast_run.py -
 ======================================================
 
 :Author: Andreas Heger
@@ -32,9 +32,9 @@ optic/check_blast_run.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+check blast run.
+
+Input: one or more sets of vertices.
 
 Usage
 -----
@@ -56,22 +56,7 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
-import re
-import getopt
-import time
-import sets
-import optparse
-import math
-import tempfile
-
-""" program $Id: optic/check_blast_run.py 2781 2009-09-10 11:33:14Z andreas $
-check blast run.
-
-Input: one or more sets of vertices.
-"""
 import CGAT.Experiment as E
 import CGAT.BlastAlignments as BlastAlignments
 

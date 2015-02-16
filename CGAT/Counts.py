@@ -38,14 +38,11 @@ Code
 ----
 
 '''
-import CGAT.Pipeline as P
 import CGAT.Experiment as E
-import os
-import glob
 import CGAT.IOTools as IOTools
 import pandas as pd
-import re
 import numpy as np
+import numpy.ma as ma
 import copy
 import random
 import sys
@@ -86,7 +83,8 @@ def loadTagDataPandas(tags_filename, design_filename):
 
     '''
 
-    counts_table = pd.read_table(sys.stdin, sep="\t", index_col=0, comment="#")
+    counts_table = pd.read_table(tags_filename, sep="\t",
+                                 index_col=0, comment="#")
 
     E.info("read data: %i observations for %i samples" % counts_table.shape)
 
@@ -164,7 +162,14 @@ def filterTagDataPandas(counts_table,
                 len(take) - sum(take)))
         counts_table = counts_table[take]
 
-    return counts_table
+    # need to return altered design table based on filtering
+    # in case samples are removed!
+
+    design_table = design_table.ix[high_samples]
+        
+    nobservations, nsamples = counts_table.shape
+        
+    return nobservations, nsamples, counts_table, design_table
 
 
 def mapGroups(design_table):
@@ -272,7 +277,7 @@ def findClusters(df, distance, size, tracks_map, groups):
 
 
 def shuffleRows(df, i_bins, c_bins, tracks_map,  groups,
-                difference, s_max=100, i=1, seed=None):
+                difference, s_max=100, i=1):
     '''take a dataframe and shuffle the rows to obtain spike in rows.
     return the indices to obtain the rows from the original dataframe'''
     counts = np.zeros((len(i_bins) + 1, len(c_bins) + 1))
@@ -286,17 +291,10 @@ def shuffleRows(df, i_bins, c_bins, tracks_map,  groups,
     for iteration in range(0,  i):
         E.info("performing shuffling iteration number %i.." % (iteration + 1))
         if min_occup < s_max:
-            if seed:
-                # this is included for testing purposes
-                E.info("The random seed has been set as: %s" % seed)
-                prng = np.random.RandomState(seed)
-                group1_rand = prng.permutation(df.index)
-                prng = np.random.RandomState(seed + 1)
-                group2_rand = prng.permutation(df.index)
-            else:
-                # remute the df index axes to get a random row order
-                group1_rand = np.random.permutation(df.index)
-                group2_rand = np.random.permutation(df.index)
+            group1_rand = copy.copy(df.index.tolist())
+            group2_rand = copy.copy(df.index.tolist())
+            random.shuffle(group1_rand)
+            random.shuffle(group2_rand)
 
             # subset the dataframe rows in the first random order
             # and by the column_ids in the first group
@@ -484,3 +482,71 @@ def outputSpikes(df, id_column, indices, tracks_map, groups,
                                        header=False, sep="\t",
                                        dtype={'position': int})
                 n += 1
+
+
+def geometric_mean(array, axis=0):
+    '''return the geometric mean of an array removing all zero-values but
+    retaining total length
+    '''
+    non_zero = ma.masked_values(array, 0)
+    log_a = ma.log(non_zero)
+    return ma.exp(log_a.mean(axis=axis))
+
+
+def normalizeTagData(counts, method="deseq-size-factors"):
+    '''return a table with normalized count data.
+
+    Implemented methods are:
+
+    million-counts
+
+       Divide each value by the column total and multiply by 1,000,000
+
+    deseq-size-factors
+
+       Construct a "reference sample" by taking, for each row, the
+       geometric mean of the counts in all samples.
+
+       To get the sequencing depth of a column relative to the
+       reference, calculate for each row the quotient of the counts in
+       your column divided by the counts of the reference sample. Now
+       you have, for each row and column, an estimate of the depth
+       ratio.
+
+       Simply take the median of all the quotients in a column to get
+       the relative depth of the library.
+
+       Divide all values in a column by the normalization factor.
+
+    This method returns the normalized counts and any normalization
+    factors that have been applied.
+
+    '''
+
+    if method == "deseq-size-factors":
+
+        # compute row-wise geometric means
+        geometric_means = geometric_mean(counts, axis=1)
+
+        # remove 0 geometric means
+        take = geometric_means > 0
+        geometric_means = geometric_means[take]
+        counts = counts[take]
+
+        normed = (counts.T / geometric_means).T
+
+        size_factors = normed.median(axis=0)
+
+        normed = counts / size_factors
+
+    elif method == "million-counts":
+        size_factors = counts.sum(axis=0)
+        normed = counts * 1000000.0 / size_factors
+    else:
+        raise NotImplementedError(
+            "normalization method '%s' not implemented" % method)
+
+    # make sure we did not loose any rows or columns
+    assert normed.shape == counts.shape
+
+    return normed, size_factors

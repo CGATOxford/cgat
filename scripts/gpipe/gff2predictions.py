@@ -59,15 +59,6 @@ Code
 import sys
 import string
 import re
-
-USAGE = """python %s [OPTIONS] < psl > predictions
-
-Convert GFF exon list to predictions format.
-
-Version: $Id: gpipe/gff2predictions.py 2021 2008-07-10 16:00:48Z andreas $
-"""
-
-
 import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
 import CGAT.Genomics as Genomics
@@ -76,6 +67,13 @@ import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IOTools as IOTools
 import CGAT.GTF as GTF
 import CGAT.Predictor2 as Predictor
+
+USAGE = """python %s [OPTIONS] < psl > predictions
+
+Convert GFF exon list to predictions format.
+
+Version: $Id: gpipe/gff2predictions.py 2021 2008-07-10 16:00:48Z andreas $
+"""
 
 
 def checkIdentity(reference, translation, options):

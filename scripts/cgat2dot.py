@@ -330,7 +330,7 @@ def main(argv=None):
 
     parser.add_option("-f", "--format", dest="output_format", type="choice",
                       choices=("rdf", "galaxy"),
-                      help = "output format [%default]. ")
+                      help="output format [%default]. ")
 
     parser.add_option("-l", "--list", dest="filename_list", type="string",
                       help="filename with list of files to export "

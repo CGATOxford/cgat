@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-optic/compare_projects.py - 
+optic/compare_projects.py -
 ======================================================
 
 :Author: Andreas Heger
@@ -56,14 +56,12 @@ Code
 ----
 
 '''
-import os
 import sys
 import string
-import re
 import getopt
-import tempfile
-import time
-import popen2
+import CGAT.Experiment as E
+import pgdb
+import numpy
 
 USAGE = """python %s [OPTIONS] schema1 schema2 [...]
 
@@ -91,12 +89,6 @@ param_long_options = ["verbose=", "help", "connection=",
                       "version"]
 
 param_short_options = "v:hC:r:f:as:"
-
-import CGAT.Genomics as Genomics
-import CGAT.Experiment as E
-import pgdb
-import scipy
-import numpy
 param_schemas = None
 param_report = None
 param_fields = None

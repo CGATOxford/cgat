@@ -56,12 +56,13 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
-import re
 import getopt
-import tempfile
+import CGAT.Experiment as E
+import CGAT.Exons as Exons
+import alignlib_lite
+import CGAT.BlastAlignments as BlastAlignments
+
 
 USAGE = """python %s [OPTIONS] < orthologs > genes
 
@@ -89,12 +90,6 @@ Options:
 --disable-check-exon-number     do not check exon number
 --report-step                   dump progress at each umpth step.
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.Exons as Exons
-import alignlib_lite
-import CGAT.BlastAlignments as BlastAlignments
 
 param_long_options = ["verbose=", "help",
                       "cds=",

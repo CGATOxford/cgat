@@ -82,7 +82,7 @@ import sys
 import time
 import collections
 import warnings
-
+import alignlib_lite
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.Blat as Blat
@@ -96,8 +96,6 @@ import CGAT.IndexedGenome as IndexedGenome
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import networkx
-
-import alignlib_lite
 
 
 def readIntervals(infile, options):

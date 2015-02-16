@@ -57,9 +57,11 @@ Code
 
 '''
 import sys
-import string
-import re
-import optparse
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.Exons as Exons
+import CGAT.IndexedFasta as IndexedFasta
+
 
 USAGE = """python %s [OPTIONS] < exons.in > exons.out
 
@@ -68,12 +70,6 @@ Modify an exon list. Methods to apply are:
 remove-stop: removes a traling stop codon from the last exon.
 
 """
-
-
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.Exons as Exons
-import CGAT.IndexedFasta as IndexedFasta
 
 
 def main(argv=None):

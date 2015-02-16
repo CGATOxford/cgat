@@ -32,23 +32,10 @@ Command line options
 --------------------
 
 '''
-USAGE = """python run.py [OPTIONS] 
-
-generic wrapper around a command-line. 
-
-The wrapper records where a command was executed and how long
-it took.
-"""
 
 import os
 import sys
-import re
-import string
-import optparse
-import time
-import glob
 import subprocess
-
 import CGAT.Experiment as E
 
 
@@ -61,7 +48,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    parser = E.OptionParser(version="%prog version: $Id: run.py 2782 2009-09-10 11:40:29Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
     # stop parsing options at the first argument

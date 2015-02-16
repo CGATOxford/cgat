@@ -31,14 +31,12 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
 import re
 import getopt
-import tempfile
-import time
-import popen2
+import CGAT.Experiment as E
+import CGAT.BlastAlignments as BlastAlignments
+import math
 
 USAGE = """python %s [OPTIONS] < graph.in > graph.out
 
@@ -87,11 +85,6 @@ param_short_options = "hv:m:f:o:a"
 param_loglevel = 1
 param_method = "bitscore"
 param_filename_self_scores = None
-
-import CGAT.Experiment as E
-import CGAT.BlastAlignments as BlastAlignments
-import math
-
 param_lambda = 0.267
 param_K = 0.0410
 param_expected = -0.5209
