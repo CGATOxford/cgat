@@ -63,7 +63,7 @@ import CGAT.Experiment as E
 import pandas as pd
 import itertools
 from math import factorial
-import PipelineTimeseries as TS
+import CGATPipelines.PipelineTimeseries as TS
 
 
 def main(argv=None):

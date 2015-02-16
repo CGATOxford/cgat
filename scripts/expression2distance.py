@@ -133,7 +133,7 @@ Command line options
 import sys
 import pandas as pd
 import CGAT.Experiment as E
-import PipelineTimeseries as TS
+import CGATPipelines.PipelineTimeseries as TS
 import numpy as np
 
 

@@ -165,7 +165,8 @@ import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Database as Database
 import CGAT.GTF as GTF
-import PipelineTimeseries
+import CGATPipelines.PipelineTimeseries as PipelineTimeseries
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 ###################################################
 ###################################################
@@ -185,7 +186,6 @@ PARAMS = P.PARAMS
 ###################################################################
 # Helper functions mapping tracks to conditions, etc
 ###################################################################
-import CGATPipelines.PipelineTracks as PipelineTracks
 
 # sample = PipelineTracks.AutoSample
 
@@ -676,7 +676,7 @@ def drawTimeVennDiagram(infiles, outfile):
     select = ",".join(select)
 
     statement = '''
-    python %(scriptsdir)sdiffgene2venn.py
+    python %(scriptsdir)s/diffgene2venn.py
     --alpha=%(deseq_alpha)s
     --log=condition-venn.log
     --file-list=%(select)s
