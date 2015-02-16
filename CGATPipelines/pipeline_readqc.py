@@ -136,7 +136,7 @@ import CGATPipelines.PipelineTracks as PipelineTracks
 import CGAT.Pipeline as P
 import CGATPipelines.PipelineReadqc as PipelineReadqc
 import CGATPipelines.PipelinePreprocess as PipelinePreprocess
-
+import CGAT.IOTools as IOTools
 #########################################################################
 #########################################################################
 #########################################################################
@@ -303,8 +303,6 @@ if PARAMS["preprocessors"]:
             pass
 
         trimmomatic_options = PARAMS["trimmomatic_options"]
-        # NB: adapter_file overrides trimmomatic_adapter
-
         if PARAMS["adapter_file"] or PARAMS["trimmomatic_adapter"]:
             if PARAMS["adapter_file"]:
                 adapter_file = PARAMS["adapter_file"]
