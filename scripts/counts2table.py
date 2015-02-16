@@ -326,7 +326,9 @@ def main(argv=None):
             )
 
         elif options.method == "edger":
-            Expression.runEdgeR(
+            Expression.runEdgeRPandas(
+                counts=counts,
+                design_table=design,
                 outfile=options.output_filename,
                 outfile_prefix=options.output_filename_pattern,
                 fdr=options.fdr,
