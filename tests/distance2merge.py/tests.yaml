@@ -1,0 +1,11 @@
+version:
+ stdin: null
+ outputs: [stdout]
+ references: []
+ options: --version
+
+merge:
+ stdin: null
+ outputs: [stdout]
+ references: [test-merged-distance.tsv]
+ options: --log=merged.log /ifs/devel/projects/proj036/pipeline_timeseries/src/tests/distance2merge.py/test-cond-rep-1_50-distance.tsv,/ifs/devel/projects/proj036/pipeline_timeseries/src/tests/distance2merge.py/test-cond-rep-51_100-distance.tsv,/ifs/devel/projects/proj036/pipeline_timeseries/src/tests/distance2merge.py/test-cond-rep-101_150-distance.tsv

@@ -1,0 +1,29 @@
+version:
+ stdin: null
+ outputs: [stdout]
+ references: []
+ options: --version
+
+dtw:
+ stdin: null
+ outputs: [stdout]
+ references: [test-dtw-distance.tsv]
+ options: --distance-metric=dtw --log=test-dtw-distance.log --k=2 /ifs/devel/projects/proj036/pipeline_timeseries/src/tests/expression2distance.py/test-expression.tsv
+
+cross_corr:
+ stdin: null
+ outputs: [stdout]
+ references: [test-xcorr-distance.tsv]
+ options: --distance-metric=cross-correlate --lag=0 --log=test-xcorr-distance.log /ifs/devel/projects/proj036/pipeline_timeseries/src/tests/expression2distance.py/test-expression.tsv
+
+temp_corr:
+ stdin: null
+ outputs: [stdout]
+ references: [test-tempcorr-distance.tsv]
+ options: --distance-metric=temporal-correlate --log=test-tempcorr-distance.log /ifs/devel/projects/proj036/pipeline_timeseries/src/tests/expression2distance.py/test-expression.tsv
+
+parallel:
+ stdin: null
+ outputs: [stdout]
+ references: [test-cond-rep-1_50-distance.tsv]
+ options: --distance=cross-correlate --parallel --log=parallel.log --lag=0 --expression-file=/ifs/devel/projects/proj036/pipeline_timeseries/src/tests/expression2distance.py/test-cond-large-expression.tsv /ifs/devel/projects/proj036/pipeline_timeseries/src/tests/expression2distance.py/test-cond-rep-1_50-expression.tsv

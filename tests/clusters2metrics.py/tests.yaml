@@ -1,0 +1,11 @@
+version:
+ stdin: null
+ outputs: [stdout]
+ references: []
+ options: --version
+
+metrics:
+ stdin: null
+ outputs: [stdout]
+ references: [metrics.tsv]
+ options: --log=metrics.log /ifs/devel/projects/proj036/pipeline_timeseries/src/tests/clusters2metrics.py/test-agg-clusters.tsv

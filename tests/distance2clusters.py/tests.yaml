@@ -1,0 +1,23 @@
+version:
+ stdin: null
+ outputs: [stdout]
+ references: []
+ options: --version
+
+cluster:
+ stdin: null
+ outputs: [stdout]
+ references: [test-clusters.tsv, test-clusterlabels.tsv]
+ options: --task=cluster --cluster-algorithm=average --cluster-file=test-clusterlabels.tsv  --expression-file=test-filtered.tsv --log=test-clusters.log /ifs/devel/cgat/tests/distance2clusters.py/test-distance.tsv
+
+clust_average:
+ stdin: null
+ outputs: [stdout]
+ references: [test-average-cluster.tsv]
+ options: --task=clustagree --method=replicate --log=test-average-cluster.log /ifs/devel/cgat/tests/distance2clusters.py/test-average-R1.tsv,/ifs/devel/cgat/tests/distance2clusters.py/test-average-R2.tsv,/ifs/devel/cgat/tests/distance2clusters.py/test-average-R3.tsv
+
+clust_consensus:
+ stdin: null 
+ outputs: [stdout]
+ references: [test-consensus.tsv]
+ options: --task=clustagree --method=resample --log=test-consensus.log /ifs/devel/cgat/tests/distance2clusters.py/test-all-clusters.tsv
