@@ -349,7 +349,6 @@ def main(argv=None):
         width_sbin=1,
         id_column=None,
         shuffle_suffix=None,
-        keep_suffix=None
         keep_suffix=None,
         normalization_method="deseq-size-factors",
     )
