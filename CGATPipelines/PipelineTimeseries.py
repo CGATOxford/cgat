@@ -52,7 +52,7 @@ def deseqNormalize(infile,
     reps = reps
 
     # load library
-    R('''suppressMessages(library(DESeq))''')
+    R('''suppressMessages(library("DESeq"))''')
 
     # generates a lists for the design data frame
     # of the proper length
@@ -147,7 +147,7 @@ def avTimeExpression(infile):
 
     R('''sink(file='sink_file.txt')''')
     R('''source("/ifs/devel/michaelm/Time-series/summarySE.R")''')
-    R('''library(reshape2)''')
+    R('''library("reshape2")''')
     R('''indata <- read.table('%(infile)s', sep="\t", '''
       '''row.names=1, h=T)''' % locals())
 
@@ -258,8 +258,8 @@ def clusterPCA(infile,
 
     # reshape data
     R('''sink(file='sink_file.txt')''')
-    R('''suppressMessages(library(reshape2))''')
-    R('''suppressMessages(library(WGCNA))''')
+    R('''suppressMessages(library("reshape2"))''')
+    R('''suppressMessages(library("WGCNA"))''')
     R('''source("/ifs/devel/michaelm/Time-series/summarySE.R")''')
     R('''source("/ifs/devel/projects/proj036/r_scripts/clusterEigengenes.R")''')
     R('''cluster_match <- read.table('%(cluster_file)s', h=T, '''
@@ -468,7 +468,7 @@ def drawVennDiagram(deg_dict, header, out_dir):
     keys = sorted(keys, key=lambda x: int(x.split("_")[1].rstrip("-time")))
 
     venn_size = len(keys)
-    R('''suppressPackageStartupMessages(library(VennDiagram))''')
+    R('''suppressPackageStartupMessages(library("VennDiagram"))''')
     n1 = set(deg_dict[keys[0]])
     n2 = set(deg_dict[keys[1]])
     area1 = len(n1)
@@ -617,7 +617,7 @@ def maSigPro(infile,
 
     masigpro_out = "deseq.dir/maSigPro.out"
 
-    R('''suppressMessages(library(maSigPro))''')
+    R('''suppressMessages(library("maSigPro"))''')
     R('''input_data <- read.table('%(infile)s', sep="\t", '''
       '''h=T, row.names=1)''' % locals())
     R('''input_data <- t(input_data[0:(length(input_data)-2)])''')
@@ -994,8 +994,8 @@ def treeCutting(infile,
     R.assign("gene_ids", genes_r)
 
     R('''sink(file='%(wgcna_out)s')''' % locals())
-    R('''suppressPackageStartupMessages(library(WGCNA))''')
-    R('''suppressPackageStartupMessages(library(flashClust))''')
+    R('''suppressPackageStartupMessages(library("WGCNA"))''')
+    R('''suppressPackageStartupMessages(library("flashClust"))''')
     E.info("clustering data by %s linkage" % cluster_algorithm)
     R('''rownames(distance_data) <- gene_ids''')
     R('''clustering <- flashClust(as.dist(distance_data),'''
@@ -1146,13 +1146,20 @@ def consensusClustering(infile,
     wgcna_out = "tmp.dir/consensus-WGCNA.out"
 
     R('''sink(file='%(wgcna_out)s')''' % locals())
-    R('''suppressMessages(library(WGCNA))''')
-    R('''suppressMessages(library(flashClust))''')
+    R('''suppressMessages(library("WGCNA"))''')
+    R('''suppressMessages(library("flashClust"))''')
 
     E.info("loading distance matrix")
 
-    R('''distance_data <- data.matrix(read.table('%(infile)s','''
-      '''h=T, sep="\t", row.names=1))''' % locals())
+    df = pd.read_table(infile, sep="\t", header=0, index_col=0)
+    labels = df.index.tolist()
+    labels_r = ro.StrVector([l for l in labels])
+    df_r = pandas2ri.convert_to_r_dataframe(df)
+    R.assign("distance.frame", df_r)
+    R.assign("labels", labels_r)
+
+    R('''rownames(distance.frame) <- labels''')
+    R('''distance_data <- data.matrix(distance.frame)''')
 
     E.info("clustering data by %s linkage" % cluster_algorithm)
 
