@@ -140,40 +140,38 @@ def deseqNormalize(infile,
 def avTimeExpression(infile):
     '''
     Calculate average expression over replicates at each time point
+    Requires genes as columns with 'replicates' and 'times' as additional
+    columns
     '''
 
-    # import into R and reformat with reshape, average using
-    # custom R function
+    # check file compression
+    if infile.split(".")[-1] == "gz":
+        comp = "gzip"
+    else:
+        comp = None
 
-    R('''sink(file='sink_file.txt')''')
-    R('''source("/ifs/devel/michaelm/Time-series/summarySE.R")''')
-    R('''library("reshape2")''')
-    R('''indata <- read.table('%(infile)s', sep="\t", '''
-      '''row.names=1, h=T)''' % locals())
+    df = pd.read_table(infile, sep="\t",
+                       header=0, index_col=0,
+                       compression=comp)
 
-    # make sure times is numeric rather than factor
-    R('''times <- sapply(colnames(indata), '''
-      '''function(x) unlist(strsplit(x, "[.]"))[2])''')
-    R('''replicates <- sapply(colnames(indata), '''
-      '''function(x) unlist(strsplit(x, "[.]"))[3])''')
-    R('''tdata = data.frame(t(indata))''')
-    R('''tdata$times <- as.numeric(as.character(times))''')
-    R('''tdata$replicates <- replicates''')
+    # average over replicates at each time point
+    # then recombine
+    df_groups = df.groupby(by='times')
+    data_frame = pd.DataFrame(index=df.columns,
+                              columns=None)
+    for names, groups in df_groups:
+        _df = groups.drop(['times', 'replicates'], axis=1)
+        _df = _df.apply(np.mean, axis=0)
+        data_frame[names] = _df
 
-    # melt data frame and calculate average over replicates
-
-    R('''data_melted <- melt(tdata, id.vars=c("times", "replicates"))''')
-    R('''data_sum <- summarySE(data_melted, measurevar="value", '''
-      '''groupvars=c("times", "variable"))''')
-    R('''data_sum <- data.frame(data_sum$times, '''
-      '''data_sum$variable, data_sum$value)''')
-    R('''colnames(data_sum) <- c("times", "genes", "value")''')
-    R('''data_av <- dcast(data_sum, genes ~ times, value.var="value")''')
-    R('''rownames(data_av) <- data_av$genes''')
-    R('''data_av <- data_av[,-1]''')
-    R('''sink(file=NULL)''')
-
-    data_frame = com.load_data('data_av')
+    # check no extraneous columns remaining
+    try:
+        data_frame.drop(['replicates', 'times'],
+                        inplace=True,
+                        axis=0)
+    except KeyError:
+        pass
+    
     return data_frame
 
 
