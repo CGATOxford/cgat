@@ -196,7 +196,7 @@ def pandasMerge(infile1, infile2, outfile, merge_type, left, right,
     df1 = pandasRead(infile1, peak=True)
     df2 = pandasRead(infile2, peak=True)
     df1.set_index(left, drop=False, append=False, inplace=True)
-    df2.set_index(right, drop=False, append=False, inplace=True)
+    df2.set_index(right, drop=True, append=False, inplace=True)
 
     merged = df1.merge(df2, how=merge_type, left_index=True,
                        right_index=True, sort=False)
