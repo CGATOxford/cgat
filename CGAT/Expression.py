@@ -2663,7 +2663,7 @@ def runTTestPandas(counts_table,
     DF_Dict["transformed_l2fold"].extend(list(numpy.log2(DF_Dict["fold"])))
 
     # set all status values to "OK"
-    DF_Dict["status"].extend(("OK",)*len(DF_Dict["test_id"]))
+    DF_Dict["status"].extend(("OK",)*n_rows)
 
     results = pandas.DataFrame(DF_Dict)
     results.set_index("test_id", inplace=True)
@@ -2728,6 +2728,9 @@ def runEdgeRPandas(counts,
     (groups, pairs, conds, factors, has_replicates,
      has_pairs) = checkTagGroupsPandas(design_table, ref_group)
 
+    if not has_replicates and dispersion is None:
+        raise ValueError("no replicates and no dispersion")
+
     # output heatmap plot
     plotCorrelationHeatmapMatplot(counts,
                                   '%(outfile_prefix)sheatmap.png' % locals(),
@@ -2744,9 +2747,13 @@ def runEdgeRPandas(counts,
 
     if has_pairs:
         # output difference between groups
-        # note: this is performed on non-normalised data?
-        # also, this isn't edgeR specific, should this be moved?
-        # yes make this a function to call on any count dataframe
+        # TS #####
+        # this is performed on non-normalised data
+        # should we use Counts.py to normalise first?
+        # also, this isn't edgeR specific, should this be
+        # moved to a seperate summary function?
+        # also move the MDS plotting?
+        # #####
         first = True
         pairs_df = pandas.DataFrame()
         nrows = len(counts.index)
@@ -2820,171 +2827,170 @@ def runEdgeRPandas(counts,
         ''' % locals())
 
         r_pairs_in_groups_df = com.convert_to_r_dataframe(pairs_in_groups_df)
-        plot_pairs(r_pairs_in_groups_df)
+        plot_pairs_in_groups(r_pairs_in_groups_df)
 
-    # build DGEList object
+    # create r objects
+    r_counts = com.convert_to_r_dataframe(counts)
+    r_groups = ro.StrVector(conds)
+    r_pairs = ro.StrVector(pairs)
+    r_has_pairs = ro.default_py2ri(has_pairs)
+    r_has_replicates = ro.default_py2ri(has_replicates)
+
+    if dispersion is not None:
+        r_dispersion = ro.default_py2ri(dispersion)
+    else:
+        r_dispersion = ro.default_py2ri(False)
+
     if ref_group is not None:
         r_ref_group = ro.default_py2ri(ref_group)
     else:
         r_ref_group = ro.default_py2ri(groups[0])
 
-    r_counts = com.convert_to_r_dataframe(counts)
-    r_groups = ro.StrVector(conds)
-
+    # build DGEList object
     buildDGEList = R('''
     suppressMessages(library('edgeR'))
     function(counts, groups, ref_group){
-    print(head(counts))
-    print(groups)
     countsTable = DGEList(counts, group=groups)
     countsTable$samples$group <- relevel(countsTable$samples$group,
     ref = ref_group)
     countsTable = calcNormFactors(countsTable)
-    print(countsTable)
+    return(countsTable)
     }''')
 
-    buildDGEList(r_counts, r_groups, r_ref_group)
-
-
-def restOfEdgeRfunction():
+    r_countsTable = buildDGEList(r_counts, r_groups, r_ref_group)
 
     # output MDS plot
+    # TT - should this be performed on the normalised counts table?(see above)
     R.png('''%(outfile_prefix)smds.png''' % locals())
     try:
-        R('''plotMDS( countsTable )''')
+        MDSplot = R('''function(counts){
+        plotMDS(counts)}''')
+        MDSplot(r_counts)
     except rpy2.rinterface.RRuntimeError, msg:
         E.warn("can not plot mds: %s" % msg)
     R['dev.off']()
 
     # build design matrix
-    if has_pairs:
-        R('''design = model.matrix(~pairs + countsTable$samples$group)''')
-    else:
-        R('''design = model.matrix(~countsTable$samples$group)''')
+    buildDesign = R('''function(countsTable, has_pairs, pairs){
+    if (has_pairs==TRUE) {
+        design <- model.matrix( ~pairs + countsTable$samples$group ) }
+    else {
+        design <- model.matrix( ~countsTable$samples$group ) }
+    return(design)
+    }''')
 
-    # R('''rownames(design) = rownames( countsTable$samples )''')
-    # R('''colnames(design)[length(colnames(design))] = "CD4" ''' )
+    r_design = buildDesign(r_countsTable, r_has_pairs, r_pairs)
 
-    # fitting model to each tag
-    if has_replicates:
+    fitModel = R('''function(countsTable, design, has_replicates, dispersion){
+    if (has_replicates == TRUE) {
         # estimate common dispersion
-        R('''countsTable = estimateGLMCommonDisp(countsTable, design)''')
+        countsTable = estimateGLMCommonDisp( countsTable, design )
         # estimate tagwise dispersion
-        R('''countsTable = estimateGLMTagwiseDisp(countsTable, design)''')
+        countsTable = estimateGLMTagwiseDisp( countsTable, design )
         # fitting model to each tag
-        R('''fit = glmFit(countsTable, design)''')
-    else:
+        fit = glmFit( countsTable, design ) }
+    else {
         # fitting model to each tag
-        if dispersion is None:
-            raise ValueError("no replicates and no dispersion")
-        E.warn("no replicates - using a fixed dispersion value")
-        R('''fit = glmFit(countsTable, design, dispersion=%f)''' %
-          dispersion)
+        fit = glmFit(countsTable, design, dispersion=dispersion) }
+    return(fit)
+    }''')
 
-    # perform LR test
-    R('''lrt = glmLRT(fit)''')
+    r_fit = fitModel(r_countsTable, r_design, r_has_replicates, r_dispersion)
 
     E.info("Generating output")
 
+    # perform LR test
+    lrtTest = R('''function(fit, prefix){
+    lrt = glmLRT(fit)
+    # save image for access to the whole of the lrt object
+    save.image(paste0(prefix,"lrt.RData"))
+    return(lrt)
+    }''')
+    r_lrt = lrtTest(r_fit, outfile_prefix)
+    
+    # return statistics table - must be a better way to do this?
+    extractTable = R('''function(lrt){ return(lrt$table)}''')
+    r_lrt_table = extractTable(r_lrt)
+
     # output cpm table
-    R('''suppressMessages(library(reshape2))''')
-    R('''countsTable.cpm <- cpm(countsTable, normalized.lib.sizes=TRUE)''')
-    R('''melted <- melt(countsTable.cpm)''')
-    R('''names(melted) <- c("test_id", "sample", "ncpm")''')
+    outputCPMTable = R('''function(countsTable, outfile_prefix, lrt){
+    suppressMessages(library(reshape2))
+    countsTable.cpm <- cpm(countsTable, normalized.lib.sizes=TRUE)
+    melted <- melt(countsTable.cpm)
+    names(melted) <- c("test_id", "sample", "ncpm")
+
     # melt columns are factors - convert to string for sorting
-    R('''melted$test_id = levels(melted$test_id)[as.numeric(melted$test_id)]''')
-    R('''melted$sample = levels(melted$sample)[as.numeric(melted$sample)]''')
+    melted$test_id = levels(melted$test_id)[as.numeric(melted$test_id)]
+    melted$sample = levels(melted$sample)[as.numeric(melted$sample)]
+
     # sort cpm table by test_id and sample
-    R('''sorted = melted[with(melted, order(test_id, sample)),]''')
-    R('''gz = gzfile("%(outfile_prefix)scpm.tsv.gz", "w" )''' % locals())
-    R('''write.table(sorted, file=gz, sep = "\t",
-                     row.names=FALSE, quote=FALSE)''')
-    R('''close(gz)''')
+    sorted <- melted[with(melted, order(test_id, sample)),]
+    gz <- gzfile(paste0(outfile_prefix,"cpm.tsv.gz"), "w" )
+    write.table(sorted, file=gz, sep = "\t", row.names=FALSE, quote=FALSE)
+    close(gz)}''')
 
-    # compute adjusted P-Values
-    R('''padj = p.adjust(lrt$table$PValue, 'BH')''')
-
-    rtype = collections.namedtuple("rtype", "lfold logCPM LR pvalue")
+    outputCPMTable(r_countsTable, outfile_prefix, r_lrt)
 
     # output differences between pairs
     if len(groups) == 2:
-        R.png('''%(outfile_prefix)smaplot.png''' % locals())
-        R('''plotSmear(countsTable, pair=c('%s'))''' % "','".join(groups))
-        R('''abline(h=c(-2, 2), col='dodgerblue') ''')
-        R['dev.off']()
+        plotSmear = R('''function(countsTable, outfile_prefix){
+        png(paste0(outfile_prefix,"smaplot.png"
+        plotSmear(countsTable, pair=c('%s'))
+        abline(h=c(-2, 2), col='dodgerblue')
+        dev.off()}''' % "','".join(groups))
 
-    # I am assuming that logFC is the base 2 logarithm foldchange.
-    # Parse results and parse to file
-    results = []
+    lrt_table = com.convert_robj(r_lrt_table)
+
+    n_rows = lrt_table.shape[0]
+    DF_Dict = makeEmptyDataFrameDict()
+
+    # import r stats module for BH adjustment
+    stats = importr('stats')
+
+    DF_Dict["control_name"].extend((groups[0],)*n_rows)
+    DF_Dict["treatment_name"].extend((groups[1],)*n_rows)
+    DF_Dict["test_id"].extend(lrt_table.index)
+    DF_Dict["control_mean"].extend(lrt_table['logCPM'])
+    DF_Dict["treatment_mean"].extend(lrt_table['logCPM'])
+    DF_Dict["control_std"].extend((0,)*n_rows)
+    DF_Dict["treatment_std"].extend((0,)*n_rows)
+    DF_Dict["p_value"].extend(lrt_table['PValue'])
+    DF_Dict["p_value_adj"].extend(
+        list(stats.p_adjust(FloatVector(DF_Dict["p_value"]), method='BH')))
+    DF_Dict["significant"].extend(
+        [int(float(x) < fdr) for x in DF_Dict["p_value_adj"]])
+    DF_Dict["l2fold"].extend(list(numpy.log2(lrt_table['logFC'])))
+
+    # TS -note: the transformed log2 fold change is not transformed!
+    DF_Dict["transformed_l2fold"].extend(list(numpy.log2(lrt_table['logFC'])))
+
+    # TS -note: check what happens when no fold change is available
+    # TS -may need an if/else in list comprehension. Raise E.warn too?
+    DF_Dict["fold"].extend([math.pow(2, float(x)) for x in lrt_table['logFC']])
+
+    # set all status values to "OK"
+    # TS - again, may need an if/else, check...
+    DF_Dict["status"].extend(("OK",)*n_rows)
+
+    results = pandas.DataFrame(DF_Dict)
+    results.set_index("test_id", inplace=True)
+    results.to_csv(outfile, sep="\t", header=True, index=True)
+
     counts = E.Counter()
-
-    for interval, data, padj in zip(
-            R('''rownames(lrt$table)'''),
-            zip(*R('''lrt$table''')),
-            R('''padj''')):
-        d = rtype._make(data)
-
-        counts.input += 1
-
-        # set significant flag
-        if padj <= fdr:
-            signif = 1
-            counts.significant += 1
-            if d.lfold > 0:
-                counts.significant_over += 1
-            else:
-                counts.significant_under += 1
-        else:
-            signif = 0
-            counts.insignificant += 1
-
-        if d.lfold > 0:
-            counts.all_over += 1
-        else:
-            counts.all_under += 1
-
-        # is.na failed in rpy2 2.4.2
-        if d.pvalue != R('''NA'''):
-            status = "OK"
-        else:
-            status = "FAIL"
-
-        counts[status] += 1
-
-        try:
-            fold = math.pow(2.0, d.lfold)
-        except OverflowError:
-            E.warn("%s: fold change out of range: lfold=%f" %
-                   (interval, d.lfold))
-            # if out of range set to 0
-            fold = 0
-
-        # fold change is determined by the alphabetical order of the factors.
-        # Is the following correct?
-        results.append(GeneExpressionResult._make((
-            interval,
-            groups[1],
-            d.logCPM,
-            0,
-            groups[0],
-            d.logCPM,
-            0,
-            d.pvalue,
-            padj,
-            d.lfold,
-            fold,
-            d.lfold,  # no transform of lfold
-            str(signif),
-            status)))
-
-    writeExpressionResults(outfile, results)
+    counts.signficant = sum(results['significant'])
+    counts.insignficant = (len(results['significant']) - counts.signficant)
+    counts.all_over = sum([x > 0 for x in results['l2fold']])
+    counts.all_under = sum([x < 0 for x in results['l2fold']])
+    counts.signficant_over = sum([results['significant'][x] == 1 and
+                                 results['l2fold'][x] > 1 for
+                                 x in range(0, n_rows)])
+    counts.signficant_under = sum([results['significant'][x] == 1 and
+                                   results['l2fold'][x] < 1 for
+                                   x in range(0, n_rows)])
 
     outf = IOTools.openFile("%(outfile_prefix)ssummary.tsv" % locals(), "w")
     outf.write("category\tcounts\n%s\n" % counts.asTable())
     outf.close()
-
-# needs to put into class
-##
 
 
 def outputSpikeIns(filename_tags,
