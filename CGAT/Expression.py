@@ -118,6 +118,69 @@ except IOError:
     pass
 
 
+def runDETest(raw_DataFrame,
+              design_file,
+              outfile,
+              de_caller,
+              **kwargs):
+    if caller.lower() == "deseq":
+        caller = DESeqCaller
+    else:
+        raise ValueError("Unknown caller")
+
+    caller.run(raw_DataFrame, design_file, outfile)
+
+
+class DECaller(object):
+    """
+    Base
+    """
+
+    def __call__(self, *args, **kwargs):
+        pass
+
+    def __init__(self):
+        pass
+
+    def parseDesignFile(self):
+        """
+        Replacement for loadTagData...
+        """
+        pass
+
+    def filterCountTable(self):
+        """
+        Replacement for filterTagData
+        """
+        pass
+
+    def plotDiagnostics(self):
+        """
+        All plotting that should be as faithful to published protocol as
+        possible. Gallery plot stuff! 
+        """ 
+        pass
+
+    def callDifferentialExpression(self, *, **):
+        """
+        Custom DE functions
+        """
+        pass
+
+    def postProcessDEResults(self):
+        """
+        """
+        pass
+
+    def run(self, df, design_file, outfile):
+        """
+        """
+        groups, conditions, pairs  = self.parseDesignFile(design_file)
+        counts = self.filterCountTable(df, groups, conditions, pairs)          
+        self.postProcess(self.callDifferentialExpression())
+        pass
+
+
 def buildProbeset2Gene(infile,
                        outfile,
                        database="hgu133plus2.db",
@@ -1557,7 +1620,8 @@ def runDESeq2(outfile,
     Does not make use of group tag data bc function doesn't accomodate
     multi-factor designs
 
-    To Do: Parse results into standard output format.
+    To Do: Parse results into standard output format. 
+    Fix fact that plotMA is hardcoded.
     """
 
     # load libraries
@@ -1593,10 +1657,28 @@ def runDESeq2(outfile,
     R('''dds <- DESeqDataSetFromMatrix(countData=countsTable,
                                        colData=mdata,
                                        design=%(model)s)''' % locals())
-    # WARNING: This is not done automatically
+    # WARNING: This is not done automatically... I don't know why?
     R('''colnames(dds) <- colnames(countsTable)''')
     E.info("Combined colData, design formula and counts table to create"
            " DESeqDataSet instance")
+
+    # Rlog transform
+    R('''rld <- rlog(dds)''')
+
+    # Plot PCA of rlog transformed count data for top 500
+    for factor in terms:
+        outf = outfile_prefix + factor + "_PCAplot500.tiff"
+        E.info("Creating PCA plot for factor: %s" % outf)
+        R('''x <- plotPCA(rld, intgroup="%(factor)s")''' % locals())
+        # R('''saveRDS(x, '%(outf)s')''' % locals())
+        R('''tiff("%(outf)s")''' % locals())
+        R('''plot(x)''')
+        R('''dev.off()''')
+
+    # Extract rlog transformed count data...
+    rlog_out = P.snip(outfile, ".tsv.gz") + "_rlog.tsv.gz"
+    # R('''saveRDS(rld, "%s")''' % rlog_out)
+    R('''write.table(assay(rld), file='%s', sep="\t", quote=FALSE)''' % rlog_out)
 
     # Run DESeq2
     R('''dds <- DESeq(dds)''')
@@ -1615,8 +1697,8 @@ def runDESeq2(outfile,
         variable, control, treatment = combination
 
         # Fetch results
-        gfix = "%s_%s_vs_%s_" % (variable, control, treatment)
-        outfile_groups_prefix = outfile_prefix + gfix + "MAplot.png"
+        gfix = "%s_%s_vs_%s" % (variable, control, treatment)
+        outfile_groups_prefix = outfile_prefix + gfix + "_MAplot.png"
         R('''res <- results(dds, contrast=c("%(variable)s",
                                             "%(treatment)s",
                                             "%(control)s"))''' % locals())
@@ -1625,7 +1707,7 @@ def runDESeq2(outfile,
 
         # plot MA plot
         R('''png("%(outfile_groups_prefix)s")''' % locals())
-        R('''plotMA(res)''')
+        R('''plotMA(res, alpha=%f)''' % fdr)
         R('''dev.off()''')
         E.info("Plotted MA plot for levels %s (treatment) vs %s (control)"
                " for factor %s" % (treatment, control, variable))
@@ -1636,7 +1718,7 @@ def runDESeq2(outfile,
         df_out["treatment"] = [treatment, ]*len(df_out.index)
         df_out["control"] = [control, ]*len(df_out.index)
         df_out["variable"] = [variable, ]*len(df_out.index)
-        df_out.to_csv(IOTools.openFile(outfile_groups_prefix + "tsv.gz", "w"),
+        df_out.to_csv(IOTools.openFile(outfile_prefix + gfix + ".tsv.gz", "w"),
                       sep="\t",
                       index_label="gene_id")
         E.info("Extracted results table for contrast  '%s' (treatment) vs '%s'"
@@ -1646,17 +1728,6 @@ def runDESeq2(outfile,
         df_out.reset_index(inplace=True)
         df_out.rename(columns={"index": "gene_id"}, inplace=True)
         df_final = df_final.append(df_out, ignore_index=True)
-
-    # Extract rlog transformed count data...
-    rld = R('''rld <- rlog(dds)''')
-    R('''saveRDS(rld, "Rlog.rds")''')
-
-    # Plot PCA of rlog transformed count data for top 500
-    for factor in terms:
-        outf = outfile_prefix + factor + "_PCAplot500.png"
-        R('''png("%s")''' % outf)
-        R('''plotPCA(rld, intgroup="%(factor)s")''' % locals())
-        R('''dev.off()''')
 
     # write final dataframe
     df_final.to_csv(IOTools.openFile(outfile, "w"), sep="\t", index=False)
