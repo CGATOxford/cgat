@@ -67,7 +67,7 @@ def main(argv=sys.argv):
 
     parser.add_option("-f", "--format", dest="format", type="choice",
                       choices=("png", "eps", "svg"),
-                      help = "output file format [%default]")
+                      help="output file format [%default]")
 
     parser.add_option("-o", "--host", dest="host", type="string",
                       help="host that IGV is running on [%default]")

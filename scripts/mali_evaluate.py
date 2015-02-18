@@ -31,12 +31,18 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
 import string
 import re
 import getopt
-import math
+import CGAT.Experiment as E
+import CGAT.MaliIO as MaliIO
+import scipy
+import CGAT.Exons as Exons
+import alignlib_lite
+import CGAT.Genomics as Genomics
+import numpy
+
 
 USAGE = """python %s [OPTIONS] < exonerate_output > filtered
 
@@ -110,16 +116,6 @@ param_do_cluster = False
 param_remove_fragments = False
 
 param_pattern_prefix = ""
-
-import CGAT.Experiment as E
-import CGAT.MaliIO as MaliIO
-import scipy
-import CGAT.Exons as Exons
-import alignlib_lite
-import CGAT.Genomics as Genomics
-import numpy
-
-# ------------------------------------------------------------------------
 
 
 def GetOverlapMatrix(mali, identifiers, gap_char="-"):
@@ -373,7 +369,7 @@ def WriteGeneStructureCorrespondence(mali, identifiers, exons, param_master_patt
     # list of number of exons
     anexons = []
 
-    ## exons in reference
+    # exons in reference
     ref_nexons = 0
     x = 0
     for key1 in identifiers:

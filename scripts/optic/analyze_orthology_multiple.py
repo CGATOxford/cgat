@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-optic/analyze_orthology_multiple.py - 
+optic/analyze_orthology_multiple.py -
 ======================================================
 
 :Author: Andreas Heger
@@ -33,7 +33,7 @@ Purpose
 -------
 
 .. todo::
-   
+
    describe purpose of the script.
 
 Usage
@@ -238,7 +238,7 @@ class Duplication:
 
         (self.mGeneNode, self.mSpeciesNode, self.mSpeciesTree,
          self.mNSpecies, self.mNChildren,
-         self.mNGenes, self.mNPseudogenes, self.mNOthers, self.mNMaxContigs ) = \
+         self.mNGenes, self.mNPseudogenes, self.mNOthers, self.mNMaxContigs) = \
             map(int, (gene_node, species_node, species_tree,
                       nspecies, nchildren,
                       ngenes, npseudogenes, nothers, max_ncontigs))
@@ -250,12 +250,14 @@ class Duplication:
         self.mDistance2Children = map(float, distances_to_children.split(","))
 
     def getHeader(self):
-        return "\t".join(("gene_tree", "gene_node", "species_tree", "species_node",
-                          "nspecies", "nchildren",
-                          "d2root", "d2min", "d2max",
-                          "height", "distance",
-                          "rel_distance", "parent_distance", "children_distances",
-                          "ngenes", "npseudogenes", "nothers", "max_contigs"))
+        return "\t".join((
+            "gene_tree", "gene_node", "species_tree", "species_node",
+            "nspecies", "nchildren",
+            "d2root", "d2min", "d2max",
+            "height", "distance",
+            "rel_distance", "parent_distance",
+            "children_distances",
+            "ngenes", "npseudogenes", "nothers", "max_contigs"))
 
 ###################################################################
 
@@ -2264,7 +2266,7 @@ def annotateDuplicationEvents(best, gene_tree, species_nexus, best_nodes,
         child_species_node = best_nodes[children[0][0]].mSpeciesNode
 
     # used to perform various checks whether trees were conguent
-    ## not necessary
+    # not necessary
     if False:
         # check if we have the same species tree between parent and children
         if best.mType != "DuplicationLineage":
@@ -2602,12 +2604,14 @@ def main(argv=None):
     parser.add_option("--print-svg", dest="print_svg", action="store_true",
                       help="output svg files.")
 
-    parser.add_option("--print-species-svg", dest="print_species_svg", action="store_true",
+    parser.add_option("--print-species-svg", dest="print_species_svg",
+                      action="store_true",
                       help="output species svg files.")
 
-    parser.add_option("--output-filename-pattern", dest="output_pattern", type="string",
-                      help="""output pattern for separate output of sections [default: %default].
-                       Set to None, if output to stdout. Can contain one %s to be substituted with section."""  )
+    parser.add_option(
+        "--output-filename-pattern", dest="output_pattern", type="string",
+        help="""output pattern for separate output of sections [default: %default].
+        Set to None, if output to stdout. Can contain one %s to be substituted with section.""")
 
     parser.add_option("--output-pattern-svg", dest="output_pattern_svg", type="string",
                       help="filename for svg output. If it contains %s, this is replaced by gene_tree name.")
@@ -2641,7 +2645,7 @@ def main(argv=None):
 members:    print duplicated genes for each cluster.
 local-dups: print locally duplicated genes in each cluster. Local duplications are lineage specific and are not
                 separated by any other gene.
-""" )
+""")
 
     parser.add_option("--filter-quality", dest="filter_quality", type="choice",
                       choices=("all", "genes", "pseudogenes"),
@@ -2711,34 +2715,34 @@ local-dups: print locally duplicated genes in each cluster. Local duplications a
         filename_duplications=None,
         format_branch_length="%6.4f",
         nodetypes_inconsistency=("InconsistentTranscripts", "Inconsistency"),
-        nodetypes_duplication = (
+        nodetypes_duplication=(
             "Duplication", "DuplicationLineage", "DuplicationDeletion"),
-        nodetypes_speciation = ("Speciation", "SpeciationDeletion"),
-        analyze_resolution_data = None,
-        analyze_duplication_data = None,
-        hist_dist_bin_size = 0.01,
-        hist_dist_min_value = 0,
-        hist_dist_max_value = None,
-        hist_dups_bin_size = 1.0,
-        hist_dups_min_value = 0,
-        hist_dups_max_value = None,
-        filename_filter_positives = None,
-        filename_species_list = None,
-        filename_map_annotation_interpro = "/net/cpp-data/backup/andreas/projects/flies/data_1v5/interpro.list",
-        filename_gene_trees = "-",
-        filename_output_gene_trees = None,
-        filename_contig_size = None,
-        skip_preprocessing = False,
-        svg_wheel_plot_radius = 1500,
-        svg_wheel_plot_min_value = 0.0,
-        svg_wheel_plot_max_value = 0.2,
-        svg_wheel_plot_radius_increment = 40,
-        svg_wheel_plot_quality2symbol = {
+        nodetypes_speciation=("Speciation", "SpeciationDeletion"),
+        analyze_resolution_data=None,
+        analyze_duplication_data=None,
+        hist_dist_bin_size=0.01,
+        hist_dist_min_value=0,
+        hist_dist_max_value=None,
+        hist_dups_bin_size=1.0,
+        hist_dups_min_value=0,
+        hist_dups_max_value=None,
+        filename_filter_positives=None,
+        filename_species_list=None,
+        filename_map_annotation_interpro="/net/cpp-data/backup/andreas/projects/flies/data_1v5/interpro.list",
+        filename_gene_trees="-",
+        filename_output_gene_trees=None,
+        filename_contig_size=None,
+        skip_preprocessing=False,
+        svg_wheel_plot_radius=1500,
+        svg_wheel_plot_min_value=0.0,
+        svg_wheel_plot_max_value=0.2,
+        svg_wheel_plot_radius_increment=40,
+        svg_wheel_plot_quality2symbol={
             'CG': "circle", 'PG': "circle", 'SG': "circle"},
-        svg_wheel_plot_quality2mask = (
+        svg_wheel_plot_quality2mask=(
             "RG", "CP", "PP", "SP", "RP", "CF", "PF", "SF", "UG", "UP", "UF", "BF", "UK"),
-        svg_template = "screen",
-        svg_add_legend = True,
+        svg_template="screen",
+        svg_add_legend=True,
     )
 
     (options, args) = E.Start(parser, add_csv_options=True)

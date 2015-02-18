@@ -1,13 +1,9 @@
 import os
-import sys
 import re
-import types
-import itertools
 import math
 import numpy
 import numpy.ma
 import xml.etree.ElementTree
-
 from IntervalReport import *
 
 ##########################################################################
@@ -52,12 +48,15 @@ def computeMastCurve(evalues):
 
 
 def getFDR(samples, control, num_bins=1000):
-    '''return the score cutoff at a certain FDR threshold using scores and control scores.
-    Note that this method assumes that a higher score is a better result.
+    '''return the score cutoff at a certain FDR threshold using scores and
+    control scores.  Note that this method assumes that a higher score
+    is a better result.
 
-    The FDR is defined as fdr = expected number of false positives (FP) / number of positives (P)
+    The FDR is defined as fdr = expected number of false positives
+    (FP) / number of positives (P)
 
-    Given a certain score threshold s , the following will be used as approximations:
+    Given a certain score threshold s , the following will be used as
+    approximations:
 
     FP: the number of controls with a score of less than or equal to s. These
         are all assumed to be false positives. Both samples and control should 
@@ -67,19 +66,19 @@ def getFDR(samples, control, num_bins=1000):
        are a mixture of both true and false positives.
 
     returns the score cutoff at FDR threshold.
+
     '''
 
     if len(samples) == 0 or len(control) == 0:
         return None, None
 
-    bins = 100
     mi1, ma1 = min(samples), max(samples)
     mi2, ma2 = min(control), max(control)
     mi, ma = min(mi1, mi2), max(ma1, ma2)
     hist_samples, bin_edges_samples = numpy.histogram(
-        samples, range=(mi, ma), bins = num_bins)
+        samples, range=(mi, ma), bins=num_bins)
     hist_control, bin_edges_control = numpy.histogram(
-        control, range=(mi, ma), bins = num_bins)
+        control, range=(mi, ma), bins=num_bins)
     hist_samples = hist_samples[::-1].cumsum()
     hist_control = hist_control[::-1].cumsum()
     bin_edges = bin_edges_samples[::-1]
@@ -206,10 +205,10 @@ class MastSummary(Mast):
 
         intervals_and_peakvals = \
             self.get("""
-                              SELECT peakval, evalue
-                              FROM %(track)s_mast AS m, %(track)s_intervals AS i
-                              WHERE i.interval_id = m.id AND motif = '%(slice)s'
-                              ORDER BY peakval""" % locals() )
+            SELECT peakval, evalue
+            FROM %(track)s_mast AS m, %(track)s_intervals AS i
+            WHERE i.interval_id = m.id AND motif = '%(slice)s'
+            ORDER BY peakval""" % locals())
 
         intervals_with_motifs = len(
             [x for x in intervals_and_peakvals if x[1] <= evalue])
@@ -267,7 +266,7 @@ class MastSummary(Mast):
                                SELECT peakval, nmatches
                                FROM %(track)s_mast AS m, %(track)s_intervals AS i
                                WHERE i.interval_id = m.id AND motif = '%(slice)s'
-                               ORDER BY peakval""" % locals() )
+                               ORDER BY peakval""" % locals())
 
         intervals_with_motifs = len(
             [x for x in intervals_and_peakvals if x[1] > 0])
@@ -293,9 +292,9 @@ class MastQuickSummary(Mast):
 
     """return a quicker summary of MC analysis of mast results.
 
-    Return for each track the number of intervals in total,
-    the number of intervals submitted to mast, 
-    The evalue used as a MAST curve cutoff, the number and % explained using the Mast cutoff.
+    Return for each track the number of intervals in total, the number
+    of intervals submitted to mast, The evalue used as a MAST curve
+    cutoff, the number and % explained using the Mast cutoff.
 
     """
 
@@ -525,7 +524,7 @@ class MastCurve(Mast):
 #         data = []
 
 # obtain evalue distribution
-#         evalues = self.getValues( "SELECT evalue FROM %(track)s_mast WHERE motif = '%(slice)s'" % locals() )
+#         evalues = self.getValues( "SELECT evalue FROM %(track)s_mast WHERE motif = '%(slice)s'" % locals())
 
 #         if len(evalues) == 0: return odict()
 
@@ -617,8 +616,8 @@ class MastCurve(Mast):
 
 #     def __call__(self, track, slice = None):
 
-#         return odict( (("evalue", self.getValues( "SELECT evalue FROM %(track)s_mast WHERE motif = '%(slice)s'" % locals() )),
-#                        ("evalue - control", self.getValues( "SELECT min_evalue FROM %(track)s_mast WHERE motif = '%(slice)s'" % locals() )) ) )
+#         return odict( (("evalue", self.getValues( "SELECT evalue FROM %(track)s_mast WHERE motif = '%(slice)s'" % locals())),
+#                        ("evalue - control", self.getValues( "SELECT min_evalue FROM %(track)s_mast WHERE motif = '%(slice)s'" % locals()))))
 
 
 class MastPeakValWithMotif(Mast):
@@ -632,17 +631,18 @@ class MastPeakValWithMotif(Mast):
     def __call__(self, track, slice):
 
         # obtain evalue distribution
-        data = self.get( '''
+        data = self.get('''
         SELECT i.peakval, m.nmatches
         FROM %(track)s_intervals AS i,
              %(track)s_mast AS m
         WHERE m.id = i.interval_id \
-           AND m.motif = '%(slice)s' ORDER BY i.peakval DESC''' % locals() )
+           AND m.motif = '%(slice)s' ORDER BY i.peakval DESC''' % locals())
 
         result = Stats.getSensitivityRecall(
             [(int(x[0]), x[1] > 0) for x in data])
 
-        return odict(zip(("peakval", "proportion with motif", "recall"), zip(*result)))
+        return odict(zip(("peakval", "proportion with motif", "recall"),
+                         zip(*result)))
 
 # class MastPeakValWithMotifEvalue( Mast ):
 #     '''return for each peakval the proportion of intervals
@@ -688,7 +688,7 @@ class MemeInputSequenceComposition(IntervalTracker):
               'nUnk', 'pA', 'pAT', 'pC', 'pG', 'pGC', 'pN', 'pT')
 
     def __call__(self, track, slice):
-        return self.getValues( '''SELECT %(slice)s FROM %(track)s_motifseq_stats''' )
+        return self.getValues('''SELECT %(slice)s FROM %(track)s_motifseq_stats''')
 
 
 class MemeRuns(IntervalTracker):
@@ -741,7 +741,6 @@ class MemeResults(IntervalTracker):
 
         tree = xml.etree.ElementTree.ElementTree()
         tree.parse(os.path.join(resultsdir, "meme.xml"))
-        model = tree.find("model")
         # data.append( ("nsequences", int(model.find( "num_sequences" ).text) ) )
         # data.append( ("nbases", int(model.find( "num_positions" ).text) ) )
 
@@ -780,10 +779,10 @@ class TomTomResults(IntervalTracker):
 
     def __call__(self, track, slice=None):
 
-        data = self.getAll( """SELECT query_id, target_id, target_name,
-                               optimal_offset,pvalue,qvalue,evalue, overlap, query_consensus,
-                               target_consensus, orientation 
-                               FROM %(track)s_tomtom""" % locals())
+        data = self.getAll("""SELECT query_id, target_id, target_name,
+        optimal_offset,pvalue,qvalue,evalue, overlap, query_consensus,
+        target_consensus, orientation
+        FROM %(track)s_tomtom""" % locals())
 
         resultsdir = os.path.abspath(
             os.path.join(EXPORTDIR, "tomtom", "%s.tomtom" % re.sub("_", "-", track)))

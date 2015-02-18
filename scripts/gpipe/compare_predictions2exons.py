@@ -56,12 +56,15 @@ Code
 ----
 
 '''
-import os
 import sys
 import string
-import re
-import optparse
 import math
+import alignlib_lite
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.PredictionParser as PredictionParser
+import CGAT.Exons as Exons
 
 USAGE = """python %s [OPTIONS] < exonerate_output > filtered
 
@@ -71,15 +74,6 @@ Evaluate genewise alignments.
 
 Build a file with exon comparisions between genes.
 """ % sys.argv[0]
-
-import alignlib_lite
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.IndexedFasta as IndexedFasta
-import CGAT.PredictionParser as PredictionParser
-import CGAT.Exons as Exons
-
-# ------------------------------------------------------------
 
 
 def main(argv=None):

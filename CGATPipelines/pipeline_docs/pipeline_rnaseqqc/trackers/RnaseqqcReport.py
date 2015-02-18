@@ -1,17 +1,9 @@
-import os
-import sys
 import re
-import types
-import itertools
 import glob
 import pandas as pd
-import numpy as np
 from CGATReport.Tracker import *
 from CGATReport.Utils import PARAMS as P
-from collections import OrderedDict as odict
-
-from CGATReport.ResultBlock import ResultBlock, ResultBlocks
-from CGATReport import Utils
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 ###################################################################
 ###################################################################
@@ -25,7 +17,7 @@ DATABASE = P.get('readqc_backend', P.get('sql_backend', 'sqlite:///./csvdb'))
 # cf. pipeline_rnaseq.py
 # This should be automatically gleaned from pipeline_rnaseq.py
 ###################################################################
-import CGATPipelines.PipelineTracks as PipelineTracks
+
 
 TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
     glob.glob("%s/*.sra" % DATADIR), "(\S+).sra") +\

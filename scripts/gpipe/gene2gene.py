@@ -56,11 +56,8 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
-import re
-import optparse
+import CGAT.Experiment as E
 
 USAGE = """python %s [OPTIONS] < gene_list > graph
 
@@ -68,10 +65,6 @@ print list of all transcripts within a gene.
 """ % sys.argv[0]
 
 # add links between genes
-
-import CGAT.Experiment as E
-
-# ------------------------------------------------------------
 
 
 def main(argv=None):

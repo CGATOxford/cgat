@@ -59,9 +59,10 @@ Code
 import os
 import sys
 import string
-import re
-import getopt
-import optparse
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.PredictionParser as PredictionParser
+import CGAT.IndexedFasta as IndexedFasta
 
 USAGE = """python %s [OPTIONS] < assignments > pairs
 
@@ -105,11 +106,6 @@ Options:
 --combine-exons                 combine exons
 --filename-previous               filename with previous output (that are to be skipped).
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.PredictionParser as PredictionParser
-import CGAT.IndexedFasta as IndexedFasta
 
 global_outfile = None
 global_chunk_size = 0

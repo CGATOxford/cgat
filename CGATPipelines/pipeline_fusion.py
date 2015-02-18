@@ -130,22 +130,13 @@ from ruffus import *
 
 import sys
 import glob
-import gzip
 import os
-import itertools
-import re
-import math
-import types
-import collections
-import time
-import optparse
 import shutil
 import sqlite3
 import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
-import CGAT.Database as Database
+import CGAT.Pipeline as P
+import CGATPipelines.PipelineTracks as PipelineTracks
 import CGATPipelines.PipelineMapping as PipelineMapping
-
 ###################################################
 ###################################################
 ###################################################
@@ -153,25 +144,21 @@ import CGATPipelines.PipelineMapping as PipelineMapping
 ###################################################
 
 # load options from the config file
-import CGAT.Pipeline as P
+
 P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
      "pipeline.ini"])
 
 PARAMS = P.PARAMS
-PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
-                                      "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
+PARAMS_ANNOTATIONS = P.peekParameters(
+    PARAMS["annotations_dir"],
+    "pipeline_annotations.py", on_error_raise=__name__ == "__main__")
 
 USECLUSTER = True
 ###################################################################
 ###################################################################
 # Helper functions mapping tracks to conditions, etc
-###################################################################
-import CGATPipelines.PipelineTracks as PipelineTracks
-
-###################################################################
-###################################################################
 ###################################################################
 
 
@@ -199,7 +186,8 @@ def connect():
 ###################################################################
 
 
-@files(None, ("ensGene.txt", "ensGtp.txt", "mcl", "refGene_sorted.txt", "blast_human"))
+@files(None, ("ensGene.txt", "ensGtp.txt", "mcl",
+              "refGene_sorted.txt", "blast_human"))
 def prepare_directory(infiles, outfiles):
     ''' Prepares the directory neccesary for the pipeline. Links 
      the required annotation files and blast databases '''

@@ -31,23 +31,18 @@ Command line options
 --------------------
 
 '''
+import os
+import sys
+import re
+import glob
+import subprocess
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+
 USAGE = """python submit.py [OPTIONS] 
 
 submit a list of jobs to the cluster.
 """
-
-import os
-import sys
-import re
-import string
-import optparse
-import time
-import glob
-import subprocess
-import stat
-
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
 
 
 def checkPythonRuns(filename):

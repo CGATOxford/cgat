@@ -32,9 +32,10 @@ Command line options
 
 '''
 import sys
-import string
 import re
 import getopt
+import CGAT.Experiment as E
+import CGAT.PredictionParser as PredictionParser
 
 USAGE = """python %s [OPTIONS] < psl > predictions
 
@@ -53,9 +54,6 @@ param_long_options = ["verbose=", "help", "trans", "version"]
 param_short_options = "v:ht"
 
 param_trans = None
-
-import CGAT.Experiment as E
-import CGAT.PredictionParser as PredictionParser
 
 
 def main(argv=None):

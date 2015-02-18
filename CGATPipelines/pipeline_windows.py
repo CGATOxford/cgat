@@ -628,6 +628,24 @@ def aggregateWindowsReadCounts(infiles, outfile):
                                                regex="(.*).counts.bed.gz")
 
 
+@transform(aggregateWindowsReadCounts,
+           suffix(".tsv.gz"),
+           "_normed.tsv.gz")
+def normalizeWindowsReadCounts(infile, outfile):
+    '''output a file with normalized counts.
+    '''
+    statement = '''
+    zcat %(infile)s
+    | python %(scriptsdir)s/counts2counts.py
+    --method=normalize
+    --normalization-method=%(tags_normalization_method)s
+    --log=%(outfile)s.olg
+    | gzip
+    > %(outfile)s
+    '''
+    P.run()
+
+
 @transform(aggregateWindowsReadCounts, suffix(".tsv.gz"), ".load")
 def loadWindowsReadCounts(infile, outfile):
     '''load a sample of window composition data for QC purposes.'''

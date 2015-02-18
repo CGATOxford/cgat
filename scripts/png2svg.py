@@ -33,27 +33,12 @@ Command line options
 import os
 import sys
 import string
-import re
-import getopt
-import time
-import optparse
 import math
 import tempfile
-import subprocess
 import random
-
-from types import *
-""" program $Id: png2svg.py 2782 2009-09-10 11:40:29Z andreas $
-
-arrange png files in an svg image.
-"""
 import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
 import CGAT.SVGdraw as SVGdraw
-
-# ------------------------------------------------------------------------
-
-###################################################################
+from types import *
 
 
 class Image:

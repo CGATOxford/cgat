@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-optic/orthologs2transcripts.py - 
+optic/orthologs2transcripts.py -
 ======================================================
 
 :Author: Andreas Heger
@@ -59,9 +59,17 @@ Code
 import os
 import sys
 import string
-import re
 import getopt
 import tempfile
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.Exons as Exons
+import alignlib_lite
+import CGAT.WrapperDialign as WrapperDialign
+import CGAT.WrapperDBA as WrapperDBA
+# clustalw wrapper not up-to-date
+# import CGAT.WrapperClustal as WrapperClustal
+import CGAT.AlignedPairs as AlignedPairs
 
 USAGE = """python %s [OPTIONS] < orthologs > genes
 
@@ -109,16 +117,6 @@ Options:
 --min-exon-size=                minimum exon size (important for exon counts) (in codons).
 """ % sys.argv[0]
 
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.Exons as Exons
-import alignlib_lite
-
-import CGAT.WrapperDialign as WrapperDialign
-import CGAT.WrapperDBA as WrapperDBA
-# clustalw wrapper not up-to-date
-#import CGAT.WrapperClustal as WrapperClustal
-import CGAT.AlignedPairs as AlignedPairs
 
 param_long_options = ["verbose=", "help", "map1=", "map2=",
                       "peptides1=", "peptides2=",
@@ -387,9 +385,9 @@ def ReadMapGene2Transcripts(infile, peptides, filter=None):
         except ValueError:
             continue
 
-        if filter and not filter.has_key(gene_id):
+        if filter and gene_id not in filter:
             continue
-        if not map_gene2transcripts.has_key(gene_id):
+        if gene_id not in map_gene2transcripts:
             map_gene2transcripts[gene_id] = []
         map_gene2transcripts[gene_id].append(
             (prediction_id, sbjct_token, sbjct_strand, sbjct_from, sbjct_to))
@@ -429,7 +427,7 @@ def WriteExons(token1, peptide1, cds1, transcript1,
     dialign = WrapperDialign.Dialign("-n")
     dialignlgs = WrapperDialign.Dialign("-n -it -thr 2 -lmax 30 -smin 8")
     dba = WrapperDBA.DBA()
-    #clustal = WrapperClustal.Clustal()
+    # clustal = WrapperClustal.Clustal()
 
     matrix, gop, gep = global_substitution_matrix
     alignator_nw = alignlib_lite.makeAlignatorDPFullDP(
@@ -519,26 +517,26 @@ def WriteExons(token1, peptide1, cds1, transcript1,
 # if tmp_map_a2b.getLength() == 0:
 # if param_loglevel >= 1:
 # print "# WARNING: empty alignment between exon %i (from %i to %i) and exon %i" % \
-##                       (e1,c1.mGenomeFrom + 1, c1.mGenomeTo, e2)
+#                       (e1,c1.mGenomeFrom + 1, c1.mGenomeTo, e2)
 # print "## peptide_map_a2b", peptide_map_a2b.getRowFrom(), peptide_map_a2b.getRowTo(),\
-##                       peptide_map_a2b.getColFrom(), peptide_map_a2b.getColTo(), \
+#                       peptide_map_a2b.getColFrom(), peptide_map_a2b.getColTo(), \
 # Alignlib.writeAlignmentCompressed(peptide_map_a2b)
 # print "## dna_map_a2b", dna_map_a2b.getRowFrom(), dna_map_a2b.getRowTo(),\
-##                       dna_map_a2b.getColFrom(), dna_map_a2b.getColTo(), \
+#                       dna_map_a2b.getColFrom(), dna_map_a2b.getColTo(), \
 # Alignlib.writeAlignmentCompressed(dna_map_a2b)
 # for cd in cds1: print "##", str(cd)
 # for cd in cds2: print "##", str(cd)
-##             nerrors += 1
+#             nerrors += 1
 # continue
-##         data = map(lambda x: x.split("\t"), alignlib_lite.writePairAlignment( seq1, seq2, tmp_map_a2b  ).split("\n"))
+#         data = map(lambda x: x.split("\t"), alignlib_lite.writePairAlignment( seq1, seq2, tmp_map_a2b  ).split("\n"))
 # if "caligned" in param_write_exons :
 # print "exon\tcaligned\t%s\t%i\t%s\t%i\t%s\t%s\t%s\t%s\t%s\t%s" % ( token1, e1,
-##                                                                                token2, e2,
-##                                                                                data[0][0], data[0][2],
-##                                                                                data[1][0], data[1][2],
+#                                                                                token2, e2,
+#                                                                                data[0][0], data[0][2],
+#                                                                                data[1][0], data[1][2],
 # data[0][1], data[1][1] )
-##         ali_common1 += data[0][1]
-##         ali_common2 += data[1][1]
+#         ali_common1 += data[0][1]
+#         ali_common2 += data[1][1]
         #######################################################################
         # write alignment of introns for orthologous introns
         # orthologous introns are between orthologous exons
@@ -595,13 +593,13 @@ def WriteExons(token1, peptide1, cds1, transcript1,
                     print str(pair)
 
 # else:
-##                         anchored_from1 = intron_from1 - param_extend_introns
-##                         anchored_to1 = intron_to1 + param_extend_introns
-##                         anchored_from2 = intron_from2 - param_extend_introns
-##                         anchored_to2 = intron_to2 + param_extend_introns
+#                         anchored_from1 = intron_from1 - param_extend_introns
+#                         anchored_to1 = intron_to1 + param_extend_introns
+#                         anchored_from2 = intron_from2 - param_extend_introns
+#                         anchored_to2 = intron_to2 + param_extend_introns
 
-##                         anchored_fragment1 = transcript1[anchored_from1:anchored_to1]
-##                         anchored_fragment2 = transcript2[anchored_from2:anchored_to2]
+#                         anchored_fragment1 = transcript1[anchored_from1:anchored_to1]
+#                         anchored_fragment2 = transcript2[anchored_from2:anchored_to2]
 
 # for method in param_write_introns:
 
@@ -613,11 +611,11 @@ def WriteExons(token1, peptide1, cds1, transcript1,
 
 # if method == "unaligned":
 
-##                                 from1, to1, ali1, from2, to2, ali2 = 0, 0, intron_fragment1, 0, 0, intron_fragment2
+#                                 from1, to1, ali1, from2, to2, ali2 = 0, 0, intron_fragment1, 0, 0, intron_fragment2
 
 # elif method in ("dialigned", "dbaligned", "clusaligned", "dialignedlgs"):
 
-##                                 tmp_intron_a2b = alignlib_lite.makeAlignmentVector()
+#                                 tmp_intron_a2b = alignlib_lite.makeAlignmentVector()
 
 # if param_loglevel >= 1:
 # print "# aligning with method %s two fragments of length %i and %i" % (method,
@@ -626,59 +624,59 @@ def WriteExons(token1, peptide1, cds1, transcript1,
 # sys.stdout.flush()
 
 # if method == "dialigned":
-##                                     result = dialign.Align( anchored_fragment1, anchored_fragment2, tmp_intron_a2b )
+#                                     result = dialign.Align( anchored_fragment1, anchored_fragment2, tmp_intron_a2b )
 # elif method == "dialignedlgs":
-##                                     result = dialignlgs.Align( anchored_fragment1, anchored_fragment2, tmp_intron_a2b )
+#                                     result = dialignlgs.Align( anchored_fragment1, anchored_fragment2, tmp_intron_a2b )
 # elif method == "dbaligned":
-##                                     result = dba.Align( anchored_fragment1, anchored_fragment2, tmp_intron_a2b )
+#                                     result = dba.Align( anchored_fragment1, anchored_fragment2, tmp_intron_a2b )
 # elif method == "clusaligned":
-##                                     result = clustal.Align( anchored_fragment1, anchored_fragment2, tmp_intron_a2b )
+#                                     result = clustal.Align( anchored_fragment1, anchored_fragment2, tmp_intron_a2b )
 # if not result or result.getLength() == 0:
 # if param_loglevel >= 1:
 # print "# Error: empty intron alignment"
 # sys.stdout.flush()
-##                                     nerrors += 1
+#                                     nerrors += 1
 # continue
-##                                 tmp_intron_a2b.moveAlignment( anchored_from1, anchored_from2 )
+#                                 tmp_intron_a2b.moveAlignment( anchored_from1, anchored_from2 )
 # alignlib_lite.copyAlignment( map_intron_a2b, tmp_intron_a2b,
-##                                                        intron_from1 + 1, intron_to1,
+#                                                        intron_from1 + 1, intron_to1,
 # intron_from2 + 1, intron_to2 )
 # elif method == "nwaligned":
-##                                 seq1.useSegment( cds1[e1-1].mGenomeTo + 1, cds1[e1].mGenomeFrom )
-##                                 seq2.useSegment( cds2[e2-1].mGenomeTo + 1, cds2[e2].mGenomeFrom )
-##                                 alignator_nw.Align( seq1, seq2, map_intron_a2b )
+#                                 seq1.useSegment( cds1[e1-1].mGenomeTo + 1, cds1[e1].mGenomeFrom )
+#                                 seq2.useSegment( cds2[e2-1].mGenomeTo + 1, cds2[e2].mGenomeFrom )
+#                                 alignator_nw.Align( seq1, seq2, map_intron_a2b )
 # seq1.useFullLength()
 # seq2.useFullLength()
 # elif method == "swaligned":
-##                                 seq1.useSegment( cds1[e1-1].mGenomeTo + 1, cds1[e1].mGenomeFrom )
-##                                 seq2.useSegment( cds2[e2-1].mGenomeTo + 1, cds2[e2].mGenomeFrom )
-##                                 alignlib_lite.performIterativeAlignment( map_intron_a2b, seq1, seq2, alignator_sw, param_min_score_sw )
+#                                 seq1.useSegment( cds1[e1-1].mGenomeTo + 1, cds1[e1].mGenomeFrom )
+#                                 seq2.useSegment( cds2[e2-1].mGenomeTo + 1, cds2[e2].mGenomeFrom )
+#                                 alignlib_lite.performIterativeAlignment( map_intron_a2b, seq1, seq2, alignator_sw, param_min_score_sw )
 # seq1.useFullLength()
 # seq2.useFullLength()
 # else:
-##                                 raise "unknown method %s" % method
+#                                 raise "unknown method %s" % method
 # if map_intron_a2b.getLength() > 0:
 # if param_compress:
-##                                     from1, to1 = map_intron_a2b.getRowFrom(), map_intron_a2b.getRowTo()
-##                                     from2, to2 = map_intron_a2b.getColFrom(), map_intron_a2b.getColTo()
-##                                     ali1, ali2 = Alignlib.writeAlignmentCompressed( map_intron_a2b )
+#                                     from1, to1 = map_intron_a2b.getRowFrom(), map_intron_a2b.getRowTo()
+#                                     from2, to2 = map_intron_a2b.getColFrom(), map_intron_a2b.getColTo()
+#                                     ali1, ali2 = Alignlib.writeAlignmentCompressed( map_intron_a2b )
 # else:
 # data = map(lambda x: x.split("\t"),
 # alignlib_lite.writePairAlignment( seq1, seq2, map_intron_a2b  ).split("\n"))
 # if len(data) < 2:
-##                                         data=[ ( 0, "", 0), (0, "", 0)]
-##                                     from1, ali1, to1 = data[0]
-##                                     from2, ali2, to2 = data[1]
+#                                         data=[ ( 0, "", 0), (0, "", 0)]
+#                                     from1, ali1, to1 = data[0]
+#                                     from2, ali2, to2 = data[1]
 # print string.join(map(str, ("intron",
 # method,
-##                                                         token1, e1, len(cds1) - 1, len(intron_fragment1),
-##                                                         token2, e2, len(cds2) - 1, len(intron_fragment2),
+#                                                         token1, e1, len(cds1) - 1, len(intron_fragment1),
+#                                                         token2, e2, len(cds2) - 1, len(intron_fragment2),
 # map_intron_a2b.getNumGaps(),
 # map_intron_a2b.getLength(),
-##                                                         map_intron_a2b.getLength() - map_intron_a2b.getNumGaps(),
-##                                                         from1, to1, ali1,
-##                                                         from2, to2, ali2,
-##                                                         intron_from1, intron_to1,
+#                                                         map_intron_a2b.getLength() - map_intron_a2b.getNumGaps(),
+#                                                         from1, to1, ali1,
+#                                                         from2, to2, ali2,
+#                                                         intron_from1, intron_to1,
 # intron_from2, intron_to2)), "\t")
 # sys.stdout.flush()
         last_e1, last_e2 = e1, e2
@@ -688,9 +686,9 @@ def WriteExons(token1, peptide1, cds1, transcript1,
 # for method in param_write_exons:
 # if method == "common":
 # print "exon\tcommon\t%s\t%i\t%s\t%i\t%s\t%s\t%s\t%s\t%s\t%s" % ( token1, 0,
-##                                                                            token2, 0,
-##                                                                            0, 0,
-##                                                                            0, 0,
+#                                                                            token2, 0,
+#                                                                            0, 0,
+#                                                                            0, 0,
 # ali_common1, ali_common2 )
 # elif method == "exons":
 # Write full alignment without gaps.
@@ -699,45 +697,45 @@ def WriteExons(token1, peptide1, cds1, transcript1,
 # alignlib_lite.writePairAlignment( seq1, seq2, dna_map_a2b  ).split("\n"))
 
 # try:
-##                 from1, s1, to1, from2, s2, to2 = data[0] + data[1]
+#                 from1, s1, to1, from2, s2, to2 = data[0] + data[1]
 # except ValueError:
-##                 from1, to1, from2, to2 = 0, 0, 0, 0
-##                 s1, s2 = "", ""
-##                 nerrors += 1
+#                 from1, to1, from2, to2 = 0, 0, 0, 0
+#                 s1, s2 = "", ""
+#                 nerrors += 1
 # except IndexError:
-##                 from1, to1, from2, to2 = 0, 0, 0, 0
-##                 s1, s2 = "", ""
-##                 nerrors += 1
+#                 from1, to1, from2, to2 = 0, 0, 0, 0
+#                 s1, s2 = "", ""
+#                 nerrors += 1
 
 # if from1:
 # if len(s1) != len(s2):
 # print "# WARNING: alignment of different lengths: %i and %i" % (len(s1), len(s2))
-##                     nerrors += 1
-##                     from1, to1, from2, to2 = 0, 0, 0, 0
-##                     s1, s2 = "", ""
+#                     nerrors += 1
+#                     from1, to1, from2, to2 = 0, 0, 0, 0
+#                     s1, s2 = "", ""
 # else:
-##                     a1, a2 = [], []
+#                     a1, a2 = [], []
 # for x in range( min(len(s1), len(s2)) ):
 # if s1[x] != "-" and s2[x] != "-":
-##                             a1.append( s1[x] )
-##                             a2.append( s2[x] )
-##                     s1 = string.join(a1, "")
-##                     s2 = string.join(a2, "")
+#                             a1.append( s1[x] )
+#                             a2.append( s2[x] )
+#                     s1 = string.join(a1, "")
+#                     s2 = string.join(a2, "")
 
 # print "exon\texons\t%s\t%i\t%s\t%i\t%s\t%s\t%s\t%s\t%s\t%s" % ( (token1, 0,
-##                                                                              token2, 0,
-##                                                                              from1, to1,
-##                                                                              from2, to2,
+#                                                                              token2, 0,
+#                                                                              from1, to1,
+#                                                                              from2, to2,
 # s1, s2 ) )
 # elif method == "full":
 # write full alignment (do not care about exon boundaries)
 # data = map(lambda x: x.split("\t"),
 # alignlib_lite.writePairAlignment( seq1, seq2, dna_map_a2b  ).split("\n"))
-##             if len(data) < 2: data=[ ( 0, "", 0), (0, "", 0)]
+#             if len(data) < 2: data=[ ( 0, "", 0), (0, "", 0)]
 # print "exon\tfull\t%s\t%i\t%s\t%i\t%s\t%s\t%s\t%s\t%s\t%s" % ( token1, 0,
-##                                                                            token2, 0,
-##                                                                            data[0][0], data[0][2],
-##                                                                            data[1][0], data[1][2],
+#                                                                            token2, 0,
+#                                                                            data[0][0], data[0][2],
+#                                                                            data[1][0], data[1][2],
 # data[0][1], data[1][1] )
 
     if param_loglevel >= 3:
@@ -786,7 +784,7 @@ def GetOrthologTranscripts(transcripts1, peptides1, cds1,
     if param_loglevel >= 4:
         print "# building sequence 1"
     for i in range(len(seqs1)):
-        if not cds1.has_key(transcripts1[i][0]):
+        if transcripts1[i][0] not in cds1:
             if param_loglevel >= 4:
                 print "# %s not found" % transcripts1[i][0]
 
@@ -794,7 +792,7 @@ def GetOrthologTranscripts(transcripts1, peptides1, cds1,
         print "# building sequence 2"
 
     for i in range(len(seqs2)):
-        if not cds2.has_key(transcripts2[i][0]):
+        if transcripts2[i][0] not in cds2:
             if param_loglevel >= 4:
                 print "# %s not found" % transcripts1[i][0]
 
@@ -985,7 +983,7 @@ def GetOrthologTranscripts(transcripts1, peptides1, cds1,
             if cc < param_min_coverage:
                 continue
 
-            if not weights.has_key(cc):
+            if cc in weights:
                 weights[cc] = []
 
             alis1[i].append((coverage_a, j))
@@ -1009,7 +1007,7 @@ def GetOrthologTranscripts(transcripts1, peptides1, cds1,
 
     for w in ww:
         for i, j, map_a2b in weights[w]:
-            if not assigned1.has_key(i) and not assigned2.has_key(j):
+            if i not in assigned1 and j not in assigned2:
                 pairs.append((transcripts1[i], transcripts2[j], w, map_a2b))
                 assigned1[i] = 1
                 assigned2[j] = 1
@@ -1020,8 +1018,6 @@ def GetOrthologTranscripts(transcripts1, peptides1, cds1,
 
     return pairs
 
-# ------------------------------------------------------------
-
 
 def PruneHash(hash, *args):
 
@@ -1030,7 +1026,7 @@ def PruneHash(hash, *args):
         for v in vv:
             found = 1
             for arg in args:
-                found = found and arg.has_key(v[0])
+                found = found and v[0] in arg
             if found:
                 new_vv.append(v)
             else:

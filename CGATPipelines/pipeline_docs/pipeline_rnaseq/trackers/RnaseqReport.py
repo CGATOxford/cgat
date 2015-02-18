@@ -1,13 +1,9 @@
-import os
-import sys
 import re
-import types
-import itertools
 import glob
 
 from CGATReport.Tracker import *
 from CGATReport.Utils import PARAMS as P
-from CGATReport.odict import OrderedDict as odict
+import PipelineTracks
 
 # get from config file
 UCSC_DATABASE = "hg19"
@@ -29,7 +25,7 @@ DATABASE = P['rnaseq_backend']
 # cf. pipeline_rnaseq.py
 # This should be automatically gleaned from pipeline_rnaseq.py
 ###################################################################
-import PipelineTracks
+
 
 TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample3).loadFromDirectory(
     glob.glob("%s/*.sra" % DATADIR), "(\S+).sra") +\

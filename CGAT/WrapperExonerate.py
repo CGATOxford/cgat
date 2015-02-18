@@ -36,14 +36,8 @@ Code
 import os
 import sys
 import string
-import re
 import tempfile
 import subprocess
-import optparse
-
-"""Wrapper for Exonerate
-"""
-
 from CGAT import Experiment as E
 from CGAT import PredictionParser as PredictionParser
 from CGAT import Genomics as Genomics

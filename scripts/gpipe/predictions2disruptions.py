@@ -56,11 +56,11 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
-import re
-import optparse
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.PredictionParser as PredictionParser
 
 USAGE = """python %s < predictions > genes
 
@@ -73,13 +73,6 @@ Options:
 -v, --verbose=                  loglevel.
 -g, --genome-pattern=           pattern for filenames with the genomic DNA (FASTA).
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.IndexedFasta as IndexedFasta
-import CGAT.PredictionParser as PredictionParser
-
-# ------------------------------------------------------------
 
 
 def main(argv=None):

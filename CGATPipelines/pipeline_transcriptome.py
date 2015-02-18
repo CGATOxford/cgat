@@ -15,7 +15,7 @@ computes are:
    * coding potential (using CPC)
    * overlap with repeats
    * substitution rates
-   * conservation 
+   * conservation
       * with respect to ancestral repeat rates)
       * TODO: conservation (with respect to UCSC tracks)
    * annotation with respect to a reference gene set, for example
@@ -82,11 +82,8 @@ Code
 
 """
 import sys
-import tempfile
-import optparse
 import shutil
 import itertools
-import csv
 import random
 import re
 import glob
@@ -99,10 +96,9 @@ import CGAT.Pipeline as P
 import CGAT.IOTools as IOTools
 import CGAT.Database as Database
 import CGAT.GTF as GTF
-
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 # load options from the config file
-import CGAT.Pipeline as P
 P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
@@ -127,8 +123,6 @@ PARAMS_ANCESTRAL_REPEATS = P.peekParameters(
 ###################################################################
 # Helper functions mapping tracks to conditions, etc
 ###################################################################
-import CGATPipelines.PipelineTracks as PipelineTracks
-
 # collect sra nd fastq.gz tracks
 TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
     glob.glob("*.gtf.gz"), "(\S+).gtf.gz", exclude=("repeats.gtf.gz", "introns.gtf.gz", "merged.gtf.gz"))

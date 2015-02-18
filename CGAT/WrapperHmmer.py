@@ -37,12 +37,6 @@ import os
 import sys
 
 from types import *
-
-"""Wrapper for Hmmer
-"""
-
-# raise NotImplementedError("incomplete")
-
 from CGAT import Experiment as Experiment
 
 

@@ -56,12 +56,10 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
 import re
 import getopt
-import math
+import CGAT.PredictionParser as PredictionParser
 
 USAGE = """python %s [OPTIONS] < exonerate_output > filtered
 
@@ -86,10 +84,6 @@ param_keep = 1
 param_filename = None
 param_filename_keys = None
 param_format = "predictions"
-
-import CGAT.PredictionParser as PredictionParser
-
-# ------------------------------------------------------------
 
 
 def main(argv=None):

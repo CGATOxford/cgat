@@ -34,14 +34,7 @@ Code
 
 '''
 import os
-import sys
-import string
-import re
 import tempfile
-
-"""Wrapper for Gblocks
-"""
-
 from CGAT import Genomics as Genomics
 
 

@@ -2,7 +2,7 @@
 TreeTools.py - tools for dealing with domain trees.
 ====================================================
 
-:Author: 
+:Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
 :Tags: Python
@@ -23,18 +23,11 @@ oriented, but I thought that might be overkill.
 import Bio
 from Bio.Nexus.Nexus import Nexus
 from Bio.Nexus.Trees import Tree
-
-from CGAT import Tree as Tree
-import sys
 import string
 import re
 import StringIO
-
 from types import *
-
 from CGAT import Intervalls as Intervalls
-
-# --------------------------------------------------------
 
 
 def SetChildren(tree):
@@ -52,8 +45,6 @@ def SetChildren(tree):
             tree[parent][3] = node
         else:
             tree[parent][2] = node
-
-# --------------------------------------------------------
 
 
 def CollapseTree(tree):
@@ -90,9 +81,9 @@ def CollapseTree(tree):
 
         index += 1
 
-        ## PrintTree( new_tree )
+        # PrintTree( new_tree )
 
-    ## PrintTree( new_tree )
+    # PrintTree( new_tree )
     # print "#########"
 
     return new_tree
@@ -130,20 +121,13 @@ def RemoveEmptyNodes(tree):
         new_tree.append(
             [new_tree[map_old2new[parent]][0] + 1, map_old2new[parent], 0, 0, ranges])
 
-##     PrintTree( new_tree )
-# print "#########"
-
     return new_tree
-
-# --------------------------------------------------------
 
 
 def PrintTree(tree):
     """print tree."""
     for node in range(0, len(tree)):
         print "%i\t" % node + string.join(map(str, tree[node]), "\t")
-
-# --------------------------------------------------------
 
 
 def RemoveSmallDomains(tree, min_segment=10):
@@ -184,8 +168,6 @@ def RemoveSmallDomains(tree, min_segment=10):
 
             tree[node][4] = new_ranges
 
-# PrintTree(tree)
-# print "#########"
     return RemoveEmptyNodes(tree)
 
 # --------------------------------------------------------
@@ -194,9 +176,6 @@ def RemoveSmallDomains(tree, min_segment=10):
 def TruncateTree(tree, min_segment=10):
     """truncate tree, if a segment is less than a certain size.
     """
-
-# PrintTree(tree)
-# print "#########"
 
     for node in range(1, len(tree)):
 
@@ -217,14 +196,7 @@ def TruncateTree(tree, min_segment=10):
             if right_child:
                 tree[right_child][4] = []
 
-# PrintTree(tree)
-# print "#########"
-
     return RemoveEmptyNodes(tree)
-
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
 
 
 def Newick2Nexus(infile):
@@ -636,10 +608,6 @@ def Transcript2GeneTree(tree,
         for y in range(x + 1, len(taxa)):
             print ids[x], ids[y], taxa[x], taxa[y]
 
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-
 
 def MapTaxa(tree, mapping):
     """map taxon names in all trees."""
@@ -648,10 +616,6 @@ def MapTaxa(tree, mapping):
         t1 = tree.node(nx).get_data().taxon
         if t1 in mapping:
             tree.node(nx).get_data().taxon = mapping[t1]
-
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
 
 
 def GetCommonAncestor(tree, taxa):
@@ -673,10 +637,6 @@ def GetCommonAncestor(tree, taxa):
         else:
             return trace[0]
 
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-
 
 def Nop(x):
     return True
@@ -697,18 +657,10 @@ def TreeDFS(tree, node_id,
             TreeDFS(tree, n, pre_function, descend_condition, post_function)
     post_function(node_id)
 
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-
 
 def GetMaxIndex(tree):
     """get maximum node number."""
     return tree.id
-
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
 
 
 def GetNumChildren(tree):
@@ -727,10 +679,6 @@ def GetNumChildren(tree):
 
     TreeDFS(tree, tree.root, post_function=count)
     return counts
-
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
 
 
 def GetBranchLengths(tree):
@@ -757,9 +705,6 @@ def GetBranchLengths(tree):
     return min_sums, max_sums
 
 
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
 def Reroot(tree, taxa):
     """reroot tree with taxa - the list of
     taxa does not need to be monophyletic.
@@ -816,9 +761,6 @@ def Reroot(tree, taxa):
     TreeDFS(tree, tree.root,
             descend_condition=has_taxa)
 
-#     for x in range(nnodes):
-#         print x, within_taxa[x], extra_subtree[x]
-
     nodes = filter(lambda x: extra_subtree[x], range(nnodes))
 
     if len(nodes) == 0:
@@ -846,10 +788,6 @@ def Reroot(tree, taxa):
                 return n
     else:
         return subtree_node
-
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
 
 
 def GetSubsets(tree, node=None, with_decoration=True):
@@ -893,10 +831,6 @@ def GetSubsets(tree, node=None, with_decoration=True):
 
             return ss + [children]
 
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-
 
 def CountBranchPoints(tree, taxa):
     """count the number branch points together with their
@@ -913,10 +847,6 @@ def CountBranchPoints(tree, taxa):
 
     # retrieve all subsets with their branchlengths.
     return GetSubsets(tree, parent)
-
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
 
 
 def IsCompatible(tree1, tree2):
@@ -945,10 +875,6 @@ def IsCompatible(tree1, tree2):
     else:
         return True, ""
 
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-
 
 def Tree2Graph(tree):
     """return tree as a list of edges in a graph."""
@@ -957,10 +883,6 @@ def Tree2Graph(tree):
         if node1.prev is not None:
             links.append((node_id1, node1.prev, node1.get_data().branchlength))
     return links
-
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
 
 
 def Graph2Tree(links, label_ancestral_nodes=False):
@@ -1008,18 +930,10 @@ def Graph2Tree(links, label_ancestral_nodes=False):
 
     return tree
 
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-
 
 def GetAllNodes(tree):
     """return all nodes in the tree."""
     return tree.chain.keys()
-
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
 
 
 def GetDistancesBetweenTaxa(tree, taxa1, taxa2):
@@ -1040,8 +954,6 @@ def GetDistancesBetweenTaxa(tree, taxa1, taxa2):
             distances.append((ta, tb, tree.distance(aa, bb)))
 
     return distances
-
-# -------------------------------------------------------------------------
 
 
 def PruneTerminal(tree, taxon):
@@ -1071,10 +983,6 @@ def PruneTerminal(tree, taxon):
 
         return prev
 
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-
 
 def add_children(old_tree, new_tree, old_id, new_id):
 
@@ -1097,10 +1005,6 @@ def GetSubtree(tree, node_id):
 
     add_children(tree, subtree, node_id, subtree.root)
     return subtree
-
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
 
 
 def Unroot(tree):
@@ -1138,10 +1042,6 @@ def Unroot(tree):
     tree.node(y).data.branchlength = n
     tree.rooted = False
 
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-
 
 def GetSize(tree):
     """return the length of the tree. This is the maximum node_id + 1.
@@ -1150,10 +1050,6 @@ def GetSize(tree):
     a container.
     """
     return max(tree.chain.keys()) + 1
-
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
 
 
 def PruneTree(tree, taxa, keep_distance_to_root=False):
@@ -1180,10 +1076,6 @@ def PruneTree(tree, taxa, keep_distance_to_root=False):
             sn.data.branchlength = 0.0
         tree.root = s
         tree.kill(r)
-
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
 
 
 def GetNodeMap(tree1, tree2):

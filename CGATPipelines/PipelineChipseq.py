@@ -176,7 +176,6 @@ def getBedLocations(filename):
 
     fh.close()
 
-    #E.info("Read in %i regions from %s" % ( n_regions, filename) )
     return (region_list)
 
 ############################################################
@@ -235,26 +234,26 @@ def buildBAMforPeakCalling(infiles, outfile, dedup, mask):
     if len(infiles) > 1 and isinstance(infiles, str) == 0:
         # assume: samtools merge output is sorted
         # assume: sam files are sorted already
-        statement.append( '''samtools merge @OUT@ %s''' % (infiles.join(" ")) )
-        statement.append( '''samtools sort @IN@ @OUT@''')
+        statement.append('''samtools merge @OUT@ %s''' % (infiles.join(" ")))
+        statement.append('''samtools sort @IN@ @OUT@''')
 
     if dedup:
-        statement.append( '''MarkDuplicates
-                                       INPUT=@IN@
-                                       ASSUME_SORTED=true 
-                                       REMOVE_DUPLICATES=true
-                                       QUIET=true
-                                       OUTPUT=@OUT@
-                                       METRICS_FILE=%(outfile)s.picardmetrics
-                                       VALIDATION_STRINGENCY=SILENT 
-                   > %(outfile)s.picardlog ''' )
+        statement.append('''MarkDuplicates
+        INPUT=@IN@
+        ASSUME_SORTED=true
+        REMOVE_DUPLICATES=true
+        QUIET=true
+        OUTPUT=@OUT@
+        METRICS_FILE=%(outfile)s.picardmetrics
+        VALIDATION_STRINGENCY=SILENT
+        > %(outfile)s.picardlog ''')
 
     if mask:
         statement.append(
-            '''intersectBed -abam @IN@ -b %(mask)s -wa -v > @OUT@''' )
+            '''intersectBed -abam @IN@ -b %(mask)s -wa -v > @OUT@''')
 
-    statement.append('''mv @IN@ %(outfile)s''' )
-    statement.append('''samtools index %(outfile)s''' )
+    statement.append('''mv @IN@ %(outfile)s''')
+    statement.append('''samtools index %(outfile)s''')
 
     statement = P.joinStatements(statement, infiles)
     P.run()
@@ -295,22 +294,17 @@ def buildSimpleNormalizedBAM(infiles, outfile, nreads):
     E.info("buildNormalizedBam: %i input, %i output (%5.2f%%), should be %i" %
            (ninput, noutput, 100.0 * noutput / ninput, nreads))
 
-############################################################
-############################################################
-############################################################
-####### Depreciate this function? ##########################
-############################################################
-
 
 def buildNormalizedBAM(infiles, outfile, normalize=True):
     '''build a normalized BAM file.
 
-    Infiles are merged and duplicated reads are removed. 
-    If *normalize* is set, reads are removed such that all 
-    files will have approximately the same number of reads.
+    Infiles are merged and duplicated reads are removed.  If
+    *normalize* is set, reads are removed such that all files will
+    have approximately the same number of reads.
 
     Note that the duplication here is wrong as there
     is no sense of strandedness preserved.
+
     '''
 
     min_reads = getMinimumMappedReads(glob.glob("*.readstats"))
@@ -1470,32 +1464,35 @@ def loadIntervalsFromBed(bedfile, track, outfile,
         if replicates:
             npeaks, peakcenter, length, avgval, peakval, nprobes = \
                 PipelineChipseq.countPeaks(
-                    bed.contig, bed.start, bed.end, samfiles, offsets)
+                    bed.contig, bed.start, bed.end,
+                    samfiles, offsets)
 
             # nreads can be 0 if the intervals overlap only slightly
-            # and due to the binning, no reads are actually in the overlap region.
-            # However, most of these intervals should be small and have already be deleted via
-            # the merge_min_interval_length cutoff.
-            # do not output intervals without reads.
+            # and due to the binning, no reads are actually in the
+            # overlap region.  However, most of these intervals should
+            # be small and have already be deleted via the
+            # merge_min_interval_length cutoff.  do not output
+            # intervals without reads.
             if nprobes == 0:
                 c.skipped_reads += 1
 
         else:
-            npeaks, peakcenter, length, avgval, peakval, nprobes = (1,
-                                                                    bed.start +
-                                                                    (bed.end -
-                                                                     bed.start) // 2,
-                                                                    bed.end -
-                                                                    bed.start,
-                                                                    1,
-                                                                    1,
-                                                                    1)
+            npeaks, peakcenter, length, avgval, peakval, nprobes = (
+                1,
+                bed.start +
+                (bed.end - bed.start) // 2,
+                bed.end - bed.start,
+                1,
+                1,
+                1)
 
         c.output += 1
-        tmpfile.write("\t".join(map(str, (avgval, disttostart, genelist, length,
-                                          peakcenter, peakval, position, bed.name,
-                                          ncpgs, ngenes, npeaks, nprobes, npromoters,
-                                          bed.contig, bed.start, bed.end))) + "\n")
+        tmpfile.write("\t".join(map(
+            str, 
+            (avgval, disttostart, genelist, length,
+             peakcenter, peakval, position, bed.name,
+             ncpgs, ngenes, npeaks, nprobes, npromoters,
+             bed.contig, bed.start, bed.end))) + "\n")
 
     if c.output == 0:
         E.warn("%s - no intervals")
@@ -1507,14 +1504,14 @@ def loadIntervalsFromBed(bedfile, track, outfile,
 
     statement = '''
     python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty-file
-              --add-index=interval_id 
-              --table=%(tablename)s
-    < %(tmpfilename)s 
+    --allow-empty-file
+    --add-index=interval_id
+    --table=%(tablename)s
+    < %(tmpfilename)s
     > %(outfile)s
     '''
 
     P.run()
     os.unlink(tmpfile.name)
 
-    L.info("%s\n" % str(c))
+    E.info("%s\n" % str(c))

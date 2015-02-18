@@ -32,17 +32,11 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import optparse
-import math
-import time
-import tempfile
-import subprocess
-
 import webbrowser
+import CGAT.GTF as GTF
+import CGAT.Experiment as E
+import CGAT.IndexedFasta as IndexedFasta
 
 USAGE = """python %s [OPTIONS] < stdin
 
@@ -51,12 +45,6 @@ with UCSC and genome browser.
 
 TODO: add support for ensembl
 """ % sys.argv[0]
-
-import CGAT.GTF as GTF
-import CGAT.Experiment as E
-import CGAT.IndexedFasta as IndexedFasta
-
-# ------------------------------------------------------------
 
 
 def main(argv=None):

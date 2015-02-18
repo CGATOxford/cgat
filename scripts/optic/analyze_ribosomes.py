@@ -33,7 +33,7 @@ Purpose
 -------
 
 .. todo::
-   
+
    describe purpose of the script.
 
 Usage
@@ -56,16 +56,11 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
-import re
-import getopt
-import time
-import sets
-import optparse
-import math
-import tempfile
+import CGAT.Experiment as E
+import CGAT.CSV as CSV
+import CGAT.IOTools as IOTools
+import CGAT.Stats as Stats
 
 USAGE = """ program $Id: optic/analyze_ribosomes.py 2781 2009-09-10 11:33:14Z andreas $
 
@@ -74,10 +69,6 @@ analyse ribosomal proteins.
 Input is a file of orthologs, a list of schemas and a list
 of sequence identifiers.
 """
-import CGAT.Experiment as E
-import CGAT.CSV as CSV
-import CGAT.IOTools as IOTools
-import CGAT.Stats as Stats
 
 
 def main(argv=None):

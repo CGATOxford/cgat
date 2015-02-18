@@ -56,11 +56,13 @@ Code
 ----
 
 '''
-import os
 import sys
 import string
-import re
 import getopt
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.PredictionParser as PredictionParser
+import alignlib_lite
 
 USAGE = """python %s [OPTIONS] < assignments > pairs
 
@@ -78,11 +80,6 @@ Options:
                                 paired_fasta: concatenated pairwise alignments in FASTA format
                                 
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.PredictionParser as PredictionParser
-import alignlib_lite
 
 param_long_options = ["verbose=", "help", "genome-file=", "format=",
                       "cds=", "version"]

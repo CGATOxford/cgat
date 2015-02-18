@@ -56,26 +56,17 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
-import re
-import getopt
-import time
-import sets
-import optparse
-import math
-import tempfile
-""" program $Id: gpipe/analyze_queries.py 2781 2009-09-10 11:33:14Z andreas $
-
-Analyse query predictions.
-"""
 import CGAT.Experiment as E
-import CGAT.Exons as Exons
 import CGAT.IOTools as IOTools
 import CGAT.Genomics as Genomics
 
 import pgdb
+
+""" program $Id: gpipe/analyze_queries.py 2781 2009-09-10 11:33:14Z andreas $
+
+Analyse query predictions.
+"""
 
 ###############################################################################
 

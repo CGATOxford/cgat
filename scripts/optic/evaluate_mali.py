@@ -88,9 +88,14 @@ import sys
 import string
 import re
 import getopt
-import math
-
 import evaluate_bootstrap as evaluate_bootstrap
+import CGAT.Experiment as E
+import CGAT.MaliIO as MaliIO
+import scipy
+import CGAT.Exons as Exons
+import alignlib_lite
+import CGAT.Genomics as Genomics
+import numpy
 
 USAGE = """python %s [OPTIONS] < exonerate_output > filtered
 
@@ -180,17 +185,6 @@ param_cluster_merging_min_coverage = 95
 param_cluster_merging_min_identity = 90
 
 ####################################################
-
-
-import CGAT.Experiment as E
-import CGAT.MaliIO as MaliIO
-import scipy
-import CGAT.Exons as Exons
-import alignlib_lite
-import CGAT.Genomics as Genomics
-import numpy
-
-# ------------------------------------------------------------------------
 
 
 def GetOverlapMatrix(mali, identifiers, gap_char="-"):

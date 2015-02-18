@@ -53,7 +53,6 @@ Command line options
 import os
 import sys
 import tempfile
-import pandas
 import math
 
 from rpy2.robjects import r as R
@@ -62,6 +61,7 @@ import rpy2.rinterface
 import CGAT.Experiment as E
 import CGAT.Expression as Expression
 import CGAT.IOTools as IOTools
+import CGAT.IndexedFasta as IndexedFasta
 import CGAT.CSV as CSV
 import CGAT.BamTools as BamTools
 
@@ -150,7 +150,7 @@ def main(argv=None):
                       action="append",
                       choices=("saturation", "coverage", "enrichment",
                                "dmr", "rms", "rpm", "all", "convert"),
-                      help = "actions to perform [default=%default].")
+                      help="actions to perform [default=%default].")
 
     parser.add_option("-w", "--bigwig-file", dest="bigwig",
                       action="store_true",

@@ -64,33 +64,33 @@ O'Reilly (www.oreilly.com) python books as information sources. A svg viewer
 is available from www.adobe.com
 '''
 
+import exceptions
+import sys
+
 __version__ = "1.0"
 
-# there are two possibilities to generate svg:
-# via a dom implementation and directly using <element>text</element> strings
-# the latter is way faster (and shorter in coding)
-# the former is only used in debugging svg programs
-# maybe it will be removed alltogether after a while
-# with the following variable you indicate whether to use the dom implementation
-# Note that PyXML is required for using the dom implementation.
-# It is also possible to use the standard minidom. But I didn't try that one.
-# Anyway the text based approach is about 60 times faster than using the
-# full dom implementation.
+# there are two possibilities to generate svg: via a dom
+# implementation and directly using <element>text</element> strings
+# the latter is way faster (and shorter in coding) the former is only
+# used in debugging svg programs maybe it will be removed alltogether
+# after a while with the following variable you indicate whether to
+# use the dom implementation Note that PyXML is required for using the
+# dom implementation.  It is also possible to use the standard
+# minidom. But I didn't try that one.  Anyway the text based approach
+# is about 60 times faster than using the full dom implementation.
 use_dom_implementation = 0
 
-
-import exceptions
 if use_dom_implementation != 0:
     try:
         from xml.dom import implementation
         from xml.dom.ext import PrettyPrint
     except:
         raise exceptions.ImportError, "PyXML is required for using the dom implementation"
+
 # The implementation is used for the creating the XML document.
 # The prettyprint module is used for converting the xml document object to
 # a xml file
 
-import sys
 assert sys.version_info[0] >= 2
 if sys.version_info[1] < 2:
     True = 1

@@ -56,11 +56,13 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
 import re
-import optparse
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.PredictionParser as PredictionParser
+import CGAT.IndexedFasta as IndexedFasta
+import alignlib_lite
 
 USAGE = """python %s [OPTIONS] < assignments > pairs
 
@@ -70,15 +72,6 @@ Take genewise predictions and write aligned pairs of genomic dnas. This
 step assumes that there are no frameshifts in the cds sequences. Frameshifts
 in the predictions are removed.
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.PredictionParser as PredictionParser
-import CGAT.IndexedFasta as IndexedFasta
-
-import alignlib_lite
-
-# ------------------------------------------------------------
 
 
 def main(argv=None):

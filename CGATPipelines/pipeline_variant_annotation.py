@@ -1,5 +1,4 @@
-"""
-===========================
+"""===========================
 Variant annotation pipeline
 ===========================
 
@@ -39,15 +38,15 @@ Input
 Variants
 ++++++++
 
-Variants are read from a :term:`vcf` formatted file called :file:`variants.vcf.gz`. 
-The file is assumed to have been compressed with :file:`bgzip` and compressed with
-tabix.
+Variants are read from a :term:`vcf` formatted file called
+:file:`variants.vcf.gz`.  The file is assumed to have been compressed
+with :file:`bgzip` and compressed with tabix.
 
-The tracks are taken from the headers in the :term:`vcf` file. Please avoid any special
-characters like ``_][*.+-``  within strain names.
+The tracks are taken from the headers in the :term:`vcf` file. Please
+avoid any special characters like ``_][*.+-`` within strain names.
 
-The pipeline expects the following information within the genotype field in 
-the :term:`vcf` file:
+The pipeline expects the following information within the genotype
+field in the :term:`vcf` file:
 
 GT
    The genotype
@@ -92,7 +91,7 @@ To run the example, simply unpack and untar::
    cd pipeline_variants
    python <srcdir>/pipeline_variants.py make full
 
-.. note:: 
+.. note::
    For the pipeline to run, install the :doc:`pipeline_annotations` as well.
 
 Glossary
@@ -103,7 +102,6 @@ Glossary
    polyphen
        polyphen_ - a program to predict the deleteriousness of substitutions
 
-   
 .. _polyphen: http://genetics.bwh.harvard.edu/pph2/dokuwiki/start
 
 Code
@@ -124,12 +122,7 @@ import CGAT.Database as Database
 import scipy.stats
 import CGAT.Stats as Stats
 import pysam
-
-# only update R if called as pipeline
-# otherwise - failure with sphinx
-from rpy2.robjects import r as R
-import rpy2.robjects as ro
-import rpy2.robjects.numpy2ri
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 ###################################################################
 ###################################################################
@@ -152,7 +145,6 @@ SEPARATOR = "|"
 ###################################################################
 ###################################################################
 # Helper functions mapping tracks to conditions, etc
-import CGATPipelines.PipelineTracks as PipelineTracks
 
 
 class TracksVCF (PipelineTracks.Tracks):

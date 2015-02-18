@@ -36,6 +36,7 @@ import re
 import string
 import os
 import getopt
+import CGAT.Experiment as E
 
 USAGE = """python %s < stdin > stdout
 
@@ -59,8 +60,6 @@ OPTIONS:
                                 id from column.
 --version                       output version information
 """ % (sys.argv[0], "s")
-
-import CGAT.Experiment as E
 
 
 def CreateOpen(file, mode="w", dry_run=False, header=None):

@@ -56,12 +56,15 @@ Code
 ----
 
 '''
-import os
 import sys
 import string
 import re
 import getopt
-import tempfile
+import CGAT.Experiment as E
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Exons as Exons
+import CGAT.Genomics as Genomics
+import alignlib_lite
 
 USAGE = """python %s [OPTIONS] schema1 schema2 [...]
 
@@ -79,12 +82,6 @@ Options:
 -c, --contigs-tsv-file=                  filename with contig sizes
 -g, --use-genome-length         use genome length for deciding which rep to use.
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import CGAT.IndexedFasta as IndexedFasta
-import CGAT.Exons as Exons
-import CGAT.Genomics as Genomics
-import alignlib_lite
 
 param_loglevel = 1
 

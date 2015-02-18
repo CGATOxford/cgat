@@ -219,7 +219,7 @@ def createTable(dbhandle, error, options,
                    (options.tablename, str(msg)))
             dbhandle.rollback()
             if not options.retry:
-                raise error, msg
+                raise error(msg)
             elif options.tablename in existing_tables:
                 # table exists, but drop did not work (e.g. database lock)
                 time.sleep(5)
@@ -640,10 +640,10 @@ def buildParser():
         backend="sqlite",
         indices=[],
         missing_values=("na", "NA", ),
-        insert_quick = False,
-        allow_empty = False,
-        retry = False,
-        utr = False
+        insert_quick=False,
+        allow_empty=False,
+        retry=False,
+        utf=False,
     )
 
     return parser

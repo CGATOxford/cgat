@@ -59,10 +59,13 @@ Code
 import os
 import sys
 import string
-import re
 import getopt
-import time
 import tempfile
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.PredictionParser as PredictionParser
+import CGAT.PredictionFile as PredictionFile
+
 
 USAGE = """python %s [OPTIONS] < exonerate_output > filtered
 
@@ -87,12 +90,6 @@ Options:
 -o, --max-overlap=              maximum overlap
 -s, --filename-sizes=           filename with sizes
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.Intervalls as Intervalls
-import CGAT.PredictionParser as PredictionParser
-import CGAT.PredictionFile as PredictionFile
 
 param_loglevel = 1
 

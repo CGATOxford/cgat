@@ -41,17 +41,15 @@ Command line options
 import os
 import sys
 import re
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+import CGAT.Malis as Malis
 
 USAGE = """python %s [OPTIONS]
 
 """ % sys.argv[0]
 
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
-import CGAT.Malis as Malis
 
-
-# ------------------------------------------------------------
 def main(argv=None):
     """script main.
 

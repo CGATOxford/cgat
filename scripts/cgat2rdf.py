@@ -1,7 +1,7 @@
 '''cgat2rdf.py - create rdf description of CGAT script
 ====================================================
 
-:Author: 
+:Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
 :Tags: Python
@@ -80,9 +80,12 @@ import sys
 import re
 import datetime
 import collections
-
 from jinja2 import Template
-
+from rdflib import Graph
+from rdflib import Namespace
+from rdflib.namespace import RDF, RDFS, DCTERMS
+from rdflib import Literal, BNode, URIRef
+from rdflib.collection import Collection
 import CGAT.Experiment as E
 
 # handle to original E.Start function
@@ -91,11 +94,6 @@ ORIGINAL_START = None
 # Parser object collected from child script
 PARSER = None
 
-from rdflib import Graph
-from rdflib import Namespace
-from rdflib.namespace import RDF, RDFS, DCTERMS
-from rdflib import Literal, BNode, URIRef
-from rdflib.collection import Collection
 
 # DCTerms = Namespace('http://purl.org/dc/terms/')
 FOAF = Namespace('http://xmlns.com/foaf/1.1/')
@@ -690,7 +688,7 @@ def main(argv=None):
 
     parser.add_option("-f", "--format", dest="output_format", type="choice",
                       choices=("rdf", "galaxy"),
-                      help = "output format [%default]. ")
+                      help="output format [%default]. ")
 
     parser.add_option("-l", "--list", dest="filename_list", type="string",
                       help="filename with list of files to export "
@@ -730,7 +728,8 @@ def main(argv=None):
 
     if options.output_pattern and not options.input_regex:
         raise ValueError(
-            "please specify --input-regex when using --output-filename-pattern")
+            "please specify --input-regex when using "
+            "--output-filename-pattern")
 
     if options.output_format == "galaxy":
         options.stdout.write(

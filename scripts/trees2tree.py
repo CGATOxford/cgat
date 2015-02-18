@@ -34,18 +34,12 @@ Command line options
 --------------------
 
 """
-import os
 import sys
-import string
 import re
-import optparse
-import math
-
 import scipy
 import scipy.stats
 import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
-import CGAT.IOTools as IOTools
 import CGAT.WrapperPhylip as WrapperPhylip
 
 
@@ -97,8 +91,8 @@ def main(argv=None):
         method="mean",
         regex_id=None,
         filtered_branch_lengths=(-999.0, 999.0),
-        write_values = None,
-        error_branchlength = None,
+        write_values=None,
+        error_branchlength=None,
         separator=":",
     )
 

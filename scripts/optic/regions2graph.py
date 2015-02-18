@@ -61,8 +61,14 @@ import sys
 import string
 import re
 import tempfile
-import optparse
 import gzip
+import CGAT.Experiment as E
+import CGAT.Exons as Exons
+import CGAT.Genomics as Genomics
+import CGAT.Intervalls as Intervalls
+import CGAT.PredictionParser as PredictionParser
+import CGAT.PredictionFile as PredictionFile
+import alignlib_lite
 
 USAGE = """python %s [OPTIONS] < exonerate_output > filtered
 
@@ -94,15 +100,6 @@ Options for deciding when two queries are homologs:
 --overlap-min-coverage=         minimum mininum coverage for overlap
 --overlap-min-identity=         minimum percent identity for overlap
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import CGAT.Exons as Exons
-import CGAT.Genomics as Genomics
-import CGAT.Intervalls as Intervalls
-import CGAT.PredictionParser as PredictionParser
-import CGAT.PredictionFile as PredictionFile
-import alignlib_lite
-
 
 global_alignments = {}
 options = {}

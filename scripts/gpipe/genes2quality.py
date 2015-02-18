@@ -56,15 +56,12 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
 import re
-import getopt
-import time
-import optparse
-import math
-import tempfile
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import pgdb
+
 
 """ program $Id: gpipe/genes2quality.py 2781 2009-09-10 11:33:14Z andreas $
 
@@ -81,11 +78,6 @@ The following filtering options are available:
 --filter-nbest: keeps n best transcripts per gene
 --filter-ds: keeps only transcripts with a ds of less than #
 """
-
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-
-import pgdb
 
 parser = E.OptionParser(
     version="%prog version: $Id: gpipe/genes2quality.py 2781 2009-09-10 11:33:14Z andreas $")

@@ -57,14 +57,10 @@ global_last_sbjct_token = None
 
 global_translator = string.maketrans("ACGTacgt", "TGCAtgca")
 
-# ------------------------------------------------------------
-
 
 def complement(s):
     """complement a sequence."""
     return string.translate(s[:], global_translator)[::-1]
-
-# ------------------------------------------------------------
 
 
 def GetHID(sequence):
@@ -89,8 +85,6 @@ def GetHID(sequence):
 
     return hid
 
-# ------------------------------------------------------------
-
 
 def String2Location(s):
     """convert a string to location information."""
@@ -101,9 +95,7 @@ def String2Location(s):
     elif len(data) == 4:
         return data[0], data[1], int(data[2]), int(data[3])
     else:
-        raise ValueError, "unknown format %s" % (s)
-
-# ------------------------------------------------------------
+        raise ValueError("unknown format %s" % (s))
 
 
 def GetFastaId(fasta_record):
@@ -111,20 +103,14 @@ def GetFastaId(fasta_record):
     title_atoms = string.split(fasta_record.title)
     return title_atoms[0]
 
-# ------------------------------------------------------------
-
 
 def IndexExists(filename):
     """check if a certain file has been indexed."""
     return os.path.exists(filename + ".idx")
 
-# ------------------------------------------------------------
-
 
 def IndexFastaFile(filename):
     Bio.Fasta.index_file(filename, filename + ".idx", GetFastaId)
-
-# ------------------------------------------------------------
 
 
 def ParseFasta2HashFromIndex(filename, filter=None):
@@ -162,15 +148,17 @@ def ParseFasta2HashFromIndex(filename, filter=None):
 def ParseFasta2Hash(infile, filter=None, regex_identifier=None):
     """read fasta formatted sequences file and build a hash.
 
-    Keys are all characters before the first whitespace in the description line.
+    Keys are all characters before the first whitespace in the
+    description line.
 
-    Previously, if the key contained a ":", everything before the ":" was removed.
-    This is not true any more.
+    Previously, if the key contained a ":", everything before the ":"
+    was removed.  This is not true any more.
 
     Use array for higher space efficiency.
 
     If regex_identifier is given, this is used to extract the identifier
     from the fasta description line.
+
     """
     parsed = {}
     key = None
@@ -207,10 +195,12 @@ def ParseFasta2Hash(infile, filter=None, regex_identifier=None):
 def oldParseFasta2Hash(infile, filter=None):
     """read fasta formatted sequences file and build a hash.
 
-    Keys are all characters before the first whitespace in the description line.
-    If the key contains a :, everything before the : is removed
+    Keys are all characters before the first whitespace in the
+    description line.  If the key contains a :, everything before the
+    : is removed
 
     Use array for higher space efficiency.
+
     """
     parsed = {}
     key = None
@@ -243,7 +233,6 @@ def oldParseFasta2Hash(infile, filter=None):
     return parsed
 
 
-# ------------------------------------------------------------
 def WriteGenomicSequences(outfile, forward_sequences, wrap=0):
     """read genomic sequences from a fasta file and return forward
     and backward sequence.
@@ -256,8 +245,6 @@ def WriteGenomicSequences(outfile, forward_sequences, wrap=0):
                 outfile.write("%s\n" % sequence[x:x + wrap])
         else:
             outfile.write("%s\n" % sequence[:])
-
-# ------------------------------------------------------------
 
 
 def ReadGenomicSequences(infile,
@@ -275,7 +262,8 @@ def ReadGenomicSequences(infile,
     if mask:
         for k in forward_sequences.keys():
             forward_sequences[k] = AString.AString(
-                string.translate(forward_sequences[k][:], string.maketrans("acgtn", "NNNNN")))
+                string.translate(forward_sequences[k][:],
+                                 string.maketrans("acgtn", "NNNNN")))
 
     if do_reverse:
         reverse_sequences = {}
@@ -292,8 +280,6 @@ def ReadGenomicSequences(infile,
         return forward_sequences, reverse_sequences
     else:
         return forward_sequences
-
-# ------------------------------------------------------------
 
 
 def GetGenomicSequence(sbjct_token, sbjct_strand,
@@ -322,7 +308,8 @@ def GetGenomicSequence(sbjct_token, sbjct_strand,
 
         if is_index:
             if loglevel >= 1:
-                print "# acquiring %s via index for file %s" % (sbjct_token, filename_genome)
+                print "# acquiring %s via index for file %s" %\
+                    (sbjct_token, filename_genome)
                 sys.stdout.flush()
 
                 global_forward_sequences = ParseFasta2HashFromIndex(
@@ -334,10 +321,11 @@ def GetGenomicSequence(sbjct_token, sbjct_strand,
                 sys.stdout.flush()
 
             try:
-                global_forward_sequences = ReadGenomicSequences(open(filename_genome, "r"),
-                                                                do_reverse=0,
-                                                                as_array=True,
-                                                                filter=filter)
+                global_forward_sequences = ReadGenomicSequences(
+                    open(filename_genome, "r"),
+                    do_reverse=0,
+                    as_array=True,
+                    filter=filter)
             except IOError:
                 raise "# ERROR: genome %s not found" % filename_genome
 
@@ -346,14 +334,16 @@ def GetGenomicSequence(sbjct_token, sbjct_strand,
 
         if is_index:
             if loglevel >= 1:
-                print "# acquiring %s via index for file %s" % (sbjct_token, filename_genome)
+                print "# acquiring %s via index for file %s" %\
+                    (sbjct_token, filename_genome)
                 sys.stdout.flush()
 
             global_forward_sequences = ParseFasta2HashFromIndex(
                 filename_genome, {sbjct_token: 1})
 
     if sbjct_token not in global_forward_sequences:
-        raise IndexError, "%s not found in %s" % (sbjct_token, filename_genome)
+        raise IndexError("%s not found in %s" %
+                         (sbjct_token, filename_genome))
 
     global_last_filename_genome = filename_genome
     global_last_sbjct_token = sbjct_token
@@ -370,12 +360,11 @@ def GetGenomicSequence(sbjct_token, sbjct_strand,
                 l - sbjct_to:l - sbjct_from]
             return complement(s)
         else:
-            return complement(global_forward_sequence[sbjct_token])
-
-# ------------------------------------------------------------
+            return complement(global_forward_sequences[sbjct_token])
 
 
-def ReadPeptideSequences(infile, filter=None, as_array=False, regex_identifier=None):
+def ReadPeptideSequences(infile, filter=None, as_array=False,
+                         regex_identifier=None):
     """read peptide sequence from fasta infile.
     """
 
@@ -386,8 +375,6 @@ def ReadPeptideSequences(infile, filter=None, as_array=False, regex_identifier=N
         for k in sequences.keys():
             sequences[k] = sequences[k][:]
     return sequences
-
-# ------------------------------------------------------------
 
 
 def ReadContigSizes(infile):
@@ -402,8 +389,6 @@ def ReadContigSizes(infile):
 
     return sizes
 
-# ------------------------------------------------------------
-
 
 def ReadLocationsGFF(infile):
     """read locations from a file in GFF format
@@ -415,8 +400,11 @@ def ReadLocationsGFF(infile):
             pass
 
         def __str__(self):
-            return string.join(map(str, (self.mQueryToken, self.mSbjctGenomeFrom, self.mSbjctGenomeTo,
-                                         self.mSbjctStrand, self.mSbjctToken)), "\t")
+            return string.join(map(str, (self.mQueryToken,
+                                         self.mSbjctGenomeFrom,
+                                         self.mSbjctGenomeTo,
+                                         self.mSbjctStrand,
+                                         self.mSbjctToken)), "\t")
 
     locations = {}
     for line in infile:
@@ -430,8 +418,6 @@ def ReadLocationsGFF(infile):
         locations[l.mQueryToken] = l
 
     return locations
-
-# ------------------------------------------------------------
 
 
 def ReadGo(infile):
@@ -457,8 +443,6 @@ def ReadGo(infile):
         go[id].append(g)
 
     return go
-
-# ------------------------------------------------------------
 
 
 def ReadClusters(infile):
@@ -500,8 +484,6 @@ def ReadClusters(infile):
 
     return map_rep2mem, map_mem2rep
 
-# ------------------------------------------------------------
-
 
 def ToForwardCoordinates(a, b, strand, length):
     """return a and b in forward coordinates."""
@@ -509,8 +491,6 @@ def ToForwardCoordinates(a, b, strand, length):
         return length - b, length - a
     else:
         return a, b
-
-# ------------------------------------------------------------
 
 
 def ReadMap(infile):
@@ -541,8 +521,6 @@ def ReadMap(infile):
 
     return map_rep2mem, map_mem2rep
 
-# ------------------------------------------------------------
-
 
 def CountGeneFeatures(first_position,
                       alignment,
@@ -554,13 +532,16 @@ def CountGeneFeatures(first_position,
     border_stop_codon should be divisible by three and is the number of codons
     that are ignored at the edes of matches regions.
 
-    returns (nintrons, nframeshifts, ngaps, nsplit, nstopcodons, disruptions)
+    returns (nintrons, nframeshifts, ngaps, nsplit, nstopcodons,
+    disruptions)
 
-    disruptions is a list of disruptions in the prediction. Each disruption
-    is a tuple of ( "stop|frameshift", position in protein, position in cds, position on genomic sequence).
+    disruptions is a list of disruptions in the prediction. Each
+    disruption is a tuple of ( "stop|frameshift", position in protein,
+    position in cds, position on genomic sequence).
 
     Note that codons can be split, for example:
     S 0 2 5 0 2 I 0 17541 3 0 2 S 1 2 5 0 2 I 0 27979 3 0 2 S 1 2
+
     """
 
     current_pos_genome = first_position
@@ -595,11 +576,14 @@ def CountGeneFeatures(first_position,
             first_state = False
 
         if state in ("M", "G"):
-            # check for stop codons, ignore the first border_stop_codon nucleotides
-            # note: this should be a multiple of three
+            # check for stop codons, ignore the first
+            # border_stop_codon nucleotides note: this should be a
+            # multiple of three
             if genomic_sequence:
 
-                for x in range(border_stop_codon, l_genome - border_stop_codon, 3):
+                for x in range(border_stop_codon,
+                               l_genome - border_stop_codon,
+                               3):
                     y = current_pos_cds + x
                     z = current_pos_genome + x
                     codon = genomic_sequence[z:z + 3].upper()
@@ -615,9 +599,10 @@ def CountGeneFeatures(first_position,
 
         elif state == "F":
             nframeshifts += 1
-            disruptions.append(("frameshift",
-                                current_pos_cds, current_pos_cds + l_genome,
-                                current_pos_genome, current_pos_genome + l_genome))
+            disruptions.append((
+                "frameshift",
+                current_pos_cds, current_pos_cds + l_genome,
+                current_pos_genome, current_pos_genome + l_genome))
 
         elif state == "G":
             ngaps += 1
@@ -627,9 +612,10 @@ def CountGeneFeatures(first_position,
 
         elif state == "S":
 
-            # I used to ignore alignments that start with a split codon as they
-            # might have been incomplet. However, the code below seems to work for split codens
-            # if not first_state:
+            # I used to ignore alignments that start with a split
+            # codon as they might have been incomplet. However, the
+            # code below seems to work for split codens if not
+            # first_state:
             nsplits += 1
 
             # check for stop-codons in split codons as well:
@@ -644,19 +630,18 @@ def CountGeneFeatures(first_position,
                                     for c in partial_codon[x:x + 3]).upper()
                     if codon in stop_codons:
                         nstopcodons += 1
-                        disruptions.append(("split-stop",
-                                            partial_codon[x][
-                                                0], partial_codon[x + 2][0],
-                                            partial_codon[x][1], partial_codon[x + 2][1]))
-        ## advance in cds
+                        disruptions.append(
+                            ("split-stop",
+                             partial_codon[x][
+                                 0], partial_codon[x + 2][0],
+                             partial_codon[x][1], partial_codon[x + 2][1]))
+        # advance in cds
         if state in ("M", "G", "F", "S"):
             current_pos_cds += l_genome
 
         current_pos_genome += l_genome
 
     return nintrons, nframeshifts, ngaps, nsplits, nstopcodons, disruptions
-
-# ------------------------------------------------------------
 
 
 def Alignment2String(alignment):
@@ -665,8 +650,6 @@ def Alignment2String(alignment):
     return string.join(map(
         lambda x: string.join(map(str, x), " "),
         alignment), " ")
-
-# ------------------------------------------------------------
 
 
 def String2Alignment(source):
@@ -683,8 +666,6 @@ def String2Alignment(source):
 
     return ali
 
-# ------------------------------------------------------------
-
 
 def GetAlignmentLength(alignment):
 
@@ -695,10 +676,9 @@ def GetAlignmentLength(alignment):
 
     return q, s
 
-# ------------------------------------------------------------
 
-
-def Alignment2ExonBoundaries(alignment, query_from=0, sbjct_from=0, add_stop_codon=1):
+def Alignment2ExonBoundaries(alignment, query_from=0,
+                             sbjct_from=0, add_stop_codon=1):
     """convert a Peptide2DNA alignment to exon boundaries.
 
     frame is frame of start of exon.
@@ -782,8 +762,6 @@ def Alignment2ExonBoundaries(alignment, query_from=0, sbjct_from=0, add_stop_cod
 
     return exons
 
-# ------------------------------------------------------------
-
 
 def RemoveFrameShiftsFromAlignment(row_ali, col_ali, gap_char="-"):
     """remove frame shifts in alignment. These are all gaps that
@@ -814,13 +792,9 @@ def RemoveFrameShiftsFromAlignment(row_ali, col_ali, gap_char="-"):
 
     return new_row_ali, new_col_ali
 
-# ------------------------------------------------------------
-
 
 def IsStopCodon(codon, stop_codons=("TAG", "TAA", "TGA")):
     return codon in stop_codons
-
-# ------------------------------------------------------------
 
 
 def MaskStopCodons(sequence, stop_codons=("TAG", "TAA", "TGA")):
@@ -834,8 +808,6 @@ def MaskStopCodons(sequence, stop_codons=("TAG", "TAA", "TGA")):
             codon = "NNN"
         codons.append(codon)
     return string.join(codons, "")
-
-# ------------------------------------------------------------
 
 
 def Alignment2DNA(alignment, query_from=0, sbjct_from=0):
@@ -1241,15 +1213,11 @@ def decodeGenotype(code):
     '''
     return DECODE_GENOTYPE[code]
 
-# ------------------------------------------------------------
-
 
 def resolveAmbiguousNA(code):
     '''resolve ambiguous nucleic acid letters.
     '''
     return AMBIGUOUS_CODES_NA[code.upper()]
-
-# ------------------------------------------------------------
 
 
 def resolveReverseAmbiguousNA(genotype):
@@ -1257,8 +1225,6 @@ def resolveReverseAmbiguousNA(genotype):
     for example, CT -> Y.
     '''
     return REVERSE_AMBIGUOUS_NA[genotype.upper()]
-
-# ------------------------------------------------------------
 
 
 def GetMapAA2Codons():
@@ -1274,19 +1240,13 @@ def GetMapAA2Codons():
         map_aa2codons[aa].append(codon)
     return map_aa2codons
 
-# ------------------------------------------------------------
-
 
 def GetDegeneracy(codon):
     return Degeneracy[codon.upper()]
 
-# ------------------------------------------------------------
-
 
 def IsStopCodon(codon, stop_codons=("TAG", "TAA", "TGA")):
     return codon in stop_codons
-
-# ------------------------------------------------------------
 
 
 def MapCodon2AA(codon, is_seleno=False, ignore_n=True):
@@ -1315,11 +1275,11 @@ def MapCodon2AA(codon, is_seleno=False, ignore_n=True):
     else:
         code = GeneticCode
 
-    if code.has_key(codon):
+    if codon in code:
         return code[codon]
     elif codon == "---":
         return "-"
-    elif GeneticCodeDegenerate.has_key(codon[:2]):
+    elif codon[:2] in GeneticCodeDegenerate:
         # check for four-fold degenerate codons,
         # if they can be mapped (ENSEMBL does it).
         return GeneticCodeDegenerate[codon[:2]]
@@ -1328,8 +1288,6 @@ def MapCodon2AA(codon, is_seleno=False, ignore_n=True):
     else:
         return "X"
 
-# ------------------------------------------------------------
-
 
 def Protein2Wobble(s):
 
@@ -1337,8 +1295,6 @@ def Protein2Wobble(s):
     for x in s:
         c.append(Wobble[x])
     return string.join(c, "")
-
-# ------------------------------------------------------------
 
 
 def Alignment2PeptideAlignment(alignment,
@@ -1409,8 +1365,6 @@ def Alignment2PeptideAlignment(alignment,
 
     return map_query2sbjct, string.join(sbjct_residues, "")
 
-# -------------------------------------------------------------------------
-
 
 def translate(sequence,
               is_seleno=False,
@@ -1449,8 +1403,6 @@ def translate(sequence,
 
     return string.join(residues, "")
 
-# -------------------------------------------------------------------------
-
 
 def TranslateDNA2Protein(*args, **kwargs):
     """convert a DNA sequence to a peptide sequence.
@@ -1459,8 +1411,6 @@ def TranslateDNA2Protein(*args, **kwargs):
     deprecated - use :meth:`translate` instead.
     """
     return translate(*args, **kwargs)
-
-# -------------------------------------------------------------------------
 
 
 def Alignment2CDNA(alignment,
@@ -1479,7 +1429,7 @@ def Alignment2CDNA(alignment,
     # count in nucleotides for query
     query_pos = query_from * 3
     sbjct_pos = sbjct_from
-    ## position in cDNA
+    # position in cDNA
     cdna_pos = 0
     for state, l_query, l_sbjct in alignment:
 
@@ -1535,8 +1485,6 @@ def GetExon(exons, first_aa):
         g += exons[e].mGenomeFrom - exons[e - 1].mGenomeTo
 
     return g, e, combined_na / 3 + 1
-
-# -------------------------------------------------------------------
 
 
 def Exons2Alignment(exons):
@@ -1624,8 +1572,6 @@ def Exons2Alignment(exons):
 
     return alignment
 
-# -------------------------------------------------------------------
-
 
 def AlignmentProtein2CDNA(src, exons1=None, exons2=None):
     """convert a peptide alignment to a nucleotide
@@ -1693,8 +1639,6 @@ def AlignmentProtein2CDNA(src, exons1=None, exons2=None):
 
     return result
 
-# -------------------------------------------------------------------
-
 
 def GetDegenerateSites(seq1, seq2,
                        degeneracy=4,
@@ -1742,7 +1686,7 @@ class SequencePairInfo:
     def getGCContent(self):
         """return GC content."""
         if not self.mNAligned:
-            raise ValueError, "no data for calculating GC content"
+            raise ValueError("no data for calculating GC content")
 
         cp = self.mMapChar2Pos['C']
         gp = self.mMapChar2Pos['G']
@@ -1759,12 +1703,14 @@ class SequencePairInfo:
         return float(gc) / 2.0 / self.mNAligned
 
     def __str__(self):
-        return "\t".join(map(str, (self.mNIdentical, self.mNAligned, self.mNDifferent,
+        return "\t".join(map(str, (self.mNIdentical,
+                                   self.mNAligned, self.mNDifferent,
                                    self.mNTransitions, self.mNTransversions,
                                    self.mNUnaligned1, self.mNUnaligned2)))
 
     def getHeader(self):
-        return "\t".join(("identical", "aligned", "different", "transitions", "transversions",
+        return "\t".join(("identical", "aligned", "different",
+                          "transitions", "transversions",
                           "unaligned1", "unaligned2"))
 
 
@@ -1818,9 +1764,10 @@ def CalculatePairIndices(seq1, seq2, gap_char="-", with_codons=False):
     """returns number of idential and transitions/transversions substitutions
     in the alignment.
 
-    If with-codons = True, synonymous and nonsynonymous changes will be recorded
-    as well. The routine assumes no frame-shifts and will count more than one change
-    as non-synonymous.
+    If with-codons = True, synonymous and nonsynonymous changes will
+    be recorded as well. The routine assumes no frame-shifts and will
+    count more than one change as non-synonymous.
+
     """
     alphabet = "ACGT" + gap_char
 
@@ -1878,8 +1825,6 @@ def CalculatePairIndices(seq1, seq2, gap_char="-", with_codons=False):
         result.mNNonSynonymous = nnon
 
     return result
-
-# ------------------------------------------------------------
 
 
 def makeSubstitutionMatrix(type="EMBOSS"):
@@ -1973,8 +1918,6 @@ def makeSubstitutionMatrix(type="EMBOSS"):
     os.remove(filename_tmpfile)
     return smatrix, gop, gep
 
-# ------------------------------------------------------------
-
 
 def CalculateRCSUValuesFromCounts(counts, pseudo_counts=0):
     """calculate RCSU values for codons.
@@ -1982,8 +1925,6 @@ def CalculateRCSUValuesFromCounts(counts, pseudo_counts=0):
     RCSU = relative frequency / uniform frequency
     """
     pass
-
-# ------------------------------------------------------------
 
 
 def CalculateCodonFrequenciesFromCounts(counts, pseudo_counts=0):
@@ -2009,8 +1950,6 @@ def CalculateCodonFrequenciesFromCounts(counts, pseudo_counts=0):
 
     return weights
 
-# ------------------------------------------------------------
-
 
 def CalculateCAIWeightsFromCounts(counts, pseudo_counts=0):
     """calculate CAI weights from codon counts.
@@ -2031,8 +1970,6 @@ def CalculateCAIWeightsFromCounts(counts, pseudo_counts=0):
 
     return weights
 
-# ------------------------------------------------------------
-
 
 def IsJunk(contig):
     """returns true, if contigs is likely to be junk.
@@ -2052,8 +1989,6 @@ def IsJunk(contig):
 
     return False
 
-# ------------------------------------------------------------
-
 
 def CountCodons(sequence):
     """count the codons in a sequence."""
@@ -2072,8 +2007,6 @@ def CountCodons(sequence):
 
     return counts
 
-# ------------------------------------------------------------
-
 
 def GetUniformCodonUsage():
     """get list of frequencies for codons expected for uniform codon usage."""
@@ -2091,8 +2024,6 @@ def GetUniformCodonUsage():
         frequencies[codon] = 1.0 / aas[aa]
 
     return frequencies
-
-# ------------------------------------------------------------
 
 
 def GetBiasedCodonUsage(bias=1.0):
@@ -2118,19 +2049,13 @@ def GetBiasedCodonUsage(bias=1.0):
 
     return frequencies
 
-# ------------------------------------------------------------
-
 
 def IsNegativeStrand(strand):
     return str(strand) in ("-", "0", "-1")
 
-# ------------------------------------------------------------
-
 
 def IsPositiveStrand(strand):
     return not IsNegativeStrand(strand)
-
-# ------------------------------------------------------------
 
 
 def convertStrand(strand):
@@ -2144,28 +2069,6 @@ def convertStrand(strand):
     else:
         return "."
 
-# ------------------------------------------------------------
-
-
-def IsJunk(contig):
-    """returns true, if contigs is likely to be junk.
-
-    This is done by name matching. Junk contigs contain either
-    one of the following:
-
-    random, unknown, chrU, chU.
-    """
-
-    c = contig.lower()
-    negative_list = "random", "unknown", "chru", "chu"
-
-    for x in negative_list:
-        if re.search(x, c):
-            return True
-
-    return False
-
-# ------------------------------------------------------------
 INTRON_TYPES = (("U2-GT/AG", "GT", "AG"),
                 ("U2-nc-GC/AG", "GC", "AG"),
                 ("U12-AT/AC", "AT", "AC"))
@@ -2196,8 +2099,6 @@ def GetIntronType(sequence, both_strands=False):
                 return name, prime3, prime5
         else:
             return "unknown", sequence[:5], sequence[-5:]
-
-# ------------------------------------------------------------
 
 
 def printPrettyAlignment(seq1, *args):

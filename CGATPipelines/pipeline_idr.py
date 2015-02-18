@@ -167,15 +167,14 @@ import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGATPipelines.PipelineUtilities as PU
 import CGATPipelines.PipelineIDR as IDR
-
+import CGAT.Pipeline as P
+import CGATPipelines.PipelineTracks as PipelineTracks
 ##########################################################################
 ##########################################################################
 ##########################################################################
 # Pipeline configuration
 ##########################################################################
-
 # load options from the config file
-import CGAT.Pipeline as P
 P.getParameters(
     ["%s/pipeline.ini" % __file__[:-len(".py")],
      "../pipeline.ini",
@@ -191,9 +190,6 @@ PARAMS_ANNOTATIONS = P.peekParameters(
 ##########################################################################
 # Helper functions mapping tracks to conditions, etc
 ##########################################################################
-
-import CGATPipelines.PipelineTracks as PipelineTracks
-
 Sample = PipelineTracks.AutoSample
 
 # define tracks based on all samples in .bamfile that are not input or index

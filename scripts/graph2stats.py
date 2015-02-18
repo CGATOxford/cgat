@@ -32,24 +32,7 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import getopt
-import time
-import optparse
-import math
-import tempfile
-
-""" program $Id: graph2stats.py 2782 2009-09-10 11:40:29Z andreas $
-
-python graph2stats.py < graph.in
-
-calculate statistics for a (redundant) graph.
-
-Possibilities are: 
-"""
 import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
 
@@ -102,17 +85,17 @@ def main(argv=None):
         titles=False,
         columns="all",
         append=(),
-        empty_bins = False,
-        min_value = None,
-        max_value = None,
-        normalize = False,
-        cumulative = False,
-        reverse_cumulative = False,
-        nonull = None,
-        make_symmetric = False,
-        output_pattern = "%s.hist",
-        method = "histograms",
-        output_format = "semi"
+        empty_bins=False,
+        min_value=None,
+        max_value=None,
+        normalize=False,
+        cumulative=False,
+        reverse_cumulative=False,
+        nonull=None,
+        make_symmetric=False,
+        output_pattern="%s.hist",
+        method="histograms",
+        output_format="semi"
     )
 
     (options, args) = E.Start(parser)

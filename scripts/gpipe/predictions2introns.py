@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-gpipe/predictions2introns.py - 
+gpipe/predictions2introns.py -
 ======================================================
 
 :Author: Andreas Heger
@@ -56,27 +56,19 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
-import re
-import optparse
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Exons as Exons
+import CGAT.PredictionParser as PredictionParser
 
 USAGE = """python %s < predictions > introns
 
 Version: $Id: gpipe/predictions2introns.py 2781 2009-09-10 11:33:14Z andreas $
 
 Summarize information about introns in predictions.
-  
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.IndexedFasta as IndexedFasta
-import CGAT.Exons as Exons
-import CGAT.Prediction as Prediction
-import CGAT.PredictionParser as PredictionParser
-import CGAT.Stats as Stats
 
 
 def findCodonReverse(sequence, start, found_codons, abort_codons=None):
@@ -103,8 +95,6 @@ def findCodonReverse(sequence, start, found_codons, abort_codons=None):
 
     return found, start
 
-# ------------------------------------------------------------
-
 
 def main(argv=None):
     """script main.
@@ -127,11 +117,14 @@ def main(argv=None):
     parser.add_option("--skip-header", dest="skip_header", action="store_true",
                       help="skip header.")
 
-    parser.add_option("--fill-introns", dest="fill_introns", type="int",
-                      help="fill intron if divisible by three and no stop codon up to a maximum length of #.")
+    parser.add_option(
+        "--fill-introns", dest="fill_introns", type="int",
+        help="fill intron if divisible by three and no stop codon up to a "
+        "maximum length of #.")
 
-    parser.add_option("--introns-max-stops", dest="introns_max_stops", type="int",
-                      help="maximum number of stop codons to tolerate within an intron.")
+    parser.add_option(
+        "--introns-max-stops", dest="introns_max_stops", type="int",
+        help="maximum number of stop codons to tolerate within an intron.")
 
     parser.add_option("--output-format", dest="output_format", type="choice",
                       choices=("predictions", "extensions", "filled-introns"),
@@ -140,8 +133,8 @@ def main(argv=None):
     parser.set_defaults(
         genome_file="genome",
         start_codons=("ATG"),
-        stop_codons = ("TAG", "TAA", "TGA"),
-        skip_header = False,
+        stop_codons=("TAG", "TAA", "TGA"),
+        skip_header=False,
     )
 
     (options, args) = E.Start(parser, add_pipe_options=True)

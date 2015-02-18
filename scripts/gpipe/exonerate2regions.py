@@ -56,12 +56,14 @@ Code
 ----
 
 '''
-import os
 import sys
 import string
 import re
 import getopt
-import time
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.Intervalls as Intervalls
+import CGAT.PredictionParser as PredictionParser
 
 USAGE = """python %s [OPTIONS] < exonerate_output > filtered
 
@@ -81,11 +83,6 @@ Options:
 -c, --force-contiguous          force contiguous blocks
 -d, --dump                      just dump results
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.Intervalls as Intervalls
-import CGAT.PredictionParser as PredictionParser
 
 HEADER = """# QUERY:        1  query
 # QFROM:        2  query first residue

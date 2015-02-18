@@ -70,17 +70,8 @@ Command line options
 --------------------
 """
 
-import os
 import sys
-import string
 import re
-import getopt
-import time
-import optparse
-import math
-import tempfile
-import subprocess
-
 import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 import CGAT.IOTools as IOTools
@@ -172,17 +163,21 @@ def Process(lines, other_trees, options, map_old2new, ntree):
                     nskipped += 1
                     continue
 
-                # even if the trees are the same (in topology), the node numbering might not be
-                # the same. Thus build a map of node ids.
+                # even if the trees are the same (in topology), the
+                # node numbering might not be the same. Thus build a
+                # map of node ids.
                 map_a2b = TreeTools.GetNodeMap(tree, other_tree)
 
                 for n in tree.chain.keys():
                     try:
                         tree.node(
-                            n).data.branchlength /= float(other_tree.node(map_a2b[n]).data.branchlength)
+                            n).data.branchlength /= float(
+                                other_tree.node(map_a2b[n]).data.branchlength)
                     except ZeroDivisionError:
-                        options.stdlog.write("# Warning: branch for nodes %i and %i in tree-pair %i: divide by zero\n" %
-                                             (n, map_a2b[n], ntree))
+                        options.stdlog.write(
+                            "# Warning: branch for nodes %i and %i in "
+                            "tree-pair %i: divide by zero\n" %
+                            (n, map_a2b[n], ntree))
                         continue
 
             elif method == "rename":
@@ -270,8 +265,9 @@ def Process(lines, other_trees, options, map_old2new, ntree):
         ntree += 1
 
     if options.output_format == "nh":
-        options.stdout.write(TreeTools.Nexus2Newick(nexus, write_all_taxa=True,
-                                                    with_branchlengths=options.with_branchlengths) + "\n")
+        options.stdout.write(TreeTools.Nexus2Newick(
+            nexus, write_all_taxa=True,
+            with_branchlengths=options.with_branchlengths) + "\n")
     else:
         for tree in nexus.trees:
             tree.writeToFile(options.stdout, format=options.output_format)
@@ -293,27 +289,37 @@ def main(argv=None):
 
     parser.add_option("-d", "--value", dest="value", type="float",
                       help="normalizing value.")
-    parser.add_option("-m", "--method", dest="methods", type="string",
-                      help="""methods to apply [normalize|divide-by-tree|divide-by-tree|rename|set-uniform-branch-length|extract-with-pattern|build-map|remove-pattern|unroot|midpoint-root|balanced-root|add-node-names"""  )
-    parser.add_option("-2", "--filename-tree2", dest="filename_tree2", type="string",
-                      help="filename with second tree.")
+    parser.add_option(
+        "-m", "--method", dest="methods", type="string",
+        help="""methods to apply [normalize|divide-by-tree|divide-by-tree|rename|set-uniform-branch-length|extract-with-pattern|build-map|remove-pattern|unroot|midpoint-root|balanced-root|add-node-names""")
+    parser.add_option(
+        "-2", "--filename-tree2", dest="filename_tree2", type="string",
+        help="filename with second tree.")
     parser.add_option("-o", "--outgroup", dest="outgroup", type="string",
                       help="reroot with outgroup before processing.")
-    parser.add_option("-p", "--parameters", dest="parameters", type="string",
-                      help="parameters for methods.")
-    parser.add_option("-e", "--template-identifier", dest="template_identifier", type="string",
-                      help="""template identifier [%default]. A %i is replaced by the position
-                      of the sequence in the file."""  )
-    parser.add_option("-i", "--invert-map", dest="invert_map", action="store_true",
-                      help="""invert map.""")
-    parser.add_option("-f", "--method=filter --filter-method", dest="filter", type="choice",
-                      choices=("max-branch-length",),
-                      help="filter trees")
-    parser.add_option("--output-format", dest="output_format", type="choice",
-                      choices=("nh", "nhx"),
-                      help=("output format for trees."))
-    parser.add_option("-b", "--no-branch-lengths", dest="with_branchlengths", action="store_false",
-                      help="""do not write branchlengths. Per default, 0 branch lengths are added.""")
+    parser.add_option(
+        "-p", "--parameters", dest="parameters", type="string",
+        help="parameters for methods.")
+    parser.add_option(
+        "-e", "--template-identifier", dest="template_identifier", type="string",
+        help="""template identifier [%default]. A %i is replaced by the position
+        of the sequence in the file."""  )
+    parser.add_option(
+        "-i", "--invert-map", dest="invert_map", action="store_true",
+        help="""invert map.""")
+    parser.add_option(
+        "-f", "--method=filter --filter-method", dest="filter", type="choice",
+        choices=("max-branch-length",),
+        help="filter trees")
+    parser.add_option(
+        "--output-format", dest="output_format", type="choice",
+        choices=("nh", "nhx"),
+        help=("output format for trees."))
+    parser.add_option(
+        "-b", "--no-branch-lengths", dest="with_branchlengths",
+        action="store_false",
+        help="do not write branchlengths. Per default, 0 branch "
+        "lengths are added.")
 
     parser.set_defaults(
         value=0,
@@ -394,7 +400,8 @@ def main(argv=None):
 
             options.stdout.write(lines[chunks[-1]])
             t, s, ntree = Process(
-                lines[chunks[-1] + 1:], other_trees, options, map_old2new, ntree)
+                lines[chunks[-1] + 1:], other_trees,
+                options, map_old2new, ntree)
             ntotal += t
             nskipped += s
         else:

@@ -56,6 +56,10 @@ Code
 ----
 
 '''
+import sys
+import CGAT.IOTools as IOTools
+import CGAT.Experiment as E
+
 USAGE = """python optic/annotate_clusters.py [OPTIONS] < clusters > output
 
 annotate a selection of clusters with external information such as INTERPRO or PFAM.
@@ -73,22 +77,6 @@ PFAM format: ignored, gene_id, ignored, name, short_description, long_descriptio
 
 INTERPRO format: ignored, gene_id, ignored, name, short_description, long_description
 """
-
-
-import os
-import sys
-import string
-import re
-import getopt
-import time
-import sets
-import optparse
-import math
-import tempfile
-import copy
-
-import CGAT.IOTools as IOTools
-import CGAT.Experiment as E
 
 
 class Annotation:

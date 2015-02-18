@@ -56,11 +56,14 @@ Code
 ----
 
 '''
-import os
 import sys
 import string
-import re
 import getopt
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.Exons as Exons
+import CGAT.PredictionParser as PredictionParser
+import pgdb
 
 USAGE = """python %s < predictions > genes
 
@@ -77,14 +80,6 @@ Options:
 -Q, --table-quality             table with quality information
 -G, --genes-tsv-file                     table with genic regions to be skipped
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.Exons as Exons
-import CGAT.Intervalls as Intervalls
-import CGAT.PredictionParser as PredictionParser
-import alignlib_lite
-import pgdb
 
 param_long_options = ["verbose=", "help", "overlap=", "filter-tokens=", "filter-predictions=",
                       "table-predictions=",

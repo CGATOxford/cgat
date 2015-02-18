@@ -43,8 +43,8 @@ configuration file in the current directory, type::
 
     python <codedir>/pipeline_motifs.py config
 
-The following sections and parameters probably should be changed from the default 
-values:
+The following sections and parameters probably should be changed from
+the default values:
 
 .. todo::
    describe important parameters
@@ -133,7 +133,6 @@ import re
 import glob
 import os
 from ruffus import *
-import logging as L
 import sqlite3
 import xml.etree.ElementTree
 
@@ -176,26 +175,12 @@ TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory(glob.glob("*.bed.gz"),
 
 TRACKS_BEDFILES = ["%s.bed.gz" % x for x in TRACKS]
 
-###################################################################
-###################################################################
-###################################################################
-# if conf.py exists: execute to change the above assignmentsn
-if os.path.exists("pipeline_conf.py"):
-    L.info("reading additional configuration from pipeline_conf.py")
-    execfile("pipeline_conf.py")
-
-###################################################################
-###################################################################
-###################################################################
-#
-###################################################################
-
 
 def getAssociatedBAMFiles(track):
     '''return a list of BAM files associated with a track.
 
-    By default, this method searches for ``track.bam`` 
-    file in the current directory and returns an offset of 0.
+    By default, this method searches for ``track.bam`` file in the
+    current directory and returns an offset of 0.
 
     Associations can be defined in the .ini file in the section
     [bams]. For example, the following snippet associates track
@@ -222,7 +207,6 @@ def getAssociatedBAMFiles(track):
 
         [bams]
         %=all.bam
-
 
     '''
     fn = track.asFile()
@@ -253,8 +237,10 @@ def getAssociatedBAMFiles(track):
         offsets = [0] * len(bamfiles)
 
     if len(bamfiles) != len(offsets):
-        raise ValueError("number of BAM files %s is not the same as number of offsets: %s" % (
-            str(bamfiles), str(offsets)))
+        raise ValueError(
+            "number of BAM files %s is not the "
+            "same as number of offsets: %s" %
+            (str(bamfiles), str(offsets)))
 
     return bamfiles, offsets
 
@@ -315,26 +301,22 @@ def loadIntervals(infile, outfile):
 
     statement = '''zcat %(bedfile)s
                 | awk '{printf("%%s\\t%%i\\t%%i\\t%%i\\n", $1,$2,$3,++a)}'
-                | python %(scriptsdir)s/bed2table.py 
+                | python %(scriptsdir)s/bed2table.py
                            --counter=peaks
                            --bam-file=%(bamfile)s
                            --offset=%(offset)i
                            --bed-header=contig,start,end,interval_id
                            %(control)s
-                           --output-all-fields 
+                           --output-all-fields
                            --log=%(outfile)s
-                | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+                | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
                        --add-index=contig,start
                        --add-index=interval_id
                        --table=%(tablename)s
-                       --allow-empty-file 
+                       --allow-empty-file
                 > %(outfile)s'''
 
     P.run()
-
-############################################################
-############################################################
-############################################################
 
 
 @follows(mkdir(os.path.join(PARAMS["exportdir"], "bed")))
@@ -346,10 +328,6 @@ def indexIntervals(infile, outfile):
     '''
     statement = '''zcat %(infile)s | sort -k1,1 -k2,2n | bgzip > %(outfile)s; tabix -p bed %(outfile)s'''
     P.run()
-
-############################################################
-############################################################
-############################################################
 
 
 @follows(mkdir(os.path.join(PARAMS["exportdir"], "peaks")))
@@ -364,8 +342,9 @@ def exportPeakLocations(infile, outfile):
     outf = IOTools.openFile(outfile, "w")
     cc = dbh.cursor()
     table = P.toTable(infile)
-    for x in cc.execute( """SELECT contig, peakcenter, peakcenter+1, interval_id, peakval 
-                                   FROM %(table)s """ % locals() ):
+    for x in cc.execute("""SELECT contig, peakcenter,
+    peakcenter+1, interval_id, peakval
+    FROM %(table)s """ % locals()):
         outf.write("\t".join(map(str, x)) + "\n")
     outf.close()
 
@@ -381,44 +360,44 @@ def exportMotifDiscoverySequences(infile, outfile):
 
     This method requires the _interval tables.
 
-    For motif discovery, only the sequences with the highest S/N ratio are supplied.
+    For motif discovery, only the sequences with the highest S/N ratio
+    are supplied.
 
     1. The top *motifs_proportion* intervals sorted by peakval
-    2. Only a region +/- *motifs_halfwidth* around the peak 
+    2. Only a region +/- *motifs_halfwidth* around the peak
     3. At least *motifs_min_sequences*. If there are not enough sequences
           to start with, all will be used.
     4. At most *motifs_max_size* sequences will be output.
+
     '''
     track = P.snip(infile, "_intervals.load")
     dbhandle = connect()
 
     p = P.substituteParameters(**locals())
-    nseq = PipelineMotifs.writeSequencesForIntervals(track,
-                                                     outfile,
-                                                     dbhandle,
-                                                     full=False,
-                                                     masker=P.asList(
-                                                         p['motifs_masker']),
-                                                     halfwidth=int(
-                                                         p["motifs_halfwidth"]),
-                                                     maxsize=int(
-                                                         p["motifs_max_size"]),
-                                                     proportion=p[
-                                                         "motifs_proportion"],
-                                                     min_sequences=p[
-                                                         "motifs_min_sequences"],
-                                                     num_sequences=p[
-                                                         "motifs_num_sequences"],
-                                                     order=p['motifs_score'])
+    nseq = PipelineMotifs.writeSequencesForIntervals(
+        track,
+        outfile,
+        dbhandle,
+        full=False,
+        masker=P.asList(
+            p['motifs_masker']),
+        halfwidth=int(
+            p["motifs_halfwidth"]),
+        maxsize=int(
+            p["motifs_max_size"]),
+        proportion=p[
+            "motifs_proportion"],
+        min_sequences=p[
+            "motifs_min_sequences"],
+        num_sequences=p[
+            "motifs_num_sequences"],
+        order=p['motifs_score'])
 
     if nseq == 0:
         E.warn("%s: no sequences - meme skipped" % outfile)
         P.touch(outfile)
 
 
-############################################################
-############################################################
-############################################################
 @follows(mkdir("motifs"))
 @transform(TRACKS_BEDFILES,
            regex("(.*).bed.gz"),
@@ -437,7 +416,7 @@ def exportMotifDetectionSequences(infile, outfile):
            regex("(.*).bed.gz"),
            r"motifs/\1.control.fasta")
 def exportMotifControlSequences(infile, outfile):
-    '''for each interval, export the left and right 
+    '''for each interval, export the left and right
     sequence segment of the same size.
     '''
     PipelineMotifs.exportSequencesFromBedFile(infile, outfile,
@@ -445,9 +424,6 @@ def exportMotifControlSequences(infile, outfile):
                                               mode="leftright")
 
 
-############################################################
-############################################################
-############################################################
 @follows(mkdir("meme.dir"))
 @transform(exportMotifDiscoverySequences,
            regex("(.*).discovery.fasta"),
@@ -455,16 +431,16 @@ def exportMotifControlSequences(infile, outfile):
 def runMeme(infile, outfile):
     '''run MEME to find motifs.
 
-    In order to increase the signal/noise ratio,
-    MEME is not run on all intervals but only the 
-    top 10% of intervals (peakval) are used. 
-    Also, only the segment of 200 bp around the peak
-    is used and not the complete interval.
+    In order to increase the signal/noise ratio, MEME is not run on
+    all intervals but only the top 10% of intervals (peakval) are
+    used.  Also, only the segment of 200 bp around the peak is used
+    and not the complete interval.
 
     * Softmasked sequence is converted to hardmasked
       sequence to avoid the detection of spurious motifs.
 
     * Sequence is run through dustmasker
+
     '''
 
     track = P.snip(infile, ".discovery.fasta")
@@ -496,10 +472,6 @@ def loadMemeSummary(infiles, outfile):
 
     os.unlink(outf.name)
 
-###############################################################################
-############################ Meme-Chip ########################################
-###############################################################################
-
 
 def suggestMotifDiscoveryForeground():
     '''output bed files for motif discovery.
@@ -513,10 +485,13 @@ def suggestMotifDiscoveryForeground():
         track = P.snip(os.path.basename(infile), ".bed.gz")
         for n, w, masker in itertools.product(npeaks, widths, maskers):
             foreground = os.path.join(
-                "discovery.dir", ".".join([track, n, w, masker, "foreground", "fasta"]))
+                "discovery.dir", ".".join(
+                    [track, n, w, masker, "foreground", "fasta"]))
             background = os.path.join(
-                "discovery.dir", ".".join([track, n, w, masker, "background", "fasta"]))
-            yield (track + "_intervals.load", foreground, int(n), int(w), masker)
+                "discovery.dir", ".".join(
+                    [track, n, w, masker, "background", "fasta"]))
+            yield (track + "_intervals.load", foreground,
+                   int(n), int(w), masker)
 
 
 def suggestMotifDiscoveryBackground():
@@ -531,8 +506,10 @@ def suggestMotifDiscoveryBackground():
         track = P.snip(os.path.basename(infile), ".bed.gz")
         for n, w, masker in itertools.product(npeaks, widths, maskers):
             background = os.path.join(
-                "discovery.dir", ".".join([track, n, w, masker, "background", "fasta"]))
-            yield (track + "_intervals.load", background, int(n), int(w), masker)
+                "discovery.dir", ".".join([track, n, w, masker,
+                                           "background", "fasta"]))
+            yield (track + "_intervals.load", background,
+                   int(n), int(w), masker)
 
 
 @follows(loadIntervals, mkdir("discovery.dir"))
@@ -544,17 +521,18 @@ def buildDiscoverySequences(infile, outfile, npeaks, width, masker):
     track = P.snip(infile, "_intervals.load")
     dbhandle = connect()
 
-    nseq = PipelineMotifs.writeSequencesForIntervals(track,
-                                                     outfile,
-                                                     dbhandle,
-                                                     full=False,
-                                                     masker=[masker],
-                                                     halfwidth=width,
-                                                     maxsize=int(
-                                                         PARAMS["motifs_max_size"]),
-                                                     proportion=None,
-                                                     num_sequences=npeaks,
-                                                     order='peakval')
+    nseq = PipelineMotifs.writeSequencesForIntervals(
+        track,
+        outfile,
+        dbhandle,
+        full=False,
+        masker=[masker],
+        halfwidth=width,
+        maxsize=int(
+            PARAMS["motifs_max_size"]),
+        proportion=None,
+        num_sequences=npeaks,
+        order='peakval')
 
     if nseq == 0:
         E.warn("%s: no sequences in foreground" % outfile)
@@ -570,26 +548,23 @@ def buildBackgroundSequences(infile, outfile, npeaks, width, masker):
     track = P.snip(infile, "_intervals.load")
     dbhandle = connect()
 
-    nseq = PipelineMotifs.writeSequencesForIntervals(track,
-                                                     outfile,
-                                                     dbhandle,
-                                                     full=False,
-                                                     masker=[masker],
-                                                     halfwidth=width,
-                                                     maxsize=int(
-                                                         PARAMS["motifs_max_size"]),
-                                                     proportion=None,
-                                                     num_sequences=npeaks,
-                                                     order='peakval',
-                                                     shift="leftright")
+    nseq = PipelineMotifs.writeSequencesForIntervals(
+        track,
+        outfile,
+        dbhandle,
+        full=False,
+        masker=[masker],
+        halfwidth=width,
+        maxsize=int(
+            PARAMS["motifs_max_size"]),
+        proportion=None,
+        num_sequences=npeaks,
+        order='peakval',
+        shift="leftright")
 
     if nseq == 0:
         E.warn("%s: no sequences in background" % outfile_background)
         # P.touch( outfile )
-
-############################################################
-############################################################
-############################################################
 
 
 @transform(buildBackgroundSequences,
@@ -600,10 +575,6 @@ def buildMemeBackgroundFiles(infile, outfile):
     statement = '''fasta-get-markov -m 2 %(infile)s  > %(outfile)s''' % locals()
     P.run()
 
-############################################################
-############################################################
-############################################################
-
 
 @follows(mkdir("memechip.dir"))
 @merge(PARAMS["memechip_transfac_matrices"],
@@ -611,17 +582,13 @@ def buildMemeBackgroundFiles(infile, outfile):
 def filterTransfac(infile, outfile):
     '''filter the transfac matrices, here for vertebrate'''
 
-    statement = '''cat %(infile)s 
-                | python %(scriptsdir)s/transfac2transfac.py 
-                         --method=filter --filter-method=V
-                         --log=%(outfile)s.log
-                >  %(outfile)s
+    statement = '''cat %(infile)s
+    | python %(scriptsdir)s/transfac2transfac.py
+    --method=filter --filter-method=V
+    --log=%(outfile)s.log
+    >  %(outfile)s
                 '''
     P.run()
-
-############################################################
-############################################################
-############################################################
 
 
 @transform(filterTransfac,
@@ -630,18 +597,15 @@ def filterTransfac(infile, outfile):
 def makeMemeMotifs(infile, outfile):
     '''convert transfac motifs to meme format'''
 
-    statement = '''transfac2meme 
-                    -use_acc 
-                    -logodds
-                    %(infile)s
-                   > %(outfile)s
-                '''
+    statement = '''transfac2meme
+    -use_acc
+    -logodds
+    %(infile)s
+    > %(outfile)s
+    '''
     P.run()
 
 
-############################################################
-############################################################
-############################################################
 @follows(mkdir("memechip.dir"))
 @collate((buildDiscoverySequences, buildMemeBackgroundFiles),
          regex("discovery.dir/(.*).(foreground.fasta|background.markov)"),
@@ -689,10 +653,6 @@ def runMemeChip(infiles, outfile):
 
     P.run()
 
-############################################################
-############################################################
-############################################################
-
 
 @merge(runMemeChip, "memechip_summary.load")
 def loadMemeChipSummary(infiles, outfile):
@@ -718,21 +678,16 @@ def loadMemeChipSummary(infiles, outfile):
     os.unlink(outf.name)
 
 
-############################################################
-############################################################
-############################################################
 @transform(exportMotifDiscoverySequences,
            suffix(".fasta"),
            ".motifseq_stats.load")
 def loadMotifSequenceComposition(infile, outfile):
     '''compute sequence composition of sequences used for ab-initio search.'''
 
-    to_cluster = True
-
     tablename = P.toTable(outfile)
 
     statement = '''
-    python %(scriptsdir)s/fasta2table.py 
+    python %(scriptsdir)s/fasta2table.py
         --section=na
         --log=%(outfile)s
     < %(infile)s
@@ -742,10 +697,6 @@ def loadMotifSequenceComposition(infile, outfile):
     > %(outfile)s'''
 
     P.run()
-
-############################################################
-############################################################
-############################################################
 
 
 @merge("*.motif", "motif_info.load")
@@ -767,12 +718,6 @@ def loadMotifInformation(infiles, outfile):
     P.load(outf.name, outfile, "--allow-empty-file")
 
     os.unlink(outf.name)
-
-############################################################
-############################################################
-############################################################
-# run against database of known motifs
-############################################################
 
 
 @transform(runMeme, suffix(".meme"), ".tomtom")
@@ -824,10 +769,6 @@ def loadTomTom(infile, outfile):
 
     os.unlink(tmpfile.name)
 
-############################################################
-############################################################
-############################################################
-
 
 @files_re((exportMotifDetectionSequences, exportMotifControlSequences),
           "(\S+).control.fasta",
@@ -844,10 +785,6 @@ def runMast(infiles, outfile):
     '''
     PipelineMotifs.runMAST(infiles, outfile)
 
-############################################################
-############################################################
-############################################################
-
 
 @transform(runMast,
            suffix(".mast.gz"),
@@ -862,12 +799,9 @@ def loadMast(infile, outfile):
     '''
     PipelineMotifs.loadMAST(infile, outfile)
 
-############################################################
-############################################################
-############################################################
 
-
-@follows(loadMotifInformation, mkdir(os.path.join(PARAMS["exportdir"], "motifs")))
+@follows(loadMotifInformation, mkdir(os.path.join(PARAMS["exportdir"],
+                                                  "motifs")))
 @merge(loadMast, "motifs.export")
 def exportMotifLocations(infiles, outfile):
     '''export motif locations. There will be a bed-file per motif.
@@ -888,8 +822,10 @@ def exportMotifLocations(infiles, outfile):
         for infile in infiles:
             table = P.toTable(infile)
             track = P.snip(table, "_mast")
-            for x in cc.execute( """SELECT contig, start, end, '%(track)s', evalue
-                                   FROM %(table)s WHERE motif = '%(motif)s' AND start IS NOT NULL""" % locals() ):
+            for x in cc.execute(
+                    """SELECT contig, start, end, '%(track)s', evalue
+                    FROM %(table)s WHERE motif = '%(motif)s' AND
+                    start IS NOT NULL""" % locals()):
                 tmpf.write("\t".join(map(str, x)) + "\n")
         tmpf.close()
 
@@ -903,31 +839,11 @@ def exportMotifLocations(infiles, outfile):
         os.unlink(tmpf.name)
 
 
-############################################################
-############################################################
-############################################################
-# export section start
-############################################################
-
-############################################################
-############################################################
-############################################################
-# export section end
-############################################################
-
-
-###################################################################
-###################################################################
-###################################################################
 @follows(loadMemeChipSummary,
          loadIntervals)
 def full():
     '''run the full pipeline.'''
     pass
-
-###################################################################
-###################################################################
-###################################################################
 
 
 @follows(mkdir("report"))
@@ -937,10 +853,6 @@ def build_report():
     E.info("starting documentation build process from scratch")
     P.run_report(clean=True)
 
-###################################################################
-###################################################################
-###################################################################
-
 
 @follows(mkdir("report"))
 def update_report():
@@ -948,10 +860,6 @@ def update_report():
 
     E.info("updating documentation")
     P.run_report(clean=False)
-
-###################################################################
-###################################################################
-###################################################################
 
 
 @follows(mkdir("%s/bedfiles" % PARAMS["web_dir"]),
@@ -969,7 +877,8 @@ def publish():
 
     # directory, files
     exportfiles = {
-        "intervals": glob.glob(os.path.join(PARAMS["exportdir"], "bed", "*.bed.gz")) +
+        "intervals": glob.glob(os.path.join(
+            PARAMS["exportdir"], "bed", "*.bed.gz")) +
         glob.glob(os.path.join(PARAMS["exportdir"], "bed", "*.bed.gz.tbi")),
     }
 
@@ -991,23 +900,6 @@ def publish():
                 E.debug("creating symlink from %s to %s" % (src, dest))
                 os.symlink(os.path.abspath(src), dest)
 
-    # output ucsc links
-    for bam in bams:
-        filename = os.path.basename(bam)
-        track = P.snip(filename, ".bam")
-        print """track type=bam name="%(track)s" bigDataUrl=http://www.cgat.org/downloads/%(project_id)s/bamfiles/%(filename)s""" % locals()
 
 if __name__ == "__main__":
-
-    # print( "# tracks found: %s" % TRACKS_ALL )
-    # print( "# tracks by experiment: %s" % TRACKS_EXPERIMENTS )
-    # print( "# tracks by condition: %s" % TRACKS_CONDITIONS )
-    # print( "# tracks by tissue: %s" % TRACKS_TISSUES )
-
-    # fails for config command
-    # check compatibility
-    # assert PARAMS["genome"] == PARAMS_ANNOTATIONS["genome"]
-    # sanity checks
-    # assert len(TRACKS_ALL) > 0
-
     sys.exit(P.main(sys.argv))

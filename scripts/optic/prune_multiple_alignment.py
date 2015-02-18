@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-optic/prune_multiple_alignment.py - 
+optic/prune_multiple_alignment.py -
 ======================================================
 
 :Author: Andreas Heger
@@ -56,19 +56,19 @@ Code
 ----
 
 '''
-import os
 import sys
 import string
 import re
-import optparse
-import math
 import warnings
-
 import scipy
 import scipy.cluster
-
 import Bio
 import Bio.Cluster
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.Mali as Mali
+import CGAT.Exons as Exons
+
 
 # ignore warnings from networkx/matplotlib that a display
 # can not be found
@@ -92,11 +92,6 @@ Lower case characters are interpreted as unaligned characters, unless
 the option --ignore-case is given.
 """ % sys.argv[0]
 
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.Mali as Mali
-import CGAT.Exons as Exons
-
 
 def GetPides(mali, id1, ids, first_res, last_res):
     """calculate pid between sequence id1 and all others in ids."""
@@ -117,12 +112,9 @@ def GetPides(mali, id1, ids, first_res, last_res):
         result.append(float(n) / t)
     return result
 
-# ------------------------------------------------------------------------
-# ------------------------------------------------------------------------
-# ------------------------------------------------------------------------
 
-
-def GetInconsistentClusters(mali, nclusters, first_res, last_res, inconsistencies, options):
+def GetInconsistentClusters(mali, nclusters, first_res, last_res,
+                            inconsistencies, options):
     """cluster sequences in mali range into nclusters.
 
     """
@@ -286,8 +278,8 @@ def SplitExons(mali, exons, options, separator="|", gap_char="-", masters=None):
         component_sizes = []
         for gene, pairs_per_gene in pairs.items():
 
-            # The number of clusters is given by the maximum number of consistent groups
-            # per gene
+            # The number of clusters is given by the maximum number of
+            # consistent groups per gene
             consistency_graph = networkx.Graph()
 
             is_inconsistent = False
@@ -303,13 +295,17 @@ def SplitExons(mali, exons, options, separator="|", gap_char="-", masters=None):
 
                 if column[g1] != column[g2]:
                     if options.loglevel >= 6:
-                        options.stdlog.write("# column %i: inconsistency: %s - %i <---> %s - %i\n" %
-                                             (c, identifiers[g1], column[g1], identifiers[g2], column[g2]))
+                        options.stdlog.write(
+                            "# column %i: inconsistency: %s - %i <---> %s - %i\n" %
+                            (c, identifiers[g1], column[g1],
+                             identifiers[g2], column[g2]))
 
                     ic.add(
-                        (identifiers[g1],) + tuple(identifiers[g1].split(options.separator)))
+                        (identifiers[g1],) + tuple(
+                            identifiers[g1].split(options.separator)))
                     ic.add(
-                        (identifiers[g2],) + tuple(identifiers[g2].split(options.separator)))
+                        (identifiers[g2],) + tuple(
+                            identifiers[g2].split(options.separator)))
                     is_inconsistent = True
                 else:
                     consistency_graph.add_edge(g1, g2)
@@ -319,7 +315,8 @@ def SplitExons(mali, exons, options, separator="|", gap_char="-", masters=None):
             if options.loglevel >= 6:
                 if is_inconsistent:
                     options.stdlog.write(
-                        "# column %i: inconsistency for gene %s - %s\n" % (c, str(gene), str(components)))
+                        "# column %i: inconsistency for gene %s - %s\n" %
+                        (c, str(gene), str(components)))
 
             component_sizes.append(len(components))
 
@@ -837,42 +834,6 @@ def main(argv=None):
                     if chars[i] not in options.gap_chars:
                         chars[i] = options.mask_char
                 fragments.append("".join(chars))
-
-# else:
-
-# for a,b,c in frame_columns:
-
-##                     codon = sequence[a] + sequence[b] + sequence[c]
-
-##                     codon_is_ok, codon_is_aligned, codon_is_all_gaps = checkCodon( codon, options )
-
-##                     if codon_is_aligned: naligned += 1
-
-# if codon_is_all_gaps:
-##                         fragments.append( options.gap_char * 3 )
-##                         ngaps += 1
-# elif codon_is_ok:
-##                         ncodons += 1
-# if string.upper(codon) in ("TAG", "TAA", "TGA"):
-# if options.remove_stops:
-##                                 fragments.append( options.gap_char * 3 )
-# elif options.mask_stops:
-##                                 fragments.append( options.mask_char * 3 )
-# else:
-##                                 fragments.append( codon )
-##                             nstops += 1
-# else:
-##                             fragments.append( codon )
-# else:
-##                         fragments.append( options.gap_char * 3 )
-##                         nmasked += 1
-
-# if options.loglevel >= 7:
-# options.stdlog.write("# %s: %i,%i,%i: codon=%s ok=%s is_aligned=%s\n" % (id,
-# a,b,c,
-# codon,
-# str(codon_is_ok),
-# str(codon_is_aligned) ))
 
             s = string.join(fragments, "")
             if options.loglevel >= 1:

@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-WrapperSlr.py - 
+WrapperSlr.py - Wrapper for SLR tool
 ======================================================
 
 :Author: Andreas Heger
@@ -33,20 +33,12 @@ Code
 ----
 
 '''
-import os
-import sys
 import string
 import re
 import tempfile
 import subprocess
-import optparse
 import shutil
-
 from types import *
-
-"""Wrapper for CodeSlr
-"""
-
 from CGAT import Experiment as Experiment
 from CGAT import Mali as Mali
 from CGAT import TreeTools as TreeTools

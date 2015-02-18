@@ -10,9 +10,7 @@ merge_tables.py -
 Purpose
 -------
 
-.. todo::
-   
-   describe purpose of the script.
+merge two tables with the same number of lines
 
 Usage
 -----
@@ -31,25 +29,12 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
 import string
-import re
-import tempfile
-import subprocess
-import optparse
-import time
-
-"""merge two tables with the same number of lines
-"""
-
 import CGAT.Experiment as E
 
-import CGAT.WrapperAdaptiveCAI as WrapperAdaptiveCAI
-import numpy
-
 parser = E.OptionParser(
-    version="%prog version: $Id: merge_tables.py 2782 2009-09-10 11:40:29Z andreas $")
+    version="%prog version: $Id$")
 
 
 def main(argv=None):

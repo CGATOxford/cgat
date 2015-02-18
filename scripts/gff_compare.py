@@ -1,5 +1,4 @@
-'''
-gff_compare.py - compare two gene sets
+'''gff_compare.py - compare two gene sets
 ======================================
 
 :Author: Andreas Heger
@@ -10,7 +9,8 @@ gff_compare.py - compare two gene sets
 Purpose
 -------
 
-This script benchmarks two gene predictions. Predictions are given as gff files.
+This script benchmarks two gene predictions. Predictions are given as
+gff files.
 
 This script is transcript aware but not gene aware, i.e. if there are several
 transcripts for a gene, overcounting happens.
@@ -33,19 +33,9 @@ Command line options
 
 '''
 import sys
-import string
 import re
-import optparse
-
-USAGE = """python %s [OPTIONS] target reference
-
-""" % sys.argv[0]
-
 import CGAT.Experiment as E
-import CGAT.PredictionParser as PredictionParser
 import numpy
-
-# ------------------------------------------------------------------------
 
 
 def Old():
@@ -190,7 +180,7 @@ def CountMatchesPerGene(gffs,
                         rx_gene,
                         rx_other,
                         write=(),
-                        outfile = sys.stdout):
+                        outfile=sys.stdout):
     """use status information in gffs to check for completely matches/extra genes.
     """
 
@@ -641,7 +631,7 @@ def main(argv=None):
                                 print "#", str(x)
 
                     ###########################################################
-                    ## r, t = next_r, next_t
+                    # r, t = next_r, next_t
                     if ref_end == target_end:
                         r, t = next_r, next_t
                     elif ref_end < target_end:

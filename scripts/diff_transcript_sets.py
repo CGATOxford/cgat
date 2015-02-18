@@ -31,23 +31,14 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import getopt
-import time
-import sets
-import optparse
-import math
-import tempfile
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 
 """ program $Id: diff_transcript_sets.py 2781 2009-09-10 11:33:14Z andreas $
 
 show differences between two transcript sets.
 """
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
 
 
 def parseIdentifier(id, options):

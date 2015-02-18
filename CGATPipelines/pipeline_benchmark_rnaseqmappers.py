@@ -133,21 +133,14 @@ Code
 from ruffus import *
 
 import CGAT.Experiment as E
-import logging as L
 import CGAT.Database as Database
-
 import sys
 import os
-import re
-import shutil
-import itertools
-import math
 import glob
-import time
-
-import numpy
 import sqlite3
 import CGAT.IOTools as IOTools
+import CGAT.Pipeline as P
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 ###################################################
 ###################################################
@@ -156,7 +149,6 @@ import CGAT.IOTools as IOTools
 ###################################################
 
 # load options from the config file
-import CGAT.Pipeline as P
 P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
@@ -170,8 +162,6 @@ PARAMS_ANNOTATIONS = P.peekParameters(PARAMS["annotations_dir"],
 ###################################################################
 # Helper functions mapping tracks to conditions, etc
 ###################################################################
-import CGATPipelines.PipelineMapping as PipelineMapping
-import CGATPipelines.PipelineTracks as PipelineTracks
 
 TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
     glob.glob("*.fastq.gz"), "(\S+).fastq.gz")

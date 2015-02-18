@@ -3,12 +3,6 @@ from ChipseqReport import *
 import xml.etree.ElementTree
 import Glam2
 
-##########################################################################
-##########################################################################
-##########################################################################
-# compute MAST curve
-##########################################################################
-
 
 def computeMastCurve(evalues):
     '''compute a MAST curve.
@@ -37,42 +31,40 @@ def computeMastCurve(evalues):
 
     return bin_edges[:-1], with_motifs, explained
 
-##########################################################################
-##########################################################################
-##########################################################################
-##
-##########################################################################
-
 
 def getFDR(samples, control, num_bins=1000):
-    '''return the score cutoff at a certain FDR threshold using scores and control scores.
-    Note that this method assumes that a higher score is a better result.
+    '''return the score cutoff at a certain FDR threshold using scores and
+    control scores.  Note that this method assumes that a higher score
+    is a better result.
 
-    The FDR is defined as fdr = expected number of false positives (FP) / number of positives (P)
+    The FDR is defined as fdr = expected number of false positives
+    (FP) / number of positives (P)
 
-    Given a certain score threshold s , the following will be used as approximations:
+    Given a certain score threshold s , the following will be used as
+    approximations:
 
-    FP: the number of controls with a score of less than or equal to s. These
-        are all assumed to be false positives. Both samples and control should 
-        contain rougly equal number of entries, but FP is scaled to be equivalent to P. 
+    FP: the number of controls with a score of less than or equal to
+        s. These are all assumed to be false positives. Both samples
+        and control should contain rougly equal number of entries, but
+        FP is scaled to be equivalent to P.
 
-    P: the number of samples with a score of less than or equal to s. These
-       are a mixture of both true and false positives.
+    P: the number of samples with a score of less than or equal to
+       s. These are a mixture of both true and false positives.
 
     returns the score cutoff at FDR threshold.
+
     '''
 
     if len(samples) == 0 or len(control) == 0:
         return None, None
 
-    bins = 100
     mi1, ma1 = min(samples), max(samples)
     mi2, ma2 = min(control), max(control)
     mi, ma = min(mi1, mi2), max(ma1, ma2)
     hist_samples, bin_edges_samples = numpy.histogram(
-        samples, range=(mi, ma), bins = num_bins)
+        samples, range=(mi, ma), bins=num_bins)
     hist_control, bin_edges_control = numpy.histogram(
-        control, range=(mi, ma), bins = num_bins)
+        control, range=(mi, ma), bins=num_bins)
     hist_samples = hist_samples[::-1].cumsum()
     hist_control = hist_control[::-1].cumsum()
     bin_edges = bin_edges_samples[::-1]
@@ -90,12 +82,6 @@ def getFDR(samples, control, num_bins=1000):
 
     return bin_edges[:-1][::-1], fdrs[::-1]
 
-##########################################################################
-##########################################################################
-##########################################################################
-##
-##########################################################################
-
 
 def getMastEvalueCutoff(evalues, control_evalues, fdr=0.1):
     '''return the E-Value cutoff at a certain FDR threshold
@@ -111,12 +97,6 @@ def getMastEvalueCutoff(evalues, control_evalues, fdr=0.1):
             return -bin
 
     return 0
-
-##########################################################################
-##########################################################################
-##########################################################################
-##
-##########################################################################
 
 
 def getGlamScoreCutoff(scores, controls, fdr=0.1):
@@ -328,11 +308,11 @@ class MastAllCorrelations(Mast):
 
     def __call__(self, track, slice=None):
         field = "length"
-        data = self.get( """SELECT m.evalue, m.nmatches, i.length, i.peakval, i.avgval
-                                 FROM %(track)s_mast as m, %(track)s_intervals as i 
-                                 WHERE i.interval_id = m.id AND motif = '%(slice)s'
-                                 ORDER BY i.%(field)s DESC"""
-                         % locals())
+        data = self.get("""SELECT m.evalue, m.nmatches, i.length, i.peakval, i.avgval
+        FROM %(track)s_mast as m, %(track)s_intervals as i
+        WHERE i.interval_id = m.id AND motif = '%(slice)s'
+        ORDER BY i.%(field)s DESC"""
+                        % locals())
         return odict(zip(("evalue", "nmatches", "length", "peakval", "avgval"),
                          zip(*data)))
 
@@ -345,10 +325,10 @@ class MastPairwiseCorrelation(Mast):
 
         field1 = self.mField1
         field2 = self.mField2
-        data = self.get( """SELECT %(field1)s as a, %(field2)s AS b
-                                 FROM %(track)s_mast as m, %(track)s_intervals as i 
-                                 WHERE i.interval_id = m.id AND motif = '%(slice)s'"""
-                         % locals())
+        data = self.get("""SELECT %(field1)s as a, %(field2)s AS b
+        FROM %(track)s_mast as m, %(track)s_intervals as i
+        WHERE i.interval_id = m.id AND motif = '%(slice)s'"""
+                        % locals())
 
         return odict(zip((field1, field2), zip(*data)))
 
@@ -395,7 +375,8 @@ class MastPeakValPerNMatches(MastPairwiseCorrelation):
         for x in sorted(data["nmatches"]):
             n[x] = []
 
-        for nmatches, peakval in sorted(zip(data["nmatches"], data["peakval"])):
+        for nmatches, peakval in sorted(
+                zip(data["nmatches"], data["peakval"])):
             n[nmatches].append(peakval)
 
         return odict(n)
@@ -407,11 +388,12 @@ class MastMotifLocation(Mast):
 
     def __call__(self, track, slice=None):
 
-        data = self.getValues( """SELECT (i.peakcenter - (m.start + (m.end - m.start) / 2)) / ((CAST(i.length AS FLOAT) - (m.end - m.start)) / 2)
-                                 FROM %(track)s_mast as m, %(track)s_intervals as i 
-                                 WHERE i.interval_id = m.id AND motif = '%(slice)s'
-                                 AND m.nmatches = 1"""
-                               % locals())
+        data = self.getValues(
+            """SELECT (i.peakcenter - (m.start + (m.end - m.start) / 2)) / ((CAST(i.length AS FLOAT) - (m.end - m.start)) / 2)
+            FROM %(track)s_mast as m, %(track)s_intervals as i
+            WHERE i.interval_id = m.id AND motif = '%(slice)s'
+            AND m.nmatches = 1"""
+            % locals())
 
         return odict((("distance", data),))
 
@@ -428,12 +410,13 @@ class MastMotifLocationMiddle(Mast):
         # divide by (intervalsize - motifsize) / 2
         #
         # only take single matches (multiple matches need not be centered)
-        data = self.getValues( """SELECT ((i.start + i.length / 2) - (m.start + (m.end - m.start) / 2)) 
-                                         / ((CAST(i.length AS FLOAT) - (m.end - m.start))/2)
-                                 FROM %(track)s_mast as m, %(track)s_intervals as i 
-                                 WHERE i.interval_id = m.id AND motif = '%(slice)s'
-                                 AND m.nmatches = 1"""
-                               % locals())
+        data = self.getValues(
+            """SELECT ((i.start + i.length / 2) - (m.start + (m.end - m.start) / 2)) 
+            / ((CAST(i.length AS FLOAT) - (m.end - m.start))/2)
+            FROM %(track)s_mast as m, %(track)s_intervals as i 
+            WHERE i.interval_id = m.id AND motif = '%(slice)s'
+            AND m.nmatches = 1"""
+            % locals())
         return odict((("distance", data),))
 
 
@@ -443,16 +426,18 @@ class MastControlLocationMiddle(Mast):
 
     def __call__(self, track, slice=None):
 
-        data1 = self.getValues( """SELECT ( (m.r_length / 2) - (m.r_start + (m.r_end - m.r_start) / 2) ) / ((CAST( m.r_length as float) - (m.r_end - m.r_start))/2)
-                                 FROM %(track)s_mast as m, %(track)s_intervals as i 
-                                 WHERE i.interval_id = m.id AND motif = '%(slice)s'
-                                 AND m.r_nmatches = 1"""
-                                % locals())
-        data2 = self.getValues( """SELECT ( (m.l_length / 2) - (m.l_start + (m.l_end - m.l_start) / 2) ) / ((CAST( m.l_length as float) - (m.l_end - m.l_start))/2)
-                                 FROM %(track)s_mast as m, %(track)s_intervals as i 
-                                 WHERE i.interval_id = m.id AND motif = '%(slice)s'
-                                 AND m.l_nmatches = 1"""
-                                % locals())
+        data1 = self.getValues(
+            """SELECT ( (m.r_length / 2) - (m.r_start + (m.r_end - m.r_start) / 2) ) / ((CAST( m.r_length as float) - (m.r_end - m.r_start))/2)
+            FROM %(track)s_mast as m, %(track)s_intervals as i
+            WHERE i.interval_id = m.id AND motif = '%(slice)s'
+            AND m.r_nmatches = 1"""
+            % locals())
+        data2 = self.getValues(
+            """SELECT ( (m.l_length / 2) - (m.l_start + (m.l_end - m.l_start) / 2) ) / ((CAST( m.l_length as float) - (m.l_end - m.l_start))/2)
+            FROM %(track)s_mast as m, %(track)s_intervals as i
+            WHERE i.interval_id = m.id AND motif = '%(slice)s'
+            AND m.l_nmatches = 1"""
+            % locals())
 
         return odict((("distance", data1 + data2),))
 
@@ -520,11 +505,11 @@ class MastROC(Mast):
 
         for field in self.mFields:
 
-            values = self.get( """SELECT i.%(field)s, m.evalue 
-                                 FROM %(track)s_mast as m, %(track)s_intervals as i 
-                                 WHERE i.interval_id = m.id AND motif = '%(slice)s'
-                                 ORDER BY i.%(field)s DESC"""
-                               % locals())
+            values = self.get("""SELECT i.%(field)s, m.evalue 
+            FROM %(track)s_mast as m, %(track)s_intervals as i
+            WHERE i.interval_id = m.id AND motif = '%(slice)s'
+            ORDER BY i.%(field)s DESC"""
+                              % locals())
 
             try:
                 roc = Stats.computeROC(
@@ -557,11 +542,12 @@ class MastROCNMatches(Mast):
 
         for field in self.mFields:
 
-            values = self.get( """SELECT i.%(field)s, m.nmatches
-                                 FROM %(track)s_mast as m, %(track)s_intervals as i 
-                                 WHERE i.interval_id = m.id AND motif = '%(slice)s'
-                                 ORDER BY i.%(field)s DESC"""
-                               % locals())
+            values = self.get(
+                """SELECT i.%(field)s, m.nmatches
+                FROM %(track)s_mast as m, %(track)s_intervals as i
+                WHERE i.interval_id = m.id AND motif = '%(slice)s'
+                ORDER BY i.%(field)s DESC"""
+                % locals())
 
             try:
                 roc = Stats.computeROC([(x[0], x[1] > 0) for x in values])
@@ -617,12 +603,12 @@ class MastPeakValWithMotif(Mast):
     def __call__(self, track, slice=None):
 
         # obtain evalue distribution
-        data = self.get( '''
+        data = self.get('''
         SELECT i.peakval, m.nmatches
         FROM %(track)s_intervals AS i,
              %(track)s_mast AS m
         WHERE m.id = i.interval_id \
-           AND m.motif = '%(slice)s' ORDER BY i.peakval DESC''' % locals() )
+        AND m.motif = '%(slice)s' ORDER BY i.peakval DESC''' % locals())
 
         result = Stats.getSensitivityRecall(
             [(int(x[0]), x[1] > 0) for x in data])
@@ -655,12 +641,12 @@ class MastPeakValWithMotifEvalue(Mast):
         # determine the e-value cutoff as the maximum of "explained"
         cutoff = bin_edges[numpy.argmax(explained)]
 
-        data = self.get( '''
+        data = self.get('''
         SELECT i.peakval, m.evalue
         FROM %(track)s_intervals AS i,
              %(track)s_mast AS m
         WHERE m.id = i.interval_id \
-           AND m.motif = '%(slice)s' ORDER BY i.peakval DESC''' % locals() )
+           AND m.motif = '%(slice)s' ORDER BY i.peakval DESC''' % locals())
 
         result = Stats.getSensitivityRecall(
             [(int(x[0]), x[1] < cutoff) for x in data])
@@ -677,7 +663,7 @@ class MemeInputSequenceComposition(DefaultTracker):
               'nUnk', 'pA', 'pAT', 'pC', 'pG', 'pGC', 'pN', 'pT')
 
     def __call__(self, track, slice):
-        return self.getValues( '''SELECT %(slice)s FROM %(track)s_motifseq_stats''' )
+        return self.getValues('''SELECT %(slice)s FROM %(track)s_motifseq_stats''')
 
 
 class MemeRuns(DefaultTracker):
@@ -740,7 +726,8 @@ class MemeResults(DefaultTracker):
                 ("evalue", motif.get("e_value")),
                 ("information content", motif.get("ic")),
                 ("sites", motif.get("sites")),
-                ("link", "`meme_%s_%i <%s/meme.html#summary%i>`_" % (track, nmotif, resultsdir, nmotif))))
+                ("link", "`meme_%s_%i <%s/meme.html#summary%i>`_" %
+                 (track, nmotif, resultsdir, nmotif))))
 
         return result
 
@@ -750,12 +737,13 @@ class TomTomResults(DefaultTracker):
 
     def __call__(self, track, slice=None):
 
-        data = self.get( """SELECT query_id, target_id,
+        data = self.get("""SELECT query_id, target_id,
         optimal_offset,pvalue,qvalue,overlap,query_consensus,
         target_consensus, orientation FROM %(track)s_tomtom""" % locals())
 
         headers = ("query_id", "target_id",
-                   "optimal_offset", "pvalue", "qvalue", "overlap", "query_consensus",
+                   "optimal_offset", "pvalue", "qvalue", "overlap",
+                   "query_consensus",
                    "target_consensus", "orientation")
 
         result = odict()
@@ -790,7 +778,8 @@ class AnnotationsMatrix(DefaultTracker):
         map_level2col = dict([(y, x) for x, y in enumerate(levels)])
         for intergenic, intronic, upstream, downstream, utr, coding, ambiguous, level in data:
             col = level
-            for x, v in enumerate((intergenic, intronic, upstream, downstream, utr, coding, ambiguous)):
+            for x, v in enumerate((intergenic, intronic, upstream,
+                                   downstream, utr, coding, ambiguous)):
                 if v:
                     row = rows[x]
                     break
@@ -904,32 +893,34 @@ def getGlamFDR(samples, control, num_bins=100):
     '''return the score cutoff at a certain FDR threshold
     using scores and control scores.
 
-    The FDR is defined as fdr = expected number of false positives (FP) / number of positives (P)
+    The FDR is defined as fdr = expected number of false positives
+    (FP) / number of positives (P)
 
-    Given a certain score threshold s , the following will be used as approximations:
+    Given a certain score threshold s , the following will be used as
+    approximations:
 
-    FP: the number of controls with a score of less than or equal to s. These
-        are all assumed to be false positives.
+    FP: the number of controls with a score of less than or equal to
+        s. These are all assumed to be false positives.
 
-    P: the number of samples with a score of less than or equal to s. These
-       are a mixture of both true and false positives.
+    P: the number of samples with a score of less than or equal to
+       s. These are a mixture of both true and false positives.
 
     Both samples and control should contain rougly equal number of entries.
 
     returns the score cutoff at FDR threshold.
+
     '''
 
     if len(samples) == 0 or len(control) == 0:
         return None, None
 
-    bins = 100
     mi1, ma1 = min(samples), max(samples)
     mi2, ma2 = min(control), max(control)
     mi, ma = min(mi1, mi2), max(ma1, ma2)
     hist_samples, bin_edges_samples = numpy.histogram(
-        samples, range=(mi, ma), bins = num_bins)
+        samples, range=(mi, ma), bins=num_bins)
     hist_control, bin_edges_control = numpy.histogram(
-        control, range=(mi, ma), bins = num_bins)
+        control, range=(mi, ma), bins=num_bins)
     hist_samples = hist_samples[::-1].cumsum()
     hist_control = hist_control[::-1].cumsum()
     bin_edges = bin_edges_samples[::-1]
@@ -975,8 +966,8 @@ class GlamSummary(Glam):
 
     """return summary of glam results.
 
-    Return for each track the number of intervals in total,
-    the number of intervals submitted to mast, 
+    Return for each track the number of intervals in total, the number
+    of intervals submitted to mast, ...
 
     """
     mEvalueCutoff = 1

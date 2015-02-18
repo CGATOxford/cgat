@@ -29,26 +29,11 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import tempfile
-import subprocess
-import optparse
 import math
-
-"""
-"""
-
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
-import numpy
-
 import CGAT.FastaIterator as FastaIterator
-import Bio.Alphabet.IUPAC
-
-# -------------------------------------------------------------------------
 
 
 def FilterAlignedPairForPositions(seq1, seq2, method):

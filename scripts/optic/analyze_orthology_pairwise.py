@@ -56,41 +56,28 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
 import re
-import getopt
 import time
-import sets
-import optparse
-import math
-import tempfile
 import copy
 import gzip
+import CGAT.Experiment as E
+import CGAT.Orthologs as Orthologs
+import CGAT.Genomics as Genomics
+import csv
+import scipy
+import scipy.stats
+import numpy
+import alignlib_lite
+import CGAT.AlignedPairs as AlignedPairs
+import CGAT.TreeTools as TreeTools
+import CGAT.BlastAlignments as BlastAlignments
 
 """program $Id: optic/analyze_orthology_pairwise.py 2781 2009-09-10 11:33:14Z andreas $
 
 analyse orthology sets.
 
 """
-
-import CGAT.Experiment as E
-import CGAT.Orthologs as Orthologs
-import CGAT.Genomics as Genomics
-import pgdb
-import csv
-import scipy
-import scipy.stats
-import numpy
-import CGAT.Histogram as Histogram
-import alignlib_lite
-import CGAT.AlignedPairs as AlignedPairs
-import CGAT.TreeTools as TreeTools
-import CGAT.IOTools as IOTools
-import CGAT.BlastAlignments as BlastAlignments
-
-# ------------------------------------------------------------------------
 
 
 def AnalyseOrphans(orphans, outfile,

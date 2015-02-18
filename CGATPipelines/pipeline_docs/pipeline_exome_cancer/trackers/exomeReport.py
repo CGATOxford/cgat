@@ -1,12 +1,6 @@
-import os
-import sys
 import re
-import types
-import itertools
-import glob
-
 from SphinxReport.Tracker import *
-from collections import OrderedDict as odict
+from SphinxReport.Utils import PARAMS as P
 
 # get from config file
 UCSC_DATABASE = "hg19"
@@ -18,7 +12,7 @@ EXPORTDIR = "export"
 ###################################################################
 # Run configuration script
 
-from SphinxReport.Utils import PARAMS as P
+
 EXPORTDIR = P.get('exome_exportdir', P.get('exportdir', 'export'))
 DATADIR = P.get('exome_datadir', P.get('datadir', '.'))
 DATABASE = P.get('exome_backend', P.get('sql_backend', 'sqlite:///./csvdb'))

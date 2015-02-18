@@ -39,11 +39,6 @@ import string
 import re
 import tempfile
 import subprocess
-import optparse
-
-"""Wrapper for adaptive codon bias program
-"""
-
 from CGAT import Experiment as E
 
 

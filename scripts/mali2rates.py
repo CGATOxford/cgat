@@ -34,11 +34,8 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
 import re
-import optparse
 import time
 import math
 import tempfile
@@ -78,7 +75,7 @@ def CalculateDistancePOVL(seq1, seq2, gap_chars=(".", "-")):
 
 def CalculateDistancePID(seq1, seq2,
                          gap_chars=("-", "."),
-                         mask_chars = ("X"),
+                         mask_chars=("X"),
                          ):
 
     nidentical, naligned, nunaligned = 0, 0, 0
@@ -410,7 +407,7 @@ def runXrate(mali, pairs, options):
 # mali.getEntry(ids[y]).mId,
 # temp_mali.getWidth()) )
 
-##             nskipped += 1
+#             nskipped += 1
 # continue
 
         outfile = open(data, "w")
@@ -532,46 +529,52 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id: mali2rates.py 2781 2009-09-10 11:33:14Z andreas $",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-i", "--input-format", dest="input_format", type="choice",
-                      choices=(
-                          "plain", "fasta", "clustal", "stockholm", "phylip"),
-                      help="input format of multiple alignment")
+    parser.add_option(
+        "-i", "--input-format", dest="input_format", type="choice",
+        choices=(
+            "plain", "fasta", "clustal", "stockholm", "phylip"),
+        help="input format of multiple alignment")
 
     parser.add_option("-s", "--sites", dest="sites", type="string",
                       help="sites to use [default=%default].", )
 
-    parser.add_option("-f", "--file", dest="filename", type="string",
-                      help="filename of multiple alignment (- for stdin) [default=%default].",
-                      metavar="FILE")
+    parser.add_option(
+        "-f", "--file", dest="filename", type="string",
+        help="filename of multiple alignment (- for stdin) [default=%default].",
+        metavar="FILE")
 
     parser.add_option("-o", "--format", dest="format", type="string",
                       help="format [default=%default].",
                       metavar="format")
 
-    parser.add_option("-d", "--distance-method", dest="distance", type="choice",
-                      choices=("PID", "T92", "JC69", "POVL", "F84", "LogDet",
-                               "K80", "F81", "HKY85", "TN93", "REV", "UNREST", "REVU",
-                               "UNRESTU",
-                               "JTT", "PMB", "PAM", "Kimura", "CategoriesModel"),
-                      help="method to use for distance calculation [default=%default].")
+    parser.add_option(
+        "-d", "--distance-method", dest="distance", type="choice",
+        choices=("PID", "T92", "JC69", "POVL", "F84", "LogDet",
+                 "K80", "F81", "HKY85", "TN93", "REV", "UNREST", "REVU",
+                 "UNRESTU",
+                 "JTT", "PMB", "PAM", "Kimura", "CategoriesModel"),
+        help="method to use for distance calculation [default=%default].")
 
     parser.add_option("--method", dest="method", type="choice",
                       choices=("phylip", "baseml", "own", "xrate"),
-                      help = "program to use for rate calculation.")
+                      help="program to use for rate calculation.")
 
     parser.add_option("--output-format", dest="output_format", type="choice",
                       choices=("list", "tree"),
-                      help = "output format.")
+                      help="output format.")
 
-    parser.add_option("-m", "--min-sites", dest="min_sites", type="int",
-                      help="minimum number of sites for output[default=%default].", )
+    parser.add_option(
+        "-m", "--min-sites", dest="min_sites", type="int",
+        help="minimum number of sites for output[default=%default].", )
 
-    parser.add_option("-a", "--alphabet", dest="alphabet", type="choice",
-                      choices=("aa", "na", "auto"),
-                      help="alphabet to use.", )
+    parser.add_option(
+        "-a", "--alphabet", dest="alphabet", type="choice",
+        choices=("aa", "na", "auto"),
+        help="alphabet to use.", )
 
-    parser.add_option("-t", "--tree-nh-file", dest="filename_tree", type="string",
-                      help="filename with tree information.")
+    parser.add_option(
+        "-t", "--tree-nh-file", dest="filename_tree", type="string",
+        help="filename with tree information.")
 
     parser.add_option("--set-alpha", dest="alpha", type="float",
                       help="initial alpha value.")
@@ -828,7 +831,7 @@ def main(argv=None):
 #define both_non_n(a, b) (strcmp(a, "n") && strcmp(b, "n"))
 
 void dist_dna_JC69(char **x, int *n, int *s, double *d, int *pairdel,
-		   int *variance, double *var, int *gamma, double *alpha)
+             int *variance, double *var, int *gamma, double *alpha)
 {
   int i, j, k, s1, s2, target, Nd, L;
   double p;
@@ -839,28 +842,28 @@ void dist_dna_JC69(char **x, int *n, int *s, double *d, int *pairdel,
       Nd = 0;
       L = 0;
       for (k = 0; k < *s; k++) {
-	s1 = i * *s + k;
-	s2 = j * *s + k;
-	if (*pairdel) {
-	  if (both_non_n(x[s1], x[s2])) L += 1;
-	  else continue;
-	}
-	if (strcmp(x[s1], x[s2])) Nd += 1;
+     s1 = i * *s + k;
+     s2 = j * *s + k;
+     if (*pairdel) {
+       if (both_non_n(x[s1], x[s2])) L += 1;
+       else continue;
+     }
+     if (strcmp(x[s1], x[s2])) Nd += 1;
       }
       if (!*pairdel) L = *s;
       p = ((double) Nd/L);
       if (*gamma) d[target] = 0.75 * *alpha * (pow(1 - 4*p/3, -1/ *alpha) - 1);
       else d[target] = -0.75 * log(1 - 4 * p/3);
       if (*variance) {
-	if (*gamma) var[target] = p*(1 - p)/(pow(1 - 4*p/3, -2/(*alpha + 1)) * L);
-	else var[target] = p*(1 - p)/(pow(1 - 4*p/3, 2)*L);
+     if (*gamma) var[target] = p*(1 - p)/(pow(1 - 4*p/3, -2/(*alpha + 1)) * L);
+     else var[target] = p*(1 - p)/(pow(1 - 4*p/3, 2)*L);
       }
     }
   }
 }
 
 void dist_dna_K80(char **x, int *n, int *s, double *d, int *pairdel,
-		   int *variance, double *var, int *gamma, double *alpha)
+             int *variance, double *var, int *gamma, double *alpha)
 {
   int i, j, k, s1, s2, target, Nd, Ns, L;
   double P, Q, a1, a2, b, c1, c2, c3;
@@ -872,29 +875,29 @@ void dist_dna_K80(char **x, int *n, int *s, double *d, int *pairdel,
       Ns = 0;
       L = 0;
       for (k = 0; k < *s; k++) {
-	s1 = i * *s + k;
-	s2 = j * *s + k;
-	if (*pairdel) {
-	  if (both_non_n(x[s1], x[s2])) L += 1;
-	  else continue;
-	}
-	if (strcmp(x[s1], x[s2])) {
-	  Nd += 1;
-	  if (!strcmp(x[s1], "a") && !strcmp(x[s2], "g"))
-	    Ns += 1;
-	  else {
-	    if (!strcmp(x[s1], "g") && !strcmp(x[s2], "a"))
-	      Ns += 1;
-	    else {
-	      if (!strcmp(x[s1], "c") && !strcmp(x[s2], "t"))
-		Ns += 1;
-	      else {
-		if (!strcmp(x[s1], "t") && !strcmp(x[s2], "c"))
-		  Ns += 1;
-	      }
-	    }
-	  }
-	}
+     s1 = i * *s + k;
+     s2 = j * *s + k;
+     if (*pairdel) {
+       if (both_non_n(x[s1], x[s2])) L += 1;
+       else continue;
+     }
+     if (strcmp(x[s1], x[s2])) {
+       Nd += 1;
+       if (!strcmp(x[s1], "a") && !strcmp(x[s2], "g"))
+         Ns += 1;
+       else {
+         if (!strcmp(x[s1], "g") && !strcmp(x[s2], "a"))
+           Ns += 1;
+         else {
+           if (!strcmp(x[s1], "c") && !strcmp(x[s2], "t"))
+          Ns += 1;
+           else {
+          if (!strcmp(x[s1], "t") && !strcmp(x[s2], "c"))
+            Ns += 1;
+           }
+         }
+       }
+     }
       }
       if (!*pairdel) L = *s;
       P = ((double) Ns/L);
@@ -902,30 +905,30 @@ void dist_dna_K80(char **x, int *n, int *s, double *d, int *pairdel,
       a1 = 1 - 2 * P - Q;
       a2 = 1 - 2 * Q;
       if (*gamma) {
-	b = -1 / *alpha;
-	d[target] = *alpha * (pow(a1, b) + 0.5 * pow(a2, b) - 1.5) / 2;
+     b = -1 / *alpha;
+     d[target] = *alpha * (pow(a1, b) + 0.5 * pow(a2, b) - 1.5) / 2;
       }
       else d[target] = -0.5 * log(a1 * sqrt(a2));
       if (*variance) {
-	if (*gamma) {
-	  b = -(1 / *alpha + 1);
-	  c1 = pow(a1, b);
-	  c2 = pow(a2, b);
-	  c3 = (c1 + c2) / 2;
-	} else {
-	  c1 = 1 / a1;
-	  c2 = 1 / a2;
-	  c3 = (c1 + c2) / 2;
-	}
-	var[target] = (c1*c1*P + c3*c3*Q - pow(c1*P + c3*Q, 2))/L;
+     if (*gamma) {
+       b = -(1 / *alpha + 1);
+       c1 = pow(a1, b);
+       c2 = pow(a2, b);
+       c3 = (c1 + c2) / 2;
+     } else {
+       c1 = 1 / a1;
+       c2 = 1 / a2;
+       c3 = (c1 + c2) / 2;
+     }
+     var[target] = (c1*c1*P + c3*c3*Q - pow(c1*P + c3*Q, 2))/L;
       }
     }
   }
 }
 
 void dist_dna_F81(char **x, int *n, int *s, double *d, double *BF,
-		  int *pairdel, int *variance, double *var,
-		  int *gamma, double *alpha)
+            int *pairdel, int *variance, double *var,
+            int *gamma, double *alpha)
 {
   int i, j, k, Nd, L, target, s1, s2;
   double E, p;
@@ -938,28 +941,28 @@ void dist_dna_F81(char **x, int *n, int *s, double *d, double *BF,
       Nd = 0;
       L = 0;
       for (k = 0; k < *s; k++) {
-	s1 = i * *s + k;
-	s2 = j * *s + k;
-	if (*pairdel) {
-	  if (both_non_n(x[s1], x[s2])) L += 1;
-	  else continue;
-	}
-	if (strcmp(x[s1], x[s2])) Nd += 1;
+     s1 = i * *s + k;
+     s2 = j * *s + k;
+     if (*pairdel) {
+       if (both_non_n(x[s1], x[s2])) L += 1;
+       else continue;
+     }
+     if (strcmp(x[s1], x[s2])) Nd += 1;
       }
       if (!*pairdel) L = *s;
       p = ((double) Nd/L);
       if (*gamma) d[target] = E * *alpha * (pow(1 - p/E, -1/ *alpha) - 1);
       else d[target] = -E*log(1 - p/E);
       if (*variance) {
-	if (*gamma) var[target] = p*(1 - p)/(pow(1 - p/E, -2/(*alpha + 1)) * L);
-	else var[target] = p*(1 - p)/(pow(1 - p/E, 2)*L);
+     if (*gamma) var[target] = p*(1 - p)/(pow(1 - p/E, -2/(*alpha + 1)) * L);
+     else var[target] = p*(1 - p)/(pow(1 - p/E, 2)*L);
       }
     }
   }
 }
 
 void dist_dna_K81(char **x, int *n, int *s, double *d, int *pairdel,
-		   int *variance, double *var)
+             int *variance, double *var)
 {
   int i, j, k, Nd, Nv1, Nv2, L, s1, s2, target;
   double P, Q, R, a1, a2, a3, a, b, c;
@@ -972,34 +975,34 @@ void dist_dna_K81(char **x, int *n, int *s, double *d, int *pairdel,
       Nv2 = 0;
       L = 0;
       for (k = 0; k < *s; k++) {
-	s1 = i * *s + k;
-	s2 = j * *s + k;
-	if (*pairdel) {
-	  if (both_non_n(x[s1], x[s2])) L += 1;
-	  else continue;
-	}
-	if (strcmp(x[s1], x[s2])) {
-	  Nd += 1;
-	  if (!strcmp(x[s1], "a")) {
-	    if (!strcmp(x[s2], "t")) Nv1 += 1;
-	    if (!strcmp(x[s2], "c")) Nv2 += 1;
-	  } else {
-	    if (!strcmp(x[s1], "g")) {
-	      if (!strcmp(x[s2], "c")) Nv1 += 1;
-	      if (!strcmp(x[s2], "t")) Nv2 += 1;
-	    } else {
-	      if (!strcmp(x[s1], "c")) {
-		if (!strcmp(x[j * *s + k], "g")) Nv1 += 1;
-		if (!strcmp(x[j * *s + k], "a")) Nv2 += 1;
-	      } else {
-		if (!strcmp(x[s1], "t")) {
-		  if (!strcmp(x[s2], "a")) Nv1 += 1;
-		  if (!strcmp(x[s2], "g")) Nv2 += 1;
-		}
-	      }
-	    }
-	  }
-	}
+     s1 = i * *s + k;
+     s2 = j * *s + k;
+     if (*pairdel) {
+       if (both_non_n(x[s1], x[s2])) L += 1;
+       else continue;
+     }
+     if (strcmp(x[s1], x[s2])) {
+       Nd += 1;
+       if (!strcmp(x[s1], "a")) {
+         if (!strcmp(x[s2], "t")) Nv1 += 1;
+         if (!strcmp(x[s2], "c")) Nv2 += 1;
+       } else {
+         if (!strcmp(x[s1], "g")) {
+           if (!strcmp(x[s2], "c")) Nv1 += 1;
+           if (!strcmp(x[s2], "t")) Nv2 += 1;
+         } else {
+           if (!strcmp(x[s1], "c")) {
+          if (!strcmp(x[j * *s + k], "g")) Nv1 += 1;
+          if (!strcmp(x[j * *s + k], "a")) Nv2 += 1;
+           } else {
+          if (!strcmp(x[s1], "t")) {
+            if (!strcmp(x[s2], "a")) Nv1 += 1;
+            if (!strcmp(x[s2], "g")) Nv2 += 1;
+          }
+           }
+         }
+       }
+     }
       }
       if (!*pairdel) L = *s;
       P = ((double) (Nd - Nv1 - Nv2)/L);
@@ -1011,8 +1014,8 @@ void dist_dna_K81(char **x, int *n, int *s, double *d, int *pairdel,
       d[target] = -0.25 * log(a1 * a2 * a3);
       if (*variance) {
         a = (1/a1 + 1/a2)/2;
-	b = (1/a1 + 1/a3)/2;
-	c = (1/a2 + 1/a3)/2;
+     b = (1/a1 + 1/a3)/2;
+     c = (1/a2 + 1/a3)/2;
         var[target] = (a*a*P + b*b*Q + c*c*R - pow(a*P + b*Q + c*R, 2))/2;
       }
     }
@@ -1020,7 +1023,7 @@ void dist_dna_K81(char **x, int *n, int *s, double *d, int *pairdel,
 }
 
 void dist_dna_F84(char **x, int *n, int *s, double *d, double *BF,
-		  int *pairdel, int *variance, double *var)
+            int *pairdel, int *variance, double *var)
 {
   int i, j, k, Nd, Ns, L, target, s1, s2;
   double P, Q, A, B, C, a, b, t1, t2, t3;
@@ -1036,29 +1039,29 @@ void dist_dna_F84(char **x, int *n, int *s, double *d, double *BF,
       Ns = 0;
       L = 0;
       for (k = 0; k < *s; k++) {
-	s1 = i * *s + k;
-	s2 = j * *s + k;
-	if (*pairdel) {
-	  if (both_non_n(x[s1], x[s2])) L += 1;
-	  else continue;
-	}
-	if (strcmp(x[s1], x[s2])) {
-	  Nd += 1;
-	  if (!strcmp(x[s1], "a") && !strcmp(x[s2], "g"))
-	    Ns += 1;
-	  else {
-	    if (!strcmp(x[s1], "g") && !strcmp(x[s2], "a"))
-	      Ns += 1;
-	    else {
-	      if (!strcmp(x[s1], "c") && !strcmp(x[s2], "t"))
-		Ns += 1;
-	      else {
-		if (!strcmp(x[s1], "t") && !strcmp(x[s2], "c"))
-		  Ns += 1;
-	      }
-	    }
-	  }
-	}
+     s1 = i * *s + k;
+     s2 = j * *s + k;
+     if (*pairdel) {
+       if (both_non_n(x[s1], x[s2])) L += 1;
+       else continue;
+     }
+     if (strcmp(x[s1], x[s2])) {
+       Nd += 1;
+       if (!strcmp(x[s1], "a") && !strcmp(x[s2], "g"))
+         Ns += 1;
+       else {
+         if (!strcmp(x[s1], "g") && !strcmp(x[s2], "a"))
+           Ns += 1;
+         else {
+           if (!strcmp(x[s1], "c") && !strcmp(x[s2], "t"))
+          Ns += 1;
+           else {
+          if (!strcmp(x[s1], "t") && !strcmp(x[s2], "c"))
+            Ns += 1;
+           }
+         }
+       }
+     }
       }
       if (!*pairdel) L = *s;
       P = ((double) Ns/L);
@@ -1066,11 +1069,11 @@ void dist_dna_F84(char **x, int *n, int *s, double *d, double *BF,
       d[target] = -2*A*log(1 - (P/(2*A) - (A - B)*Q/(2*A*C))) + 2*(A - B - C)*log(1 - Q/(2*C));
       if (*variance) {
         t1 = A*C;
-	t2 = C*P/2;
-	t3 = (A - B)*Q/2;
+     t2 = C*P/2;
+     t3 = (A - B)*Q/2;
         a = t1/(t1 - t2 - t3);
-	b = A*(A - B)/(t1 - t2 - t3) - (A - B - C)/(C - Q/2);
-	var[target] = (a*a*P + b*b*Q - pow(a*P + b*Q, 2))/2;
+     b = A*(A - B)/(t1 - t2 - t3) - (A - B - C)/(C - Q/2);
+     var[target] = (a*a*P + b*b*Q - pow(a*P + b*Q, 2))/2;
       }
     }
   }
@@ -1091,29 +1094,29 @@ void dist_dna_T92(char **x, int *n, int *s, double *d, double *BF,
       Ns = 0;
       L = 0;
       for (k = 0; k < *s; k++) {
-	s1 = i * *s + k;
-	s2 = j * *s + k;
-	if (*pairdel) {
-	  if (both_non_n(x[s1], x[s2])) L += 1;
-	  else continue;
-	}
-	if (strcmp(x[s1], x[s2])) {
-	  Nd += 1;
-	  if (!strcmp(x[s1], "a") && !strcmp(x[s2], "g"))
-	    Ns += 1;
-	  else {
-	    if (!strcmp(x[s1], "g") && !strcmp(x[s2], "a"))
-	      Ns += 1;
-	    else {
-	      if (!strcmp(x[s1], "c") && !strcmp(x[s2], "t"))
-		Ns += 1;
-	      else {
-		if (!strcmp(x[s1], "t") && !strcmp(x[s2], "c"))
-		  Ns += 1;
-	      }
-	    }
-	  }
-	}
+     s1 = i * *s + k;
+     s2 = j * *s + k;
+     if (*pairdel) {
+       if (both_non_n(x[s1], x[s2])) L += 1;
+       else continue;
+     }
+     if (strcmp(x[s1], x[s2])) {
+       Nd += 1;
+       if (!strcmp(x[s1], "a") && !strcmp(x[s2], "g"))
+         Ns += 1;
+       else {
+         if (!strcmp(x[s1], "g") && !strcmp(x[s2], "a"))
+           Ns += 1;
+         else {
+           if (!strcmp(x[s1], "c") && !strcmp(x[s2], "t"))
+          Ns += 1;
+           else {
+          if (!strcmp(x[s1], "t") && !strcmp(x[s2], "c"))
+            Ns += 1;
+           }
+         }
+       }
+     }
       }
       if (!*pairdel) L = *s;
       P = ((double) Ns/L);
@@ -1132,8 +1135,8 @@ void dist_dna_T92(char **x, int *n, int *s, double *d, double *BF,
 }
 
 void dist_dna_TN93(char **x, int *n, int *s, double *d, double *BF,
-		  int *pairdel, int *variance, double *var,
-		  int *gamma, double *alpha)
+            int *pairdel, int *variance, double *var,
+            int *gamma, double *alpha)
 {
   int i, j, k, Nd, Ns1, Ns2, L, target, s1, s2;
   double P1, P2, Q, A, B, C, gR, gY, k1, k2, k3, k4, w1, w2, w3, c1, c2, c3, c4, b;
@@ -1153,28 +1156,28 @@ void dist_dna_TN93(char **x, int *n, int *s, double *d, double *BF,
       L = 0;
       for (k = 0; k < *s; k++) {
         s1 = i * *s + k;
-	s2 = j * *s + k;
-	if (*pairdel) {
-	  if (both_non_n(x[s1], x[s2])) L += 1;
-	  else continue;
-	}
-	if (strcmp(x[s1], x[s2])) {
-	  Nd += 1;
-	  if (!strcmp(x[s1], "a") && !strcmp(x[s2], "g"))
-	    Ns1 += 1;
-	  else {
-	    if (!strcmp(x[s1], "g") && !strcmp(x[s2], "a"))
-	      Ns1 += 1;
-	    else {
-	      if (!strcmp(x[s1], "c") && !strcmp(x[s2], "t"))
-		Ns2 += 1;
-	      else {
-		if (!strcmp(x[s1], "t") && !strcmp(x[s2], "c"))
-		  Ns2 += 1;
-	      }
-	    }
-	  }
-	}
+     s2 = j * *s + k;
+     if (*pairdel) {
+       if (both_non_n(x[s1], x[s2])) L += 1;
+       else continue;
+     }
+     if (strcmp(x[s1], x[s2])) {
+       Nd += 1;
+       if (!strcmp(x[s1], "a") && !strcmp(x[s2], "g"))
+         Ns1 += 1;
+       else {
+         if (!strcmp(x[s1], "g") && !strcmp(x[s2], "a"))
+           Ns1 += 1;
+         else {
+           if (!strcmp(x[s1], "c") && !strcmp(x[s2], "t"))
+          Ns2 += 1;
+           else {
+          if (!strcmp(x[s1], "t") && !strcmp(x[s2], "c"))
+            Ns2 += 1;
+           }
+         }
+       }
+     }
       }
       if (!*pairdel) L = *s;
       P1 = ((double) Ns1/L);
@@ -1207,7 +1210,7 @@ void dist_dna_TN93(char **x, int *n, int *s, double *d, double *BF,
 }
 
 void dist_dna_GG95(char **x, int *n, int *s, double *d,
-		   int *pairdel, int *variance, double *var)
+             int *pairdel, int *variance, double *var)
 {
   int i, j, k, s1, s2, target, *GC, gccount, Nd, Ns, *L, length, tl, npair;
   double *theta, gcprop, *P, pp, *Q, qq, *tstvr, svr, A,
@@ -1236,11 +1239,11 @@ void dist_dna_GG95(char **x, int *n, int *s, double *d,
     for (k = 0; k < *s; k++) {
       s1 = i * *s + k;
       if (*pairdel) {
-	if (strcmp(x[s1], "n")) tl += 1;
-	else continue;
+     if (strcmp(x[s1], "n")) tl += 1;
+     else continue;
       }
       if (!strcmp(x[s1], "c") || !strcmp(x[s1], "g"))
-	GC[i] += 1;
+     GC[i] += 1;
     }
     if (!*pairdel) tl = *s;
     theta[i] = ((double) GC[i]/tl);
@@ -1256,29 +1259,29 @@ void dist_dna_GG95(char **x, int *n, int *s, double *d,
       Ns = 0;
       L[target] = 0;
       for (k = 0; k < *s; k++) {
-	s1 = i * *s + k;
-	s2 = j * *s + k;
-	if (*pairdel) {
-	  if (both_non_n(x[s1], x[s2])) L[target] += 1;
-	  else continue;
-	}
-	if (strcmp(x[s1], x[s2])) {
-	  Nd += 1;
-	  if (!strcmp(x[s1], "a") && !strcmp(x[s2], "g"))
-	    Ns += 1;
-	  else {
-	    if (!strcmp(x[s1], "g") && !strcmp(x[s2], "a"))
-	      Ns += 1;
-	    else {
-	      if (!strcmp(x[s1], "c") && !strcmp(x[s2], "t"))
-		Ns += 1;
-	      else {
-		if (!strcmp(x[s1], "t") && !strcmp(x[s2], "c"))
-		  Ns += 1;
-	      }
-	    }
-	  }
-	}
+     s1 = i * *s + k;
+     s2 = j * *s + k;
+     if (*pairdel) {
+       if (both_non_n(x[s1], x[s2])) L[target] += 1;
+       else continue;
+     }
+     if (strcmp(x[s1], x[s2])) {
+       Nd += 1;
+       if (!strcmp(x[s1], "a") && !strcmp(x[s2], "g"))
+         Ns += 1;
+       else {
+         if (!strcmp(x[s1], "g") && !strcmp(x[s2], "a"))
+           Ns += 1;
+         else {
+           if (!strcmp(x[s1], "c") && !strcmp(x[s2], "t"))
+          Ns += 1;
+           else {
+          if (!strcmp(x[s1], "t") && !strcmp(x[s2], "c"))
+            Ns += 1;
+           }
+         }
+       }
+     }
       }
       if (!*pairdel) L[target] = *s;
       P[target] = ((double) Ns/L[target]);
@@ -1309,33 +1312,33 @@ void dist_dna_GG95(char **x, int *n, int *s, double *d,
       K2 = ma*pow(theta[i] - theta[j], 2)/(ma + 1);
       d[target] = -0.5*K1*log(A) + K2*(1 - pow(A, 0.25*(ma + 1)));
       if (*variance)
-	var[target] = pow(K1 + K2*0.5*(ma + 1)*pow(A, 0.25*(ma + 1)), 2)*Q[target]*(1 - Q[target])/(A*A*L[target]);
+     var[target] = pow(K1 + K2*0.5*(ma + 1)*pow(A, 0.25*(ma + 1)), 2)*Q[target]*(1 - Q[target])/(A*A*L[target]);
     }
   }
 }
 
 BF: base frequencies: a c g t
 void dist_dna(char **x, int *n, int *s, int *model, double *d,
-	      double *BF, int *pairdel, int *variance, double *var,
-	      int *gamma, double *alpha)
+           double *BF, int *pairdel, int *variance, double *var,
+           int *gamma, double *alpha)
 {
   switch (*model) {
   case 1 : dist_dna_JC69(x, n, s, d, pairdel, variance,
-			 var, gamma, alpha); break;
+                var, gamma, alpha); break;
   case 2 : dist_dna_K80(x, n, s, d, pairdel, variance,
-			var, gamma, alpha); break;
+               var, gamma, alpha); break;
   case 3 : dist_dna_F81(x, n, s, d, BF, pairdel, variance,
-			var, gamma, alpha); break;
+               var, gamma, alpha); break;
   case 4 : dist_dna_K81(x, n, s, d, pairdel, variance,
-			var); break;
+               var); break;
   case 5 : dist_dna_F84(x, n, s, d, BF, pairdel, variance,
-			var); break;
+               var); break;
   case 6 : dist_dna_T92(x, n, s, d, BF, pairdel, variance,
-			var); break;
+               var); break;
   case 7 : dist_dna_TN93(x, n, s, d, BF, pairdel, variance,
-			 var, gamma, alpha); break;
+                var, gamma, alpha); break;
   case 8 : dist_dna_GG95(x, n, s, d, pairdel,
-			 variance, var); break;
+                variance, var); break;
   }
 }
 """

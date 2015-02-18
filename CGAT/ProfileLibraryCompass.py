@@ -35,20 +35,13 @@ Code
 '''
 import os
 import sys
-import string
-import re
 import tempfile
 import subprocess
-import optparse
-import time
-import math
 import shutil
+from CGAT import Experiment as Experiment
+from CGAT import Mali as Mali
+from ProfileLibrary import ProfileLibrary
 
-#--------------------------------------------------------
-#--------------------------------------------------------
-#--------------------------------------------------------
-# usage message
-#--------------------------------------------------------
 USAGE = """python %s [OPTIONS]
 
 work with library of compass profiles.
@@ -61,15 +54,6 @@ Actions include:
 
 This is version $Id: ProfileLibraryCompass.py 2781 2009-09-10 11:33:14Z andreas $.
 """ % sys.argv[0]
-
-#--------------------------------------------------------
-#--------------------------------------------------------
-#--------------------------------------------------------
-# import of user libraries
-#--------------------------------------------------------
-from CGAT import Experiment as Experiment
-from CGAT import Mali as Mali
-from ProfileLibrary import ProfileLibrary
 
 
 class CompassProfile:
@@ -268,14 +252,9 @@ class ProfileLibraryCompass(ProfileLibrary):
 
         return ninput, nfound, nnotfound, ndifferent
 
-#--------------------------------------------------------
-#--------------------------------------------------------
-#--------------------------------------------------------
-# main part of script
-#--------------------------------------------------------
+
 if __name__ == "__main__":
 
-    #--------------------------------------------------------
     # command line parsing options
     parser = E.OptionParser(
         version="%prog version: $Id: ProfileLibraryCompass.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
@@ -295,7 +274,6 @@ if __name__ == "__main__":
 
     (options, args) = Experiment.Start(parser)
 
-    #--------------------------------------------------------
     # main part of script
     mali = Mali.Mali()
 
@@ -337,6 +315,5 @@ if __name__ == "__main__":
     elif options.action == "stats":
         options.stdout.write("profiles\t%i\n" % len(plib))
 
-    #--------------------------------------------------------
     # general cleaning up
     Experiment.Stop()

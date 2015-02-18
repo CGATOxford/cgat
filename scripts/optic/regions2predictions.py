@@ -62,6 +62,12 @@ import string
 import re
 import getopt
 import tempfile
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.Intervalls as Intervalls
+import CGAT.PredictionParser as PredictionParser
+import CGAT.PredictionFile as PredictionFile
+import alignlib_lite
 
 USAGE = """python %s [OPTIONS] < exonerate_output > filtered
 
@@ -87,13 +93,6 @@ Options:
 --disable-suboptimal            turn of elimination of suboptimal predictions
 --disable-activation            turn of reactivation of eliminated queries
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.Intervalls as Intervalls
-import CGAT.PredictionParser as PredictionParser
-import CGAT.PredictionFile as PredictionFile
-import alignlib_lite
 
 param_loglevel = 2
 

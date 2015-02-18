@@ -56,21 +56,16 @@ Code
 ----
 
 '''
-USAGE = """recalculated translations from a predictions file.
-"""
 
 import sys
-import os
-import string
-import re
-import optparse
-
 import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Genomics as Genomics
 
-# ------------------------------------------------------------
+
+USAGE = """recalculated translations from a predictions file.
+"""
 
 
 def main(argv=None):

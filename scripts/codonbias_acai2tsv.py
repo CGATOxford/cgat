@@ -31,24 +31,17 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
 import string
 import re
-import tempfile
-import subprocess
-import optparse
 import random
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.WrapperAdaptiveCAI as WrapperAdaptiveCAI
+import CGAT.IOTools as IOTools
 
 """Wrapper for adaptive codon bias program
 """
-
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-
-import CGAT.WrapperAdaptiveCAI as WrapperAdaptiveCAI
-import CGAT.IOTools as IOTools
-import CGAT.CSV as CSV
 
 # order of codon matrix as expected by caijava.
 OUTPUT_ORDER_CODON_MATRIX = (

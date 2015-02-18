@@ -34,7 +34,7 @@ Purpose
 
 .. todo::
    
-   describe purpose of the script.
+Remove transcripts from a gene that are likely predictions by paralogs.
 
 Usage
 -----
@@ -49,6 +49,7 @@ Type::
 
 for command line help.
 
+
 Documentation
 -------------
 
@@ -56,26 +57,8 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
-import re
-import getopt
-import time
-import sets
-import optparse
-import math
-import tempfile
-
-""" program $Id: gpipe/select_transcripts_per_gene.py 2781 2009-09-10 11:33:14Z andreas $
-
-Remove transcripts from a gene that are likely predictions by paralogs.
-
-"""
-
 import CGAT.Experiment as E
-import CGAT.Exons as Exons
-
 import pgdb
 
 

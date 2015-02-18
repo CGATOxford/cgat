@@ -54,8 +54,6 @@ from CGAT import Experiment as E
 from AString import AString
 import pysam
 
-# ------------------------------------------------------------
-
 
 class Uncompressor:
 
@@ -89,8 +87,6 @@ class Uncompressor:
             u) >= end - start, "fragment smaller than requested size: %i > %i-%i=%i" % (len(u), end, start, end - start)
 
         return u[r:r + end - start]
-
-# ------------------------------------------------------------
 
 
 def writeFragments(outfile_fasta,

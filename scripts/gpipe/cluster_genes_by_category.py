@@ -56,12 +56,11 @@ Code
 ----
 
 '''
-import os
 import sys
 import string
-import re
 import getopt
-import tempfile
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
 
 USAGE = """python %s [OPTIONS] < exonerate_output > filtered
 
@@ -77,8 +76,6 @@ Options:
 -r, --regions=                  filename with regions for genes
 """ % sys.argv[0]
 
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
 
 param_loglevel = 2
 

@@ -70,7 +70,8 @@ The four files contain intervals, that
 3. have tf1 and tf2 present, or
 4. have PolII and tf1 and tf2 present.
 
-If the --exclusive-overlap option is set, three sets will be output with intervals that
+If the --exclusive-overlap option is set, three sets will be output
+with intervals that
 
 1. have PolII and tf1 present but no tf2,
 2. have PolII and tf2 present but no tf1,
@@ -166,10 +167,11 @@ def combineUnmergedIntervals(foreground, background):
 
     Algorithm:
 
-    1. report all intervals in the first track that overlap with an interval in every other track.
+    1. report all intervals in the first track that overlap with an
+    interval in every other track.
+
     '''
 
-    intervals = []
     c = 0
     for bed in foreground.fetch(parser=pysam.asBed()):
         c += 1
@@ -203,10 +205,11 @@ def main(argv=None):
         help="pattern to convert a filename "
         "to an id [default=%default].")
 
-    parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices=("merged-combinations",
-                               "unmerged-combinations"),
-                      help = "method to perform [default=%default]")
+    parser.add_option(
+        "-m", "--method", dest="method", type="choice",
+        choices=("merged-combinations",
+                 "unmerged-combinations"),
+        help="method to perform [default=%default]")
 
     parser.set_defaults(
         pattern_id="(.*).bed.gz",

@@ -60,13 +60,10 @@ Command line options
 
 '''
 
-import os
 import sys
-import tempfile
 import collections
 import itertools
 import subprocess
-
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import pysam

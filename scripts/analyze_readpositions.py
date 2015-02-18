@@ -30,34 +30,22 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import getopt
-import time
-import optparse
-import math
-import tempfile
-
-USAGE = """ program $Id: analyze_readpositions.py 2781 2009-09-10 11:33:14Z andreas $
-
-
-"""
 import CGAT.Experiment as E
 import CGAT.CSV as CSV
-import CGAT.IOTools as IOTools
-import CGAT.Stats as Stats
 import numpy
 
 
 def main(argv=None):
 
     parser = E.OptionParser(
-        version="%prog version: $Id: analyze_readpositions.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    parser.add_option("--output-filename-pattern", dest="output_filename_pattern", type="string",
-                      help="pattern for additional output files [%default].")
+    parser.add_option(
+        "--output-filename-pattern",
+        dest="output_filename_pattern", type="string",
+        help="pattern for additional output files [%default].")
 
     parser.set_defaults(
         length=1000,

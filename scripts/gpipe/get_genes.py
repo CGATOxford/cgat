@@ -59,9 +59,13 @@ Code
 import os
 import sys
 import string
-import re
 import getopt
-import math
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.PredictionParser as PredictionParser
+import pgdb
+import webbrowser
+
 
 USAGE = """python %s [OPTIONS] < exonerate_output > filtered
 
@@ -114,13 +118,6 @@ param_short_options = "v:hb:e:p:g:E:P:G:i:a:S:nl"
 
 # pattern for genomes, %s is substituted for the sbjct_token
 param_genome_file = "genome_%s.fasta"
-
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.PredictionParser as PredictionParser
-import pgdb
-import webbrowser
-
 param_format = "gff"
 param_loglevel = 0
 param_filename_peptides = None

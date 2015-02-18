@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-optic/links2exons.py - 
+optic/links2exons.py -
 ======================================================
 
 :Author: Andreas Heger
@@ -33,7 +33,7 @@ Purpose
 -------
 
 .. todo::
-   
+
    describe purpose of the script.
 
 Usage
@@ -56,12 +56,14 @@ Code
 ----
 
 '''
-import os
 import sys
 import string
 import re
 import getopt
-import tempfile
+import CGAT.Experiment as E
+import CGAT.Exons as Exons
+import alignlib_lite
+import CGAT.BlastAlignments as BlastAlignments
 
 USAGE = """python %s [OPTIONS] < orthologs > genes
 
@@ -77,12 +79,6 @@ Options:
 -c, --cds-gtf-file=                      files with coding sequences (exon boundaries)
 -e, --expand                    write in nucleic acid coordinates (default: peptide coordinates)
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.Exons as Exons
-import alignlib_lite
-import CGAT.BlastAlignments as BlastAlignments
 
 param_long_options = ["verbose=", "help",
                       "cds=", "map=", "version"]
@@ -112,8 +108,6 @@ def ScaleAlignment(alignment, factor):
 
     s = map(lambda x, y: "%s%i" % (x, y), signs, data)
     return string.join(s, "")
-
-# ------------------------------------------------------------
 
 
 def main(argv=None):

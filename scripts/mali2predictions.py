@@ -31,24 +31,20 @@ Command line options
 --------------------
 
 '''
+import sys
+import string
+import re
+import CGAT.Experiment as E
+import CGAT.Prediction as Prediction
+import CGAT.Genomics as Genomics
+import CGAT.Mali as Mali
+import CGAT.IOTools as IOTools
+
 USAGE = """convert a multiply aligned genomic segment to predictions.
 
 lower case characters are exons, upper-case characters are introns.
 Introns of a size smaller than 6 are frameshifts.
 """
-
-import sys
-import os
-import string
-import re
-import optparse
-
-import CGAT.Experiment as E
-import CGAT.Prediction as Prediction
-import CGAT.IndexedFasta as IndexedFasta
-import CGAT.Genomics as Genomics
-import CGAT.Mali as Mali
-import CGAT.IOTools as IOTools
 
 
 def processCodon(codon):

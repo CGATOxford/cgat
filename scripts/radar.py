@@ -33,6 +33,8 @@ Command line options
 '''
 import sys
 import re
+import CGAT.Experiment as E
+import CGAT.FastaIterator as FastaIterator
 
 USAGE = """python %s [OPTIONS] < mali > mali
 
@@ -50,13 +52,6 @@ Parameters are given to the option parameters in a comma-separated list in the o
 that the edit operations are called upon.
 
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
-import CGAT.Genomics as Genomics
-import CGAT.FastaIterator as FastaIterator
-
-# ------------------------------------------------------------
 
 
 def main(argv=None):

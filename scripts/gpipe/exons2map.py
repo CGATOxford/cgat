@@ -58,8 +58,11 @@ Code
 '''
 import sys
 import string
-import re
 import getopt
+import CGAT.Experiment as E
+import CGAT.Exons as Exons
+import alignlib_lite
+
 
 USAGE = """python %s [OPTIONS] < psl > predictions
 
@@ -83,11 +86,6 @@ param_short_options = "v:hc:"
 param_trans = None
 
 param_filename_contigs = None
-
-import CGAT.Experiment as E
-import CGAT.PredictionParser as PredictionParser
-import CGAT.Exons as Exons
-import alignlib_lite
 
 
 def main(argv=None):

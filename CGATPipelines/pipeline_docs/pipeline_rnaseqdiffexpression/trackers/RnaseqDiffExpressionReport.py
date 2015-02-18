@@ -1,15 +1,11 @@
-import os
-import sys
 import re
-import types
-import itertools
 import glob
 
 from CGATReport.Tracker import *
 from CGATReport.Utils import PARAMS as P
-from collections import OrderedDict as odict
 
 from CGATPipelines.PipelineGeneset import mapUCSCToEnsembl
+import CGATPipelines.PipelineTracks as PipelineTracks
 
 # get from config file
 UCSC_DATABASE = P["genome"]
@@ -30,7 +26,7 @@ DATABASE_ANNOTATIONS = P['annotations_database']
 # cf. pipeline_rnaseq.py
 # This should be automatically gleaned from pipeline_rnaseq.py
 ###################################################################
-import CGATPipelines.PipelineTracks as PipelineTracks
+
 
 TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
     glob.glob("%s/*.bam" % DATADIR), "(\S+).bam")

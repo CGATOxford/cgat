@@ -31,6 +31,11 @@ Command line options
 --------------------
 
 '''
+import sys
+import string
+import CGAT.Experiment as E
+
+
 USAGE = """
 Create a graph from a list of edges.
 
@@ -44,16 +49,6 @@ python links2gdl.py [OPTIONS] < in_edges > out_graph.gdl
 --weights-tsv-file               add weights to graph
 --default-edge-colour   default edge colour
 """
-
-import os
-import sys
-import string
-import re
-import getopt
-import optparse
-
-import CGAT.Experiment as E
-import matplotlib
 
 FORMAT_GRAPH = '''
          layoutalgorithm: forcedir      
@@ -110,12 +105,12 @@ def PrintNodes(nodes, labels, colours):
 
     for id in nodes.keys():
 
-        if labels.has_key(id):
+        if id in labels:
             label = labels[id]
         else:
             label = "na"
 
-        if colours.has_key(id):
+        if id in colours:
             colour = colours[id]
         else:
             colour = None
@@ -136,13 +131,13 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    #--------------------------------------------------------
-    # command line parsing options
     parser = E.OptionParser(
-        version="%prog version: $Id: graph_links2gdl.py 2782 2009-09-10 11:40:29Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    parser.add_option("-c", "--components-tsv-file", dest="filename_components", type="string",
-                      help="filename with component information.")
+    parser.add_option(
+        "-c", "--components-tsv-file", dest="filename_components", type="string",
+        help="filename with component information.")
     parser.add_option("-o", "--component", dest="component", type="string",
                       help="restrict output to component.")
     parser.add_option("-s", "--filename-node-colours", dest="filename_node_colours", type="string",
@@ -237,7 +232,7 @@ def main(argv=None):
             if line[0] == "#":
                 continue
             id, label = string.split(line[:-1], "\t")[:2]
-            if labels.has_key(id):
+            if id in labels:
                 labels[id] += "," + label
             else:
                 labels[id] = label
@@ -371,19 +366,19 @@ def main(argv=None):
             continue
 
         # patch for PFAM domains
-        ## id1, id2 = map(string.atoi, string.split(line[:-1], "\t")[:2])
+        # id1, id2 = map(string.atoi, string.split(line[:-1], "\t")[:2])
 
         if id1 == id2:
             continue
 
         if options.filename_subset:
-            if not subset.has_key(id1) or not subset.has_key(id2):
+            if id1 not in subset or id2 not in subset:
                 continue
 
         if options.component is not None:
-            if not components.has_key(id1):
+            if id1 not in components:
                 continue
-            if not components.has_key(id2):
+            if id2 not in components:
                 continue
             if components[id1] != options.component or components[id2] != options.component:
                 continue
@@ -400,7 +395,7 @@ def main(argv=None):
         else:
             key = "%s-%s" % (id2, id1)
 
-        if touched.has_key(key):
+        if key in touched:
             continue
         touched[key] = 1
 

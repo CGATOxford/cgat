@@ -56,16 +56,14 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
 import re
-import getopt
-import optparse
 import bisect
-
 import CGAT.Genomics as Genomics
 import alignlib_lite
+import CGAT.Experiment as E
+import CGAT.PredictionParser as PredictionParser
+from CGAT.Predictor2 import PredictorExonerate
 
 USAGE = """python %s file1 file2
 
@@ -80,11 +78,6 @@ Options:
 -v, --verbose=                  loglevel.
 
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import CGAT.PredictionParser as PredictionParser
-
-from CGAT.Predictor2 import PredictorExonerate
 
 parser = E.OptionParser(
     version="%prog version: $Id: gpipe/liftover_predictions.py 2781 2009-09-10 11:33:14Z andreas $")

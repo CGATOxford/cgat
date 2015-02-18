@@ -40,11 +40,11 @@ Command line options
 
 '''
 import sys
-import re
 import string
 import os
 import getopt
-import time
+import CGAT.Experiment as E
+import CGAT.Histogram as Histogram
 
 param_long_options = ["missing=", "headers=", "titles", "normalize",
                       "format=", "format-bin=", "format-value=", "sort=", "help",
@@ -63,11 +63,6 @@ param_format_bin = None
 param_format_value = None
 
 param_sort = None
-
-import CGAT.Experiment as E
-import CGAT.Histogram as Histogram
-
-# ------------------------------------------------------------------------
 
 
 def main(argv=None):

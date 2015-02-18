@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-optic/evaluate_trees.py - 
+optic/evaluate_trees.py -
 ======================================================
 
 :Author: Andreas Heger
@@ -56,18 +56,9 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
-import re
-import getopt
-import tempfile
-import time
-import popen2
-import optparse
-
-from Bio.Nexus import Nexus
-from Bio.Nexus.Nodes import Node
+import CGAT.Experiment as E
+import CGAT.TreeTools as TreeTools
 
 USAGE = """python %s [OPTIONS] < tree.in > tree.out
 
@@ -81,13 +72,6 @@ Options:
 -p, --pattern-species=          regex pattern to extract species from identifier
 -g, --genes-tsv-file=                    filename with list of genes per species
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import CGAT.BlastAlignments as BlastAlignments
-import CGAT.Genomics as Genomics
-import CGAT.TreeTools as TreeTools
-
-# ------------------------------------------------------------------------
 
 
 def main(argv=None):

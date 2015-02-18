@@ -61,13 +61,6 @@ import sys
 import re
 
 from types import *
-
-"""program $Id: optic/analyze_genetrees.py 2781 2009-09-10 11:33:14Z andreas $
-
-analyse orthology sets.
-
-"""
-
 import CGAT.Experiment as E
 import CGAT.TreeTools as TreeTools
 import CGAT.Tree as Tree
@@ -215,7 +208,7 @@ def main(argv=None):
 
     parser.add_option("--output-filename-pattern", dest="output_pattern", type="string",
                       help="""output pattern for separate output of sections [default: %default].
-                       Set to None, if output to stdout. Can contain one %s to be substituted with section."""  )
+                      Set to None, if output to stdout. Can contain one %s to be substituted with section.""")
 
     parser.add_option("--output-pattern-svg", dest="output_pattern_svg", type="string",
                       help="filename for svg output. If it contains %s, this is replaced by gene_tree name.")
@@ -283,10 +276,10 @@ def main(argv=None):
         filename_node_types=None,
         format_branch_length="%6.4f",
         nodetypes_inconsistency=("InconsistentTranscripts", "Inconsistency"),
-        analyze_resolution_data = None,
-        warning_small_branch_length = 0.01,
-        filename_filter_positives = None,
-        skip_without_outgroups = False,
+        analyze_resolution_data=None,
+        warning_small_branch_length=0.01,
+        filename_filter_positives=None,
+        skip_without_outgroups=False,
     )
 
     (options, args) = E.Start(

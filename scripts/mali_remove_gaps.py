@@ -31,12 +31,13 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
 import string
 import re
 import getopt
-import math
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.MaliIO as MaliIO
 
 USAGE = """python %s [OPTIONS] < exonerate_output > filtered
 
@@ -67,13 +68,6 @@ param_gap_char = "-"
 param_mask_char = "x"
 
 param_filename_output = None
-
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.MaliIO as MaliIO
-import CGAT.Exons as Exons
-
-# ------------------------------------------------------------
 
 
 def main(argv=None):

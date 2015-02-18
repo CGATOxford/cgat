@@ -34,6 +34,9 @@ Command line options
 import sys
 import re
 import getopt
+import CGAT.Experiment as E
+import CGAT.BlastAlignments as BlastAlignments
+
 
 USAGE = """python %s [OPTIONS] < graph.in > graph.out
 
@@ -61,10 +64,6 @@ param_short_options = "hv:p:f:i"
 param_loglevel = 1
 param_method = "evalue"
 param_filename_self_scores = None
-
-import CGAT.Experiment as E
-import CGAT.BlastAlignments as BlastAlignments
-
 param_pattern_genome = "^([^|]+)|"
 param_method = "evalue"
 

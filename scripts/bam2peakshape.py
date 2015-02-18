@@ -187,7 +187,7 @@ def buildOptionParser(argv):
 
     parser.add_option("-f", "--format", dest="format", type="choice",
                       choices=("bam", "bigwig"),
-                      help = "format of genomic input files for densities "
+                      help="format of genomic input files for densities "
                       "[%default]")
 
     parser.add_option(
@@ -223,7 +223,7 @@ def buildOptionParser(argv):
                       action="append",
                       choices=("peak-height", "peak-width", "unsorted",
                                "interval-width", "interval-score"),
-                      help = "output sort order for matrices. "
+                      help="output sort order for matrices. "
                       "[%default]")
 
     parser.add_option(
@@ -249,7 +249,7 @@ def buildOptionParser(argv):
     parser.add_option(
         "-e", "--centring-method", dest="centring_method", type="choice",
         choices=("reads", "middle"),
-        help = "centring method. Available are: "
+        help="centring method. Available are: "
         "reads=use density to determine peak, "
         "middle=use middle of interval "
         "[%default]")
@@ -257,7 +257,7 @@ def buildOptionParser(argv):
     parser.add_option(
         "-n", "--normalize-matrix", dest="normalization", type="choice",
         choices=("none", "sum"),
-        help = "matrix normalisation to perform. "
+        help="matrix normalisation to perform. "
         "[%default]")
 
     parser.add_option(

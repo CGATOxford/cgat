@@ -58,23 +58,16 @@ Command line options
 
 """
 
-import os
 import sys
-import string
 import re
-import getopt
-import time
-import optparse
-import math
-import tempfile
-import subprocess
-
 from types import *
+import CGAT.Experiment as E
+import CGAT.TreeTools as TreeTools
+
+
 """ program $Id: tree2matrix.py 2782 2009-09-10 11:40:29Z andreas $
 
 """
-import CGAT.Experiment as E
-import CGAT.TreeTools as TreeTools
 
 
 def TranslateNode(node, tree, terminals, options):

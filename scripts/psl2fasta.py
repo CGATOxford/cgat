@@ -61,7 +61,7 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv
 
-    parser = E.OptionParser(version="%prog version: $Id: psl2fasta.py 2781 2009-09-10 11:33:14Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
     parser.add_option("--query-psl-file", dest="filename_query", type="string",
@@ -86,7 +86,7 @@ def main(argv=None):
 
     parser.add_option("--id", dest="id", type="choice",
                       choices=("numeric", "query"),
-                      help = "choose type of identifier to use [%default]")
+                      help="choose type of identifier to use [%default]")
 
     parser.set_defaults(
         filename_query=None,
@@ -134,7 +134,8 @@ def main(argv=None):
                               query_ali,
                               options.target_prefix,
                               options.output_format_id % id,
-                              match.mSbjctId, match.strand, match.mSbjctFrom, match.mSbjctTo,
+                              match.mSbjctId, match.strand,
+                              match.mSbjctFrom, match.mSbjctTo,
                               sbjct_ali))
         id += 1
 

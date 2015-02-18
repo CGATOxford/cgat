@@ -56,12 +56,14 @@ Code
 ----
 
 '''
-import os
 import sys
 import string
-import re
 import getopt
-import math
+import alignlib_lite
+import CGAT.Experiment as E
+import CGAT.PredictionParser as PredictionParser
+import CGAT.Exons as Exons
+import pgdb
 
 USAGE = """python %s [OPTIONS] < exonerate_output > filtered
 
@@ -85,13 +87,6 @@ Options:
 param_long_options = [
     "verbose=", "help", "table-reference=", "table-target=", "version"]
 param_short_options = "v:hR:T:"
-
-import alignlib_lite
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.PredictionParser as PredictionParser
-import CGAT.Exons as Exons
-import pgdb
 
 param_loglevel = 0
 

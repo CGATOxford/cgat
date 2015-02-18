@@ -1,5 +1,4 @@
-"""
-===============
+"""===============
 Chains pipeline
 ===============
 
@@ -11,41 +10,46 @@ Chains pipeline
 Purpose
 -------
 
-build pairwise genomic alignments from a set of multiple alignments or combine several
-pairwise alignments into new pairwise alignments.
+build pairwise genomic alignments from a set of multiple alignments or
+combine several pairwise alignments into new pairwise alignments.
 
-Starting from a multiple genomic alignment in :term:`maf` format, this pipeline builds
-a set of pairwise mappings between various query genomes and a single
-reference or target genome. 
+Starting from a multiple genomic alignment in :term:`maf` format, this
+pipeline builds a set of pairwise mappings between various query
+genomes and a single reference or target genome.
 
-The output is a set of `chain <http://www.breyer.com/ucsc/htdocs/goldenPath/help/chain.html>`_
-formatted files that can be used to map feature sets from one assembly to
-another using :file:`liftOver`.
+The output is a set of `chain
+<http://www.breyer.com/ucsc/htdocs/goldenPath/help/chain.html>`_
+formatted files that can be used to map feature sets from one assembly
+to another using :file:`liftOver`.
 
-The script works by creating ``psl`` formatted files first. It will then filter and merge
-these. ``chain`` formatted files are created in the last stage.
+The script works by creating ``psl`` formatted files first. It will
+then filter and merge these. ``chain`` formatted files are created in
+the last stage.
 
 .. note::
 
-   There is a limit on the divergence between assemblies beyond which features can not be mapped accurately.
-   At high divergence, features should better mapped using tools like :file:`gmap`.
+   There is a limit on the divergence between assemblies beyond which
+   features can not be mapped accurately.  At high divergence,
+   features should better mapped using tools like :file:`gmap`.
 
 Liftover chain files are named <target>To<query>.over.chain.gz. Liftover files
 downloaded from UCSC are unique for query, but can have overlapping targets.
 
 .. note::
-   This script removes all 1-to-many, many-to-1 and many-to-many mappings.
-   It does so in a greedy way by removing all segments that overlap with any other segment.
-   A single base overlap is sufficient for overlap and all overlapping segments are removed.
+
+   This script removes all 1-to-many, many-to-1 and many-to-many
+   mappings.  It does so in a greedy way by removing all segments that
+   overlap with any other segment.  A single base overlap is
+   sufficient for overlap and all overlapping segments are removed.
 
 Nomenclature
 ++++++++++++
 
-The nomenclature in the UCSC is :file:`TargetToQuery.chain` for mapping ``target``
-to ``query`` (according to the UCSC documentation, ``target`` is the first entry
-in ``chain`` files).
+The nomenclature in the UCSC is :file:`TargetToQuery.chain` for
+mapping ``target`` to ``query`` (according to the UCSC documentation,
+``target`` is the first entry in ``chain`` files).
 
-I have been using the nomenclature `QueryToTarget.psl`. 
+I have been using the nomenclature `QueryToTarget.psl`.
 
 Usage
 -----
@@ -71,25 +75,15 @@ Code
 
 """
 import sys
-import tempfile
-import optparse
-import shutil
 import itertools
-import csv
-import math
-import random
 import re
 import glob
 import os
-import shutil
-import collections
-
+from ruffus import *
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
-
 import CGAT.IOTools as IOTools
 import CGAT.IndexedFasta as IndexedFasta
-from ruffus import *
 
 ###################################################
 ###################################################
@@ -98,7 +92,7 @@ from ruffus import *
 ###################################################
 
 # load options from the config file
-import CGAT.Pipeline as P
+
 P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
@@ -121,8 +115,6 @@ PARAMS = P.getParameters()
 ###################################################################
 # Helper functions mapping tracks to conditions, etc
 ###################################################################
-import CGATPipelines.PipelineTracks as PipelineTracks
-
 ###################################################################
 
 

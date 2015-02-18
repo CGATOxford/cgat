@@ -56,17 +56,14 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
 import re
-import getopt
-import time
-import sets
-import optparse
-import math
-import tempfile
 import random
+import CGAT.Experiment as E
+import numpy
+import scipy
+import scipy.stats
+
 
 """analyse values based on a clustering.
 
@@ -84,12 +81,6 @@ optional input:
         --best-per-compoment: only take the best (minimum) value per cluster / cluster pair
 
 """
-
-import CGAT.Experiment as E
-
-import numpy
-import scipy
-import scipy.stats
 
 parser = E.OptionParser(
     version="%prog version: $Id: optic/analyze_clustering.py 2781 2009-09-10 11:33:14Z andreas $")

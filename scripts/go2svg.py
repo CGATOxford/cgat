@@ -34,13 +34,8 @@ import os
 import sys
 import string
 import re
-import getopt
-import time
-import optparse
 import math
 import tempfile
-
-
 import CGAT.Experiment as E
 import CGAT.SVGdraw as SVGdraw
 import bisect
@@ -174,7 +169,8 @@ def Collect(infile,
                         data = [x for x in data if x.mPValue < pvalue]
                         break
                 else:
-                    E.warn("fdr could not be computed - compute more samples (at P = %f, actual fdr=%f)" %
+                    E.warn("fdr could not be computed - compute more "
+                           "samples (at P = %f, actual fdr=%f)" %
                            (pvalue, d.mAverage / d.mObserved))
                     no_fdr = True
 
@@ -313,7 +309,7 @@ class GoPlot:
         self.mTitle = None
 
         if self.mTemplate == "screen":
-            ## screen is default
+            # screen is default
             pass
         elif self.mTemplate == "publication":
             self.startColour = RED
@@ -322,12 +318,11 @@ class GoPlot:
 
         self.mMarkColumns = mark_columns
         if self.mMarkColumns:
-            assert len(self.mMarkColumns) == len(
-                self.mColNames), "length of mark_columns must equal length of columns"
+            assert len(self.mMarkColumns) == len(self.mColNames), \
+                "length of mark_columns must equal length of columns"
 
         self.initializePlot()
 
-    #####################################################################
     def initializePlot(self):
         """set various coordinates in the plot."""
 
@@ -365,17 +360,14 @@ class GoPlot:
         self.mPageHeight = self.mHeaderHeight + self.mDataHeight + \
             self.mFooterHeight + 2 * self.mSeparator + self.mBottomMargin
 
-    #####################################################################
     def setTitle(self, title):
         """set title."""
         self.mTitle = title
 
-    #####################################################################
     def setFooter(self, footer):
         """set footer."""
         self.mFooter = footer
 
-    #####################################################################
     def writeTitle(self):
         """write title into plot."""
 
@@ -390,7 +382,6 @@ class GoPlot:
 
             self.mElements.append(e)
 
-    #####################################################################
     def buildColourMap(self):
         """build map of thresholds to colours.
 
@@ -446,7 +437,6 @@ class GoPlot:
 
             self.mColours.append(self.mStopColour)
 
-    #####################################################################
     def buildMapRow2Position(self):
 
         # build map of row_name to row
@@ -457,7 +447,6 @@ class GoPlot:
             self.mMapRow2Position[
                 self.mRowNames[x]] = offset + x * self.mRowHeight
 
-    #####################################################################
     def buildMapCol2Position(self):
 
         # build map of row_name to row
@@ -466,7 +455,6 @@ class GoPlot:
         for x in range(len(self.mColNames)):
             self.mMapCol2Position[self.mColNames[x]] = x * self.mColWidth
 
-    #####################################################################
     def addValue(self, row, col, size, colour_value):
         """add a dot in row/col.
         """
@@ -499,7 +487,6 @@ class GoPlot:
 
         self.mElements.append(e)
 
-    #####################################################################
     def writeColHeaders(self):
         """write row headers."""
 
@@ -513,21 +500,21 @@ class GoPlot:
                 color = BLACK
                 name = self.mColNames[i]
 
-            e = SVGdraw.text(current_x,
-                             current_y,
-                             name,
-                             self.mHeaderFontSize,
-                             self.mHeaderFont,
-                             stroke="rgb(%i,%i,%i)" % color,
-                             text_anchor="start",
-                             transform="rotate(-45,%i,%i)" % (current_x, current_y))
+            e = SVGdraw.text(
+                current_x,
+                current_y,
+                name,
+                self.mHeaderFontSize,
+                self.mHeaderFont,
+                stroke="rgb(%i,%i,%i)" % color,
+                text_anchor="start",
+                transform="rotate(-45,%i,%i)" % (current_x, current_y))
 
             self.mElements.append(e)
 
             current_x += self.mColWidth
             # current_y -= self.mColWidth / 2        # GAL added # AH removed?
 
-    #####################################################################
     def writeGrid(self):
         """add grid lines."""
 
@@ -538,7 +525,8 @@ class GoPlot:
             current_y = self.mHeaderHeight + self.mSeparator / \
                 2 + self.mRowTicks * self.mRowHeight
 
-            for x in range(self.mRowTicks, len(self.mRowNames), self.mRowTicks):
+            for x in range(self.mRowTicks, len(self.mRowNames),
+                           self.mRowTicks):
 
                 e = SVGdraw.line(start_x,
                                  current_y,
@@ -557,7 +545,8 @@ class GoPlot:
 
             current_x = self.mColTicks * self.mColWidth - self.mColWidth / 2
 
-            for x in range(self.mColTicks, len(self.mColNames), self.mColTicks):
+            for x in range(self.mColTicks, len(self.mColNames),
+                           self.mColTicks):
 
                 e = SVGdraw.line(current_x,
                                  start_y,
@@ -569,7 +558,6 @@ class GoPlot:
 
                 current_x += self.mColTicks * self.mColWidth
 
-    #####################################################################
     def writeRowHeaders(self):
         """write row headers."""
 
@@ -593,7 +581,6 @@ class GoPlot:
         self.mHeaderWidth = max(
             map(len, self.mRowNames)) * self.mHeaderFontSize / 2
 
-    #####################################################################
     def writeFooter(self):
         """write footer.
 
@@ -730,7 +717,6 @@ class GoPlot:
 
             self.mElements.append(e)
 
-    #####################################################################
     def finalizePlot(self):
         """write remaining parts of the plot."""
 
@@ -740,7 +726,6 @@ class GoPlot:
         self.writeRowHeaders()
         self.writeColHeaders()
 
-    #####################################################################
     def writeToFile(self, outfile):
         """write svg image to file.
         """
@@ -777,7 +762,7 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: go2svg.py 2782 2009-09-10 11:40:29Z andreas $")
+        version="%prog version: $Id")
 
     parser.add_option("-e", "--header-names", dest="headers", action="store_true",
                       help="first row is a header [ignored].")
@@ -853,8 +838,9 @@ def main(argv=None):
         if options.col_names:
             col_names = options.col_names.split(",")
             if len(col_names) != len(input):
-                raise ValueError("Number of col_names and files different: %i != %i" % (
-                    len(col_names), len(input)))
+                raise ValueError(
+                    "Number of col_names and files different: %i != %i" %
+                    (len(col_names), len(input)))
         else:
             col_names = input
 
@@ -868,23 +854,25 @@ def main(argv=None):
         E.debug("reading data for column %s from %s " % (col_name, filename))
         # collect all columns
         try:
-            values, nremoved, no_fdr = Collect(open(filename, "r"),
-                                               with_headers=options.headers,
-                                               annotator_format=options.annotator,
-                                               delims=options.delims,
-                                               ignore=options.ignore,
-                                               use_annotator_fdr=options.annotator_fdr,
-                                               max_pvalue=options.max_pvalue,
-                                               max_qvalue=options.max_qvalue)
+            values, nremoved, no_fdr = Collect(
+                open(filename, "r"),
+                with_headers=options.headers,
+                annotator_format=options.annotator,
+                delims=options.delims,
+                ignore=options.ignore,
+                use_annotator_fdr=options.annotator_fdr,
+                max_pvalue=options.max_pvalue,
+                max_qvalue=options.max_qvalue)
         except IOError:
             E.warn("no data from %s" % filename)
             values = []
             no_fdr = False
             nremoved = 0
 
-        E.info("read %i values from %s: %i significant, %i removed" % (len(values) + nremoved, filename,
-                                                                       len(values),
-                                                                       nremoved))
+        E.info("read %i values from %s: %i significant, %i removed" %
+               (len(values) + nremoved, filename,
+                len(values),
+                nremoved))
         columns.append((col_name, values))
         errors.append(no_fdr)
 

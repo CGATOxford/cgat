@@ -31,25 +31,19 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
 import re
-import optparse
+import CGAT.Experiment as E
+import CGAT.Mali as Mali
+import CGAT.Exons as Exons
+import warnings
 
 USAGE = """python %s [OPTIONS] < graph.in > graph.out
 
 Version: $Id: mali2cleaned_mali.py 2781 2009-09-10 11:33:14Z andreas $
 
-
-
 """ % sys.argv[0]
 
-import CGAT.Experiment as E
-import CGAT.Mali as Mali
-import CGAT.Exons as Exons
-
-import warnings
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")

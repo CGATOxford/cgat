@@ -31,14 +31,13 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
 import re
-import tempfile
-import subprocess
-import optparse
-import math
+import CGAT.Experiment as E
+import CGAT.Blat as Blat
+import CGAT.SequenceProperties as SequenceProperties
+import CGAT.SequencePairProperties as SequencePairProperties
+import CGAT.WrapperCodeML as WrapperCodeML
 
 USAGE = \
     """analyze sequence pairs from a psl formatted table.
@@ -51,14 +50,6 @@ baseml: compute baseml rates
 counts: compute residue counts (percent G+C, ...)
 match:  compute match statistics (pid, coverage)
 """
-
-import CGAT.Experiment as E
-import CGAT.Blat as Blat
-import CGAT.SequenceProperties as SequenceProperties
-import CGAT.SequencePairProperties as SequencePairProperties
-import CGAT.IOTools as IOTools
-import CGAT.WrapperCodeML as WrapperCodeML
-
 # ------------------------------------------------------------------------
 
 
