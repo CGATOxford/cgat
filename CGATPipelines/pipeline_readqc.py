@@ -132,65 +132,22 @@ import sqlite3
 # import modules from the CGAT code collection
 import CGAT.Experiment as E
 import CGATPipelines.PipelineMapping as PipelineMapping
-import CGATPipelines.PipelineTracks as PipelineTracks
 import CGAT.Pipeline as P
 import CGATPipelines.PipelineReadqc as PipelineReadqc
 import CGATPipelines.PipelinePreprocess as PipelinePreprocess
 
-#########################################################################
-#########################################################################
-#########################################################################
 # load options from the config file
-
 P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
      "pipeline.ini"])
 PARAMS = P.PARAMS
 
-#########################################################################
-#########################################################################
-#########################################################################
 # define input files and preprocessing steps
-
-
 INPUT_FORMATS = ("*.fastq.1.gz", "*.fastq.gz", "*.sra", "*.csfasta.gz")
 REGEX_FORMATS = regex(r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
 SEQUENCEFILES_REGEX = regex(
     r"(\S+).(?P<suffix>fastq.1.gz|fastq.gz|sra|csfasta.gz)")
-
-#########################################################################
-# Get TRACKS grouped on either Sample3 or Sample4 track ids
-
-Sample = PipelineTracks.AutoSample
-TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory(
-    files=glob.glob("./*fastq.1.gz")
-    + glob.glob("./*fastq.gz")
-    + glob.glob("./*sra")
-    + glob.glob("./*csfasta.gz"),
-    pattern="(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
-if TRACKS:
-    if len(TRACKS.getTracks()[0].asList()) == 4:
-        EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",
-                                                               "attribute1",
-                                                               "attribute2"))
-        TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute1",))
-        CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("attribute2",))
-
-    elif len(TRACKS.getTracks()[0].asList()) == 3:
-        EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",
-                                                               "attribute1"))
-        TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",))
-        CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("attribute1",))
-    else:
-        raise ValueError("Unrecognised PipelineTracks.AutoSample instance")
-else:
-    TISSUES = []
-    CONDITIONS = []
-    EXPERIMENTS = []
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 def connect():
@@ -201,40 +158,35 @@ def connect():
     dbh = sqlite3.connect(PARAMS['database'])
     return dbh
 
-#########################################################################
-#########################################################################
-#########################################################################
-# Run Fastqc on each input file
 
-
-@follows(mkdir(PARAMS["exportdir"]), mkdir(os.path.join(PARAMS["exportdir"],
-                                                        "fastqc")))
+@follows(mkdir(PARAMS["exportdir"]),
+         mkdir(os.path.join(PARAMS["exportdir"], "fastqc")))
 @transform(INPUT_FORMATS,
            REGEX_FORMATS,
            r"\1.fastqc")
 def runFastqc(infiles, outfile):
-    '''convert sra files to fastq and check mapping qualities are in solexa format.
-    Perform quality control checks on reads from .fastq files.'''
+    '''run Fastqc on each input file.
+
+    convert sra files to fastq and check mapping qualities are in
+    solexa format.  Perform quality control checks on reads from
+    .fastq files.
+    '''
     m = PipelineMapping.FastQc(nogroup=PARAMS["readqc_no_group"],
                                outdir=PARAMS["exportdir"] + "/fastqc")
     statement = m.build((infiles,), outfile)
     P.run()
 
-#########################################################################
-# parse results files and load into database
-
 
 @jobs_limit(1, "db")
 @transform(runFastqc, suffix(".fastqc"), "_fastqc.load")
 def loadFastqc(infile, outfile):
-    '''load FASTQC stats.'''
+    '''load FASTQC stats into database.'''
     track = P.snip(infile, ".fastqc")
     filename = os.path.join(
         PARAMS["exportdir"], "fastqc", track + "*_fastqc", "fastqc_data.txt")
     PipelineReadqc.loadFastqc(filename)
     P.touch(outfile)
 
-#########################################################################
 # if preprocess tools are specified, process reads and run fastqc on output
 if PARAMS["preprocessors"]:
     PREPROCESSTOOLS = [tool for tool
@@ -379,8 +331,6 @@ def buildFastQCSummaryStatus(infiles, outfile):
     exportdir = os.path.join(PARAMS["exportdir"], "fastqc")
     PipelineReadqc.buildFastQCSummaryStatus(infiles, outfile, exportdir)
 
-#########################################################################
-
 
 @follows(loadFastqcFinal, loadFastqc)
 @merge((runFastqcFinal, runFastqc), "basic_statistics_summary.tsv.gz")
@@ -390,19 +340,16 @@ def buildFastQCSummaryBasicStatistics(infiles, outfile):
     PipelineReadqc.buildFastQCSummaryBasicStatistics(infiles, outfile,
                                                      exportdir)
 
-#########################################################################
-
-
-regex_exp = "|".join([x.__str__()[:-len("-agg")] for x in EXPERIMENTS])
-
 
 @follows(mkdir("experiment.dir"))
 @collate(runFastqc,
-         regex("(" + regex_exp + ").+"),
+         regex("(.*)-([^-]*).fastqc"),
          r"experiment.dir/\1_per_sequence_quality.tsv")
 def buildExperimentLevelReadQuality(infiles, outfile):
     """
-    Collate per sequence read qualities for all samples in EXPERIMENT
+    Collate per sequence read qualities for all replicates per experiment.
+    Replicates are the last part of a filename, eg. Experiment-R1,
+    Experiment-R2, etc.
     """
     exportdir = os.path.join(PARAMS["exportdir"], "fastqc")
     PipelineReadqc.buildExperimentReadQuality(infiles, outfile, exportdir)
@@ -416,11 +363,11 @@ def combineExperimentLevelReadQualities(infiles, outfile):
     Combine summaries of read quality for different experiments
     """
     infiles = " ".join(infiles)
-    statement = ("python %%(scriptsdir)s/combine_tables.py"
-                 "  --log=%(outfile)s.log"
-                 "  --regex-filename='.+/(.+)_per_sequence_quality.tsv'"
-                 " %(infiles)s"
-                 " > %(outfile)s")
+    statement = ("python %(scriptsdir)s/combine_tables.py "
+                 "  --log=%(outfile)s.log "
+                 "  --regex-filename='.+/(.+)_per_sequence_quality.tsv' "
+                 "%(infiles)s"
+                 "> %(outfile)s")
     P.run()
 
 
@@ -437,7 +384,10 @@ def loadFastqcSummary(infile, outfile):
     P.load(infile, outfile, options="--add-index=track")
 
 
-@follows(loadFastqc, loadFastqcSummary, loadFastqcFinal)
+@follows(loadFastqc,
+         loadFastqcSummary,
+         loadFastqcFinal,
+         loadExperimentLevelReadQualities)
 def full():
     pass
 

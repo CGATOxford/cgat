@@ -508,8 +508,9 @@ def buildReferenceTranscriptome(infile, outfile):
     '''
     P.run()
 
-    os.symlink(os.path.abspath(gtf_file),
-               P.snip(os.path.abspath(gtf_file), ".gtf") + ".gff")
+    dest = P.snip(os.path.abspath(gtf_file), ".gtf") + ".gff"
+    if not os.path.exists(dest):
+        os.symlink(os.path.abspath(gtf_file), dest)
 
     prefix = P.snip(outfile, ".fa")
 
@@ -529,7 +530,7 @@ def buildReferenceTranscriptome(infile, outfile):
 
     if 'tophat2' in MAPPERS:
         statement = '''
-        bowtie-build -f %(outfile)s %(prefix)s >> %(outfile)s.log 2>&1
+        bowtie2-build -f %(outfile)s %(prefix)s >> %(outfile)s.log 2>&1
         '''
         P.run()
 
