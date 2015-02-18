@@ -1,16 +1,29 @@
 import matplotlib.patches as mpatches
 from matplotlib.collections import PatchCollection
 import layout_code
-#L = layout_code.layout(0,100)
+
+
+# L = layout_code.layout(0,100)
+
+
 class regions(object):
-    def __init__(self,  ttype="t", trackinfo=None, L=None, name="default", priority="default"):
+    def __init__(self,
+                 ttype="t",
+                 trackinfo=None,
+                 L=None,
+                 name="default",
+                 priority="default"):
         '''
         Specify the start and end of the region to be viewed.
         ttypes (for now) :
 
+        name = name of track e.g. one of these:
+        ["gene_model","read_possitions",
+        "read_count", "splice_varient", "default"]
 
-        name = name of track e.g. one of these ["gene_model","read_possitions", "read_count", "splice_varient", "default"]
-        priority = number set by user in config file to determine ordering of graphs on page - default will be sorted in accordance to possition in list of prioritys by layout class
+        priority = number set by user in config file to determine ordering of
+        graphs on page - default will be sorted in accordance to possition in
+        list of prioritys by layout class
         ttype = "r": genomic ranges with start and end positions
         trackinfo is a list of tuples representing the ranges
         e.g.
@@ -22,8 +35,10 @@ class regions(object):
         r = regions(ttype="b", trackinfo=[2, 3, 0, 4, 5, 6, 0, 2 ,3, 6])
         L is a layout object
         '''
-        self.start = L.getStart() # start of the region to view
-        self.end = L.getFinish()  # end of the region to view
+        # start of the region to view
+        self.start = L.getStart()
+        # end of the region to view
+        self.end = L.getFinish()
         self.name = name
         self.priority = priority
         self.ttype = ttype  # type of chart
@@ -121,7 +136,7 @@ class regions(object):
         '''
         Used to build charts showing genomic ranges.
         Replaces 0s with 1s in "rows" row rn from positions[0] to positions[1]
-        represents a new rectangle which has been added        
+        represents a new rectangle which has been added
         '''
         sites = range(positions[0], positions[1]+1)
         for site in sites:
@@ -179,10 +194,10 @@ class regions(object):
             return "genomic ranges"
         elif self.ttype == "b":
             return "bar chart"
-        
-######Testing Only########
-#r = regions(ttype="r", trackinfo=[(0,25), (10, 20), (20,60), (30, 60), (50,80), (90,100)])
-#r.draw_regions()
-#fig, ax = plt.subplots(figsize=(10, r.get_plotheight()))  # initiate figure and axis
-#plt.axis([0, 100, 0, r.get_plotheight()])
-#ax.add_collection(r.get_patches())  # put rectangles on axes
+
+# #####Testing Only########
+# r = regions(ttype="r", trackinfo=[(0,25), (10, 20), (20,60), (30, 60), (50,80), (90,100)])
+# r.draw_regions()
+# fig, ax = plt.subplots(figsize=(10, r.get_plotheight()))  # initiate figure and axis
+# plt.axis([0, 100, 0, r.get_plotheight()])
+# ax.add_collection(r.get_patches())  # put rectangles on axes
