@@ -103,12 +103,14 @@ try:
     import CGAT.Database as Database
     import CGAT.IOTools as IOTools
     import CGAT.Stats as Stats
+    import CGAT.Counts as Counts
 except ImportError:
     import Experiment as E
     import Pipeline as P
     import Database
     import IOTools
     import Stats
+    import Counts
 
 import sqlite3
 
@@ -123,12 +125,132 @@ def runDETest(raw_DataFrame,
               outfile,
               de_caller,
               **kwargs):
-    if caller.lower() == "deseq":
-        caller = DESeqCaller
+    if de_caller.lower() == "deseq":
+        caller = DECaller()
     else:
         raise ValueError("Unknown caller")
 
     caller.run(raw_DataFrame, design_file, outfile)
+
+
+class ExpDesign(object):
+    '''base class for design objects'''
+
+    def __init__(self):
+        self.table = None
+
+    def readDesignFile(self, dfile):
+        ''' read design file and store as pandas DataFrame '''
+        inf = IOTools.openFile(dfile)
+        self.table = pandas.read_csv(
+            inf, sep="\t", index_col=0, comment="#")
+        inf.close()
+
+    def getDesignAttributes(self):
+        ''' parse design file and identify design attributes '''
+
+        self.table = self.table[self.table["include"] != 0]
+        self.conditions = self.table['group'].tolist()
+        self.pairs = self.table['pair'].tolist()
+        self.groups = list(set(self.conditions))
+        self.samples = self.table.index.tolist()
+
+        # TS, adapted from JJ code for DESeq2 design tables:
+        # if additional columns present, pass to 'factors'
+        if len(self.table.columns) > 3:
+            self.factors = self.table.iloc[:, 3:]
+        else:
+            self.factors = None
+
+        # Test if replicates exist, i.e at least one group has multiple samples
+        max_per_group = max([self.conditions.count(x) for x in self.groups])
+        self.has_replicates = max_per_group >= 2
+
+        # Test if pairs exist:
+        npairs = len(set(self.pairs))
+        has_pairs = npairs == 2
+
+        # ..if so, at least two samples are required per pair
+        if has_pairs:
+            min_per_pair = min([self.pairs.count(x) for x in set(self.pairs)])
+            self.has_pairs = min_per_pair >= 2
+        else:
+            self.has_pairs = False
+
+
+class DEExperiment(object):
+    ''' base class to store data for a DE experiment
+    contains a counts table and a design table'''
+
+    def __init__(self,
+                 counts_file,
+                 design_file,
+                 min_counts_row,
+                 min_counts_sample,
+                 percentile_rowsums,
+                 ref_group=None,
+                 model=None,
+                 fdr=0.1):
+        self.cfile = counts_file
+        self.dfile = design_file
+        self.min_counts_row = min_counts_row
+        self.min_counts_sample = min_counts_sample
+        self.percentile_rowsums = percentile_rowsums
+        self.counts = None
+        self.design = None
+        self.model = model
+        self.fdr = fdr
+
+    def readDesignFile(self):
+        ''' read in design file and identify attributes'''
+        self.design = ExpDesign()
+        self.design.readDesignFile(self.dfile)
+        self.design.getDesignAttributes()
+
+    def readCountsFile(self):
+        ''' read in counts file '''
+        self.counts = Counts.Counts()
+        self.counts.readCountsfile(self.cfile)
+
+    def checkForMissingSamples(self):
+        '''identify missing samples in counts table using index of
+        design table'''
+        self.missing = set(self.counts.table.columns).difference(
+            self.design.samples)
+
+    def removeUnnecessarySamples(self):
+        '''remove samples from counts table if they don't exist in the
+        design sample'''
+        self.counts.table = self.counts.table[self.design.samples]
+
+    def filterCounts(self, min_counts_row, min_counts_sample, percentile):
+        ''' call Counts.filterCounts method'''
+        self.counts.filterCounts(min_counts_row, min_counts_sample, percentile)
+
+    def updateDesignAndCounts(self):
+        ''' cross-check and update counts and design tables'''
+        # For example, after filtering counts table, the design table may need
+        # updating if samples have been removed!
+
+        self.design.table = self.design.table.ix[self.counts.table.columns]
+        self.design.getDesignAttributes()
+
+    def build(self):
+        self.readDesignFile()
+        self.readCountsFile()
+        self.removeUnnecessarySamples()
+        self.filterCounts(self.min_counts_row,
+                          self.min_counts_sample,
+                          self.percentile_rowsums)
+        self.updateDesignAndCounts()
+        
+        nobservations, nsamples = self.counts.table.shape
+        if nobservations == 0:
+            E.warn("no observations - no output")
+            return
+        if nsamples == 0:
+            E.warn("no samples remain after filtering - no output")
+            return
 
 
 class DECaller(object):
@@ -139,46 +261,99 @@ class DECaller(object):
     def __call__(self, *args, **kwargs):
         pass
 
-    def __init__(self):
-        pass
+    def __init__(self,
+                 DEExperiment,
+                 normalise):
+        self.DEExper = DEExperiment
+        self.normalise = normalise
 
-    def parseDesignFile(self):
+    def callDifferentialExpression(self):
         """
-        Replacement for loadTagData...
-        """
-        pass
-
-    def filterCountTable(self):
-        """
-        Replacement for filterTagData
+        Custom DE functions
         """
         pass
 
     def plotDiagnostics(self):
         """
         All plotting that should be as faithful to published protocol as
-        possible. Gallery plot stuff! 
-        """ 
-        pass
-
-    def callDifferentialExpression(self, *, **):
-        """
-        Custom DE functions
+        possible. Gallery plot stuff!
         """
         pass
 
     def postProcessDEResults(self):
         """
+        post-process results into generic output
         """
         pass
 
     def run(self, df, design_file, outfile):
         """
         """
-        groups, conditions, pairs  = self.parseDesignFile(design_file)
-        counts = self.filterCountTable(df, groups, conditions, pairs)          
-        self.postProcess(self.callDifferentialExpression())
-        pass
+        self.callDifferentialExpression()
+        self.Diagnostics()
+        self.postProcessDEResults()
+
+
+class DE_TTest(DECaller):
+    '''DECaller object to run TTest on counts data'''
+
+    def callDifferentialExpression(self):
+        
+        DF_Dict = makeEmptyDataFrameDict()
+
+        for combination in itertools.combinations(
+                self.DEExper.design.groups, 2):
+            # as each combination may have different numbers of samples in control
+            # and treatment, calculations have to be performed on a per
+            # combination basis
+
+            control, treatment = combination
+            n_rows = self.DEExper.counts.table.shape[0]
+            DF_Dict["control_name"].extend((control,)*n_rows)
+            DF_Dict["treatment_name"].extend((treatment,)*n_rows)
+            DF_Dict["test_id"].extend(
+                self.DEExper.counts.table.index.tolist())
+
+            # subset counts table for each combination
+            c_keep = [x == control for
+                      x in self.DEExper.design.conditions]
+            control_counts = self.DEExper.counts.table.iloc[:, c_keep]
+            t_keep = [x == treatment for
+                      x in self.DEExper.design.groups]
+            treatment_counts = self.DEExper.counts.table.iloc[:, t_keep]
+
+            c_mean = control_counts.mean(axis=1)
+            DF_Dict["control_mean"].extend(c_mean)
+            DF_Dict["control_std"].extend(control_counts.std(axis=1))
+
+            t_mean = treatment_counts.mean(axis=1)
+            DF_Dict["treatment_mean"].extend(t_mean)
+            DF_Dict["treatment_std"].extend(treatment_counts.std(axis=1))
+
+            t, prob = ttest_ind(control_counts, treatment_counts, axis=1)
+            DF_Dict["p_value"].extend(prob)
+            # what about zero values?!
+            DF_Dict["fold"].extend(t_mean / c_mean)
+
+        # import r stats module to adjust pvalues
+        stats = importr('stats')
+        DF_Dict["p_value_adj"].extend(
+            list(stats.p_adjust(FloatVector(DF_Dict["p_value"]), method='BH')))
+
+        DF_Dict["significant"].extend(
+            [int(x < self.DEExper.fdr) for x in DF_Dict["p_value_adj"]])
+
+        DF_Dict["l2fold"].extend(list(numpy.log2(DF_Dict["fold"])))
+        # note: the transformed log2 fold change is not transformed!
+        DF_Dict["transformed_l2fold"].extend(list(numpy.log2(DF_Dict["fold"])))
+
+        # set all status values to "OK"
+        DF_Dict["status"].extend(("OK",)*n_rows)
+
+        results = pandas.DataFrame(DF_Dict)
+        results.set_index("test_id", inplace=True)
+        results.to_csv(outfile, sep="\t", header=True, index=True)
+
 
 
 def buildProbeset2Gene(infile,

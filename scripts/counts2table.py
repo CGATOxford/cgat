@@ -280,30 +280,29 @@ def main(argv=None):
     else:
         fh = None
 
-    # load tag data and filter
     assert options.input_filename_tags and os.path.exists(
         options.input_filename_tags)
     assert options.input_filename_design and os.path.exists(
         options.input_filename_design)
 
-    counts, design = Counts.loadTagDataPandas(options.input_filename_tags,
-                                              options.input_filename_design)
+    DEEx = Expression.DEExperiment(
+        counts_file=options.input_filename_tags,
+        design_file=options.input_filename_design,
+        min_counts_row=options.filter_min_counts_per_row,
+        min_counts_sample=options.filter_min_counts_per_sample,
+        percentile_rowsums=options.filter_percentile_rowsums,
+        ref_group=options.ref_group,
+        model=options.model,
+        fdr=fdr)
+    )
 
-    nobservations, nsamples, counts, design = Counts.filterTagDataPandas(
-        counts, design,
-        filter_min_counts_per_row=options.filter_min_counts_per_row,
-        filter_min_counts_per_sample=options.filter_min_counts_per_sample,
-        filter_percentile_rowsums=options.filter_percentile_rowsums)
+    DEEx.build()
+    if options.method == "TTest":
+        detest = Expression.DE_TTest(DEEx, normalise=True)
+        detest.run()
 
-    if nobservations == 0:
-        E.warn("no observations - no output")
-        return
 
-    if nsamples == 0:
-        E.warn("no samples remain after filtering - no output")
-        return
-
-    try:
+    '''try:
         if options.method == "deseq2":
             Expression.runDESeq2(
                 outfile=options.output_filename,
@@ -362,7 +361,7 @@ def main(argv=None):
 
     if options.save_r_environment:
         R['save.image'](options.save_r_environment)
-
+    '''
     E.Stop()
 
 if __name__ == "__main__":

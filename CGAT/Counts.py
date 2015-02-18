@@ -48,6 +48,70 @@ import random
 import sys
 
 
+class Counts(object):
+    '''base class to store counts object'''
+
+    def __init__(self):
+        self.table = None
+
+    def readCountsfile(self, counts_file):
+        ''' read Counts file and store as pandas DataFrame '''
+        inf = IOTools.openFile(counts_file)
+        self.table = pd.read_csv(
+            inf, sep="\t", index_col=0, comment="#")
+        inf.close()
+
+    def filterCounts(self,
+                     filter_min_counts_per_row=1,
+                     filter_min_counts_per_sample=10,
+                     filter_percentile_rowsums=0):
+        '''filter tag data.
+
+        * remove rows with at least x number of counts
+
+        * remove samples with a maximum of *min_sample_counts*
+
+        * remove the lowest percentile of rows in the table, sorted
+           by total tags per row
+        '''
+
+        # Remove rows with low counts
+        max_counts_per_row = self.table.max(1)
+        self.table = self.table[
+            max_counts_per_row >= filter_min_counts_per_row]
+        observations, samples = self.table.shape
+        E.info("trimmed data: %i observations for %i samples" %
+               (observations, samples))
+
+        # remove samples without low counts
+        max_counts_per_sample = self.table.max()
+
+        low_samples = max_counts_per_sample < filter_min_counts_per_sample
+        high_samples = [not x for x in low_samples.tolist()]
+        sample_names = self.table.columns
+        nlow_samples = sum(low_samples)
+
+        if nlow_samples:
+            E.warn("%i empty samples are being removed: %s" %
+                   (nlow_samples,
+                    ",".join([sample_names[x] for x, y in
+
+                              enumerate(low_samples) if y])))
+            self.table = self.table.iloc[:, high_samples]
+
+        # percentile filtering
+        if filter_percentile_rowsums > 0:
+            percentile = float(filter_percentile_rowsums) / 100.0
+            sum_counts = self.table.sum(1)
+            take = sum_counts > sum_counts.quantile(percentile)
+            E.info("percentile filtering at level %f: keep=%i, discard=%i" %
+                   (filter_percentile_rowsums,
+                    sum(take),
+                    len(take) - sum(take)))
+            self.table = self.table[take]
+
+
+
 def loadTagDataPandas(tags_filename, design_filename):
     '''load tag data for deseq/edger analysis.
 
