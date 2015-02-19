@@ -286,21 +286,20 @@ def main(argv=None):
         options.input_filename_design)
 
     DEEx = Expression.DEExperiment(
-        counts_file=options.input_filename_tags,
-        design_file=options.input_filename_design,
         min_counts_row=options.filter_min_counts_per_row,
         min_counts_sample=options.filter_min_counts_per_sample,
         percentile_rowsums=options.filter_percentile_rowsums,
         ref_group=options.ref_group,
         model=options.model,
-        fdr=fdr)
-    )
+        fdr=options.fdr)
 
-    DEEx.build()
+    DEEx.build(
+        counts_file=options.input_filename_tags,
+        design_file=options.input_filename_design)
+
     if options.method == "TTest":
-        detest = Expression.DE_TTest(DEEx, normalise=True)
-        detest.run()
-
+        DEProcessor = Expression.DE_TTest()
+        DEProcessor(DEEx, outfile=options.output_filename, normalise=True)
 
     '''try:
         if options.method == "deseq2":

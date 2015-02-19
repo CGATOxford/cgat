@@ -110,6 +110,66 @@ class Counts(object):
                     len(take) - sum(take)))
             self.table = self.table[take]
 
+    def normaliseCounts(self, method="deseq-size-factors"):
+
+        '''return a table with normalized count data.
+
+        Implemented methods are:
+
+        million-counts
+
+           Divide each value by the column total and multiply by 1,000,000
+
+        deseq-size-factors
+
+           Construct a "reference sample" by taking, for each row, the
+           geometric mean of the counts in all samples.
+
+           To get the sequencing depth of a column relative to the
+           reference, calculate for each row the quotient of the counts in
+           your column divided by the counts of the reference sample. Now
+           you have, for each row and column, an estimate of the depth
+           ratio.
+
+           Simply take the median of all the quotients in a column to get
+           the relative depth of the library.
+
+           Divide all values in a column by the normalization factor.
+
+        This method normalises the counts and returns any normalization
+        factors that have been applied.
+
+        '''
+
+        if method == "deseq-size-factors":
+
+            # compute row-wise geometric means
+            geometric_means = geometric_mean(self.table, axis=1)
+
+            # remove 0 geometric means
+            take = geometric_means > 0
+            geometric_means = geometric_means[take]
+            self.table = self.table[take]
+
+            normed = (self.table.T / geometric_means).T
+
+            size_factors = normed.median(axis=0)
+
+            normed = self.table / size_factors
+
+        elif method == "million-counts":
+            size_factors = self.table.sum(axis=0)
+            normed = self.table * 1000000.0 / size_factors
+        else:
+            raise NotImplementedError(
+                "normalization method '%s' not implemented" % method)
+
+        self.table = normed
+        # make sure we did not loose any rows or columns
+        assert normed.shape == self.table.shape
+
+        # should this be returned or made into attribute?
+        return size_factors
 
 
 def loadTagDataPandas(tags_filename, design_filename):
