@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-ProfileLibrary.py - 
+ProfileLibrary.py -
 ======================================================
 
 :Author: Andreas Heger
@@ -35,24 +35,14 @@ Code
 '''
 import os
 import sys
-import string
-import re
-import tempfile
-import subprocess
-import optparse
-import time
-import math
+from CGAT import Experiment as Experiment
+from CGAT import Mali as Mali
 
-#--------------------------------------------------------
-#--------------------------------------------------------
-#--------------------------------------------------------
-# usage message
-#--------------------------------------------------------
 USAGE = """python %s [OPTIONS]
 
 work with library of profiles.
 
-Actions include: 
+Actions include:
    * create: create a profile library
    * verify: verify a profile library
    * merge:  merge several profile libraries
@@ -61,13 +51,6 @@ Actions include:
 This is version $Id: ProfileLibrary.py 2781 2009-09-10 11:33:14Z andreas $.
 """ % sys.argv[0]
 
-#--------------------------------------------------------
-#--------------------------------------------------------
-#--------------------------------------------------------
-# import of user libraries
-#--------------------------------------------------------
-from CGAT import Experiment as Experiment
-from CGAT import Mali as Mali
 try:
     import alignlib_lite
 except ImportError:
@@ -229,14 +212,8 @@ class ProfileLibrary:
 
         return ninput, nfound, nnotfound, ndifferent
 
-#--------------------------------------------------------
-#--------------------------------------------------------
-#--------------------------------------------------------
-# main part of script
-#--------------------------------------------------------
 if __name__ == "__main__":
 
-    #--------------------------------------------------------
     # command line parsing options
     parser = E.OptionParser(
         version="%prog version: $Id: ProfileLibrary.py 2781 2009-09-10 11:33:14Z andreas $", usage=globals()["__doc__"])
@@ -259,7 +236,6 @@ if __name__ == "__main__":
 
     (options, args) = Experiment.Start(parser)
 
-    #--------------------------------------------------------
     # main part of script
     mali = Mali.Mali()
 
@@ -298,6 +274,5 @@ if __name__ == "__main__":
     elif options.action == "stats":
         options.stdout.write("profiles\t%i\n" % len(plib))
 
-    #--------------------------------------------------------
     # general cleaning up
     Experiment.Stop()

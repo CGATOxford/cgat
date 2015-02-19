@@ -31,15 +31,9 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import getopt
-import tempfile
-import time
-import popen2
-import optparse
+import CGAT.Experiment as E
+import networkx
 
 USAGE = """python %s [OPTIONS] < graph.in > graph.out
 
@@ -55,9 +49,6 @@ Cluster transcripts based on a distance measure. The transcripts can be clustere
         Identical transcripts have a distance of 0 and are grouped together.
         
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import networkx
 
 ###########################################################
 

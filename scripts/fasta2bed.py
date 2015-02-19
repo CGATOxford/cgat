@@ -60,12 +60,10 @@ import subprocess
 import glob
 import collections
 import pybedtools
-
 import CGAT.Experiment as E
+import CGAT.FastaIterator as FastaIterator
 
 EXECUTABLE = "GCProfile"
-
-import CGAT.FastaIterator as FastaIterator
 
 
 def segmentWithCpG(infile, with_contig_sizes=False):

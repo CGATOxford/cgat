@@ -52,34 +52,38 @@ def computeMastCurve(evalues):
 
 
 def getFDR(samples, control, num_bins=1000):
-    '''return the score cutoff at a certain FDR threshold using scores and control scores.
-    Note that this method assumes that a higher score is a better result.
+    '''return the score cutoff at a certain FDR threshold using scores and
+    control scores.  Note that this method assumes that a higher score
+    is a better result.
 
-    The FDR is defined as fdr = expected number of false positives (FP) / number of positives (P)
+    The FDR is defined as fdr = expected number of false positives
+    (FP) / number of positives (P)
 
-    Given a certain score threshold s , the following will be used as approximations:
+    Given a certain score threshold s , the following will be used as
+    approximations:
 
     FP: the number of controls with a score of less than or equal to s. These
-        are all assumed to be false positives. Both samples and control should 
-        contain rougly equal number of entries, but FP is scaled to be equivalent to P. 
+        are all assumed to be false positives. Both samples and control should
+        contain rougly equal number of entries, but FP is scaled to be
+        equivalent to P.
 
     P: the number of samples with a score of less than or equal to s. These
        are a mixture of both true and false positives.
 
     returns the score cutoff at FDR threshold.
+
     '''
 
     if len(samples) == 0 or len(control) == 0:
         return None, None
 
-    bins = 100
     mi1, ma1 = min(samples), max(samples)
     mi2, ma2 = min(control), max(control)
     mi, ma = min(mi1, mi2), max(ma1, ma2)
     hist_samples, bin_edges_samples = numpy.histogram(
-        samples, range=(mi, ma), bins = num_bins)
+        samples, range=(mi, ma), bins=num_bins)
     hist_control, bin_edges_control = numpy.histogram(
-        control, range=(mi, ma), bins = num_bins)
+        control, range=(mi, ma), bins=num_bins)
     hist_samples = hist_samples[::-1].cumsum()
     hist_control = hist_control[::-1].cumsum()
     bin_edges = bin_edges_samples[::-1]

@@ -289,7 +289,6 @@ import CGAT.Pipeline as P
 ###################################################
 # Pipeline configuration
 ###################################################
-
 # load options from the config file
 P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
@@ -312,7 +311,6 @@ PipelineGeneset.PARAMS = PARAMS
 ###################################################################
 # Helper functions mapping tracks to conditions, etc
 ###################################################################
-
 # collect sra nd fastq.gz tracks
 TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample3).loadFromDirectory(
     glob.glob("*.bam"), "(\S+).bam")

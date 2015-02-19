@@ -1,20 +1,16 @@
 import os
-import sys
-import re
-import types
-import itertools
 import glob
 
 from CGATReport.Tracker import *
+from CGATReport.Utils import PARAMS as P
+import Pipeline
+import PipelineTracks
 
 ###################################################################
 ###################################################################
 ###################################################################
 ###################################################################
 # Run configuration script
-
-from CGATReport.Utils import PARAMS as P
-
 EXPORTDIR = P['metamedip_exportdir']
 DATADIR = P['metamedip_datadir']
 DATABASE = P['metamedip_backend']
@@ -23,11 +19,8 @@ DATABASE = P['metamedip_backend']
 # cf. pipeline_medip.py
 # This should be automatically gleaned from pipeline_chipseq.py
 ###################################################################
-import Pipeline
 PARAMS_PIPELINE = Pipeline.peekParameters(".",
                                           "metapipeline_medip.py")
-
-import PipelineTracks
 
 Sample = PipelineTracks.Sample
 TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory(

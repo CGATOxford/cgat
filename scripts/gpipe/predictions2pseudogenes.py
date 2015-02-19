@@ -56,12 +56,13 @@ Code
 ----
 
 '''
-import os
 import sys
 import string
 import re
 import getopt
-import time
+import CGAT.Experiment as E
+import CGAT.PredictionParser as PredictionParser
+
 
 USAGE = """python %s [OPTIONS] < exonerate_output > filtered
 
@@ -80,11 +81,6 @@ Options:
 -c, --conserved-frame           require conserved frames
 -a, --assembly                  do contig assembly
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.Intervalls as Intervalls
-import CGAT.PredictionParser as PredictionParser
 
 param_loglevel = 1
 
@@ -135,7 +131,8 @@ def ProcessSegments(segments):
 
             # check for no overlap on genome
             if (min(segments[x].mSbjctGenomeTo, segments[y].mSbjctGenomeTo) -
-                    max(segments[x].mSbjctGenomeFrom, segments[y].mSbjctGenomeFrom)) > 0:
+                    max(segments[x].mSbjctGenomeFrom,
+                        segments[y].mSbjctGenomeFrom)) > 0:
                 continue
 
             # check for no overlap of sbjct
@@ -182,8 +179,10 @@ def ProcessChunk(entries):
     if len(entries) > 0:
 
         # sort entries by query and genomic region
-        entries.sort(lambda x, y: cmp((x.mQueryToken, x.mSbjctToken, x.mSbjctStrand, x.mSbjctGenomeFrom),
-                                      (y.mQueryToken, y.mSbjctToken, y.mSbjctStrand, y.mSbjctGenomeFrom)))
+        entries.sort(lambda x, y: cmp((x.mQueryToken, x.mSbjctToken,
+                                       x.mSbjctStrand, x.mSbjctGenomeFrom),
+                                      (y.mQueryToken, y.mSbjctToken,
+                                       y.mSbjctStrand, y.mSbjctGenomeFrom)))
 
         # array with distinct segmental regions
         segments = []

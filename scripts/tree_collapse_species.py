@@ -30,17 +30,12 @@ Command line options
 --------------------
 
 """
-
-import os
 import sys
 import string
 import re
 import getopt
-import tempfile
-import time
-import popen2
-
 from Bio.Nexus import Nexus
+import CGAT.Experiment as E
 
 USAGE = """python %s [OPTIONS] < tree.in > tree.out
 
@@ -53,8 +48,6 @@ Options:
 -v, --verbose=                  loglevel.
 -p, --pattern-species=          regex pattern to extract species from identifier
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
 
 param_loglevel = 1
 

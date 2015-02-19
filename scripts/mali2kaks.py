@@ -35,13 +35,9 @@ Command line options
 '''
 import os
 import sys
-import string
 import re
 import tempfile
-import subprocess
-import optparse
 import time
-import math
 
 from types import *
 
@@ -53,26 +49,24 @@ import CGAT.RateEstimation as RateEstimation
 import CGAT.IOTools as IOTools
 import CGAT.TreeTools as TreeTools
 
-# -------------------------------------------------------------------
-# -------------------------------------------------------------------
-# -------------------------------------------------------------------
-
 
 def printPairs(pairs, mali, map_new2old, options):
     """print pairs form codeml."""
     noutput = 0
     for pair in pairs:
-        options.stdout.write("\t".join(map(str, (mali.getEntry(pair.mName2).mId,
-                                                 mali.getEntry(
-                                                     pair.mName1).mId,
-                                                 pair.mKa, pair.mKs, pair.mKaks,
-                                                 pair.mN, pair.mS, "na", "na",
-                                                 pair.mKappa, pair.mLogLikelihood,
-                                                 pair.mTau))))
+        options.stdout.write("\t".join(map(str, (
+            mali.getEntry(pair.mName2).mId,
+            mali.getEntry(
+                pair.mName1).mId,
+            pair.mKa, pair.mKs, pair.mKaks,
+            pair.mN, pair.mS, "na", "na",
+            pair.mKappa, pair.mLogLikelihood,
+            pair.mTau))))
 
         if options.with_rho:
-            options.stdout.write("\t" + "\t".join(map(str, (pair.mRn, pair.mRs, pair.mBranchLength,
-                                                            pair.mRn0, pair.mRs0, "na"))))
+            options.stdout.write("\t" + "\t".join(map(
+                str, (pair.mRn, pair.mRs, pair.mBranchLength,
+                      pair.mRn0, pair.mRs0, "na"))))
 
         if options.with_counts:
             info = Genomics.CalculatePairIndices(
@@ -84,9 +78,6 @@ def printPairs(pairs, mali, map_new2old, options):
         noutput += 1
 
     return noutput
-# -------------------------------------------------------------------
-# -------------------------------------------------------------------
-# -------------------------------------------------------------------
 
 
 def runCodeML(mali, tree, has_non_overlaps, pairs, map_new2old, options):
@@ -641,8 +632,9 @@ def outputXRateResult(mali, result, rsi, rsv, rni, rnv, msg):
     """
     ids = mali.getIdentifiers()
 
-    pi, matrix = RateEstimation.getRateMatrix(result.getModel(),
-                                              terminals=('COD0', 'COD1', 'COD2'))
+    pi, matrix = RateEstimation.getRateMatrix(
+        result.getModel(),
+        terminals=('COD0', 'COD1', 'COD2'))
 
     if rsi is None:
         o_dn, o_ds, o_omega = "na", "na", "na"
@@ -661,16 +653,16 @@ def outputXRateResult(mali, result, rsi, rsv, rni, rnv, msg):
         # get rate matrix as if omega was set to 1
         Q0, t0 = RateEstimation.getQMatrix(pi,
                                            Rsi=(rsi + rni) / 2.0,
-                                           Rsv = (rsv + rnv) / 2.0,
-                                           Rni = (rsi + rni) / 2.0,
-                                           Rnv = (rsv + rnv) / 2.0)
+                                           Rsv=(rsv + rnv) / 2.0,
+                                           Rni=(rsi + rni) / 2.0,
+                                           Rnv=(rsv + rnv) / 2.0)
 
         # get rate matrix as if kappa was set to 1
         Q1, t1 = RateEstimation.getQMatrix(pi,
                                            Rsi=(rsi + rsv) / 2.0,
-                                           Rsv = (rsi + rsv) / 2.0,
-                                           Rni = (rni + rnv) / 2.0,
-                                           Rnv = (rni + rnv) / 2.0)
+                                           Rsv=(rsi + rsv) / 2.0,
+                                           Rni=(rni + rnv) / 2.0,
+                                           Rnv=(rni + rnv) / 2.0)
 
         rI, rV, rS, rN = RateEstimation.countSubstitutions(pi, Q)
         rI0, rV0, rS0, rN0 = RateEstimation.countSubstitutions(pi, Q0)
@@ -698,9 +690,10 @@ def outputXRateResult(mali, result, rsi, rsv, rni, rnv, msg):
 
         # kappa1 is given by the ratio of the rates NOT normalized by the
         # sites.
-        msg += " rI/rV=%f rI0/rV0=%f kappa1=%s" % (rI / rV,
-                                                   rI0 / rV0,
-                                                   options.value_format % ((rsi + rni) / (rsv + rnv)))
+        msg += " rI/rV=%f rI0/rV0=%f kappa1=%s" % (
+            rI / rV,
+            rI0 / rV0,
+            options.value_format % ((rsi + rni) / (rsv + rnv)))
 
     options.stdout.write("\t".join(map(str, (mali.getEntry(ids[0]).mId,
                                              mali.getEntry(ids[1]).mId,
@@ -854,11 +847,6 @@ def processMali(mali, options):
         runXrate(mali, has_non_overlaps, pairs, map_new2old, options)
 
 
-# -------------------------------------------------------------------
-# -------------------------------------------------------------------
-# -------------------------------------------------------------------
-
-
 def main(argv=None):
     """script main.
 
@@ -869,7 +857,7 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: mali2kaks.py 2781 2009-09-10 11:33:14Z andreas $")
+        version="%prog version: $Id$")
 
     parser.add_option("--set-omega", dest="omega", type="float",
                       help="initial omega value.")
@@ -922,7 +910,7 @@ def main(argv=None):
 
     parser.add_option("--method", dest="method", type="choice",
                       choices=("paml", "xrate"),
-                      help = "choose method for rate computation [%default]")
+                      help="choose method for rate computation [%default]")
 
     parser.add_option("--xrate-model", dest="xrate_model", type="choice",
                       choices=(

@@ -139,42 +139,24 @@ To run the example, simply unpack and untar::
 # load modules
 from ruffus import *
 import CGAT.Experiment as E
-import logging as L
-import CGAT.Database as Database
-import CGAT.CSV as CSV
-import numpy as np
-import fnmatch
 import sqlite3
-import CGAT.FastaIterator as FastaIterator
-import random
-import CGAT.GTF as GTF
-import CGAT.IOTools as IOTools
 import sys
 import os
 import re
-import shutil
-import itertools
-import math
 import glob
-import time
-import gzip
-import collections
-import random
 import pandas
 import pandas.io.sql as pdsql
 from rpy2.robjects import r as R
-from rpy2.robjects.packages import importr
-from rpy2.robjects.numpy2ri import numpy2ri
 import rpy2.robjects as robjects
-import CGATPipelines.PipelineTracks as PipelineTracks
 import CGATPipelines.PipelineTransfacMatch as PipelineTFM
+import CGAT.Pipeline as P
 
 ###############################################################################
 ###############################################################################
 ###############################################################################
 use_cluster = True
 
-import CGAT.Pipeline as P
+
 P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",

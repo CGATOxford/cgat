@@ -34,15 +34,10 @@ Code
 
 '''
 import os
-import sys
 import string
 import re
 import tempfile
 import subprocess
-
-"""Wrapper for DBA.
-"""
-
 from CGAT import Genomics as Genomics
 
 

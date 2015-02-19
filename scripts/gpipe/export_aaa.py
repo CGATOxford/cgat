@@ -57,10 +57,10 @@ Code
 
 '''
 import sys
-import string
-import re
-import optparse
 import time
+import CGAT.Experiment as E
+import pgdb
+
 
 USAGE = """python %s [OPTIONS] < in > out
 
@@ -72,9 +72,6 @@ Options:
 -h, --help                      print this message.
 -v, --verbose=                  loglevel.
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import pgdb
 
 HEADER = """##gff-version   3
 #species: %(species)s

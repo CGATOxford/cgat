@@ -16,7 +16,13 @@ import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Pipeline as P
 import CGAT.Experiment as E
 import sqlite3
-import CGAT.Experiment as E
+import tempfile
+import string
+from copy import deepcopy
+import bx.intervals.io
+import bx.align.maf
+import bx.intervals
+import bx.interval_index_file
 
 ########################################################
 # gene set building
@@ -1516,15 +1522,6 @@ def reClassifyLncRNAGenes(lncRNA_gtf,
 # get_spliced_region_alignment()
 # get_starts_ends_fields_from_gene_bed()
 # iter_components_by_src()
-
-import tempfile
-import string
-from copy import deepcopy
-import bx.intervals.io
-import bx.align.maf
-import bx.intervals
-import bx.interval_index_file
-
 GAP_CHARS = ['-']
 SRC_SPLIT_CHAR = '.'
 

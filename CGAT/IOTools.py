@@ -36,10 +36,8 @@ Code
 
 import string
 import re
-import sys
 import os
 import collections
-import types
 import glob
 import stat
 import gzip
@@ -49,14 +47,12 @@ import itertools
 import numpy
 import numpy.ma
 
-########################################################################
-
 
 def readMap(infile,
             columns=(0, 1),
-            map_functions = (str, str),
+            map_functions=(str, str),
             both_directions=False,
-            has_header = False):
+            has_header=False):
     """read a map (pairs of values) from infile.
     returns a hash.
 
@@ -184,12 +180,12 @@ def ReadList(infile, column=0, map_function=str, map_category={}):
 
 def readMultiMap(infile,
                  columns=(0, 1),
-                 map_functions = (str, str),
+                 map_functions=(str, str),
                  both_directions=False,
-                 has_header = False,
-                 dtype = dict):
+                 has_header=False,
+                 dtype=dict):
     """read a map (pairs of values) from infile.
-    returns a hash. 
+    returns a hash.
 
     Use map functions to convert elements.
     If both_directions is set to true, both mapping directions are returned.
@@ -942,7 +938,6 @@ def iterator_split(infile, regex):
     If a header is present it is returned as the first file chunk.
 
     infile must be either an open file handle or an iterable.'''
-    
     chunk_list = []
 
     regex = re.compile(regex)
@@ -956,5 +951,4 @@ def iterator_split(infile, regex):
             chunk_list.append(x)
         else:
             chunk_list.append(x)
-        
     yield chunk_list
