@@ -267,6 +267,7 @@ def main(argv=None):
         spike_foldchange_bin_width=0.5,
         spike_max_counts_per_bin=50,
         model=None,
+        contrasts=None
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -291,6 +292,7 @@ def main(argv=None):
         percentile_rowsums=options.filter_percentile_rowsums,
         ref_group=options.ref_group,
         model=options.model,
+        contrasts=options.contrasts,
         fdr=options.fdr)
 
     DEEx.build(
@@ -299,7 +301,19 @@ def main(argv=None):
 
     if options.method == "TTest":
         DEProcessor = Expression.DE_TTest()
-        DEProcessor(DEEx, outfile=options.output_filename, normalise=True)
+        DEProcessor(DEEx,
+                    outfile=options.output_filename,
+                    outfile_prefix=options.output_filename_pattern,
+                    fdr=options.fdr,
+                    normalise=True,
+                    normalise_method="million-counts")
+
+    elif options.method == "edger":
+        DEProcessor = Expression.DE_edgeR()
+        DEProcessor(DEEx,
+                    outfile=options.output_filename,
+                    outfile_prefix=options.output_filename_pattern,
+                    dispersion=options.edger_dispersion)
 
     '''try:
         if options.method == "deseq2":

@@ -417,7 +417,7 @@ def main(argv=None):
 
         # write out
         counts.to_csv(options.stdout, sep="\t", header=True)
-        
+
     elif options.method == "normalize":
         normed, factors = Counts.normalizeTagData(
             counts,

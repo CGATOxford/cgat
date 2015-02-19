@@ -1505,8 +1505,9 @@ def runBiSeq(infiles, outfile):
     clusters.trimmed <- trimClusters(clusters.rej,FDR.loc = 0.5)
     print(clusters.trimmed)
     DMRs <- findDMRs(clusters.trimmed,max.dist = 100,diff.dir = TRUE)
-
-    write.tabe(DMRS, paste0("%(base)s", "_trimmed_clusters.tsv"), sep="\t",
+    # just in case we want to do something else with the results
+    save.image()
+    write.table(DMRs, paste0("%(base)s", "_trimmed_clusters.tsv"), sep="\t",
     quote=F, row.names=F)
 
     concat_vario = do.call(rbind, vario.sm$pValsList)

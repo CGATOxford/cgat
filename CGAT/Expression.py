@@ -196,31 +196,37 @@ class DEExperiment(object):
         self.design = None
         self.model = model
         self.fdr = fdr
+        self.ref_group = ref_group
 
     def readDesignFile(self, dfile):
         ''' read in design file and identify attributes'''
+
         self.design = ExpDesign()
         self.design.readDesignFile(dfile)
         self.design.getDesignAttributes()
 
     def readCountsFile(self, cfile):
         ''' read in counts file '''
+
         self.counts = Counts.Counts()
         self.counts.readCountsfile(cfile)
 
     def checkForMissingSamples(self):
         '''identify missing samples in counts table using index of
         design table'''
+
         self.missing = set(self.counts.table.columns).difference(
             self.design.samples)
 
     def removeUnnecessarySamples(self):
         '''remove samples from counts table if they don't exist in the
         design sample'''
+
         self.counts.table = self.counts.table[self.design.samples]
 
     def filterCounts(self, min_counts_row, min_counts_sample, percentile):
         ''' call Counts.filterCounts method'''
+
         self.counts.filterCounts(min_counts_row, min_counts_sample, percentile)
 
     def updateDesign(self):
@@ -232,14 +238,20 @@ class DEExperiment(object):
         self.design.getDesignAttributes()
 
     def build(self, counts_file, design_file):
+
         self.readDesignFile(design_file)
+
         self.readCountsFile(counts_file)
+
         self.removeUnnecessarySamples()
+
         self.filterCounts(self.min_counts_row,
                           self.min_counts_sample,
                           self.percentile_rowsums)
+
         self.updateDesign()
 
+        # check filtering has left some samples and observations remaining...
         nobservations, nsamples = self.counts.table.shape
 
         if nobservations == 0:
@@ -259,21 +271,29 @@ class DECaller(object):
                  DEExperiment,
                  outfile=None,
                  normalise=False,
+                 normalisation_method=None,
                  dispersion=None,
+                 outfile_prefix=None,
                  *args, **kwargs):
 
         self.DEExper = DEExperiment
         self.normalise = normalise
+        self.normalisation_method = normalisation_method
         self.outfile = outfile
+        self.outfile_prefix = outfile_prefix
         self.dispersion = dispersion
 
-        # call DE and generate a results table
-        # this should be split into two stages so that results table
-        # is parsed from DE caller output
+        # call DE and generate an initial results table
         self.callDifferentialExpression()
 
         # generate a final results table and write out
         self.postProcessDEResults()
+
+        # make diagnostics plot from intial results
+        self.plotDiagnostics()
+        
+        # sumamrise results
+        self.summariseDEResults()
 
     def __init__(self):
         pass
@@ -297,12 +317,46 @@ class DECaller(object):
         """
         pass
 
-    def run(self, df, design_file, outfile):
-        """
-        """
-        self.callDifferentialExpression()
-        self.Diagnostics()
-        self.postProcessDEResults()
+    def summariseDEResults(self):
+        ''' summarise DE results. Counts instances of possible outcomes'''
+        n_rows = self.results.shape[0]
+
+        counts = E.Counter()
+
+        counts.signficant = sum(self.results['significant'])
+        counts.insignficant = (len(self.results['significant']) -
+                               counts.signficant)
+        counts.all_over = sum([x > 0 for x in self.results['l2fold']])
+        counts.all_under = sum([x < 0 for x in self.results['l2fold']])
+        counts.signficant_over = sum([self.results['significant'][x] == 1 and
+                                     self.results['l2fold'][x] > 1 for
+                                     x in range(0, n_rows)])
+        counts.signficant_under = sum([self.results['significant'][x] == 1 and
+                                       self.results['l2fold'][x] < 1 for
+                                       x in range(0, n_rows)])
+
+        outf = IOTools.openFile("%ssummary.tsv" % self.outfile_prefix, "w")
+        outf.write("category\tcounts\n%s\n" % counts.asTable())
+        outf.close()
+
+    def run(self):
+        pass
+
+
+def adjustPvalues(p_values):
+    '''return a list of BH adjusted pvalues'''
+
+    # import r stats module to adjust pvalues
+    stats = importr('stats')
+
+    adj_pvalues = list(stats.p_adjust(FloatVector(p_values), method='BH'))
+    return adj_pvalues
+
+
+def pvaluesToSignficant(p_values, fdr):
+    '''return a list of bools for significance'''
+
+    return [int(x < fdr) for x in p_values]
 
 
 class DE_TTest(DECaller):
@@ -311,12 +365,13 @@ class DE_TTest(DECaller):
     # to do: deal with genes/regions with zero counts
 
     def callDifferentialExpression(self):
-        print self.normalise
 
-        # save out size factors?
+        # normalisation performed here rather than earlier as method is
+        # dependent upon the test being performed
+        # save out size factors to a tsv?
         if self.normalise is True:
             size_factors = self.DEExper.counts.normaliseCounts(
-                method="million-counts")
+                method=self.normalisation_method)
 
         TTestResultColumns = [
             "test_id", "treatment_name", "treatment_mean", "treatment_std",
@@ -371,21 +426,67 @@ class DE_TTest(DECaller):
         self.results["fold"] = (
             self.results["treatment_mean"] / self.results["control_mean"])
 
-        # import r stats module to adjust pvalues
-        stats = importr('stats')
-        self.results["p_value_adj"] = list(
-            stats.p_adjust(FloatVector(self.results["p_value"]), method='BH'))
+        self.results["p_value_adj"] = adjustPvalues(self.results["p_value"])
 
-        self.results["significant"] = [
-            int(x < self.DEExper.fdr) for x in self.results["p_value_adj"]]
+        self.results["significant"] = pvaluesToSignficant(
+            self.results["p_value_adj"], self.DEExper.fdr)
 
         self.results["l2fold"] = list(numpy.log2(self.results["fold"]))
 
         # note: the transformed log2 fold change is not transformed for TTest
-        self.results["transformed_l2fold"] = list(
-            numpy.log2(self.results["fold"]))
+        self.results["transformed_l2fold"] = self.results["l2fold"]
 
         self.results.to_csv(self.outfile, sep="\t", header=True, index=True)
+
+    def plotDiagnostics(self):
+        '''
+        Should TTest plot anything here? This is really for DE tool
+        specific plots
+        '''
+        for combination in itertools.combinations(
+                self.DEExper.design.groups, 2):
+            control, treatment = combination
+
+            temp_results_df = self.results[
+                (self.results['control_name'] == control) &
+                (self.results['treatment_name'] == treatment)]
+
+            title = "%(control)s_vs_%(treatment)s" % locals()
+            plotOutfile = (self.outfile + self.outfile_prefix +
+                           title + "_MAplot.png")
+
+            makeMAPlot(temp_results_df, title, plotOutfile)
+
+
+def makeMAPlot(resultsTable, title, outfile):
+    '''make an MA plot from a DE results table'''
+
+    plotter = R('''
+    function(results, title, outfile){
+    library(ggplot2)
+
+    m_text = element_text(size = 15)
+
+    results=results[order(results$significant),]
+    results$significant = factor(results$significant, levels=c(0,1))
+
+    p = ggplot(results[!is.na(results$p_value),],
+        aes(x=log(((control_mean + treatment_mean)/2), 10),
+            y = l2fold, col = significant))
+    p = p + geom_point(aes(size=significant))
+    p = p + scale_colour_manual(values=c("black", "red"),name="p-adjust < fdr")
+    p = p + scale_size_manual(values=c(1,2), name="p-adjust < fdr")
+    p = p + xlab("Normalised counts (log10)") + ylab("Fold change (log2)")
+    p = p + ggtitle(title)
+    p = p + theme(axis.title.x = m_text, axis.title.y = m_text,
+                  axis.text.x = m_text, axis.text.y = m_text,
+                  legend.title = m_text, legend.text = m_text)
+
+    ggsave(plot = p, file = outfile)}''')
+
+    r_resultsTable = com.convert_to_r_dataframe(resultsTable)
+
+    plotter(r_resultsTable, title, outfile)
 
 
 class DE_edgeR(DECaller):
@@ -415,182 +516,102 @@ class DE_edgeR(DECaller):
                 self.DEExper.design.has_replicates,
                 self.DEExper.design.has_pairs))
 
-        r_counts = com.convert_to_r_dataframe(self.DEExper.counts.table)
-
-        passDFtoRGlobalEnvironment = R('''function(df){
-        countsTable <<- df}''')
-        passDFtoRGlobalEnvironment(r_counts)
-
-        if self.DEExper.design.has_pairs:
-            # output difference between groups
-            # TS #####
-            # this is performed on non-normalised data
-            # should we use Counts.py to normalise first?
-            # also, this isn't edgeR specific, should this be
-            # moved to a seperate summary function?
-            # also move the MDS plotting?
-            # #####
-            first = True
-            pairs_df = pandas.DataFrame()
-            nrows = len(self.DEExper.counts.table.index)
-
-            n = 0
-
-            for g1, g2 in itertools.combinations(
-                    self.DEExper.design.groups, 2):
-
-                keep_a = [x == g1 for x in self.DEExper.design.conditions]
-                counts_a = self.DEExper.design.counts.table.iloc[:, keep_a]
-                keep_b = [x == g2 for x in self.DEExper.design.conditions]
-                counts_b = self.DEExper.design.counts.table.iloc[:, keep_b]
-                index = range(n, n+nrows)
-                n += nrows
-                a = counts_a.sum(axis=1)
-                b = counts_b.sum(axis=1)
-                diff = a-b
-                diff.sort()
-                temp_df = pandas.DataFrame({"cumsum": np.cumsum(diff).tolist(),
-                                            "comb": "_vs_".join([g1, g2]),
-                                            "id": range(0, nrows)},
-                                           index=index)
-                pairs_df = pairs_df.append(temp_df)
-            plot_pairs = R('''function(df, outfile){
-            suppressMessages(library('ggplot2'))
-            p = ggplot(df, aes(y=cumsum, x=id)) +
-            geom_line(aes(col=factor(comb))) +
-            scale_color_discrete(name="Comparison") +
-            xlab("index") + ylab("Cumulative sum")
-            ggsave("%(outfile_prefix)sbalance_groups.png", plot = p)}
-            ''' % locals())
-
-            r_pairs_df = com.convert_to_r_dataframe(pairs_df)
-            plot_pairs(r_pairs_df)
-
-            # output difference between pairs within groups
-            first = True
-            legend = []
-            n = 0
-            pairs_in_groups_df = pandas.DataFrame()
-            for pair in set(self.DEExper.design.pairs):
-                for g1, g2 in itertools.combinations(
-                        self.DEExper.design.groups, 2):
-
-                    key = "pair-%s-%s-vs-%s" % (pair, g1, g2)
-                    legend.append(key)
-                    keep_a = [x == pair and y == g1 for x, y in zip(
-                        self.DEExper.design.pairs,
-                        self.DEExper.design.conditions)]
-                    keep_b = [x == pair and y == g2 for x, y in zip(
-                        self.DEExper.design.pairs,
-                        self.DEExper.design.conditions)]
-
-                    # check pair and group combination actually exists
-                    if sum(keep_a) > 0 and sum(keep_b) > 0:
-                        counts_a = counts.iloc[:, keep_a]
-                        counts_b = counts.iloc[:, keep_b]
-                        index = range(n, n+nrows)
-                        n += nrows
-                        a = counts_a.sum(axis=1)
-                        b = counts_b.sum(axis=1)
-                        diff = a-b
-                        diff.sort()
-                        comparison = "pair-%s-%s-vs-%s" % (pair, g1, g2)
-                        temp_df = pandas.DataFrame({"cumsum": np.cumsum(diff).tolist(),
-                                                    "comb": comparison,
-                                                    "id": range(0, nrows)},
-                                                   index=index)
-                        pairs_in_groups_df = pairs_in_groups_df.append(temp_df)
-
-            plot_pairs_in_groups = R('''function(df, outfile){
-            suppressMessages(library('ggplot2'))
-            p = ggplot(df, aes(y=cumsum, x=id)) +
-            geom_line(aes(col=factor(comb))) +
-            scale_color_discrete(name="Comparison") +
-            xlab("index") + ylab("Cumulative sum")
-            ggsave("%(outfile_prefix)sbalance_pairs.png", plot = p)}
-            ''' % locals())
-
-            r_pairs_in_groups_df = com.convert_to_r_dataframe(pairs_in_groups_df)
-            plot_pairs_in_groups(r_pairs_in_groups_df)
-
         # create r objects
-        r_counts = com.convert_to_r_dataframe(counts)
-        r_groups = ro.StrVector(conds)
-        r_pairs = ro.StrVector(pairs)
-        r_has_pairs = ro.default_py2ri(has_pairs)
-        r_has_replicates = ro.default_py2ri(has_replicates)
+        r_counts = com.convert_to_r_dataframe(self.DEExper.counts.table)
+        r_groups = ro.StrVector(self.DEExper.design.conditions)
+        r_pairs = ro.StrVector(self.DEExper.design.pairs)
+        r_has_pairs = ro.default_py2ri(self.DEExper.design.has_pairs)
+        r_has_replicates = ro.default_py2ri(self.DEExper.design.has_replicates)
 
-        if dispersion is not None:
-            r_dispersion = ro.default_py2ri(dispersion)
+        if self.dispersion is not None:
+            r_dispersion = ro.default_py2ri(self.dispersion)
         else:
             r_dispersion = ro.default_py2ri(False)
 
-        if ref_group is not None:
-            r_ref_group = ro.default_py2ri(ref_group)
+        if self.DEExper.model is not None:
+            r_model = ro.default_py2ri(self.DEExper.model)
         else:
-            r_ref_group = ro.default_py2ri(groups[0])
+            r_model = ro.default_py2ri(False)
+
+        if self.DEExper.ref_group is not None:
+            r_ref_group = ro.default_py2ri(self.DEExper.ref_group)
+        else:
+            r_ref_group = ro.default_py2ri(self.DEExper.design.groups[0])
 
         # build DGEList object
         buildDGEList = R('''
         suppressMessages(library('edgeR'))
+        
         function(counts, groups, ref_group){
+        
         countsTable = DGEList(counts, group=groups)
+        
         countsTable$samples$group <- relevel(countsTable$samples$group,
         ref = ref_group)
+        
         countsTable = calcNormFactors(countsTable)
-        return(countsTable)
-        }''')
+        
+        return(countsTable)}''')
 
         r_countsTable = buildDGEList(r_counts, r_groups, r_ref_group)
 
-        # output MDS plot
-        # TT - should this be performed on the normalised counts table?(see above)
-        R.png('''%(outfile_prefix)smds.png''' % locals())
-        try:
-            MDSplot = R('''function(counts){
-            plotMDS(counts)}''')
-            MDSplot(r_counts)
-        except rpy2.rinterface.RRuntimeError, msg:
-            E.warn("can not plot mds: %s" % msg)
-        R['dev.off']()
+        print "model:", self.DEExper.model
+        if self.DEExper.model is not None:
+            pass
 
         # build design matrix
-        buildDesign = R('''function(countsTable, has_pairs, pairs){
-        if (has_pairs==TRUE) {
+        buildDesign = R('''
+        
+        function(countsTable, has_pairs, pairs, model){
+
+        if (model==FALSE){
+
+          if (has_pairs==TRUE) {
             design <- model.matrix( ~pairs + countsTable$samples$group ) }
-        else {
+          else {
             design <- model.matrix( ~countsTable$samples$group ) }
-        return(design)
-        }''')
 
-        r_design = buildDesign(r_countsTable, r_has_pairs, r_pairs)
+        return(design)}''')
 
-        fitModel = R('''function(countsTable, design, has_replicates, dispersion){
+        r_design = buildDesign(r_countsTable, r_has_pairs, r_pairs, r_model)
+
+        fitModel = R('''
+        function(countsTable, design, has_replicates, dispersion){
+        
         if (has_replicates == TRUE) {
+        
             # estimate common dispersion
             countsTable = estimateGLMCommonDisp( countsTable, design )
+            
             # estimate tagwise dispersion
             countsTable = estimateGLMTagwiseDisp( countsTable, design )
+            
             # fitting model to each tag
             fit = glmFit( countsTable, design ) }
+
         else {
             # fitting model to each tag
             fit = glmFit(countsTable, design, dispersion=dispersion) }
-        return(fit)
-        }''')
 
-        r_fit = fitModel(r_countsTable, r_design, r_has_replicates, r_dispersion)
+        return(fit)}''')
+
+        r_fit = fitModel(r_countsTable, r_design,
+                         r_has_replicates, r_dispersion)
 
         E.info("Generating output")
 
         # perform LR test
-        lrtTest = R('''function(fit, prefix){
+        lrtTest = R('''
+        function(fit, prefix){
+        
         lrt = glmLRT(fit)
+        
         # save image for access to the whole of the lrt object
         save.image(paste0(prefix,"lrt.RData"))
-        return(lrt)
-        }''')
-        r_lrt = lrtTest(r_fit, outfile_prefix)
+        
+        return(lrt)}''')
+
+        r_lrt = lrtTest(r_fit, self.outfile_prefix)
 
         # return statistics table - must be a better way to do this?
         extractTable = R('''function(lrt){ return(lrt$table)}''')
@@ -613,68 +634,53 @@ class DE_edgeR(DECaller):
         write.table(sorted, file=gz, sep = "\t", row.names=FALSE, quote=FALSE)
         close(gz)}''')
 
-        outputCPMTable(r_countsTable, outfile_prefix, r_lrt)
-
-        # output differences between pairs
-        if len(groups) == 2:
-            plotSmear = R('''function(countsTable, outfile_prefix){
-            png(paste0(outfile_prefix,"smaplot.png"
-            plotSmear(countsTable, pair=c('%s'))
-            abline(h=c(-2, 2), col='dodgerblue')
-            dev.off()}''' % "','".join(groups))
+        outputCPMTable(r_countsTable, self.outfile_prefix, r_lrt)
 
         lrt_table = com.convert_robj(r_lrt_table)
+        
+        self.edgeRresults = lrt_table
 
-        n_rows = lrt_table.shape[0]
-        DF_Dict = makeEmptyDataFrameDict()
+    def postProcessDEResults(self):
+        
+        FinalResultColumns = [
+            "test_id", "treatment_name", "treatment_mean",
+            "treatment_std", "control_name", "control_mean",
+            "control_std", "p_value", "p_value_adj", "l2fold", "fold",
+            "transformed_l2fold", "significant", "status"]
 
-        # import r stats module for BH adjustment
-        stats = importr('stats')
+        df_dict = {key: [] for key in FinalResultColumns}
 
-        DF_Dict["control_name"].extend((groups[0],)*n_rows)
-        DF_Dict["treatment_name"].extend((groups[1],)*n_rows)
-        DF_Dict["test_id"].extend(lrt_table.index)
-        DF_Dict["control_mean"].extend(lrt_table['logCPM'])
-        DF_Dict["treatment_mean"].extend(lrt_table['logCPM'])
-        DF_Dict["control_std"].extend((0,)*n_rows)
-        DF_Dict["treatment_std"].extend((0,)*n_rows)
-        DF_Dict["p_value"].extend(lrt_table['PValue'])
-        DF_Dict["p_value_adj"].extend(
-            list(stats.p_adjust(FloatVector(DF_Dict["p_value"]), method='BH')))
-        DF_Dict["significant"].extend(
-            [int(float(x) < fdr) for x in DF_Dict["p_value_adj"]])
-        DF_Dict["l2fold"].extend(list(numpy.log2(lrt_table['logFC'])))
+        n_rows = self.edgeRresults.shape[0]
+
+        df_dict["control_name"].extend((self.DEExper.design.groups[0],)*n_rows)
+        df_dict["treatment_name"].extend(
+            (self.DEExper.design.groups[1],)*n_rows)
+        df_dict["test_id"].extend(self.edgeRresults.index)
+        df_dict["control_mean"].extend(self.edgeRresults['logCPM'])
+        df_dict["treatment_mean"].extend(self.edgeRresults['logCPM'])
+        df_dict["control_std"].extend((0,)*n_rows)
+        df_dict["treatment_std"].extend((0,)*n_rows)
+        df_dict["p_value"].extend(self.edgeRresults['PValue'])
+        df_dict["p_value_adj"] = adjustPvalues(self.edgeRresults['PValue'])
+        df_dict["significant"] = pvaluesToSignficant(
+            df_dict["p_value_adj"], self.DEExper.fdr)
+        df_dict["l2fold"].extend(list(numpy.log2(self.edgeRresults['logFC'])))
 
         # TS -note: the transformed log2 fold change is not transformed!
-        DF_Dict["transformed_l2fold"].extend(list(numpy.log2(lrt_table['logFC'])))
+        df_dict["transformed_l2fold"] = df_dict["l2fold"]
 
         # TS -note: check what happens when no fold change is available
         # TS -may need an if/else in list comprehension. Raise E.warn too?
-        DF_Dict["fold"].extend([math.pow(2, float(x)) for x in lrt_table['logFC']])
+        df_dict["fold"].extend([math.pow(2, float(x)) for
+                                x in self.edgeRresults['logFC']])
 
         # set all status values to "OK"
-        # TS - again, may need an if/else, check...
-        DF_Dict["status"].extend(("OK",)*n_rows)
+        # TS - again, may need an if/else to check...
+        df_dict["status"].extend(("OK",)*n_rows)
 
-        results = pandas.DataFrame(DF_Dict)
-        results.set_index("test_id", inplace=True)
-        results.to_csv(outfile, sep="\t", header=True, index=True)
-
-        counts = E.Counter()
-        counts.signficant = sum(results['significant'])
-        counts.insignficant = (len(results['significant']) - counts.signficant)
-        counts.all_over = sum([x > 0 for x in results['l2fold']])
-        counts.all_under = sum([x < 0 for x in results['l2fold']])
-        counts.signficant_over = sum([results['significant'][x] == 1 and
-                                     results['l2fold'][x] > 1 for
-                                     x in range(0, n_rows)])
-        counts.signficant_under = sum([results['significant'][x] == 1 and
-                                       results['l2fold'][x] < 1 for
-                                       x in range(0, n_rows)])
-
-        outf = IOTools.openFile("%(outfile_prefix)ssummary.tsv" % locals(), "w")
-        outf.write("category\tcounts\n%s\n" % counts.asTable())
-        outf.close()
+        self.results = pandas.DataFrame(df_dict)
+        self.results.set_index("test_id", inplace=True)
+        self.results.to_csv(self.outfile, sep="\t", header=True, index=True)
 
 
 def buildProbeset2Gene(infile,
@@ -3187,7 +3193,7 @@ def runTTestPandas(counts_table,
     (groups, pairs, conds, factors, has_replicates,
      has_pairs) = checkTagGroupsPandas(design_table, ref_group)
 
-    DF_Dict = makeEmptyDataFrameDict()
+    df_dict = makeEmptyDataFrameDict()
 
     for combination in itertools.combinations(groups, 2):
         # as each combination may have different numbers of samples in control
@@ -3196,9 +3202,9 @@ def runTTestPandas(counts_table,
 
         control, treatment = combination
         n_rows = counts_table.shape[0]
-        DF_Dict["control_name"].extend((control,)*n_rows)
-        DF_Dict["treatment_name"].extend((treatment,)*n_rows)
-        DF_Dict["test_id"].extend(counts_table.index.tolist())
+        df_dict["control_name"].extend((control,)*n_rows)
+        df_dict["treatment_name"].extend((treatment,)*n_rows)
+        df_dict["test_id"].extend(counts_table.index.tolist())
 
         # subset counts table for each combination
         c_keep = [x == control for x in conds]
@@ -3207,32 +3213,32 @@ def runTTestPandas(counts_table,
         treatment_counts = counts_table.iloc[:, t_keep]
 
         c_mean = control_counts.mean(axis=1)
-        DF_Dict["control_mean"].extend(c_mean)
-        DF_Dict["control_std"].extend(control_counts.std(axis=1))
+        df_dict["control_mean"].extend(c_mean)
+        df_dict["control_std"].extend(control_counts.std(axis=1))
 
         t_mean = treatment_counts.mean(axis=1)
-        DF_Dict["treatment_mean"].extend(t_mean)
-        DF_Dict["treatment_std"].extend(treatment_counts.std(axis=1))
+        df_dict["treatment_mean"].extend(t_mean)
+        df_dict["treatment_std"].extend(treatment_counts.std(axis=1))
 
         t, prob = ttest_ind(control_counts, treatment_counts, axis=1)
-        DF_Dict["p_value"].extend(prob)
+        df_dict["p_value"].extend(prob)
         # what about zero values?!
-        DF_Dict["fold"].extend(t_mean / c_mean)
+        df_dict["fold"].extend(t_mean / c_mean)
 
-    DF_Dict["p_value_adj"].extend(
-        list(stats.p_adjust(FloatVector(DF_Dict["p_value"]), method='BH')))
+    df_dict["p_value_adj"].extend(
+        list(stats.p_adjust(FloatVector(df_dict["p_value"]), method='BH')))
 
-    DF_Dict["significant"].extend(
-        [int(x < fdr) for x in DF_Dict["p_value_adj"]])
+    df_dict["significant"].extend(
+        [int(x < fdr) for x in df_dict["p_value_adj"]])
 
-    DF_Dict["l2fold"].extend(list(numpy.log2(DF_Dict["fold"])))
+    df_dict["l2fold"].extend(list(numpy.log2(df_dict["fold"])))
     # note: the transformed log2 fold change is not transformed!
-    DF_Dict["transformed_l2fold"].extend(list(numpy.log2(DF_Dict["fold"])))
+    df_dict["transformed_l2fold"].extend(list(numpy.log2(df_dict["fold"])))
 
     # set all status values to "OK"
-    DF_Dict["status"].extend(("OK",)*n_rows)
+    df_dict["status"].extend(("OK",)*n_rows)
 
-    results = pandas.DataFrame(DF_Dict)
+    results = pandas.DataFrame(df_dict)
     results.set_index("test_id", inplace=True)
     results.to_csv(outfile, sep="\t", header=True, index=True)
 
@@ -3509,37 +3515,37 @@ def runEdgeRPandas(counts,
     lrt_table = com.convert_robj(r_lrt_table)
 
     n_rows = lrt_table.shape[0]
-    DF_Dict = makeEmptyDataFrameDict()
+    df_dict = makeEmptyDataFrameDict()
 
     # import r stats module for BH adjustment
     stats = importr('stats')
 
-    DF_Dict["control_name"].extend((groups[0],)*n_rows)
-    DF_Dict["treatment_name"].extend((groups[1],)*n_rows)
-    DF_Dict["test_id"].extend(lrt_table.index)
-    DF_Dict["control_mean"].extend(lrt_table['logCPM'])
-    DF_Dict["treatment_mean"].extend(lrt_table['logCPM'])
-    DF_Dict["control_std"].extend((0,)*n_rows)
-    DF_Dict["treatment_std"].extend((0,)*n_rows)
-    DF_Dict["p_value"].extend(lrt_table['PValue'])
-    DF_Dict["p_value_adj"].extend(
-        list(stats.p_adjust(FloatVector(DF_Dict["p_value"]), method='BH')))
-    DF_Dict["significant"].extend(
-        [int(float(x) < fdr) for x in DF_Dict["p_value_adj"]])
-    DF_Dict["l2fold"].extend(list(numpy.log2(lrt_table['logFC'])))
+    df_dict["control_name"].extend((groups[0],)*n_rows)
+    df_dict["treatment_name"].extend((groups[1],)*n_rows)
+    df_dict["test_id"].extend(lrt_table.index)
+    df_dict["control_mean"].extend(lrt_table['logCPM'])
+    df_dict["treatment_mean"].extend(lrt_table['logCPM'])
+    df_dict["control_std"].extend((0,)*n_rows)
+    df_dict["treatment_std"].extend((0,)*n_rows)
+    df_dict["p_value"].extend(lrt_table['PValue'])
+    df_dict["p_value_adj"].extend(
+        list(stats.p_adjust(FloatVector(df_dict["p_value"]), method='BH')))
+    df_dict["significant"].extend(
+        [int(float(x) < fdr) for x in df_dict["p_value_adj"]])
+    df_dict["l2fold"].extend(list(numpy.log2(lrt_table['logFC'])))
 
     # TS -note: the transformed log2 fold change is not transformed!
-    DF_Dict["transformed_l2fold"].extend(list(numpy.log2(lrt_table['logFC'])))
+    df_dict["transformed_l2fold"].extend(list(numpy.log2(lrt_table['logFC'])))
 
     # TS -note: check what happens when no fold change is available
     # TS -may need an if/else in list comprehension. Raise E.warn too?
-    DF_Dict["fold"].extend([math.pow(2, float(x)) for x in lrt_table['logFC']])
+    df_dict["fold"].extend([math.pow(2, float(x)) for x in lrt_table['logFC']])
 
     # set all status values to "OK"
     # TS - again, may need an if/else, check...
-    DF_Dict["status"].extend(("OK",)*n_rows)
+    df_dict["status"].extend(("OK",)*n_rows)
 
-    results = pandas.DataFrame(DF_Dict)
+    results = pandas.DataFrame(df_dict)
     results.set_index("test_id", inplace=True)
     results.to_csv(outfile, sep="\t", header=True, index=True)
 
