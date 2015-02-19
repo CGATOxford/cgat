@@ -1057,6 +1057,7 @@ def mapReadsWithButter(infile, outfile):
         shutil.rmtree(outdir)
         assert len(f) == 1, NotImplementedError('''The sra archive contains
         paired end data,Butter does not support paired end reads''')
+
     elif infile.endswith(".csfasta.F3.gz") or infile.endswith(".fastq.1.gz"):
         raise NotImplementedError('''infiles are paired end: %(infile)s,
         Butter does not support paired end reads''' % locals())
@@ -1065,7 +1066,6 @@ def mapReadsWithButter(infile, outfile):
     job_options = "-l mem_free=%s" % PARAMS["butter_memory"]
     m = PipelineMapping.Butter(strip_sequence=PARAMS["strip_sequence"])
     statement = m.build((infile,), outfile)
-    print statement
     P.run()
 
 ###################################################################
