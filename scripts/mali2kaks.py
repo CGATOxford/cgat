@@ -161,10 +161,12 @@ def runCodeML(mali, tree, has_non_overlaps, pairs, map_new2old, options):
 
             if temp_mali.getWidth() < options.min_overlap:
                 if options.loglevel >= 1:
-                    options.stdlog.write("# pair %s-%s: not computed because only %i residues overlap\n" % (mali.getEntry(ids[x]).mId,
-                                                                                                            mali.getEntry(
-                                                                                                                ids[y]).mId,
-                                                                                                            temp_mali.getWidth()))
+                    options.stdlog.write("# pair %s-%s: not computed because"
+                                         " only %i residues overlap\n" %
+                                         (mali.getEntry(ids[x]).mId,
+                                          mali.getEntry(
+                                          ids[y]).mId,
+                                          temp_mali.getWidth()))
                 nskipped += 1
                 continue
 
@@ -173,8 +175,12 @@ def runCodeML(mali, tree, has_non_overlaps, pairs, map_new2old, options):
             result.mPairs += sub_result.mPairs
 
             if options.loglevel >= 1 and ninput % options.report_step == 0:
-                options.stdlog.write("# pairwise computation: %i/%i -> %i%% in %i seconds.\n" %
-                                     (ninput, ntotal, 100.0 * ninput / ntotal, time.time() - tstart))
+                options.stdlog.write("# pairwise computation: "
+                                     "%i/%i -> %i%% in %i seconds.\n" %
+                                     (ninput,
+                                      ntotal,
+                                      100.0 * ninput / ntotal,
+                                      time.time() - tstart))
                 options.stdlog.flush()
 
             noutput += printPairs(sub_result.mPairs,
@@ -185,8 +191,9 @@ def runCodeML(mali, tree, has_non_overlaps, pairs, map_new2old, options):
             options.stdout.flush()
 
         if options.loglevel >= 1:
-            options.stdlog.write("# pairwise computation: ninput=%i, noutput=%i, nskipped=%i\n" % (
-                ninput, noutput, nskipped))
+            options.stdlog.write("# pairwise computation:"
+                                 " ninput=%i, noutput=%i, nskipped=%i\n" % (
+                                   ninput, noutput, nskipped))
             options.stdlog.flush()
 
     else:
@@ -236,8 +243,8 @@ def checkMatrix(pi, matrix):
                 continue
             t += matrix[codon_i][codon_j]
         assert("%5.2f" % t == "%5.2f" % -matrix[codon_i][codon_i])
-        assert("%5.2f" % (pi[codon_i] * matrix[codon_i][codon_j])
-               == "%5.2f" % (pi[codon_j] * matrix[codon_j][codon_i]))
+        assert("%5.2f" % (pi[codon_i] * matrix[codon_i][codon_j]) ==
+               "%5.2f" % (pi[codon_j] * matrix[codon_j][codon_i]))
         # print "check row %s (should be %f): %f" % (codon_i,
         # -matrix[codon_i][codon_i], t)
 
@@ -389,11 +396,11 @@ def prepareGrammar(xgram, mali, options):
 
     writeModel(input_model, "input", options)
 
-    t1 = time.time()
+    # t1 = time.time()
 
     result = xgram.train(input_model, filename)
 
-    t2 = time.time()
+    # t2 = time.time()
 
     trained_model = result.getModel()
 
@@ -416,7 +423,7 @@ def evaluateGrammar(trained_model):
         pi["".join(codon).upper()] = f
 
     # retrieve the rate matrix for all codons
-    xmatrix = trained_model.evaluateRateMatrix()[('COD0', 'COD1', 'COD2')]
+    # xmatrix = trained_model.evaluateRateMatrix()[('COD0', 'COD1', 'COD2')]
     matrix = {}
     for codon1, v in matrix.items():
         x = {}
@@ -457,8 +464,8 @@ def runXrateSN(xgram, mali, options):
                 if codon_i == codon_j:
                     continue
 
-                is_single, is_synonymous, is_transition = RateEstimation.evaluateCodonPair(
-                    codon_i, codon_j)
+                is_single, is_synonymous, is_transition = \
+                    RateEstimation.evaluateCodonPair(codon_i, codon_j)
 
                 if not is_single:
                     continue
@@ -747,10 +754,12 @@ def runXrate(mali, has_non_overlaps, pairs, map_old2new, options):
 
         if temp_mali.getWidth() < options.min_overlap:
             if options.loglevel >= 1:
-                options.stdlog.write("# pair %s-%s: not computed because only %i residues overlap\n" % (mali.getEntry(ids[x]).mId,
-                                                                                                        mali.getEntry(
-                                                                                                            ids[y]).mId,
-                                                                                                        temp_mali.getWidth()))
+                options.stdlog.write("# pair %s-%s: not computed because "
+                                     "only %i residues overlap\n" %
+                                     (mali.getEntry(ids[x]).mId,
+                                      mali.getEntry(
+                                      ids[y]).mId,
+                                      temp_mali.getWidth()))
 
             nskipped += 1
             continue
@@ -763,15 +772,22 @@ def runXrate(mali, has_non_overlaps, pairs, map_old2new, options):
             runXrateF3X4(xgram, temp_mali, options)
 
         if options.loglevel >= 1 and ninput % options.report_step == 0:
-            options.stdlog.write("# pairwise computation: %i/%i -> %i%% in %i seconds.\n" %
-                                 (ninput, ntotal, 100.0 * ninput / ntotal, time.time() - tstart))
+            options.stdlog.write("# pairwise computation: "
+                                 "%i/%i -> %i%% in %i seconds.\n" %
+                                 (ninput,
+                                  ntotal,
+                                  100.0 * ninput / ntotal,
+                                  time.time() - tstart))
             options.stdlog.flush()
 
         noutput += 1
 
     if options.loglevel >= 1:
-        options.stdlog.write("# pairwise computation: ninput=%i, noutput=%i, nskipped=%i\n" % (
-            ninput, noutput, nskipped))
+        options.stdlog.write("# pairwise computation: "
+                             "ninput=%i, noutput=%i, nskipped=%i\n" %
+                             (ninput,
+                              noutput,
+                              nskipped))
         options.stdlog.flush()
 
 # -------------------------------------------------------------------
@@ -799,8 +815,9 @@ def processMali(mali, options):
             pairs.append((0, y))
     elif options.iteration == "pairwise":
         if len(ids) % 2 != 0:
-            raise "uneven number of sequences (%i) not compatible with --iteration=pairwise" % len(
-                ids)
+            raise "uneven number of sequences (%i)" \
+                " not compatible with --iteration=pairwise" % \
+                len(ids)
         for x in range(0, len(ids), 2):
             pairs.append((x, x + 1))
     elif options.iteration == "tree":
@@ -871,7 +888,8 @@ def main(argv=None):
     parser.add_option("--fix-omega", dest="fix_omega", action="store_true",
                       help="do not estimate omega.")
 
-    parser.add_option("--set-codon-frequencies", dest="codon_frequencies", type="choice",
+    parser.add_option("--set-codon-frequencies", dest="codon_frequencies",
+                      type="choice",
                       choices=("uniform", "fequal", "f3x4", "f1x4", "f61"),
                       help="set codon frequencies.")
 
@@ -884,15 +902,19 @@ def main(argv=None):
 
     parser.add_option("--set-clean-data", dest="clean_data", type="choice",
                       choices=("0", "1"),
-                      help="PAML should cleanup data:  0=only gaps within pair are removed, 1=columns in the mali with gaps are removed.")
+                      help="PAML should cleanup data:  0=only gaps within "
+                      "pair are removed, 1=columns in the mali with gaps "
+                      "are removed.")
 
     parser.add_option("--dump", dest="dump", action="store_true",
                       help="dump raw output [%default].")
 
-    parser.add_option("--set-optimization-threshold", dest="optimization_threshold", type="string",
+    parser.add_option("--set-optimization-threshold",
+                      dest="optimization_threshold", type="string",
                       help="set paml optimization threshold [%default].")
 
-    parser.add_option("-i", "--input-format", dest="input_format", type="choice",
+    parser.add_option("-i", "--input-format", dest="input_format",
+                      type="choice",
                       choices=(
                           "plain", "fasta", "clustal", "stockholm", "phylip"),
                       help="input format of multiple alignment [%default].")
@@ -906,7 +928,9 @@ def main(argv=None):
                       help="iteration mode [%default].")
 
     parser.add_option("--no-clean", dest="clean_mali", action="store_false",
-                      help="do not clean multiple alignment before submitting to codeml. It might take too long for very large sequences.")
+                      help="do not clean multiple alignment before submitting"
+                      " to codeml. It might take too long"
+                      " for very large sequences.")
 
     parser.add_option("--method", dest="method", type="choice",
                       choices=("paml", "xrate"),
@@ -914,50 +938,67 @@ def main(argv=None):
 
     parser.add_option("--xrate-model", dest="xrate_model", type="choice",
                       choices=(
-                          "f3x4-two", "f3x4-four", "sn", "akaksgc", "ef3x4-four", "f3x4-fourproducts"),
+                          "f3x4-two", "f3x4-four", "sn", "akaksgc",
+                          "ef3x4-four", "f3x4-fourproducts"),
                       help="models to use [%default].")
 
-    parser.add_option("-w", "--write", dest="write", type="choice", action="append",
+    parser.add_option("-w", "--write", dest="write", type="choice",
+                      action="append",
                       choices=("input_fixed", "trained_fixed",
                                "input_variable", "trained_variable", "all"),
                       help="output sections to write [%default].")
 
-    parser.add_option("-o", "--output-filename-pattern", dest="output_pattern", type="string",
+    parser.add_option("-o", "--output-filename-pattern", dest="output_pattern",
+                      type="string",
                       help="output pattern for output files [%default].")
 
-    parser.add_option("--xrate-insert-frequencies", dest="xrate_insert_frequencies", action="store_true",
+    parser.add_option("--xrate-insert-frequencies",
+                      dest="xrate_insert_frequencies", action="store_true",
                       help="estimate codon frequencies from input [%default].")
 
-    parser.add_option("--xrate-uniform-frequencies", dest="xrate_insert_frequencies", action="store_false",
+    parser.add_option("--xrate-uniform-frequencies",
+                      dest="xrate_insert_frequencies", action="store_false",
                       help="use uniform codon frequencies [%default].")
 
-    parser.add_option("--xrate-fix-frequencies", dest="xrate_fix_frequencies", action="store_true",
+    parser.add_option("--xrate-fix-frequencies", dest="xrate_fix_frequencies",
+                      action="store_true",
                       help="set initial frequencies to const [%default].")
 
-    parser.add_option("--xrate-estimate-frequencies", dest="xrate_fix_frequencies", action="store_false",
+    parser.add_option("--xrate-estimate-frequencies",
+                      dest="xrate_fix_frequencies", action="store_false",
                       help="estimate nucleotide frequencies [%default].")
 
     parser.add_option("--xrate-fix-rates", dest="fix_rates", type="string",
-                      help="""fix rates to specified values. Note that the number of rates has to match the ones
-in the model. Provide values in a comma-separated list [%default].""")
+                      help="fix rates to specified values. "
+                      "Note that the number of rates has to match the ones "
+                      "in the model. Provide values in a comma-separated"
+                      " list [%default].")
 
-    parser.add_option("--xrate-min-increment", dest="xrate_min_increment", type=float,
-                      help="minimum increment to stop iteration in xrate [%default].")
+    parser.add_option("--xrate-min-increment", dest="xrate_min_increment",
+                      type=float,
+                      help="minimum increment to stop iteration"
+                      " in xrate [%default].")
 
     parser.add_option("--min-overlap", dest="min_overlap", type="int",
-                      help="minimum overlap between a sequence pair in residues [%default].")
+                      help="minimum overlap between a sequence pair"
+                      " in residues [%default].")
 
     parser.add_option("--with-rho", dest="with_rho", action="store_true",
-                      help="output rho values (substitution rates per codon). This requires a patched version of PAML [%default].")
+                      help="output rho values (substitution rates per codon)."
+                      " This requires a patched version of PAML [%default].")
 
-    parser.add_option("--with-counts", dest="with_counts", action="store_true",
-                      help="output counts of aligned positions, transitions and transversions [%default].")
+    parser.add_option("--with-counts", dest="with_counts",
+                      action="store_true",
+                      help="output counts of aligned positions,"
+                      " transitions and transversions [%default].")
 
-    parser.add_option("--remove-stops", dest="remove_stops", action="store_true",
+    parser.add_option("--remove-stops", dest="remove_stops",
+                      action="store_true",
                       help="remove stop codons [%default].")
 
     parser.add_option("--replicates", dest="replicates", type="int",
-                      help="in benchmarking mode expect ## replicates [%default].")
+                      help="in benchmarking mode expect"
+                      " ## replicates [%default].")
 
     parser.add_option("--tree", dest="tree", type="string",
                       help="use tree for estimation [%default].")
@@ -1003,10 +1044,10 @@ in the model. Provide values in a comma-separated list [%default].""")
 
     if options.method == "xrate":
         # imports for xrate computation
-        from XGram.Generator.Prebuilt import Codons
-        from XGram.Model import Annotation
-        import XGram.Run
-        import Bio.Data.CodonTable
+        # from XGram.Generator.Prebuilt import Codons
+        # from XGram.Model import Annotation
+        # import XGram.Run
+        # import Bio.Data.CodonTable
 
         # paml like estimation using xrate
         if options.codon_frequencies == "uniform":
