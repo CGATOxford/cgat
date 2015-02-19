@@ -291,7 +291,7 @@ class DECaller(object):
 
         # make diagnostics plot from intial results
         self.plotDiagnostics()
-        
+
         # sumamrise results
         self.summariseDEResults()
 
@@ -541,16 +541,16 @@ class DE_edgeR(DECaller):
         # build DGEList object
         buildDGEList = R('''
         suppressMessages(library('edgeR'))
-        
+
         function(counts, groups, ref_group){
-        
+
         countsTable = DGEList(counts, group=groups)
-        
+
         countsTable$samples$group <- relevel(countsTable$samples$group,
         ref = ref_group)
-        
+
         countsTable = calcNormFactors(countsTable)
-        
+
         return(countsTable)}''')
 
         r_countsTable = buildDGEList(r_counts, r_groups, r_ref_group)
@@ -561,7 +561,7 @@ class DE_edgeR(DECaller):
 
         # build design matrix
         buildDesign = R('''
-        
+
         function(countsTable, has_pairs, pairs, model){
 
         if (model==FALSE){
@@ -577,15 +577,15 @@ class DE_edgeR(DECaller):
 
         fitModel = R('''
         function(countsTable, design, has_replicates, dispersion){
-        
+
         if (has_replicates == TRUE) {
-        
+
             # estimate common dispersion
             countsTable = estimateGLMCommonDisp( countsTable, design )
-            
+
             # estimate tagwise dispersion
             countsTable = estimateGLMTagwiseDisp( countsTable, design )
-            
+
             # fitting model to each tag
             fit = glmFit( countsTable, design ) }
 
@@ -603,12 +603,12 @@ class DE_edgeR(DECaller):
         # perform LR test
         lrtTest = R('''
         function(fit, prefix){
-        
+
         lrt = glmLRT(fit)
-        
+
         # save image for access to the whole of the lrt object
         save.image(paste0(prefix,"lrt.RData"))
-        
+
         return(lrt)}''')
 
         r_lrt = lrtTest(r_fit, self.outfile_prefix)
@@ -637,11 +637,11 @@ class DE_edgeR(DECaller):
         outputCPMTable(r_countsTable, self.outfile_prefix, r_lrt)
 
         lrt_table = com.convert_robj(r_lrt_table)
-        
+
         self.edgeRresults = lrt_table
 
     def postProcessDEResults(self):
-        
+
         FinalResultColumns = [
             "test_id", "treatment_name", "treatment_mean",
             "treatment_std", "control_name", "control_mean",
