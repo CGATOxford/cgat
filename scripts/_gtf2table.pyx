@@ -31,6 +31,7 @@ import CGAT.Genomics as Genomics
 import CGAT.Intervals as Intervals
 import CGAT.IndexedGenome as IndexedGenome
 
+import random
 import numpy
 import pysam
 
@@ -561,6 +562,7 @@ class CounterBAM(Counter):
                  *args,
                  multi_mapping = 'all',
                  use_barcodes = False,
+                 sample_probability = 1.0,
                  minimum_mapping_quality = 0,
                  **kwargs ):
         Counter.__init__(self, *args, **kwargs )
@@ -569,6 +571,7 @@ class CounterBAM(Counter):
         self.mBamFiles = bamfiles
         self.multi_mapping = multi_mapping
         self.use_barcodes = use_barcodes
+        self.sample_probability = sample_probability
         self.minimum_mapping_quality = minimum_mapping_quality
         self.header = [ '_'.join(x) 
                         for x in itertools.product( 
@@ -676,6 +679,7 @@ class CounterReadCountsFull(CounterBAM):
         cdef bint weight_multi_mapping = self.multi_mapping == "weight"
         cdef bint ignore_multi_mapping = self.multi_mapping == "ignore"
         cdef bint use_barcodes = self.use_barcodes
+        cdef float sample_probability = self.sample_probability
         cdef int max_bases_outside_exons = self.max_bases_outside_exons
 
         # status variables
@@ -768,6 +772,11 @@ class CounterReadCountsFull(CounterBAM):
             for read in samfile.fetch(contig,
                                       exons_start,
                                       exons_end):
+
+                if sample_probability != 1:
+                    if random.random() > sample_probability:
+                        continue
+
                 if minimum_mapping_quality > 0 and read.mapq <= minimum_mapping_quality:
                     quality_read_status += 1
                     continue                   
@@ -881,13 +890,16 @@ class CounterReadCountsFull(CounterBAM):
                     try:
                         nh = read.opt('NH')
                     except KeyError:
-                        nh = 1
+                        raise ValueError("Cannot determine multimapping status, "
+                                         "NH Flag absent")
+
                     weight = 1.0 / nh
                 elif ignore_multi_mapping:
                     try:
                         nh = read.opt('NH')
                     except KeyError:
-                        nh = 1
+                        raise ValueError("Cannot determine multimapping status, "
+                                         "NH Flag absent")
                     if nh > 1:
                         weight = 0
 
@@ -1168,6 +1180,7 @@ class CounterReadPairCountsFull(CounterBAM):
         cdef float minimum_mapping_quality = self.minimum_mapping_quality
         cdef int max_bases_outside_exons = self.max_bases_outside_exons
         cdef bint weight_multi_mapping = self.multi_mapping == "weight"
+        cdef float sample_probability = self.sample_probability
         cdef bint ignore_multi_mapping = self.multi_mapping == "ignore"
 
 
@@ -1259,6 +1272,10 @@ class CounterReadPairCountsFull(CounterBAM):
             for key, reads_in_pair in itertools.groupby(
                     reads,
                     key=lambda x: x.qname):
+                
+                if sample_probability != 1:
+                    if random.random() > sample_probability:
+                        continue
                 
                 reads_in_pair = list(reads_in_pair)
                 pair_status = 0
@@ -1442,21 +1459,44 @@ class CounterReadPairCountsFull(CounterBAM):
                     # other
                     exons_status = 3
 
+                # SNS Feb 2015
+                # The original (commented-out code) appears to only consider 
+                # one end of the read pair (by happenstance from a loop above.)
+                # 
+                # Multi-mapping analyis of paired end reads is not straight 
+                # forward because the overall status of the pair and not of 
+                # the individual reads needs to be considered. A properly 
+                # paired multi-mapping read with a uniquely mapped mate can be
+                # be reasonably unambiguously assigned to a location in the 
+                # genome for example
+                #
+                # (In order to get unambiguously placed pairs, bam2UniquePairs.py 
+                # can be used although it is necessarily mapper specific - 
+                # support for your mapper may need to be added)
+
+                if weight_multi_mapping or ignore_multi_mapping:
+                    raise ValueError("Multi-mapping analysis not implemented for paired end reads")
+
                 weight = 1.0
-                if weight_multi_mapping:
-                    try:
-                        nh = read.opt('NH')
-                    except KeyError:
-                        nh = 1
-                    weight = 1.0 / nh
-                elif ignore_multi_mapping:
-                    try:
-                        nh = read.opt('NH')
-                    except KeyError:
-                        nh = 1
-                    if nh > 1:
-                        weight = 0
-                
+
+                # if weight_multi_mapping:
+                #     try:
+                #         nh = read.opt('NH')
+                #     except KeyError:
+                #         raise ValueError("Cannot determine multimapping status, "
+                #                          "NH Flag absent")
+                #     weight = 1.0 / nh
+                # elif ignore_multi_mapping:
+                #     try:
+                #         nh = read.opt('NH')
+                #     except KeyError:
+                #         raise ValueError("Cannot determine multimapping status, "
+                #                          "NH Flag absent")
+                #     if nh > 1:
+                #         weight = 0
+
+                # SNS Feb 2015
+                # I don't understand why this weight goes to spliced_status?                
                 counters[pair_status][direction_status][exons_status][spliced_status] += weight
 
         free(block_starts)
