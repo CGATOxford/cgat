@@ -82,7 +82,7 @@ The default file format assumes the following convention:
 ``replicate`` denotes the :term:`replicate` within an
 :term:`experiment`.
 
-  
+
 Requirements
 ------------
 
@@ -406,12 +406,14 @@ def executePipelineRnaseqTranscripts(infile, outfile):
     '''
 
     directory = os.path.dirname(infile)
-    statement = '''cd ./%(directory)s; 
-                   python %(scriptsdir)s/pipeline_rnaseqtranscripts.py -v5 -p10 make full'''
+    statement = '''cd ./%(directory)s;
+                   python %(scriptsdir)s/pipeline_rnaseqtranscripts.py -v5
+                   -p10 make full'''
     P.run()
 
-    statement = '''cd ./%(directory)s; 
-                   python %(scriptsdir)s/pipeline_rnaseqtranscripts.py -v5 -p10 make build_report'''
+    statement = '''cd ./%(directory)s;
+                   python %(scriptsdir)s/pipeline_rnaseqtranscripts.py
+                   -v5 -p10 make build_report'''
     P.run()
 
 ###################################################################
@@ -420,7 +422,9 @@ def executePipelineRnaseqTranscripts(infile, outfile):
 
 
 @follows(executePipelineRnaseqTranscripts)
-@transform(os.path.join(DIRECTORIES[0], "reference.gtf.gz"), regex(r"(\S+).gtf.gz"), "reference.%s.gtf.gz" % PARAMS["chromosome"])
+@transform(os.path.join(DIRECTORIES[0], "reference.gtf.gz"),
+           regex(r"(\S+).gtf.gz"),
+           "reference.%s.gtf.gz" % PARAMS["chromosome"])
 def filterReferenceGtfForChr19(infile, outfile):
     '''
     for reporting purposes get the chr19 filtered reference gtf file;
@@ -451,12 +455,19 @@ def splitMultiAndSingleExonLincRna(infile, outfiles):
     for entry in GTF.transcript_iterator(GTF.iterator(inf)):
         if len(entry) > 1:
             for exon in entry:
-                multi.write("\t".join(map(str, [exon.contig, exon.source, exon.feature, exon.start, exon.end, ".", exon.strand, "."]))
-                            + "\t" + exon.attributes + "\n")
+                multi.write(
+                    "\t".join(map(str, [exon.contig, exon.source, exon.feature,
+                                        exon.start, exon.end, ".", exon.strand,
+                                        "."])) +
+                    "\t" + exon.attributes + "\n")
+
         elif len(entry) == 1:
             for exon in entry:
-                single.write("\t".join(map(str, [exon.contig, exon.source, exon.feature, exon.start, exon.end, ".", exon.strand, "."]))
-                             + "\t" + exon.attributes + "\n")
+                single.write(
+                    "\t".join(map(str, [exon.contig, exon.source, exon.feature,
+                                        exon.start, exon.end, ".",
+                                        exon.strand, "."])) +
+                    "\t" + exon.attributes + "\n")
 
     for outfile in outfiles:
         outf = P.snip(outfile, ".gz")
@@ -514,7 +525,7 @@ def summariseReadsContributingToTranscripts(infile, outfile):
 @transform([os.path.join(directory, "abinitio_lincrna.multi_exon.gtf.gz") for directory in getDirectoryNames(options_generator(cufflinks_options))], suffix(".gtf.gz"), ".stats")
 def summariseExonCountsAndLengthOfMultiExonicLincRNA(infile, outfile):
     '''
-    summarizes some basic statistics on the length and number of exons 
+    summarizes some basic statistics on the length and number of exons
     for each set of parameter values
     '''
     outf = open(outfile, "w")
@@ -583,7 +594,7 @@ def loadNumberExonsLengthSummaryStats(infile, outfile):
 @files(loadNumberExonsLengthSummaryStats, "NumberExonsLength.tsv")
 def outputAllNumberExonsLengthSummaryStats(infiles, outfile):
     '''
-    outputs a flat file containing the exon lengths and number of 
+    outputs a flat file containing the exon lengths and number of
     exons for multi-exon transcripts for each track
     '''
     dbh = connect()

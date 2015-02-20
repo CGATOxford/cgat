@@ -164,10 +164,10 @@ SEQUENCEFILES_REGEX = regex(
 
 Sample = PipelineTracks.AutoSample
 TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory(
-    files=glob.glob("./*fastq.1.gz")
-    + glob.glob("./*fastq.gz")
-    + glob.glob("./*sra")
-    + glob.glob("./*csfasta.gz"),
+    files=glob.glob("./*fastq.1.gz") +
+    glob.glob("./*fastq.gz") +
+    glob.glob("./*sra") +
+    glob.glob("./*csfasta.gz"),
     pattern="(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
 if TRACKS:
     if len(TRACKS.getTracks()[0].asList()) == 4:
@@ -291,11 +291,11 @@ if PARAMS["preprocessors"]:
         '''process reads from .fastq format files
         Tasks specified in PREPROCESSTOOLS are run in order
         '''
-        if ((infile.endswith(".csfasta.gz")
-             or infile.endswith(".csfasta.F3.gz")
-             or infile.endswith(".sra")
-             or infile.endswith(".export.txt.gz")
-             or infile.endswith(".fa.gz"))):
+        if ((infile.endswith(".csfasta.gz") or
+             infile.endswith(".csfasta.F3.gz") or
+             infile.endswith(".sra") or
+             infile.endswith(".export.txt.gz") or
+             infile.endswith(".fa.gz"))):
             raise NotImplementedError('''preprocessing of ".sra", "csfasta" (solid)
             ".export.txt.gz" or ".fa.gz" files is not currently implemented.
             Infile: %(infile)s''' % locals())

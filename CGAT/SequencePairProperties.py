@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-SequencePairProperties.py - 
+SequencePairProperties.py -
 ======================================================
 
 :Author: Andreas Heger
@@ -228,10 +228,10 @@ class SequencePairPropertiesCountsNa (SequencePairProperties):
         # sum all rows and columns that have a least one G or C
         # and remove those that have two in order to not double count
         gc = numpy.sum(
-            self.mMatrix[0:4, cp]
-            + self.mMatrix[0:4, gp]
-            + self.mMatrix[cp, 0:4]
-            + self.mMatrix[gp, 0:4]) \
+            self.mMatrix[0:4, cp] +
+            self.mMatrix[0:4, gp] +
+            self.mMatrix[cp, 0:4] +
+            self.mMatrix[gp, 0:4]) \
             - self.mMatrix[cp, cp] \
             - self.mMatrix[gp, gp] \
             - self.mMatrix[cp, gp] \
@@ -244,14 +244,15 @@ class SequencePairPropertiesCountsNa (SequencePairProperties):
 
     def __str__(self):
 
-        return "\t".join(map(str, (self.mNIdentical, self.mNAligned, self.mNDifferent,
+        return "\t".join(map(str, (self.mNIdentical, self.mNAligned,
+                                   self.mNDifferent,
                                    self.mNTransitions, self.mNTransversions,
                                    self.mNUnaligned1, self.mNUnaligned2,
                                    self.mPercentGC)))
 
     def getHeaders(self):
-        return ["identical", "aligned", "different", "transitions", "transversions",
-                "unaligned1", "unaligned2", "pgc"]
+        return ["identical", "aligned", "different", "transitions",
+                "transversions", "unaligned1", "unaligned2", "pgc"]
 
 
 class SequencePairPropertiesCountsCodons(SequencePairPropertiesCountsNa):
