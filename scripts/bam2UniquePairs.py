@@ -1,6 +1,7 @@
 '''
-bam2UniquePairs.py - filter/report uniquely mapped read pairs from a (bwa!) bam-file
-====================================================================================
+bam2UniquePairs.py - filter/report uniquely or bes mapped
+                     read pairs from a (bwa!) bam-file
+===============================================================
 
 :Author: Steve Sansom
 :Release: $Id$
@@ -10,11 +11,12 @@ bam2UniquePairs.py - filter/report uniquely mapped read pairs from a (bwa!) bam-
 Purpose
 -------
 
-Utitily script to report and/or filter out "uniquely mapped" properly paired reads
+Utitily script to report and/or filter out "uniquely or best" mapped
+ properly paired reads
 
-Reports: 
+Reports:
 1. The percentage of properly mapped read pairs with at least
-   one uniquely mapped (XT=U) read 
+   one uniquely mapped (XT=U) read
 
 2. The percentage of properly mapped read pairs with at least one best
    mapped (X0-1) read
@@ -28,7 +30,7 @@ uniquely mapped.
 
 Duplication is ignored.
 
-Only BWA is supported.
+Only BWA and GSNAP are supported.
 
 TODO: cache and emit reads rather than iterating over the samfile twice...
 
@@ -54,52 +56,99 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id: "
+                            "cgat_script_template.py "
+                            "2871 2010-03-03 10:20:44Z andreas $",
                             usage=globals()["__doc__"])
 
     parser.add_option("-f", "--filename", dest="filename", type="string",
                       help="bamfile")
 
     parser.add_option("-a", "--aligner", dest="aligner", type="string",
-                      help="bamfile", default="bwa")
+                      help="Algorithm used to align the reads - "
+                           "supported aligners are: "
+                           "bwa and gsnap", default="must_specify")
 
     parser.add_option("-r", "--output-report", type="string", dest="report",
-                      help="bamfile", default="")
+                      help="file name of report", default="")
+
+    parser.add_option("-n", "--number-of-reads",
+                      type="int",
+                      dest="number_of_reads",
+                      help="Number of reads to process",
+                      default=-1)
 
     parser.add_option("-o", "--outfile", dest="outfile", type="string",
-                      help="bamfile", default="")
+                      help="Optional: specify an outfile to write"
+                           "the uniquely mapping pairs to",
+                      default="")
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
-    # Check the aligner is supported
-    if options.aligner != "bwa":
+    # Check the aligner is specified supported
+    supported_aligners = ["bwa", "gsnap"]
+    if options.aligner == "must_specify":
+        raise ValueError("please specify a supported aligner. "
+                         "supported aligners: "
+                         "%s" ", ".join(supported_aligners))
+
+    if options.aligner not in supported_aligners:
         raise ValueError(
-            "Currently only bwa is supported as aligner specific flags are used")
+            "%s is not a supported as aligner" % options.aligner)
+
+    E.info("Aligner specified is %s" % options.aligner)
 
     # Check that either a report or outfile name has been specified
     if options.report == "" and options.outfile == "":
-        raise ValueError("Nothing to do")
+        raise ValueError("A filename must be specified"
+                         "for a report or alignments")
 
     # Analyse the bamfile
     samfile = pysam.Samfile(options.filename, "rb")
     uniq_map, best_map, uORb_map = {}, {}, {}
     properly_paired = 0
 
+    if options.number_of_reads != -1:
+        sample = True
+        E.info("Sampling first %i reads" % options.number_of_reads)
+    else:
+        sample = False
+        E.info("Processing all reads")
+
+    nreads = 0
     for read in samfile.fetch():
+
+        if sample:
+            if nreads > options.number_of_reads:
+                break
+            else:
+                nreads += 1
 
         if read.is_proper_pair:
             tagd = dict(read.tags)
             u, b, key = False, False, read.qname
 
-            if tagd["XT"] == "U":
-                u = True
-                uniq_map[key] = 1
+            if options.aligner == "bwa":
+                if tagd["XT"] == "U":
+                    u = True
+                    uniq_map[key] = 1
 
-            if "X0" in tagd:
-                if tagd["X0"] == 1:
+                if "X0" in tagd:
+                    if tagd["X0"] == 1:
+                        b = True
+                        best_map[key] = 1
+
+            elif options.aligner == "gsnap":
+                if tagd["X2"] == 0:
+                    u = True
+                    uniq_map[key] = 1
+                if tagd["XQ"] > tagd["X2"]:
                     b = True
                     best_map[key] = 1
+
+            else:
+                raise ValueError("Aligner not recognised")
 
             if u is True or b is True:
                 uORb_map[key] = 1
@@ -110,7 +159,8 @@ def main(argv=None):
 
     npp = properly_paired / 2
 
-    E.info("No proper pairs: %s" % npp)
+    E.info("No proper pairs considered: %s" % npp)
+    E.info("No pairs uniquely or best placed: %s" % len(uORb_map.keys()))
 
     # Write a tabular report if report name given
     if options.report != "":
@@ -142,8 +192,9 @@ def main(argv=None):
 
         samfile = pysam.Samfile(options.filename, "rb")
         outbam = pysam.Samfile(options.outfile, "wb", template=samfile)
-
+        
         for read in samfile.fetch():
+
             if read.is_proper_pair:
                 if read.qname in uORb_map:
                     outbam.write(read)
