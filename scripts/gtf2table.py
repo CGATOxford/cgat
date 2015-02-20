@@ -113,7 +113,7 @@ composition-na
    output nucleotide composition of transcript/gene
 
 composition-cgp
-   output CpG count, CpG density and CpG observed / expected for 
+   output CpG count, CpG density and CpG observed / expected for
    each transcript/gene.
 
 splice
@@ -3989,7 +3989,6 @@ def main(argv=None):
                       help="Specify the probability of whether any"
                       "given read or read pair in a file bam is counted"
                       "Currently only compatible with count-reads")
-
 
     parser.add_option("--column-prefix", dest="prefixes",
                       type="string",
