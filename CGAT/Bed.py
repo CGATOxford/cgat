@@ -120,8 +120,16 @@ class Bed(object):
         return "\t".join((self.contig, str(self.start),
                           str(self.end)) + tuple(map(str, self.fields)))
 
-    def fromGTF(self, gff, name=None):
-        """fill fields from gtf formatted entry.
+    def copy(self):
+        '''Returns a new bed object that is a copy of this one'''
+
+        new_entry = Bed()
+        new_entry.__dict__ = self.__dict__.copy()
+        return new_entry
+
+
+    def fromGTF(self, gff, is_gtf=False, name=None):
+        """fill fields from gtf formatted entry
 
         Arguments
         ---------
@@ -133,6 +141,7 @@ class Bed(object):
            by this attribute of the `gff` object such as ``gene_id`` or
            ``transcript_id``.
         """
+
         self.contig, self.start, self.end = gff.contig, gff.start, gff.end
         try:
             self.fields = [getattr(gff, name),
