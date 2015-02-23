@@ -1115,7 +1115,13 @@ def deseqPlotPCA(outfile, vsd):
     not informed by the experimental design.
     '''
     R.png(outfile)
-    R('''plotPCA(vsd)''')
+    #  if there are more than 500 genes (after filtering)
+    #  use the 500 most variable in the PCA
+    #  else use the number of genes
+    R('''ntop = ifelse(as.integer(dim(vsd))[1] >= 500,
+                       500,
+                       as.integer(dim(vsd))[1])''')
+    R('''plotPCA(vsd, ntop=ntop)''')
     R['dev.off']()
 
 
@@ -1364,14 +1370,13 @@ def runDESeq(outfile,
 
     # perform variance stabilization for log2 fold changes
     vsd = R('''vsd = varianceStabilizingTransformation(cds_blind)''')
-
     # output normalized counts (in order)
     # gzfile does not work with rpy 2.4.2 in python namespace
     # using R.gzfile, so do it in R-space
 
     R('''t = counts(cds, normalized=TRUE);
     write.table(t[order(rownames(t)),],
-    file=gzfile('%(outfile_prefix)scounts.tsv.gz', 'w'),
+    file=gzfile('%(outfile_prefix)scounts.tsv.gz'),
     row.names=TRUE,
     col.names=NA,
     quote=FALSE,
@@ -1380,7 +1385,7 @@ def runDESeq(outfile,
     # output variance stabilized counts (in order)
     R('''t = exprs(vsd);
     write.table(t[order(rownames(t)),],
-    file=gzfile('%(outfile_prefix)svsd.tsv.gz', 'w'),
+    file=gzfile('%(outfile_prefix)svsd.tsv.gz'),
     row.names=TRUE,
     col.names=NA,
     quote=FALSE,
@@ -1486,7 +1491,6 @@ def runDESeq(outfile,
 
         # Plot diagnostic plots for FDR
         if has_replicates:
-            R.png('''%(outfile_groups_prefix)sfdr.png''' % locals())
             R('''orderInPlot = order(pvalues)''')
             R('''showInPlot = (pvalues[orderInPlot] < 0.08)''')
             # Jethro - previously plotting x =
@@ -1496,18 +1500,21 @@ def runDESeq(outfile,
             # values
             R('''true.pvalues <- pvalues[orderInPlot][showInPlot]''')
             R('''true.pvalues <- true.pvalues[is.finite(true.pvalues)]''')
-
-            # failure when no replicates:
-            # rpy2.rinterface.RRuntimeError:
-            # Error in plot.window(...) : need finite 'xlim' values
-            R('''plot( seq( along=which(showInPlot)),
-                       true.pvalues,
-                       pch='.',
-                       xlab=expression(rank(p[i])),
-                       ylab=expression(p[i]))''')
-            R('''abline(a=0, b=%(fdr)f / length(pvalues), col="red")''' %
-              locals())
-            R['dev.off']()
+            if R('''sum(showInPlot)''')[0] > 0:
+                R.png('''%(outfile_groups_prefix)sfdr.png''' % locals())
+                # failure when no replicates:
+                # rpy2.rinterface.RRuntimeError:
+                # Error in plot.window(...) : need finite 'xlim' values
+                R('''plot( seq( along=which(showInPlot)),
+                           true.pvalues,
+                           pch='.',
+                           xlab=expression(rank(p[i])),
+                           ylab=expression(p[i]))''')
+                R('''abline(a = 0, b = %(fdr)f / length(pvalues), col = "red")
+                ''' % locals())
+                R['dev.off']()
+            else:
+                E.warn('no p-values < 0.08')
 
         # Add log2 fold with variance stabilized l2fold value
         R('''res$transformed_log2FoldChange = vsd_l2f''')
