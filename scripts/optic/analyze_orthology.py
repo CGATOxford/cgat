@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-optic/analyze_orthology.py - 
+optic/analyze_orthology.py -
 ======================================================
 
 :Author: Andreas Heger
@@ -100,8 +100,9 @@ def AnalyseOrphans(orphans, outfile,
     for x in categories:
         sums[x] = {'all': 0}
 
-    fields = ['geneid', 'ngenes', 'ntranscripts', 'status', 'nmatches', 'bestpid', 'bestcoverage', 'genes',
-              'best_id', 'best_gid', 'best_query', 'best_pide', 'best_coverage', 'best_class']
+    fields = ['geneid', 'ngenes', 'ntranscripts', 'status', 'nmatches',
+              'bestpid', 'bestcoverage', 'genes', 'best_id', 'best_gid',
+              'best_query', 'best_pide', 'best_coverage', 'best_class']
 
     outfile.write("\t".join(fields) + "\n")
     writer = csv.DictWriter(outfile,
@@ -113,18 +114,19 @@ def AnalyseOrphans(orphans, outfile,
     f = 0
     for g, t in orphans.items():
 
-        CountOrphans(outfile, g, t,
-                     sums,
-                     writer,
-                     all_genes_this,
-                     aligned_genes_this,
-                     assigned_genes_this,
-                     aligned_genes_other,
-                     assigned_genes_other,
-                     map_query2best=map_query2best,
-                     map_transcript2location_other=map_transcript2location_other,
-                     map_transcript2gene_other=map_transcript2gene_other,
-                     options=options)
+        CountOrphans(
+           outfile, g, t,
+           sums,
+           writer,
+           all_genes_this,
+           aligned_genes_this,
+           assigned_genes_this,
+           aligned_genes_other,
+           assigned_genes_other,
+           map_query2best=map_query2best,
+           map_transcript2location_other=map_transcript2location_other,
+           map_transcript2gene_other=map_transcript2gene_other,
+           options=options)
 
         f += 1
         if f > 40:
@@ -237,9 +239,13 @@ def CountOrphans(outfile,
                     # other genes
                     overlaps = []
 
-                    for transcript, location in map_transcript2location.items():
-                        if location[0] == sbjct_token and location[1] == sbjct_strand and \
-                                min(location[3], sbjct_genome_to) - max(location[2], sbjct_genome_from) > 0:
+                    for transcript, location in \
+                            map_transcript2location.items():
+                        if location[0] == sbjct_token and \
+                             location[1] == sbjct_strand and \
+                             min(location[3],
+                                 sbjct_genome_to) - max(location[2],
+                                                        sbjct_genome_from) > 0:
                             overlaps.append(transcript)
 
                     is_replaced = False
@@ -252,8 +258,10 @@ def CountOrphans(outfile,
                                     alternatives[g] = 1
                         if len(alternatives) > 0:
                             is_replaced = True
-                            outfile.write("# alternative assignments available for %s: %s\n" % (
-                                prediction_id, ";".join(alternatives)))
+                            outfile.write("# alternative assignments "
+                                          "available for %s: %s\n" %
+                                          (prediction_id,
+                                           ";".join(alternatives)))
 
                     if is_replaced:
                         status = "missed-replaced"
@@ -378,7 +386,8 @@ def PrintCrossAssignments(outfile,
                     for x, ttt in other_genes.items():
                         for tt in ttt:
                             xs, xt, xg, xq = tt.split(separator)
-                            if map_transcript2location[xt][0] not in map_contig2junk:
+                            if map_transcript2location[xt][0] not in \
+                               map_contig2junk:
                                 non_junk_genes[xg] = 1
 
                     # only one gene without junk location, all others with junk
@@ -406,7 +415,8 @@ def PrintCrossAssignments(outfile,
 
             out.append((l, g, status, other_genes))
 
-    outfile.write("# %s: histogram of cross-assigned genes (%i alternative transcript clusters fused)\n" %
+    outfile.write("# %s: histogram of cross-assigned genes"
+                  " (%i alternative transcript clusters fused)\n" %
                   (schema, nalternative_transcripts))
     outfile.write("bin\tcounts")
 
@@ -421,10 +431,14 @@ def PrintCrossAssignments(outfile,
         for a, b in o.items():
             outfile.write("\t\t\t\t%s\t%s\n" % (a, ";".join(b)))
 
-    outfile.write("# %s: nalternatives=%i, junk=%i, ncross=%i, ndisjoint=%i, noverlap=%i\n" % (schema,
-                                                                                               nalternative_transcripts, njunk,
-                                                                                               len(out),
-                                                                                               ndisjoint, noverlap))
+    outfile.write("# %s: nalternatives=%i,"
+                  " junk=%i,"
+                  " ncross=%i,"
+                  " ndisjoint=%i,"
+                  " noverlap=%i\n" % (schema,
+                                      nalternative_transcripts, njunk,
+                                      len(out),
+                                      ndisjoint, noverlap))
 
 
 def GetAssignments(genes, map_transcript2location, separator="|"):
@@ -530,14 +544,20 @@ def RemoveRedundancy(outfile,
     # get all ranges for transcripts
     for tt in transcripts:
         try:
-            (sbjct_token, sbjct_strand,
-             sbjct_genome_from, sbjct_genome_to) = map_transcript2location[tt.mTranscript]
+            (sbjct_token,
+             sbjct_strand,
+             sbjct_genome_from,
+             sbjct_genome_to) = map_transcript2location[tt.mTranscript]
         except KeyError:
             raise "key %s not in map_transcript2location, examples are: %s" % (
                 tt.mTranscript, map_transcript2location.keys()[:10])
 
         assignments.append(
-            (sbjct_token, sbjct_strand, sbjct_genome_from, sbjct_genome_to, tt))
+            (sbjct_token,
+             sbjct_strand,
+             sbjct_genome_from,
+             sbjct_genome_to,
+             tt))
 
     # cluster transcripts by overlap
     assignments.sort()
@@ -546,7 +566,11 @@ def RemoveRedundancy(outfile,
     chunk.append((map_quality2priority[last_tt.mQuality], last_tt))
 
     new_transcripts = []
-    for this_token, this_strand, this_from, this_to, this_tt in assignments[1:]:
+    for this_token, \
+        this_strand, \
+        this_from, \
+        this_to, \
+            this_tt in assignments[1:]:
         if last_token != this_token or \
                 last_strand != this_strand or \
                 this_from > last_to:
@@ -605,7 +629,8 @@ def CountScores(outfile, t1, t2,
                         within_scores.append(score)
                         if options.loglevel >= 3:
                             outfile.write(
-                                "# %s\t%s\t%6.4f\tsame sequence\n" % (tt1, tt2, score))
+                             "# %s\t%s\t%6.4f\tsame sequence\n" %
+                             (tt1, tt2, score))
                     else:
                         # check if same gene
                         xs, xt, xg, xq = tt1.split(separator)
@@ -613,12 +638,14 @@ def CountScores(outfile, t1, t2,
                         if xg != yg:
                             if options.loglevel >= 3:
                                 outfile.write(
-                                    "# %s\t%s\t%6.4f\tlink not found\n" % (tt1, tt2, score))
+                                 "# %s\t%s\t%6.4f\tlink not found\n" %
+                                 (tt1, tt2, score))
                             nmissed_links_within += 1
                         else:
                             if options.loglevel >= 3:
                                 outfile.write(
-                                    "# %s\t%s\t%6.4f\tsame gene\n" % (tt1, tt2, score))
+                                 "# %s\t%s\t%6.4f\tsame gene\n" %
+                                 (tt1, tt2, score))
             # between links
             for tt2 in t2:
                 for tt3, score in graph[tt1]:
@@ -638,17 +665,21 @@ def CountScores(outfile, t1, t2,
                         between_scores.append(score)
                         if options.loglevel >= 3:
                             outfile.write(
-                                "# %s\t%s\t%6.4f\tsame sequence\n" % (tt1, tt2, score))
+                             "# %s\t%s\t%6.4f\tsame sequence\n" %
+                             (tt1, tt2, score))
                     else:
                         if options.loglevel >= 3:
                             outfile.write(
-                                "# %s\t%s\t%6.4f\tlink not found\n" % (tt1, tt2, score))
+                             "# %s\t%s\t%6.4f\tlink not found\n" %
+                             (tt1, tt2, score))
                         nmissed_links_between += 1
         else:
             if len(t1) != 1:
                 nmissed_vertices += 1
 
-    return between_scores, within_scores, nmissed_vertices, nmissed_links_within, nmissed_links_between
+    return \
+        between_scores, within_scores, nmissed_vertices, \
+        nmissed_links_within, nmissed_links_between
 
 # -----------------------------------------------------------------------------
 
@@ -660,12 +691,21 @@ def IsLineageSpecificDuplication(outfile, t1, t2, graph, separator="|",
     """
 
     # get scores between genes within a species and between species
-    between_scores1, within_scores1, nmissed_vertices1, nmissed_links_within1, nmissed_links_between1 = \
+    between_scores1, \
+        within_scores1, \
+        nmissed_vertices1, \
+        nmissed_links_within1, \
+        nmissed_links_between1 = \
         CountScores(outfile, t1, t2, graph, separator, cds1, cds2, options)
-    between_scores2, within_scores2, nmissed_vertices2, nmissed_links_within2, nmissed_links_between2 = \
+    between_scores2, \
+        within_scores2, \
+        nmissed_vertices2, \
+        nmissed_links_within2, \
+        nmissed_links_between2 = \
         CountScores(outfile, t2, t1, graph, separator, cds2, cds1, options)
 
-    outfile.write("# missed: vertices1=%i, vertices2=%i, links_within1=%i, links_between1=%i, links_within2=%i,links_between2=%i\n" %
+    outfile.write("# missed: vertices1=%i, vertices2=%i, links_within1=%i, "
+                  "links_between1=%i, links_within2=%i,links_between2=%i\n" %
                   (nmissed_vertices1, nmissed_vertices2,
                    nmissed_links_within1, nmissed_links_between1,
                    nmissed_links_within2, nmissed_links_between2))
@@ -909,20 +949,26 @@ def UpdateCountsForCluster(outfile,
     ortholog_distance: distance for normalization."""
 
     if options.loglevel >= 4:
-        options.stdlog.write("# updating counts for cluster %i: %i genes and %i transcripts\n" %
+        options.stdlog.write("# updating counts for cluster %i: "
+                             "%i genes and %i transcripts\n" %
                              (cluster_id, len(genes), len(transcripts)))
         options.stdlog.flush()
 
-    if options.max_duplications and len(transcripts) > options.max_duplications:
+    if options.max_duplications and \
+       len(transcripts) > options.max_duplications:
         return "transposon", [], []
 
     # count number of contigs that genes are lying on
-    status, locations, gene2location = CheckLocations(genes, map_transcript2location,
-                                                      do_strict=False,
-                                                      map_contig2junk=options.map_contig2junk,
-                                                      map_contig2chromosome=options.map_contig2chromosome,
-                                                      max_local_duplication=options.max_local_duplication,
-                                                      separator=options.separator)
+    status, \
+        locations, \
+        gene2location = \
+        CheckLocations(genes,
+                       map_transcript2location,
+                       do_strict=False,
+                       map_contig2junk=options.map_contig2junk,
+                       map_contig2chromosome=options.map_contig2chromosome,
+                       max_local_duplication=options.max_local_duplication,
+                       separator=options.separator)
 
     qualities = GetQualities(genes, options.quality_priority)
 
@@ -947,12 +993,19 @@ def UpdateCountsForCluster(outfile,
                 (sbjct_token, sbjct_strand, sbjct_genome_from,
                  sbjct_genome_to) = map_transcript2location[v.mTranscript]
             else:
-                sbjct_token, sbjct_strand, sbjct_genome_from, sbjct_genome_to = "dummy", "0", 0, 0
+                sbjct_token, \
+                    sbjct_strand, \
+                    sbjct_genome_from, \
+                    sbjct_genome_to = "dummy", "0", 0, 0
 
             outfile.write("members\t%i\t%s\t%s\n" %
                           (cluster_id,
                            schema,
-                           "\t".join([str(v), ] + map(str, (sbjct_token, sbjct_strand, sbjct_genome_from, sbjct_genome_to)))))
+                           "\t".join([str(v), ] + map(str,
+                                                      (sbjct_token,
+                                                       sbjct_strand,
+                                                       sbjct_genome_from,
+                                                       sbjct_genome_to)))))
 
     distances = []
     duplications = []
@@ -967,8 +1020,8 @@ def UpdateCountsForCluster(outfile,
             tree, str_transcripts)
 
         if options.loglevel >= 4:
-            options.stdlog.write(
-                "# checked monophyly in %5.2f seconds.\n" % (time.time() - time_t1))
+            options.stdlog.write("# checked monophyly in %5.2f seconds.\n" %
+                                 (time.time() - time_t1))
             options.stdlog.flush()
 
         if is_monophyletic:
@@ -979,7 +1032,8 @@ def UpdateCountsForCluster(outfile,
 
             if options.loglevel >= 4:
                 options.stdlog.write(
-                    "# counted branchpoints in %5.2f seconds.\n" % (time.time() - time_t1))
+                    "# counted branchpoints in %5.2f seconds.\n" %
+                    (time.time() - time_t1))
                 options.stdlog.flush()
 
             if branchpoints:
@@ -1007,19 +1061,27 @@ def UpdateCountsForCluster(outfile,
                         duplication_status = "functional"
 
                     this_genes = Orthologs.GetGenes(children)
-                    this_status, this_locations, this_gene2location = CheckLocations(this_genes,
-                                                                                     map_transcript2location,
-                                                                                     do_strict=True,
-                                                                                     map_contig2junk=options.map_contig2junk,
-                                                                                     map_contig2chromosome=options.map_contig2chromosome,
-                                                                                     max_local_duplication=options.max_local_duplication,
-                                                                                     separator=options.separator)
+                    this_status, \
+                        this_locations, \
+                        this_gene2location = \
+                        CheckLocations(
+                         this_genes,
+                         map_transcript2location,
+                         do_strict=True,
+                         map_contig2junk=options.map_contig2junk,
+                         map_contig2chromosome=options.map_contig2chromosome,
+                         max_local_duplication=options.max_local_duplication,
+                         separator=options.separator)
 
                     temp_tree = copy.deepcopy(tree)
                     TreeTools.PruneTree(temp_tree, str_children)
 
                     duplications.append(
-                        (cluster_id, this_status, duplication_status, height, children))
+                        (cluster_id,
+                         this_status,
+                         duplication_status,
+                         height,
+                         children))
 
                     if ortholog_distance > 0:
                         rel_height = "%6.4f" % (height / ortholog_distance)
@@ -1030,23 +1092,22 @@ def UpdateCountsForCluster(outfile,
                     for child in children:
                         if child.mGene in this_gene2location:
                             locs.append(
-                                "%s:%s:%s:%i:%i" % ((child.mGene,) + this_gene2location[child.mGene]))
+                             "%s:%s:%s:%i:%i" %
+                             ((child.mGene,) +
+                                 this_gene2location[child.mGene]))
 
-                    outfile.write("branchpoint\t%i\t%s\t%s\t%s\t%f\t%s\t%s\t%s\t%s\t%s\n" % (cluster_id,
-                                                                                             schema,
-                                                                                             this_status,
-                                                                                             duplication_status,
-                                                                                             height,
-                                                                                             rel_height,
-                                                                                             ";".join(
-                                                                                                 this_locations),
-                                                                                             ";".join(
-                                                                                                 str_children),
-                                                                                             ";".join(
-                                                                                                 locs),
-                                                                                             TreeTools.Tree2Newick(
-                                                                                                 temp_tree),
-                                                                                             ))
+                    outfile.write("branchpoint\t%i"
+                                  "\t%s\t%s\t%s\t%f\t%s\t%s\t%s\t%s\t%s\n" %
+                                  (cluster_id,
+                                   schema,
+                                   this_status,
+                                   duplication_status,
+                                   height,
+                                   rel_height,
+                                   ";".join(this_locations),
+                                   ";".join(str_children),
+                                   ";".join(locs),
+                                   TreeTools.Tree2Newick(temp_tree),))
 
                 if ortholog_distance > 0:
                     rel_heights = map(
@@ -1054,12 +1115,12 @@ def UpdateCountsForCluster(outfile,
                 else:
                     rel_heights = "NaN"
 
-                outfile.write("branchpoints\t%i\t%s\t%s\t%s\t%s\n" % (cluster_id,
-                                                                      schema,
-                                                                      status,
-                                                                      ";".join(
-                                                                          map(str, distances)),
-                                                                      ";".join(map(str, rel_heights))))
+                outfile.write("branchpoints\t%i\t%s\t%s\t%s\t%s\n" %
+                              (cluster_id,
+                               schema,
+                               status,
+                               ";".join(map(str, distances)),
+                               ";".join(map(str, rel_heights))))
 
     return status, distances, duplications
 
@@ -1110,18 +1171,21 @@ def PrintResultsDuplicationsDistances(outfile,
         outfile.write("\n")
     outfile.write("total")
     outfile.write(
-        "\t%i\t%i" % (reduce(lambda x, y: x + y, h0), reduce(lambda x, y: x + y, h0)))
+        "\t%i\t%i" %
+        (reduce(lambda x, y: x + y, h0), reduce(lambda x, y: x + y, h0)))
     for x in categories:
         if x in histograms1 and x in histograms2:
-            outfile.write("\t%i\t%i" % (reduce(lambda x, y: x + y, histograms1[x]),
-                                        reduce(lambda x, y: x + y, histograms2[x])))
+            outfile.write("\t%i\t%i" %
+                          (reduce(lambda x, y: x + y, histograms1[x]),
+                           reduce(lambda x, y: x + y, histograms2[x])))
         else:
             outfile.write("\t0\t0")
     outfile.write("\n")
 
 
 def GetLocationKeys():
-    return ("local", "nonlocal", "muller", "trans", "junk", "unknown", "overlap", "single")
+    return ("local", "nonlocal", "muller", "trans",
+            "junk", "unknown", "overlap", "single")
 
 
 def GetLocationHash():
@@ -1146,13 +1210,16 @@ def GetFunctionHash():
 # ------------------------------------------------------------------------
 
 
-def PrintResultsDuplicationsPairs(outfile, cluster_id, schema, members, duplications, ortholog_distance):
+def PrintResultsDuplicationsPairs(outfile, cluster_id,
+                                  schema, members, duplications,
+                                  ortholog_distance):
     """print pairs of duplicated genes."""
 
     results_locations = GetLocationHash()
     results_functions = GetFunctionHash()
 
-    for cluster_id, location_status, duplication_status, height, children in duplications:
+    for cluster_id, location_status, duplication_status, height, children in \
+            duplications:
         results_locations[location_status] += 1
         results_functions[duplication_status] += 1
 
@@ -1161,8 +1228,13 @@ def PrintResultsDuplicationsPairs(outfile, cluster_id, schema, members, duplicat
                       ("pairs",
                        cluster_id, schema, len(members), str(member),
                        "\t".join(
-                           map(str, [results_locations[x] for x in GetLocationKeys()])),
-                       "\t".join(map(str, [results_functions[x] for x in GetFunctionKeys()]))))
+                           map(str,
+                               [results_locations[x]
+                                for x in GetLocationKeys()])),
+                       "\t".join(
+                           map(str,
+                               [results_functions[x]
+                                for x in GetFunctionKeys()]))))
 
 # ------------------------------------------------------------------------
 
@@ -1245,7 +1317,8 @@ def AnalyseDuplications(outfile,
             subtree = TreeTools.GetSubtree(tree, node)
             subtrees.append(subtree)
             # subtree.display()
-            # print "distances1", TreeTools.GetDistancesBetweenTaxa( subtree, t1, t2 )
+            # print "distances1", \
+            #     TreeTools.GetDistancesBetweenTaxa( subtree, t1, t2 )
             # print "distances2", TreeTools.GetDistancesBetweenTaxa( tree, t1,
             # t2 )
             orthologs_distances += TreeTools.GetDistancesBetweenTaxa(
@@ -1253,7 +1326,8 @@ def AnalyseDuplications(outfile,
 
         if options.loglevel >= 4:
             options.stdlog.write(
-                "# collected distances between orthologs in %5.2f seconds.\n" % (time.time() - time_t1))
+                "# collected distances between orthologs in %5.2f seconds.\n" %
+                (time.time() - time_t1))
             options.stdlog.flush()
 
         orthologs_distances = map(lambda x: x[2], orthologs_distances)
@@ -1275,38 +1349,46 @@ def AnalyseDuplications(outfile,
         ######################################################################
         # get branchpoints and update counts
         time_t1 = time.time()
-        status1, distances1, duplications1 = UpdateCountsForCluster(outfile,
-                                                                    cluster_id, options.schema1,
-                                                                    results1,
-                                                                    g1, t1,
-                                                                    subtrees,
-                                                                    map_transcript2location1,
-                                                                    ortholog_distance,
-                                                                    options)
+        status1, distances1, duplications1 = \
+            UpdateCountsForCluster(outfile,
+                                   cluster_id, options.schema1,
+                                   results1,
+                                   g1, t1,
+                                   subtrees,
+                                   map_transcript2location1,
+                                   ortholog_distance,
+                                   options)
 
         if options.loglevel >= 4:
-            options.stdlog.write("# %i: UpdateCountsForCluster1: %5.2f seconds.\n" % (
-                cluster_id, time.time() - time_t1))
+            options.stdlog.write("# %i: UpdateCountsForCluster1: "
+                                 "%5.2f seconds.\n" %
+                                 (cluster_id, time.time() - time_t1))
             options.stdlog.flush()
 
         time_t1 = time.time()
-        status2, distances2, duplications2 = UpdateCountsForCluster(outfile,
-                                                                    cluster_id, options.schema2,
-                                                                    results2,
-                                                                    g2, t2,
-                                                                    subtrees,
-                                                                    map_transcript2location2,
-                                                                    ortholog_distance,
-                                                                    options)
+        status2, distances2, duplications2 = \
+            UpdateCountsForCluster(outfile,
+                                   cluster_id, options.schema2,
+                                   results2,
+                                   g2, t2,
+                                   subtrees,
+                                   map_transcript2location2,
+                                   ortholog_distance,
+                                   options)
 
         if options.loglevel >= 4:
-            options.stdlog.write("# %i: UpdateCountsForCluster1: %5.2f seconds.\n" % (
-                cluster_id, time.time() - time_t1))
+            options.stdlog.write("# %i: UpdateCountsForCluster1: "
+                                 "%5.2f seconds.\n" %
+                                 (cluster_id, time.time() - time_t1))
             options.stdlog.flush()
 
         if len(distances1) == 0 and len(distances2) == 0:
-            outfile.write("# skipped %i : %s=%i %s=%i\n" % (
-                cluster_id, status1, len(distances1), status2, len(distances2)))
+            outfile.write("# skipped %i : %s=%i %s=%i\n" %
+                          (cluster_id,
+                           status1,
+                           len(distances1),
+                           status2,
+                           len(distances2)))
             nskipped += 1
             continue
 
@@ -1322,14 +1404,23 @@ def AnalyseDuplications(outfile,
         histogram_data[("all", "all")][1] += distances2
 
         time_t1 = time.time()
-        PrintResultsDuplicationsPairs(
-            outfile, cluster_id, schema1, transcripts1, duplications2, ortholog_distance)
-        PrintResultsDuplicationsPairs(
-            outfile, cluster_id, schema2, transcripts2, duplications1, ortholog_distance)
+        PrintResultsDuplicationsPairs(outfile,
+                                      cluster_id,
+                                      schema1,
+                                      transcripts1,
+                                      duplications2,
+                                      ortholog_distance)
+        PrintResultsDuplicationsPairs(outfile,
+                                      cluster_id,
+                                      schema2,
+                                      transcripts2,
+                                      duplications1,
+                                      ortholog_distance)
 
         if options.loglevel >= 4:
             options.stdlog.write(
-                "# %i: Output: %5.2f seconds.\n" % (cluster_id, time.time() - time_t1))
+                "# %i: Output: %5.2f seconds.\n" %
+                (cluster_id, time.time() - time_t1))
             options.stdlog.flush()
 
     outfile.write("#" * 30 + "\n")
@@ -1359,12 +1450,14 @@ def AnalyseDuplications(outfile,
                            map(lambda x: "%6.4f" % x, histogram_data[key][1])),
                        ))
 
-    outfile.write("# histogram of duplications: all categories: %s to %s, skipped=%i\n" % (
-        options.schema1, options.schema2, nskipped))
+    outfile.write("# histogram of duplications: all categories: "
+                  "%s to %s, skipped=%i\n" %
+                  (options.schema1, options.schema2, nskipped))
     PrintResultsDuplicationsDistances(outfile, kk, histogram_data, options)
 
-    outfile.write("# histogram of duplications: selected categories: %s to %s, skipped=%i\n" % (
-        options.schema1, options.schema2, nskipped))
+    outfile.write("# histogram of duplications: selected categories: "
+                  "%s to %s, skipped=%i\n" %
+                  (options.schema1, options.schema2, nskipped))
     kk = (("single", "local"), ("local", "single"), ("local", "local"))
     PrintResultsDuplicationsDistances(outfile, kk, histogram_data, options)
 
@@ -1382,8 +1475,12 @@ def GetPrediction2LocationFromFile(infile, schema, options, use_genes=False):
     for line in infile:
         if line[0] == "#":
             continue
-        id, sbjct_token, sbjct_strand, phase, n, p1, p2, sbjct_genome_from, sbjct_genome_to = line[
-            :-1].split("\t")
+        id, \
+            sbjct_token, \
+            sbjct_strand, \
+            phase, n, p1, p2, \
+            sbjct_genome_from, \
+            sbjct_genome_to = line[:-1].split("\t")
 
         sbjct_genome_from, sbjct_genome_to = int(
             sbjct_genome_from), int(sbjct_genome_to)
@@ -1396,12 +1493,16 @@ def GetPrediction2LocationFromFile(infile, schema, options, use_genes=False):
             map_transcript2location[prediction_id] = (
                 sbjct_token, sbjct_strand, sbjct_genome_from, sbjct_genome_to)
         else:
-            o_sbjct_token, o_sbjct_strand, o_sbjct_genome_from, o_sbjct_genome_to = map_transcript2location[
-                prediction_id]
-            map_transcript2location[prediction_id] = (sbjct_token, sbjct_strand,
+            o_sbjct_token, \
+                o_sbjct_strand, \
+                o_sbjct_genome_from, \
+                o_sbjct_genome_to = map_transcript2location[prediction_id]
+            map_transcript2location[prediction_id] = (sbjct_token,
+                                                      sbjct_strand,
                                                       min(sbjct_genome_from,
                                                           o_sbjct_genome_from),
-                                                      max(sbjct_genome_to, o_sbjct_genome_to))
+                                                      max(sbjct_genome_to,
+                                                          o_sbjct_genome_to))
 
     return map_transcript2location
 
@@ -1429,7 +1530,7 @@ def GetPrediction2Location(dbhandle, schema,
         statement = """
         SELECT prediction_id, sbjct_token, sbjct_strand,
         export_sbjct_genome_from, export_sbjct_genome_to
-        FROM %s.%s 
+        FROM %s.%s
         """ % \
             (schema, tablename_predictions)
 
@@ -1438,7 +1539,11 @@ def GetPrediction2Location(dbhandle, schema,
     rr = cc.fetchall()
     cc.close()
 
-    for prediction_id, sbjct_token, sbjct_strand, sbjct_genome_from, sbjct_genome_to in rr:
+    for prediction_id, \
+            sbjct_token, \
+            sbjct_strand, \
+            sbjct_genome_from, \
+            sbjct_genome_to in rr:
         map_transcript2location[str(prediction_id)] = (
             sbjct_token, sbjct_strand, sbjct_genome_from, sbjct_genome_to)
 
@@ -1480,7 +1585,7 @@ def GetBestMatches(dbhandle, schema):
     statement = """
     SELECT prediction_id,
     gene_id, query_token, class,
-    query_coverage, pidentity, 
+    query_coverage, pidentity,
     sbjct_token, sbjct_strand,
     full_sbjct_genome_from, full_sbjct_genome_to
     FROM %s.overview
@@ -1515,7 +1620,11 @@ def GetBestMatches(dbhandle, schema):
                     nmatches, best_pide, best_coverage) + tuple(best_match)
 
             last_query_token = query_token
-            best, best_pide, best_coverage, best_identity, nmatches = 0, 0, 0, 0, 0
+            best, \
+                best_pide, \
+                best_coverage, \
+                best_identity, \
+                nmatches = 0, 0, 0, 0, 0
             best_match = None
 
         v = query_coverage * pidentity
@@ -1603,9 +1712,11 @@ def ReadOrphans(infile, options):
         addToOrphans(orphans2, transcripts2)
 
     if options.loglevel >= 1:
-        options.stdlog.write("# orphans: read %i/%i orphaned genes: ninput=%i, nskipped=%i\n" % (len(orphans1),
-                                                                                                 len(orphans2),
-                                                                                                 ninput, nskipped))
+        options.stdlog.write("# orphans: read %i/%i orphaned genes: "
+                             "ninput=%i, nskipped=%i\n" %
+                             (len(orphans1),
+                              len(orphans2),
+                              ninput, nskipped))
 
     return orphans1, orphans2
 
@@ -1622,22 +1733,29 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: optic/analyze_orthology.py 2781 2009-09-10 11:33:14Z andreas $")
+        version="%prog version: $Id: optic/analyze_orthology.py"
+                " 2781 2009-09-10 11:33:14Z andreas $")
 
-    parser.add_option("-s", "--species-regex", dest="species_regex", type="string",
-                      help="regular expression to extract species from identifier.")
+    parser.add_option("-s", "--species-regex", dest="species_regex",
+                      type="string",
+                      help="regular expression to extract"
+                           " species from identifier.")
 
     parser.add_option("-g", "--gene-regex", dest="gene_regex", type="string",
-                      help="regular expression to extract gene from identifier.")
+                      help="regular expression to extract"
+                           " gene from identifier.")
 
-    parser.add_option("-i", "--filename-interpretation", dest="filename_interpretation", type="string",
+    parser.add_option("-i", "--filename-interpretation",
+                      dest="filename_interpretation", type="string",
                       help="outfile of Leo's pipeline: interpretation.")
 
-    parser.add_option("-o", "--filename-orphans", dest="filename_orphans", type="string",
+    parser.add_option("-o", "--filename-orphans", dest="filename_orphans",
+                      type="string",
                       help="outfile of Leo's pipeline: orphans.")
 
     parser.add_option("-m", "--methods", dest="methods", type="string",
-                      help="Methods [orphans|expansion|1_to_1s|m_to_ms|crossassignments|duplications|orthologs].")
+                      help="Methods [orphans|expansion|1_to_1s|m_to_ms|"
+                           "crossassignments|duplications|orthologs].")
 
     parser.add_option("-1", "--schema1", dest="schema1", type="string",
                       help="schema1.")
@@ -1645,22 +1763,28 @@ def main(argv=None):
     parser.add_option("-2", "--schema2", dest="schema2", type="string",
                       help="schema2.")
 
-    parser.add_option("-l", "--filename-links", dest="filename_links", type="string",
+    parser.add_option("-l", "--filename-links", dest="filename_links",
+                      type="string",
                       help="filename with pairwise links - gzipped.")
 
-    parser.add_option("-c", "--tablename-predictions", dest="tablename_predictions", type="string",
+    parser.add_option("-c", "--tablename-predictions",
+                      dest="tablename_predictions", type="string",
                       help="table name with predictions to get locations.")
 
-    parser.add_option("-q", "--quality-priority", dest="quality_priority", type="string",
+    parser.add_option("-q", "--quality-priority", dest="quality_priority",
+                      type="string",
                       help="comma separated priority list of quality codes.")
 
-    parser.add_option("-p", "--prefix-output", dest="prefix_output", type="string",
+    parser.add_option("-p", "--prefix-output", dest="prefix_output",
+                      type="string",
                       help="prefix for output files.")
 
-    parser.add_option("--filename-input1", dest="filename_input1", type="string",
+    parser.add_option("--filename-input1", dest="filename_input1",
+                      type="string",
                       help="input filename with input ids for schema1.")
 
-    parser.add_option("--filename-input2", dest="filename_input2", type="string",
+    parser.add_option("--filename-input2", dest="filename_input2",
+                      type="string",
                       help="input filename with input ids for schema2.")
 
     parser.add_option("--filename-cds1", dest="filename_cds1", type="string",
@@ -1672,29 +1796,39 @@ def main(argv=None):
     parser.add_option("--filename-kaks", dest="filename_kaks", type="string",
                       help="input filename with kaks information.")
 
-    parser.add_option("--filename-trees", dest="filename_trees", type="string",
+    parser.add_option("--filename-trees", dest="filename_trees",
+                      type="string",
                       help="input filename with tree information.")
 
     parser.add_option("--use-genes", dest="use_genes", action="store_true",
                       help="only use gene information.")
 
-    parser.add_option("--skip-locations", dest="skip_locations", action="store_true",
+    parser.add_option("--skip-locations", dest="skip_locations",
+                      action="store_true",
                       help="do not use location information.")
 
     parser.add_option("--repeats-list", dest="repeats_list", type="string",
-                      help="get repeats list - ignore predictions based on those.")
+                      help="get repeats list - "
+                           "ignore predictions based on those.")
 
-    parser.add_option("--max-duplications", dest="max_duplications", type="int",
+    parser.add_option("--max-duplications", dest="max_duplications",
+                      type="int",
                       help="ignore duplications with more than # members.")
 
-    parser.add_option("--is-query-sbjct", dest="is_query_sbjct", action="store_true",
-                      help="species pair is query/sbjct. Can use database to check for predictions.")
+    parser.add_option("--is-query-sbjct", dest="is_query_sbjct",
+                      action="store_true",
+                      help="species pair is query/sbjct. "
+                           "Can use database to check for predictions.")
 
-    parser.add_option("--filename-exons1", dest="filename_exons1", type="string",
-                      help="filename with exon information for schema1. If not given, the database will be used.")
+    parser.add_option("--filename-exons1", dest="filename_exons1",
+                      type="string",
+                      help="filename with exon information for schema1."
+                           " If not given, the database will be used.")
 
-    parser.add_option("--filename-exons2", dest="filename_exons2", type="string",
-                      help="filename with exon information for schema2. If not given, the database will be used.")
+    parser.add_option("--filename-exons2", dest="filename_exons2",
+                      type="string",
+                      help="filename with exon information for schema2."
+                           " If not given, the database will be used.")
 
     parser.set_defaults(
         species_regex="^([^|]+)\|",
@@ -1792,8 +1926,8 @@ def main(argv=None):
     repeats2 = {}
 
     if options.repeats_list:
-        data = map(lambda x: x[:-1].split("\t")[0], filter(lambda x: x[0]
-                   != "#", open(options.repeats_list, "r").readlines()))
+        data = map(lambda x: x[:-1].split("\t")[0], filter(lambda x: x[0] !=
+                   "#", open(options.repeats_list, "r").readlines()))
 
         repeats1 = GetRepeats(dbhandle, options.schema1, data)
         repeats2 = GetRepeats(dbhandle, options.schema2, data)
@@ -1833,7 +1967,8 @@ def main(argv=None):
             transcript2 = Orthologs.Transcript(data[1])
 
             # remove repeats
-            if transcript1.mTranscript in repeats1 or transcript2.mTranscript in repeats2:
+            if transcript1.mTranscript in repeats1 or \
+               transcript2.mTranscript in repeats2:
                 nskipped += 1
                 continue
 
@@ -1843,17 +1978,21 @@ def main(argv=None):
             # remove entries not in positive list:
             skip = False
             if is_1is1:
-                if filter_restrict1 and transcript1.mTranscript not in filter_restrict1:
+                if filter_restrict1 and \
+                   transcript1.mTranscript not in filter_restrict1:
                     skip |= True
             else:
-                if filter_restrict2 and transcript1.mTranscript not in filter_restrict2:
+                if filter_restrict2 and \
+                   transcript1.mTranscript not in filter_restrict2:
                     skip |= True
 
             if is_2is1:
-                if filter_restrict1 and transcript2.mTranscript not in filter_restrict1:
+                if filter_restrict1 and \
+                   transcript2.mTranscript not in filter_restrict1:
                     skip |= True
             else:
-                if filter_restrict2 and transcript2.mTranscript not in filter_restrict2:
+                if filter_restrict2 and \
+                   transcript2.mTranscript not in filter_restrict2:
                     skip |= True
 
             if skip:
@@ -1951,28 +2090,31 @@ def main(argv=None):
     map_transcript2cluster2 = {}
     if options.filename_interpretation:
 
-        orthologs = Orthologs.ReadInterpretation(open(options.filename_interpretation, "r"),
-                                                 options.separator,
-                                                 genome1=options.schema1, genome2=options.schema2,
-                                                 filter_restrict_genes1=all_genes_schema1,
-                                                 filter_restrict_genes2=all_genes_schema2,
-                                                 filter_remove_transcripts1=repeats1,
-                                                 filter_remove_transcripts2=repeats2,
-                                                 filter_restrict_transcripts1=filter_restrict1,
-                                                 filter_restrict_transcripts2=filter_restrict2,
-                                                 )
+        orthologs = \
+            Orthologs.ReadInterpretation(
+                open(options.filename_interpretation, "r"),
+                options.separator,
+                genome1=options.schema1, genome2=options.schema2,
+                filter_restrict_genes1=all_genes_schema1,
+                filter_restrict_genes2=all_genes_schema2,
+                filter_remove_transcripts1=repeats1,
+                filter_remove_transcripts2=repeats2,
+                filter_restrict_transcripts1=filter_restrict1,
+                filter_restrict_transcripts2=filter_restrict2,)
 
         if options.loglevel >= 1:
-            print "# orthologs: read %i pairs from %s" % (len(orthologs),
-                                                          options.filename_interpretation)
+            print "# orthologs: read %i pairs from %s" % (
+                   len(orthologs), options.filename_interpretation)
 
         orthologs = Orthologs.ClusterOrthologsByGenes(orthologs)
 
         if options.loglevel >= 1:
-            print "# orthologs: clustered by genes gives %i pairs" % (len(orthologs))
+            print "# orthologs: clustered by genes gives %i pairs" % (
+                   len(orthologs))
 
         if options.loglevel >= 1:
-            print "# orthologs: after filtering %i pairs" % (len(orthologs))
+            print "# orthologs: after filtering %i pairs" % (
+                   len(orthologs))
 
         cluster_id = 0
         for t1, t2, g1, g2, w in orthologs:
@@ -2007,7 +2149,10 @@ def main(argv=None):
                     graph_ortholog_genes[x].append((False, g))
 
         if options.loglevel >= 1:
-            print "# orthologs: obtained %i/%i vertices from %s" % (len(assigned_genes_schema1), len(assigned_genes_schema2), options.filename_interpretation)
+            print "# orthologs: obtained %i/%i vertices from %s" % (
+                   len(assigned_genes_schema1),
+                   len(assigned_genes_schema2),
+                   options.filename_interpretation)
 
     ##########################################################################
     # read orphans (do not take ids that are not in the filtered input set)
@@ -2035,32 +2180,41 @@ def main(argv=None):
     map_transcript2location2 = {}
 
     if not options.skip_locations and \
-       ("duplications" in options.methods or "crossassignments" in options.methods):
+       ("duplications" in options.methods or
+           "crossassignments" in options.methods):
         if options.loglevel >= 1:
             options.stdlog.write("# locations: retrieving ... ")
             options.stdlog.flush()
 
         if options.filename_exons1:
-            map_transcript2location1 = GetPrediction2LocationFromFile(open(options.filename_exons1, "r"),
-                                                                      options.schema1,
-                                                                      options,
-                                                                      use_genes=options.use_genes)
+            map_transcript2location1 = \
+                GetPrediction2LocationFromFile(
+                    open(options.filename_exons1, "r"),
+                    options.schema1,
+                    options,
+                    use_genes=options.use_genes)
         else:
-            map_transcript2location1 = GetPrediction2Location(dbhandle, options.schema1,
-                                                              tablename_predictions=options.tablename_predictions,
-                                                              tablename_genes=options.tablename_genes,
-                                                              use_genes=options.use_genes)
+            map_transcript2location1 = \
+                GetPrediction2Location(
+                    dbhandle, options.schema1,
+                    tablename_predictions=options.tablename_predictions,
+                    tablename_genes=options.tablename_genes,
+                    use_genes=options.use_genes)
 
         if options.filename_exons2:
-            map_transcript2location2 = GetPrediction2LocationFromFile(open(options.filename_exons2, "r"),
-                                                                      options.schema2,
-                                                                      options,
-                                                                      use_genes=options.use_genes)
+            map_transcript2location2 = \
+                GetPrediction2LocationFromFile(
+                    open(options.filename_exons2, "r"),
+                    options.schema2,
+                    options,
+                    use_genes=options.use_genes)
         else:
-            map_transcript2location2 = GetPrediction2Location(dbhandle, options.schema2,
-                                                              tablename_predictions=options.tablename_predictions,
-                                                              tablename_genes=options.tablename_genes,
-                                                              use_genes=options.use_genes)
+            map_transcript2location2 = \
+                GetPrediction2Location(
+                    dbhandle, options.schema2,
+                    tablename_predictions=options.tablename_predictions,
+                    tablename_genes=options.tablename_genes,
+                    use_genes=options.use_genes)
 
         if options.loglevel >= 1:
             options.stdlog.write(" finished.\n")
@@ -2068,7 +2222,8 @@ def main(argv=None):
 
         if options.loglevel >= 1:
             options.stdlog.write("# locations: read %i/%i locations." %
-                                 (len(map_transcript2location2), len(map_transcript2location2)) + "\n")
+                                 (len(map_transcript2location2),
+                                  len(map_transcript2location2)) + "\n")
             options.stdlog.flush()
 
     ##########################################################################
@@ -2097,7 +2252,8 @@ def main(argv=None):
         if not os.path.exists(options.filename_kaks):
             if options.loglevel >= 1:
                 options.stdlog.write(
-                    "# filename %s not found - kaks analysis skipped.\n" % (options.filename_kaks))
+                    "# filename %s not found - kaks analysis skipped.\n" %
+                    (options.filename_kaks))
 
         else:
             if options.loglevel >= 1:
@@ -2178,7 +2334,11 @@ def main(argv=None):
             sys.stdout.flush()
 
         if options.loglevel >= 1:
-            print "# trees: read %i trees, nunassigned=%i, nmissed=%i, nduplicates=%i." % (len(trees), nunassigned, nmissed, nduplicates)
+            print "# trees: " \
+                  "read %i trees, " \
+                  "nunassigned=%i, " \
+                  "nmissed=%i, nduplicates=%i." % (
+                   len(trees), nunassigned, nmissed, nduplicates)
             sys.stdout.flush()
 
     if options.loglevel >= 1:
@@ -2195,7 +2355,9 @@ def main(argv=None):
         if options.prefix_output:
             outfile = open(options.prefix_output % method, "w")
             if options.loglevel >= 1:
-                print "# output for %s goes to %s" % (method, options.prefix_output % method)
+                print "# output for %s goes to %s" % (
+                    method,
+                    options.prefix_output % method)
                 sys.stdout.flush()
         else:
             outfile = sys.stdout
@@ -2206,30 +2368,33 @@ def main(argv=None):
 
             # this only works with dmel as schema1
             # if not re.match( "dmel_vs_dmel", options.schema1 ):
-            # print "# method orphans only implemented, if dmel_vs_dmel is first species."
+            # print "# method orphans only implemented, " \
+            #       "if dmel_vs_dmel is first species."
             # continue
 
-            AnalyseOrphans(orphans1, outfile,
-                           all_genes_schema1,
-                           aligned_genes_schema1,
-                           assigned_genes_schema1,
-                           aligned_genes_schema2,
-                           assigned_genes_schema2,
-                           map_query2best=map_query2best,
-                           map_transcript2location_other=map_transcript2location2,
-                           map_transcript2gene_other=map_transcript2gene_schema2,
-                           options=options)
+            AnalyseOrphans(
+                orphans1, outfile,
+                all_genes_schema1,
+                aligned_genes_schema1,
+                assigned_genes_schema1,
+                aligned_genes_schema2,
+                assigned_genes_schema2,
+                map_query2best=map_query2best,
+                map_transcript2location_other=map_transcript2location2,
+                map_transcript2gene_other=map_transcript2gene_schema2,
+                options=options)
 
-            AnalyseOrphans(orphans2, outfile,
-                           all_genes_schema2,
-                           aligned_genes_schema2,
-                           assigned_genes_schema2,
-                           aligned_genes_schema1,
-                           assigned_genes_schema1,
-                           map_query2best=map_query2best,
-                           map_transcript2location_other=map_transcript2location1,
-                           map_transcript2gene_other=map_transcript2gene_schema1,
-                           options=options)
+            AnalyseOrphans(
+               orphans2, outfile,
+               all_genes_schema2,
+               aligned_genes_schema2,
+               assigned_genes_schema2,
+               aligned_genes_schema1,
+               assigned_genes_schema1,
+               map_query2best=map_query2best,
+               map_transcript2location_other=map_transcript2location1,
+               map_transcript2gene_other=map_transcript2gene_schema1,
+               options=options)
 
         #######################################################################
         elif method == "crossassignments":
@@ -2305,7 +2470,11 @@ def main(argv=None):
 
                 if len(g1) == 1 and len(g2) == 1:
                     outfile.write(
-                        "%s\t%s\t%s\t%s\n" % (g1.keys()[0], g2.keys()[0], ",".join(t1), ",".join(t2)))
+                        "%s\t%s\t%s\t%s\n" %
+                        (g1.keys()[0],
+                         g2.keys()[0],
+                         ",".join(t1),
+                         ",".join(t2)))
 
         #######################################################################
         elif method == "m_to_ms":
@@ -2315,25 +2484,28 @@ def main(argv=None):
 
             for t1, t2, g1, g2, w in orthologs:
                 if len(g1) > 1 or len(g2) > 1:
-                    outfile.write("%s\t%s\t%s\n" % (str((len(g1), len(g2))),
-                                                    ",".join(t1), ",".join(t2)))
+                    outfile.write("%s\t%s\t%s\n" %
+                                  (str((len(g1), len(g2))),
+                                   ",".join(t1),
+                                   ",".join(t2)))
 
         #######################################################################
         elif method == "duplications":
 
-            AnalyseDuplications(outfile, orthologs, trees,
-                                graph_genes, graph_kaks,
-                                map_transcript2location1,
-                                map_transcript2location2,
-                                options.schema1,
-                                options.schema2,
-                                max_local_duplication=options.max_local_duplication,
-                                tablename_predictions=options.tablename_predictions,
-                                map_contig2junk=options.map_contig2junk,
-                                map_contig2chromosome=options.map_contig2chromosome,
-                                cds1=cds1, cds2=cds2,
-                                quality_priority=options.quality_priority,
-                                options=options)
+            AnalyseDuplications(
+                outfile, orthologs, trees,
+                graph_genes, graph_kaks,
+                map_transcript2location1,
+                map_transcript2location2,
+                options.schema1,
+                options.schema2,
+                max_local_duplication=options.max_local_duplication,
+                tablename_predictions=options.tablename_predictions,
+                map_contig2junk=options.map_contig2junk,
+                map_contig2chromosome=options.map_contig2chromosome,
+                cds1=cds1, cds2=cds2,
+                quality_priority=options.quality_priority,
+                options=options)
 
         #######################################################################
         elif method == "expansion":
@@ -2375,30 +2547,34 @@ def main(argv=None):
             l.sort()
             outfile.write("# ninput=%i, nskipped=%i, ntotal=%i\n" %
                           (ninput, nskipped, ntotal))
-            outfile.write("# histogram of degeneracy over %i clusters (%i / %5.2f%% eliminated).\n" %
+            outfile.write("# histogram of degeneracy over %i clusters"
+                          " (%i / %5.2f%% eliminated).\n" %
                           (ntotal, nskipped, 100 * float(nskipped) / ninput))
             outfile.write("""# Legend:
 # assigned: percentage based in assigned genes in genomes 1 and 2.
 # all: percentage based on all genes in genomes 1 and 2.\n""")
 
-            outfile.write("%s\t%s\tcounts\tpcluster\tpassigned1\tpassigned2\tpall1\tpall2\tngenes1\tngenes2\n" %
+            outfile.write("%s\t%s\tcounts\tpcluster\tpassigned1\tpassigned2"
+                          "\tpall1\tpall2\tngenes1\tngenes2\n" %
                           (options.schema1, options.schema2))
 
             for x in l:
                 if x[0] > 0 and x[1] > 0:
                     cnts = h_dgenes[x]
-                    outfile.write("%i\t%i\t%i\t%6.4f\t%6.4f\t%6.4f\t%6.4f\t%6.4f\t%i\t%i\n" %
-                                  (x[0], x[1], cnts,
-                                   float(100 * cnts) / ntotal,
-                                   float(
-                                       100 * cnts * x[0]) / len(assigned_genes_schema1),
-                                   float(
-                                       100 * cnts * x[1]) / len(assigned_genes_schema2),
-                                   float(
-                                       100 * cnts * x[0]) / len(all_genes_schema1),
-                                   float(
-                                       100 * cnts * x[1]) / len(all_genes_schema2),
-                                   x[0] * cnts, x[1] * cnts))
+                    outfile.write(
+                        "%i\t%i\t%i\t%6.4f\t%6.4f"
+                        "\t%6.4f\t%6.4f\t%6.4f\t%i\t%i\n" %
+                        (x[0], x[1], cnts,
+                         float(100 * cnts) / ntotal,
+                         float(
+                             100 * cnts * x[0]) / len(assigned_genes_schema1),
+                         float(
+                             100 * cnts * x[1]) / len(assigned_genes_schema2),
+                         float(
+                             100 * cnts * x[0]) / len(all_genes_schema1),
+                         float(
+                             100 * cnts * x[1]) / len(all_genes_schema2),
+                         x[0] * cnts, x[1] * cnts))
 
             outfile.write("# ninput=%i, ntotal=%i, nskipped=%i\n" %
                           (ninput, ntotal, nskipped))
@@ -2447,41 +2623,51 @@ def main(argv=None):
                 for x in all_genes_schema1.keys():
                     outfile.write("# xxx\t%s\n" % x)
 
-            outfile.write("# summary of input and assignments for %s and %s.\n" % (
-                options.schema1, options.schema2))
+            outfile.write("# summary of input and assignments"
+                          " for %s and %s.\n" %
+                          (options.schema1, options.schema2))
 
             t1, t2 = len(all_genes_schema1), len(all_genes_schema2)
 
             outfile.write("%s\t%s\tpercent1\tpercent2\tcomment\n" %
                           (options.schema1, options.schema2))
 
-            outfile.write("%i\t%i\t%5.2f\t%5.2f\tgenes with self-links\n" % (len(all_genes_schema1), len(all_genes_schema2),
-                                                                             100 *
-                                                                             len(all_genes_schema1) /
-                                                                             t1,
-                                                                             100 * len(all_genes_schema2) / t2))
-            outfile.write("%i\t%i\t%5.2f\t%5.2f\tgenes without self-links\n" % (len(aligned_genes_schema1), len(aligned_genes_schema2),
-                                                                                100 *
-                                                                                len(aligned_genes_schema1) /
-                                                                                t1,
-                                                                                100 * len(aligned_genes_schema2) / t2))
-            outfile.write("%i\t%i\t%5.2f\t%5.2f\tgenes with assigned orthology\n" % (len(assigned_genes_schema1), len(assigned_genes_schema2),
-                                                                                     100 *
-                                                                                     len(assigned_genes_schema1) /
-                                                                                     t1,
-                                                                                     100 * len(assigned_genes_schema2) / t2))
+            outfile.write("%i\t%i\t%5.2f\t%5.2f\t"
+                          "genes with self-links\n" %
+                          (len(all_genes_schema1),
+                           len(all_genes_schema2),
+                           100 * len(all_genes_schema1) / t1,
+                           100 * len(all_genes_schema2) / t2))
+
+            outfile.write("%i\t%i\t%5.2f\t%5.2f\t"
+                          "genes without self-links\n" %
+                          (len(aligned_genes_schema1),
+                           len(aligned_genes_schema2),
+                           100 * len(aligned_genes_schema1) / t1,
+                           100 * len(aligned_genes_schema2) / t2))
+
+            outfile.write("%i\t%i\t%5.2f\t%5.2f\t"
+                          "genes with assigned orthology\n" %
+                          (len(assigned_genes_schema1),
+                           len(assigned_genes_schema2),
+                           100 * len(assigned_genes_schema1) / t1,
+                           100 * len(assigned_genes_schema2) / t2))
+
             o1 = t1 - len(assigned_genes_schema1)
             o2 = t2 - len(assigned_genes_schema2)
-            outfile.write("%i\t%i\t%5.2f\t%5.2f\tgenes without assigned orthology\n" % (o1, o2,
-                                                                                        100 *
-                                                                                        o1 /
-                                                                                        t1,
-                                                                                        100 * o2 / t2))
+            outfile.write("%i\t%i\t%5.2f\t%5.2f\t"
+                          "genes without assigned orthology\n" %
+                          (o1,
+                           o2,
+                           100 * o1 / t1,
+                           100 * o2 / t2))
+
         elif method == "separation":
 
-            # analyse separation within and between clusters based on input graph
-            # Count on a per gene basis. The minimum distance is used for all possible
-            # transcripts between genes.
+            # analyse separation within and between clusters based on
+            # input graph
+            # Count on a per gene basis. The minimum distance is used
+            # for all possible transcripts between genes.
             #
             # The following histograms are computed:
             # 1. histogram of all weights
@@ -2508,7 +2694,8 @@ def main(argv=None):
                     if k1 == k2:
                         continue
 
-                    if k1 in graph_ortholog_genes and k2 in graph_ortholog_genes[k1]:
+                    if k1 in graph_ortholog_genes and \
+                       k2 in graph_ortholog_genes[k1]:
                         is_ortholog = True
                     else:
                         is_ortholog = False
@@ -2547,8 +2734,14 @@ def main(argv=None):
                       "between", "between1", "between2", "between12")
 
             for vals in (vals_all,
-                         vals_within, vals_within1, vals_within2, vals_within12,
-                         vals_between, vals_between1, vals_between2, vals_between12):
+                         vals_within,
+                         vals_within1,
+                         vals_within2,
+                         vals_within12,
+                         vals_between,
+                         vals_between1,
+                         vals_between2,
+                         vals_between12):
                 hists.append(
                     scipy.stats.histogram2(vals, range(min_bin, max_bin)))
 
@@ -2560,7 +2753,8 @@ def main(argv=None):
                 outfile.write("\n")
 
         if options.loglevel >= 1:
-            print "# method %s finished in %i seconds" % (method, time.time() - time_t1)
+            print "# method %s finished in %i seconds" % \
+                  (method, time.time() - time_t1)
             sys.stdout.flush()
 
         if options.prefix_output:

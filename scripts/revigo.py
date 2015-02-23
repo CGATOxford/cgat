@@ -190,7 +190,8 @@ class PorterStemmer:
 
     def cons(self, i):
         """cons(i) is TRUE <=> b[i] is a consonant."""
-        if self.b[i] == 'a' or self.b[i] == 'e' or self.b[i] == 'i' or self.b[i] == 'o' or self.b[i] == 'u':
+        if self.b[i] == 'a' or self.b[i] == 'e' or \
+           self.b[i] == 'i' or self.b[i] == 'o' or self.b[i] == 'u':
             return 0
         if self.b[i] == 'y':
             if i == self.k0:
@@ -252,14 +253,16 @@ class PorterStemmer:
         return self.cons(j)
 
     def cvc(self, i):
-        """cvc(i) is TRUE <=> i-2,i-1,i has the form consonant - vowel - consonant
-        and also if the second c is not w,x or y. this is used when trying to
-        restore an e at the end of a short  e.g.
+        """cvc(i) is TRUE <=> i-2,i-1,i has the form consonant
+        - vowel - consonant and also if the second c is not
+        w,x or y. this is used when trying to restore an e
+        at the end of a short  e.g.
 
            cav(e), lov(e), hop(e), crim(e), but
            snow, box, tray.
         """
-        if i < (self.k0 + 2) or not self.cons(i) or self.cons(i - 1) or not self.cons(i - 2):
+        if i < (self.k0 + 2) or not self.cons(i) or \
+           self.cons(i - 1) or not self.cons(i - 2):
             return 0
         ch = self.b[i]
         if ch == 'w' or ch == 'x' or ch == 'y':
@@ -279,7 +282,8 @@ class PorterStemmer:
         return 1
 
     def setto(self, s):
-        """setto(s) sets (j+1),...k to the characters in the string s, readjusting k."""
+        """setto(s) sets (j+1),...k to the characters in the string s,
+        readjusting k."""
         length = len(s)
         self.b = self.b[:self.j + 1] + s + self.b[self.j + length + 1:]
         self.k = self.j + length
@@ -337,7 +341,8 @@ class PorterStemmer:
                 self.setto("e")
 
     def step1c(self):
-        """step1c() turns terminal y to i when there is another vowel in the stem."""
+        """step1c() turns terminal y to i when
+        there is another vowel in the stem."""
         if (self.ends("y") and self.vowelinstem()):
             self.b = self.b[:self.k] + 'i' + self.b[self.k + 1:]
 
@@ -401,7 +406,8 @@ class PorterStemmer:
         # To match the published algorithm, delete this phrase
 
     def step3(self):
-        """step3() dels with -ic-, -full, -ness etc. similar strategy to step2."""
+        """step3() dels with -ic-, -full, -ness etc.
+        similar strategy to step2."""
         if self.b[self.k] == 'e':
             if self.ends("icate"):
                 self.r("ic")
@@ -464,7 +470,8 @@ class PorterStemmer:
             else:
                 return
         elif self.b[self.k - 1] == 'o':
-            if self.ends("ion") and (self.b[self.j] == 's' or self.b[self.j] == 't'):
+            if self.ends("ion") and (self.b[self.j] ==
+               's' or self.b[self.j] == 't'):
                 pass
             elif self.ends("ou"):
                 pass
@@ -627,8 +634,9 @@ class GOOboXmlHandler (ContentHandler):
         elif name == "alt_id":
             self.synonyms[self.cdata.strip()] = self.goid
 
-        elif (name == "term" and not self.obsolete
-              and self.namespace == self.elementNamespace):
+        elif (name == "term" and
+              not self.obsolete and
+              self.namespace == self.elementNamespace):
 
             '''# not sure what the follow trying to do
             if not self.elementNamespace in self.namespaces.keys():
@@ -648,17 +656,20 @@ class GOOboXmlHandler (ContentHandler):
                     parent, self.goid, relationship="parent_of")
 
         # and not self.name.has_key(self.goid):
-        elif (name == "name" and not self.obsolete
-              and self.goid is not None and self.goNode.name is None):
+        elif (name == "name" and
+              not self.obsolete and
+              self.goid is not None and self.goNode.name is None):
             self.goNode.setName(self.cdata.strip())
 
         # and not self.name.has_key(self.goid):
-        elif (name == "defstr" and not self.obsolete
-              and self.goid is not None):
+        elif (name == "defstr" and
+              not self.obsolete and
+              self.goid is not None):
             self.goNode.setDescription(self.cdata.strip())
 
-        elif (name == "term" and self.obsolete
-              and self.namespace == self.elementNamespace):
+        elif (name == "term" and
+              self.obsolete and
+              self.namespace == self.elementNamespace):
             self.obsoletes.add(self.goid)
 
     def characters(self, data):
@@ -671,8 +682,9 @@ class GONode():
 
     def __init__(self, goid=None, namespace=None, parents=None, obsolete=False,
                  name=None, description=None, genes=set(), propGenes=set(),
-                 pmids=set(), propPmids=set(), wordVector=dict(), descendantCount=None,
-                 mergedGenes=set(), mergedPmids=set(), mergedCount=0, infoLoss=0):
+                 pmids=set(), propPmids=set(), wordVector=dict(),
+                 descendantCount=None, mergedGenes=set(), mergedPmids=set(),
+                 mergedCount=0, infoLoss=0):
         self.goid = goid
         self.namespace = namespace
         self.parents = parents
@@ -718,7 +730,7 @@ class GONode():
         return self.parents
 
     # Set the obsolete status of the node
-    # @param    obsolete    The obsolete status that will be assigned to the node
+    # @param    obsolete The obsolete status that will be assigned to the node
     def setObsolete(self, obsolete):
         self.obsolete = obsolete
 
@@ -746,7 +758,8 @@ class GONode():
         return self.description
 
     # Set the PubMed IDs associated with the node
-    # @param    pmids   The set containing the PubMed IDs that are associated with the node.
+    # @param pmids The set containing the PubMed IDs
+    # that are associated with the node.
     # The PubMed IDs are in tuples where it's the PubMed ID number followed by
     # the qualifier.
     def setPMIDs(self, pmids):
@@ -756,13 +769,16 @@ class GONode():
     def getPMIDs(self):
         return self.pmids
 
-    # Adds list containing one or more PubMed ID tuples to the existing set of PubMed IDs
-    # @param    pmid    A list where each entry is a PubMed ID tuple, where it's the PubMed ID number followed by the qualifier
+    # Adds list containing one or more PubMed ID tuples to the
+    # existing set of PubMed IDs
+    # @param pmid A list where each entry is a PubMed ID tuple,
+    # where it's the PubMed ID number followed by the qualifier
     def addPMIDs(self, pmid):
         self.pmids = self.pmids.union(pmid)
 
     # Set the propagated PubMed IDs associated with the node or its descendants
-    # @param    propPmids   The set containing the propagated PubMed IDs that are associated with the node or its descendants.
+    # @param propPmids The set containing the propagated PubMed IDs
+    # that are associated with the node or its descendants.
     # The PubMed IDs are in tuples where it's the PubMed ID number followed by
     # the qualifier.
     def setPropagatedPMIDs(self, propPmids):
@@ -773,13 +789,16 @@ class GONode():
     def getPropagatedPMIDs(self):
         return self.propPmids
 
-    # Adds list containing PubMed ID tuples to the existing set of propagated PubMed IDs
-    # @param    pmids    A list where each entry is a PubMed ID tuple, where it's the PubMed ID number followed by the qualifier
+    # Adds list containing PubMed ID tuples to the existing set of
+    # propagated PubMed IDs
+    # @param pmids A list where each entry is a PubMed ID tuple, where it's
+    # the PubMed ID number followed by the qualifier
     def addPropagatedPMIDs(self, pmids):
         self.propPmids = self.propPmids.union(pmids)
 
     # Set the genes associated with the node
-    # @param    genes   The set containing the genes that are associated with the node.
+    # @param  genes The set containing the genes that are associated
+    # with the node.
     # The genes are in tuples where it's the gene ID followed by the
     # qualifier.
     def setGenes(self, genes):
@@ -790,12 +809,14 @@ class GONode():
         return self.genes
 
     # Adds list containing one or more gene tuples to the existing set of genes
-    # @param    genes    A list where each entry is a gene tuple, where it's the gene ID followed by the qualifier
+    # @param genes A list where each entry is a gene tuple,
+    # where it's the gene ID followed by the qualifier
     def addGenes(self, genes):
         self.genes = self.genes.union(genes)
 
     # Set the propagated genes associated with the node or its descendants
-    # @param    propGenes   The set containing the propagated PubMed IDs that are associated with the node or its descendants.
+    # @param    propGenes   The set containing the propagated PubMed IDs that
+    # are associated with the node or its descendants.
     # The PubMed IDs are in tuples where it's the PubMed ID number followed by
     # the qualifier.
     def setPropagatedGenes(self, propGenes):
@@ -806,27 +827,37 @@ class GONode():
     def getPropagatedGenes(self):
         return self.propGenes
 
-    # Adds list containing PubMed ID tuples to the existing set of propagated PubMed IDs
-    # @param    pmids    A list where each entry is a PubMed ID tuple, where it's the PubMed ID number followed by the qualifier
+    # Adds list containing PubMed ID tuples to the existing set of propagated
+    # PubMed IDs
+    # @param pmids A list where each entry is a PubMed ID tuple,
+    # where it's the PubMed ID number followed by the qualifier
     def addPropagatedGenes(self, genes):
         self.propGenes = self.propGenes.union(genes)
 
     # Calculates the word vector and stores this information
-    # @param    corpus  The corpus that contains the information on the PubMed article
-    # @param    pmids   A list of PubMed ID tuples to be added to the word vector, where it's the PubMed ID number followed by the qualifier
-    #                   The propagated PubMed IDs will be used if none is given
-    # @param    tokenizer   The tokenizer function that will be used on the text, a simple tokenizer is used if none is given.
-    #                       Should take a string as an input, and outputs a string with words that are lower case and separated by a space
-    # @param    stemmer The stemmer function that will be used to stem the words, the porter stemmer is used if none is given
-    #                   Takes a word as an input and reports a stemmed word as an output.
-    # @param    stopwords   A list of stop words that will not be included in the word vector, either as a list or a StopwordList.
+    # @param corpus The corpus that contains the information
+    # on the PubMed article
+    # @param pmids A list of PubMed ID tuples to be added to the word vector,
+    # where it's the PubMed ID number followed by the qualifier
+    # The propagated PubMed IDs will be used if none is given
+    # @param tokenizer The tokenizer function that will be used on the text,
+    # a simple tokenizer is used if none is given.
+    # Should take a string as an input, and outputs a string with words that
+    # are lower case and separated by a space.
+    # @param stemmer The stemmer function that will be used to stem the words,
+    # the porter stemmer is used if none is given
+    # Takes a word as an input and reports a stemmed word as an output.
+    # @param stopwords A list of stop words that will not be included
+    # in the word vector, either as a list or a StopwordList.
     # An empty list is used if no stop word list is given.
     def calculateWordVector(self, corpus, tokenizer=Tokenizer().tokenize_word,
-                            stemmer=PorterStemmer().stem, stopwords=[], pmids=None):
+                            stemmer=PorterStemmer().stem,
+                            stopwords=[], pmids=None):
         wordVector = {}
 
         if not corpus:
-            print "Not corpus is given, so a word vector can not be calculated."
+            print "Not corpus is given, " \
+                  "so a word vector can not be calculated."
 
         else:
             if not pmids:
@@ -847,8 +878,10 @@ class GONode():
                             wordVector[word] = pmidWordVector[word]
         self.wordVector = wordVector
 
-    # Returns the word vector for the node calculated using propagated PubMed IDs
-    # @param    corpus  The corpus that contains the information on the PubMed article
+    # Returns the word vector for the node calculated using propagated
+    # PubMed IDs
+    # @param corpus The corpus that contains the information on the
+    # PubMed article
     def getWordVector(self, corpus=None, stopwords=[]):
         # Calculates the word vector if the current word vector is empty
         if len(self.wordVector) == 0:
@@ -860,8 +893,10 @@ class GONode():
     def getDescendantCount(self):
         return self.descendantCount
 
-    # Set the genes associated with the nodes that have been merged into the current node
-    # @param    mergedGenes   The set containing the genes that are associated with the merged nodes.
+    # Set the genes associated with the nodes that have been merged into
+    # the current node
+    # @param mergedGenes The set containing the genes that are
+    # associated with the merged nodes.
     # The genes are in tuples where it's the gene ID followed by the
     # qualifier.
     def setMergedGenes(self, mergedGenes):
@@ -872,13 +907,17 @@ class GONode():
     def getMergedGenes(self):
         return self.mergedGenes
 
-    # Adds list containing one or more gene tuples to the existing set of merged genes
-    # @param    mergedGenes    A list where each entry is a gene tuple, where it's the gene ID followed by the qualifier
+    # Adds list containing one or more gene tuples to the existing
+    # set of merged genes
+    # @param mergedGenes A list where each entry is a gene tuple,
+    # where it's the gene ID followed by the qualifier
     def addMergedGenes(self, mergedGenes):
         self.mergedGenes = self.mergedGenes.union(mergedGenes)
 
-    # Set the PubMed IDs associated with the nodes that have been merged into the current node
-    # @param    mergedPmids   The set containing the PubMed IDs that are associated with the merged nodes.
+    # Set the PubMed IDs associated with the nodes that have been merged
+    # into the current node
+    # @param mergedPmids The set containing the PubMed IDs that are associated
+    # with the merged nodes.
     # The PubMed IDs are in tuples where it's the PubMed ID number followed by
     # the qualifier.
     def setMergedPMIDs(self, mergedPmids):
@@ -889,13 +928,17 @@ class GONode():
     def getMergedPMIDs(self):
         return self.mergedPmids
 
-    # Adds list containing one or more PMID tuples to the existing set of merged PMIDs
-    # @param    mergedPmids    A list where each entry is a PubMed ID tuple, where it's the PubMed ID followed by the qualifier
+    # Adds list containing one or more PMID tuples to the existing set of
+    # merged PMIDs
+    # @param mergedPmids A list where each entry is a PubMed ID tuple,
+    # where it's the PubMed ID followed by the qualifier
     def addMergedPMIDs(self, mergedPmids):
         self.mergedPmids = self.mergedPmids.union(mergedPmids)
 
-    # Set the count of the number of nodes that have been merged into the current node
-    # @param    mergedCount   The integer count of the number of nodes that have been merged into the current node
+    # Set the count of the number of nodes that have been merged into the
+    # current node
+    # @param mergedCount The integer count of the number of nodes
+    # that have been merged into the current node
     def setMergedCount(self, mergedCount):
         self.mergedCount = mergedCount
 
@@ -904,13 +947,17 @@ class GONode():
     def getMergedCount(self):
         return self.mergedCount
 
-    # Adds list containing one or more PMID tuples to the existing set of merged PMIDs
-    # @param    mergedPmids    A list where each entry is a PubMed ID tuple, where it's the PubMed ID followed by the qualifier
+    # Adds list containing one or more PMID tuples to the existing
+    # set of merged PMIDs
+    # @param mergedPmids A list where each entry is a PubMed ID tuple,
+    # where it's the PubMed ID followed by the qualifier
     def addMergedCount(self, mergedCount=1):
         self.mergedCount += mergedCount
 
-    # Set the PubMed IDs associated with the nodes that have been merged into the current node
-    # @param    infoLoss   The set containing the PubMed IDs that are associated with the merged nodes.
+    # Set the PubMed IDs associated with the nodes that have been merged
+    # into the current node
+    # @param infoLoss The set containing the PubMed IDs that are associated
+    # with the merged nodes.
     # The PubMed IDs are in tuples where it's the PubMed ID number followed by
     # the qualifier.
     def setInfoLoss(self, infoLoss):
@@ -921,8 +968,10 @@ class GONode():
     def getInfoLoss(self):
         return self.infoLoss
 
-    # Adds list containing one or more PMID tuples to the existing set of merged PMIDs
-    # @param    infoLoss    A list where each entry is a PubMed ID tuple, where it's the PubMed ID followed by the qualifier
+    # Adds list containing one or more PMID tuples to the existing
+    # set of merged PMIDs
+    # @param infoLoss A list where each entry is a PubMed ID tuple,
+    # where it's the PubMed ID followed by the qualifier
     def addInfoLoss(self, infoLoss):
         self.infoLoss += infoLoss
 
@@ -931,9 +980,9 @@ class GOGraph(networkx.DiGraph):
 
     '''from gographer.GOGraph.py'''
     # Constructor.
-    # @param    namespace     The branch of the GO ontology stored by this graph
-    # @param    XMLFileName   The file contains the GO definition in
-    #                         the format of the OBO in XML
+    # @param namespace   The branch of the GO ontology stored by this graph
+    # @param XMLFileName The file contains the GO definition in
+    #                    the format of the OBO in XML
 
     def __init__(self, namespace=None, GOOboXmlFileName=None):
         DiGraph.__init__(self)
@@ -944,7 +993,7 @@ class GOGraph(networkx.DiGraph):
             self.parseOboXml(GOOboXmlFileName)
 
     # Parses the given OBO XML file and creates a GOGraph
-    # @param    GOOboXMLFileName    The name of the OBO XML file to be parsed
+    # @param GOOboXMLFileName The name of the OBO XML file to be parsed
     def parseOboXml(self, GOOboXmlFileName):
         parser = make_parser()
         handler = GOOboXmlHandler(self)
@@ -956,7 +1005,7 @@ class GOGraph(networkx.DiGraph):
         self.obsoletes = handler.obsoletes
 
     # Returns the minimum depth of the node
-    # @param    goid    The GO ID of the node whose depth will be found and returned
+    # @param goid The GO ID of the node whose depth will be found and returned
     def getLevel(self, goid):
         parents = self.predecessors(goid)
         if len(parents) == 0:
@@ -1061,8 +1110,9 @@ class GOGraph(networkx.DiGraph):
                 else:
                     nodes[parent] = nodes[parent].union(ids)
 
-    # Return the number of descendants of the given node. Calculates the count if it had not already been done so
-    # @param    goid    The GO ID of the node to return the descendant count of
+    # Return the number of descendants of the given node.
+    # Calculates the count if it had not already been done so
+    # @param goid The GO ID of the node to return the descendant count of
     def getDescendantCount(self, goid):
         if goid in self:
             count = self.node[goid]['data'].getDescendantCount()
@@ -1080,7 +1130,7 @@ def getAncestors(g, node):
     while work:
         x = work.pop()
         p = g.predecessors(x)
-        work.extend([x for x in p if x not in ancestors])
+        work.extend([y for y in p if y not in ancestors])
         ancestors.update(p)
 
     return ancestors
@@ -1304,7 +1354,8 @@ def buildSimrelMatrix(go2genes, go2info, ancestors, p):
     return matrix, test_nodes
 
 
-def clusterSimrelMatrix(matrix, terms, ancestors, p, counts, term2pvalue, go2info, options):
+def clusterSimrelMatrix(matrix, terms, ancestors, p,
+                        counts, term2pvalue, go2info, options):
     '''apply revigo clustering scheme to *matrix*.
 
     *ancestors*, *p*, and *counts* contain auxiliary data
@@ -1449,7 +1500,7 @@ def clusterSimrelMatrix(matrix, terms, ancestors, p, counts, term2pvalue, go2inf
     member_indices = set(member_indices)
     rep_indices = [x for x in xrange(nrows) if x not in member_indices]
     terms = [terms[x] for x in rep_indices]
-    rows = len(terms)
+    # rows = len(terms)
     matrix = matrix[numpy.array([x for x in rep_indices])]
     matrix = matrix[:, numpy.array([x for x in rep_indices])]
 
@@ -1474,7 +1525,9 @@ def main(argv):
                       help="filename with ontology information "
                       "in obo-xml format. "
                       " The latest version can always be"
-                      " retrieved at `wget http://archive.geneontology.org/latest-termdb/go_daily-termdb.obo-xml.gz`."
+                      " retrieved at "
+                      "`wget http://archive.geneontology.org/"
+                      "latest-termdb/go_daily-termdb.obo-xml.gz`."
                       " [default=%default].")
 
     parser.add_option("-g", "--go-tsv-file", dest="filename_go", type="string",
@@ -1586,16 +1639,20 @@ def main(argv):
             with IOTools.openFile(fn, "w") as outfile:
                 outfile.write("goid\tancestors\n")
                 outfile.write(
-                    "".join(["%s\t%s\n" % (x, ";".join(v)) for x, v in ancestors.iteritems()]))
+                    "".join(["%s\t%s\n" %
+                             (x, ";".join(v))
+                             for x, v in ancestors.iteritems()]))
 
         #########################################
         graph = readGOGraph(options.filename_obo, namespace)
 
         #########################################
         E.info("reading gene to go assignments from %s " % options.filename_go)
-        all_gene2gos, all_go2infos = GO.ReadGene2GOFromFile(IOTools.openFile(options.filename_go),
-                                                            synonyms=graph.synonyms,
-                                                            obsolete=graph.obsoletes)
+        all_gene2gos, all_go2infos = \
+            GO.ReadGene2GOFromFile(
+             IOTools.openFile(options.filename_go),
+             synonyms=graph.synonyms,
+             obsolete=graph.obsoletes)
 
         #########################################
         # filter pvalues
@@ -1616,7 +1673,8 @@ def main(argv):
         gene2gos = all_gene2gos[test_ontology]
 
         if options.filename_bg:
-            background = IOTools.readList(IOTools.openFile(filename_bg))
+            background = IOTools.readList(
+                                 IOTools.openFile(options.filename_bg))
         else:
             background = list(gene2gos.keys())
 
@@ -1675,11 +1733,19 @@ def main(argv):
 
             with IOTools.openFile(fn, "w") as outfile:
                 outfile.write(
-                    "\t".join(("rep", "mem", "pvalue", "frequency", "description")) + "\n")
+                    "\t".join(("rep",
+                               "mem",
+                               "pvalue",
+                               "frequency",
+                               "description")) + "\n")
                 for rep, members in clusters.iteritems():
                     for mem in members:
-                        outfile.write("%s\t%s\t%f\t%f\t%s\n" % (
-                            rep, mem, term2pvalue[mem], p[mem], go2info.get(mem, "na")))
+                        outfile.write("%s\t%s\t%f\t%f\t%s\n" %
+                                      (rep,
+                                       mem,
+                                       term2pvalue[mem],
+                                       p[mem],
+                                       go2info.get(mem, "na")))
 
         # visualize output
         rows = len(terms)
