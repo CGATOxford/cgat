@@ -90,7 +90,8 @@ def bigwig(infile, contig_sizes):
              for x in contig_sizes.iteritems()]))
     os.close(tmp)
 
-    statement = "wigToBigWig -clip %(infile)s %(filename_sizes)s %(outfile)s " % locals()
+    statement = "wigToBigWig " \
+                "-clip %(infile)s %(filename_sizes)s %(outfile)s " % locals()
 
     E.debug("executing statement '%s'" % statement)
 
@@ -253,8 +254,8 @@ def main(argv=None):
                         float(line['edgeR.logFC']),
                         math.pow(2.0, float(line['edgeR.logFC'])),
                         float(line['edgeR.logFC']),  # no transform
-                        ["0", "1"][float(line['edgeR.adj.p.value'])
-                                   < options.fdr_threshold],
+                        ["0", "1"][float(line['edgeR.adj.p.value']) <
+                                   options.fdr_threshold],
                         status)))
             except ValueError, msg:
                 raise ValueError("parsing error %s in line: %s" % (msg, line))
@@ -443,7 +444,8 @@ def main(argv=None):
                 # Data that does not fit the model causes
                 # "Error in 1:max_signal_index : argument of length 0"
                 # The advice is to set MeDIP=FALSE
-                # See: http://comments.gmane.org/gmane.science.biology.informatics.conductor/52319
+                # See: http://comments.gmane.org/
+                # gmane.science.biology.informatics.conductor/52319
 
                 if options.is_medip:
                     medip = "TRUE"
