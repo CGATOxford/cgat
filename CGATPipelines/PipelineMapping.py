@@ -476,7 +476,7 @@ class Mapper(object):
                 fastqfiles.append(
                     ["%s/%s" % (tmpdir_fastq, os.path.basename(x))
                      for x in sorted(f)])
-                Sra.exract(infile, tmpdir_fastq)
+                Sra.extract(infile, tmpdir_fastq)
 
             elif infile.endswith(".fastq.gz"):
                 format = Fastq.guessFormat(
