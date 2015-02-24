@@ -1,4 +1,3 @@
-
 """=====================
 Read mapping pipeline
 =====================
@@ -266,9 +265,6 @@ SPLICED_MAPPING = ("tophat" in MAPPERS or
                    "tophat2" in MAPPERS)
 
 
-###################################################################
-###################################################################
-###################################################################
 def connect():
     '''connect to database.
 
@@ -285,17 +281,11 @@ def connect():
     return dbh
 
 
-if os.path.exists("pipeline_conf.py"):
-    E.info("reading additional configuration from pipeline_conf.py")
-    execfile("pipeline_conf.py")
-
-
 @active_if(SPLICED_MAPPING)
 @follows(mkdir("geneset.dir"))
-@merge(os.path.join(PARAMS["annotations_dir"],
-                    PARAMS["annotations_interface_geneset_all_gtf"]),
+@merge((PARAMS["annotations_interface_geneset_all_gtf"],),
        "geneset.dir/reference.gtf.gz")
-def buildReferenceGeneSet(infile, outfile):
+def buildReferenceGeneSet(infiles, outfile):
     '''sanitize ENSEMBL transcripts file for cufflinks analysis.
 
     Merge exons separated by small introns (< 5bp).
@@ -323,6 +313,8 @@ def buildReferenceGeneSet(infile, outfile):
     This geneset is the source for most other genesets in the pipeline.
 
     '''
+    gtf_file = infiles[0]
+
     tmp_mergedfiltered = P.getTempFilename(".")
 
     if "geneset_remove_repetetive_rna" in PARAMS:
@@ -332,13 +324,12 @@ def buildReferenceGeneSet(infile, outfile):
         rna_file = None
 
     gene_ids = PipelineMapping.mergeAndFilterGTF(
-        infile, tmp_mergedfiltered, "%s.removed.gz" % outfile,
-        genome=os.path.join(
-            PARAMS["genome_dir"], PARAMS["genome"]),
-        max_intron_size=PARAMS[
-            "max_intron_size"],
-        remove_contigs=PARAMS[
-            "geneset_remove_contigs"],
+        gtf_file,
+        tmp_mergedfiltered,
+        "%s.removed.gz" % outfile,
+        genome=os.path.join(PARAMS["genome_dir"], PARAMS["genome"]),
+        max_intron_size=PARAMS["max_intron_size"],
+        remove_contigs=PARAMS["geneset_remove_contigs"],
         rna_file=rna_file)
 
     # Add tss_id and p_id
@@ -1066,7 +1057,6 @@ def mapReadsWithButter(infile, outfile):
     job_options = "-l mem_free=%s" % PARAMS["butter_memory"]
     m = PipelineMapping.Butter(strip_sequence=PARAMS["strip_sequence"])
     statement = m.build((infile,), outfile)
-    print statement
     P.run()
 
 ###################################################################
