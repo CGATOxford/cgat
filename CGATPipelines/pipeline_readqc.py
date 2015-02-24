@@ -243,11 +243,11 @@ if PARAMS["preprocessors"]:
         '''process reads from .fastq format files
         Tasks specified in PREPROCESSTOOLS are run in order
         '''
-        if ((infile.endswith(".csfasta.gz")
-             or infile.endswith(".csfasta.F3.gz")
-             or infile.endswith(".sra")
-             or infile.endswith(".export.txt.gz")
-             or infile.endswith(".fa.gz"))):
+        if ((infile.endswith(".csfasta.gz") or
+             infile.endswith(".csfasta.F3.gz") or
+             infile.endswith(".sra") or
+             infile.endswith(".export.txt.gz") or
+             infile.endswith(".fa.gz"))):
             raise NotImplementedError('''preprocessing of ".sra", "csfasta" (solid)
             ".export.txt.gz" or ".fa.gz" files is not currently implemented.
             Infile: %(infile)s''' % locals())
