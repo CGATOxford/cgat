@@ -283,9 +283,9 @@ def connect():
 
 @active_if(SPLICED_MAPPING)
 @follows(mkdir("geneset.dir"))
-@merge((PARAMS["annotations_interface_geneset_all_gtf"],),
+@merge(PARAMS["annotations_interface_geneset_all_gtf"],
        "geneset.dir/reference.gtf.gz")
-def buildReferenceGeneSet(infiles, outfile):
+def buildReferenceGeneSet(infile, outfile):
     '''sanitize ENSEMBL transcripts file for cufflinks analysis.
 
     Merge exons separated by small introns (< 5bp).
@@ -313,8 +313,6 @@ def buildReferenceGeneSet(infiles, outfile):
     This geneset is the source for most other genesets in the pipeline.
 
     '''
-    gtf_file = infiles[0]
-
     tmp_mergedfiltered = P.getTempFilename(".")
 
     if "geneset_remove_repetetive_rna" in PARAMS:
@@ -324,7 +322,7 @@ def buildReferenceGeneSet(infiles, outfile):
         rna_file = None
 
     gene_ids = PipelineMapping.mergeAndFilterGTF(
-        gtf_file,
+        infile,
         tmp_mergedfiltered,
         "%s.removed.gz" % outfile,
         genome=os.path.join(PARAMS["genome_dir"], PARAMS["genome"]),
@@ -375,8 +373,7 @@ def buildCodingGeneSet(infile, outfile):
 
 @active_if(SPLICED_MAPPING)
 @follows(mkdir("geneset.dir"))
-@merge(os.path.join(PARAMS["annotations_dir"],
-                    PARAMS["annotations_interface_geneset_flat_gtf"]),
+@merge(PARAMS["annotations_interface_geneset_flat_gtf"],
        "geneset.dir/introns.gtf.gz")
 def buildIntronGeneModels(infile, outfile):
     '''build protein-coding intron-transcipts.
@@ -392,9 +389,7 @@ def buildIntronGeneModels(infile, outfile):
     are removed.
     '''
 
-    filename_exons = os.path.join(
-        PARAMS["annotations_dir"],
-        PARAMS["annotations_interface_geneset_exons_gtf"])
+    filename_exons = PARAMS["annotations_interface_geneset_exons_gtf"]
 
     statement = '''
     zcat %(infile)s
@@ -423,10 +418,6 @@ def buildIntronGeneModels(infile, outfile):
     '''
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @active_if(SPLICED_MAPPING)
 @transform(buildCodingGeneSet,
@@ -435,15 +426,10 @@ def buildIntronGeneModels(infile, outfile):
 def loadGeneInformation(infile, outfile):
     PipelineGeneset.loadTranscript2Gene(infile, outfile)
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @active_if(SPLICED_MAPPING)
 @follows(mkdir("geneset.dir"))
-@merge(os.path.join(PARAMS["annotations_dir"],
-                    PARAMS["annotations_interface_geneset_all_gtf"]),
+@merge(PARAMS["annotations_interface_geneset_all_gtf"],
        "geneset.dir/coding_exons.gtf.gz")
 def buildCodingExons(infile, outfile):
     '''compile set of protein coding exons.
@@ -466,10 +452,6 @@ def buildCodingExons(infile, outfile):
     > %(outfile)s
     '''
     P.run()
-
-#########################################################################
-#########################################################################
-#########################################################################
 
 
 @active_if(SPLICED_MAPPING)
@@ -573,15 +555,10 @@ def buildJunctions(infile, outfile):
                    rm -f %(outfile)s.tmp; '''
     P.run()
 
-#########################################################################
-#########################################################################
-#########################################################################
-
 
 @active_if(SPLICED_MAPPING)
 @follows(mkdir("gsnap.dir"))
-@files(os.path.join(PARAMS["annotations_dir"],
-                    PARAMS["annotations_interface_geneset_exons_gtf"]),
+@merge(PARAMS["annotations_interface_geneset_exons_gtf"],
        "gsnap.dir/splicesites.iit")
 def buildGSNAPSpliceSites(infile, outfile):
     '''build file with known splice sites for GSNAP from all exons...
@@ -1283,8 +1260,7 @@ def buildBAMStats(infiles, outfile):
     '''count number of reads mapped, duplicates, etc.
     '''
 
-    rna_file = os.path.join(PARAMS["annotations_dir"],
-                            PARAMS["annotations_interface_rna_gff"])
+    rna_file = PARAMS["annotations_interface_rna_gff"]
 
     job_options = "-l mem_free=12G"
 
@@ -1321,9 +1297,6 @@ def buildBAMStats(infiles, outfile):
 
     P.run()
 
-#########################################################################
-#########################################################################
-
 
 @jobs_limit(1, "db")
 @merge(buildBAMStats, "bam_stats.load")
@@ -1332,16 +1305,11 @@ def loadBAMStats(infiles, outfile):
 
     PipelineMappingQC.loadBAMStats(infiles, outfile)
 
-############################################################
-############################################################
-############################################################
-
 
 @transform(MAPPINGTARGETS,
            suffix(".bam"),
-           add_inputs(os.path.join(
-               PARAMS["annotations_dir"],
-               PARAMS["annotations_interface_genomic_context_bed"])),
+           add_inputs(
+               PARAMS["annotations_interface_genomic_context_bed"]),
            ".contextstats")
 def buildContextStats(infiles, outfile):
     '''build mapping context stats.
@@ -1640,9 +1608,7 @@ def buildBigWig(infile, outfile):
         reads_mapped = BamTools.getNumberOfAlignments(infile)
         scale = 1000000.0 / float(reads_mapped)
         tmpfile = P.getTempFilename()
-        contig_sizes = os.path.join(
-            PARAMS["annotations_dir"],
-            PARAMS["annotations_interface_contigs"])
+        contig_sizes = PARAMS["annotations_interface_contigs"]
         job_options = "-l mem_free=3G"
         statement = '''bedtools genomecov
         -ibam %(infile)s
