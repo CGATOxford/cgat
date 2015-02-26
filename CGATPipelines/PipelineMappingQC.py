@@ -181,8 +181,9 @@ def buildPicardDuplicateStats(infile, outfile):
     ASSUME_SORTED=true
     METRICS_FILE=%(outfile)s.duplicate_metrics
     OUTPUT=%(outfile)s
-    VALIDATION_STRINGENCY=SILENT
+    VALIDATION_STRINGENCY=SILENT ;
     '''
+    statement += '''samtools index %(outfile)s ;'''
     P.run()
 
 

@@ -46,10 +46,11 @@ def getGATKOptions():
 
 def GATKReadGroups(infile, outfile, genome,
                    library="unknown", platform="Illumina",
-                   platform_unit="1"):
+                   platform_unit="1", track = "unknown"):
     '''Reorders BAM according to reference fasta and adds read groups'''
 
-    track = P.snip(os.path.basename(infile), ".bam")
+    if track == 'unknown':
+        track = P.snip(os.path.basename(infile), ".bam")
     tmpdir_gatk = P.getTempDir('.')
     job_options = getGATKOptions()
     job_threads = 3
@@ -217,13 +218,16 @@ def strelkaINDELCaller(infile_control, infile_tumour, outfile, genome, config,
 
 
 def variantAnnotator(vcffile, bamlist, outfile, genome,
-                     dbsnp, annotations, snpeff_file=""):
+                     dbsnp, annotations="", snpeff_file=""):
     '''Annotate variant file using GATK VariantAnnotator'''
     job_options = getGATKOptions()
     job_threads = 3
 
-    anno = annotations.split(",")
-    anno = " -A " + " -A ".join(anno)
+    if annotations!="":
+        anno = annotations.split(",")
+        anno = " -A " + " -A ".join(anno)
+    else:
+        anno = ""
     statement = '''GenomeAnalysisTK -T VariantAnnotator
                     -R %(genome)s
                     -I %(bamlist)s
@@ -239,44 +243,58 @@ def variantAnnotator(vcffile, bamlist, outfile, genome,
 ################################################################################
 
 
-def variantRecalibrator(infile, outfile, genome,
-                        dbsnp, hapmap, omni):
+def variantRecalibrator(infile, outfile, genome, mode, dbsnp=None, 
+                        kgenomes=None, hapmap=None, omni=None, mills=None):
     '''Create variant recalibration file'''
     job_options = getGATKOptions()
     job_threads = 3
 
     track = P.snip(outfile, ".recal")
-    statement = '''GenomeAnalysisTK -T VariantRecalibrator
-    -R %(genome)s
-    -input %(infile)s
-    -resource:hapmap,known=false,training=true,truth=true,prior=15.0 %(hapmap)s
-    -resource:omni,known=false,training=true,truth=false,prior=12.0 %(omni)s
-    -resource:dbsnp,known=true,training=false,truth=false,prior=6.0 %(dbsnp)s
-    -an QD -an HaplotypeScore -an MQRankSum
-    -an ReadPosRankSum -an FS -an MQ
-    --maxGaussians 4
-    --numBadVariants 3000
-    -mode SNP
-    -recalFile %(outfile)s
-    -tranchesFile %(track)s.tranches
-    -rscriptFile %(track)s.plots.R ''' % locals()
-    P.run()
+    if mode == 'SNP':
+        statement = '''GenomeAnalysisTK -T VariantRecalibrator
+        -R %(genome)s
+        -input %(infile)s
+        -resource:hapmap,known=false,training=true,truth=true,prior=15.0 %(hapmap)s
+        -resource:omni,known=false,training=true,truth=true,prior=12.0 %(omni)s
+        -resource:dbsnp,known=true,training=false,truth=false,prior=2.0 %(dbsnp)s
+        -resource:1000G,known=false,training=true,truth=false,prior=10.0 %(kgenomes)s
+        -an QD -an SOR -an MQRankSum
+        -an ReadPosRankSum -an FS -an MQ
+        --maxGaussians 4
+        -mode %(mode)s
+        -recalFile %(outfile)s
+        -tranchesFile %(track)s.tranches
+        -rscriptFile %(track)s.plots.R ''' % locals()
+        P.run()
+    elif mode == 'INDEL':
+        statement = '''GenomeAnalysisTK -T VariantRecalibrator
+        -R %(genome)s
+        -input %(infile)s
+        -resource:mills,known=true,training=true,truth=true,prior=12.0 %(mills)s
+        -an QD -an MQRankSum
+        -an ReadPosRankSum -an FS -an MQ
+        --maxGaussians 4
+        -mode %(mode)s
+        -recalFile %(outfile)s
+        -tranchesFile %(track)s.tranches
+        -rscriptFile %(track)s.plots.R ''' % locals()
+        P.run()
 
 ################################################################################
 
 
-def applyVariantRecalibration(vcf, recal, tranches, outfile, genome):
+def applyVariantRecalibration(vcf, recal, tranches, outfile, genome, mode):
     '''Perform variant quality score recalibration using GATK '''
     job_options = getGATKOptions()
     job_threads = 3
 
     statement = '''GenomeAnalysisTK -T ApplyRecalibration
     -R %(genome)s
-    -input %(vcf)s
+    -input:VCF %(vcf)s
     -recalFile %(recal)s
     -tranchesFile %(tranches)s
     --ts_filter_level 99.0
-    -mode SNP
+    -mode %(mode)s
     -o %(outfile)s ''' % locals()
     P.run()
 

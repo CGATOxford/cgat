@@ -171,7 +171,9 @@ import sys
 import os
 import csv
 import glob
+import re
 import sqlite3
+import shutil
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Pipeline as P
@@ -297,10 +299,145 @@ def loadPicardAlignStats(infiles, outfile):
 ###############################################################################
 ###############################################################################
 ###############################################################################
+# GATK
+
+
+@follows(mkdir("gatk"))
+@transform(mapReads, regex(r"bam/(\S+).bam"), r"gatk/\1.readgroups.bam")
+def GATKReadGroups(infile, outfile):
+    '''Reorders BAM according to reference fasta and adds read groups using
+    GATK'''
+    '''Reorders BAM according to reference fasta and add read groups using
+    SAMtools, realigns around indels and recalibrates base quality
+    scores using GATK
+
+    '''
+
+    track = re.sub(r'-\w+-.\.bam', '', os.path.basename(infile))
+    tmpdir_gatk = P.getTempDir('.')
+    job_options = getGATKOptions()
+    job_threads = 3
+
+    library = PARAMS["readgroup_library"]
+    platform = PARAMS["readgroup_platform"]
+    platform_unit = PARAMS["readgroup_platform_unit"]
+    genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
+    PipelineExome.GATKReadGroups(infile, outfile, genome,
+                                 library, platform,
+                                 platform_unit, track)
+
+###############################################################################
+###############################################################################
+###############################################################################
+# Remove duplicates, realign and recalibrate lane-by-lane
+
+
+@transform(GATKReadGroups, 
+           regex(r"gatk/(\S+).readgroups.bam"), 
+           r"gatk/\1.dedup.bam")
+def RemoveDuplicatesLane(infile, outfile):
+    '''Merge Picard duplicate stats into single table and load into SQLite.'''
+    PipelineMappingQC.buildPicardDuplicateStats(infile, outfile)
+    IOTools.zapFile(infile)
+
+###############################################################################
+
+
+@jobs_limit(1, "db")
+@merge(RemoveDuplicatesLane, "picard_duplicate_stats_lane.load")
+def loadPicardDuplicateStatsLane(infiles, outfile):
+    '''Merge Picard duplicate stats into single table and load into SQLite.'''
+    PipelineMappingQC.loadPicardDuplicateStats(infiles, outfile)
+
+###############################################################################
+
+
+@transform(RemoveDuplicatesLane,
+           regex(r"gatk/(\S+).dedup.bam"),
+           r"gatk/\1.realigned.bam")
+def GATKIndelRealignLane(infile, outfile):
+    '''realigns around indels using GATK'''
+    threads = PARAMS["gatk_threads"]
+    genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
+    PipelineExome.GATKIndelRealign(infile, outfile, genome, threads)
+    IOTools.zapFile(infile)
+
+###############################################################################
+
+
+@transform(GATKIndelRealignLane,
+           regex(r"gatk/(\S+).realigned.bam"),
+           r"gatk/\1.bqsr.bam")
+def GATKBaseRecal(infile, outfile):
+    '''recalibrates base quality scores using GATK'''
+    dbsnp = PARAMS["gatk_dbsnp"]
+    solid_options = PARAMS["gatk_solid_options"]
+    genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
+    PipelineExome.GATKBaseRecal(infile, outfile, genome,
+                                dbsnp, solid_options)
+    IOTools.zapFile(infile)
+
+###############################################################################
+###############################################################################
+###############################################################################
+# Merge BAMs across different lanes for the same sample
+
+
+@collate(GATKBaseRecal,
+         regex(r"gatk/(\S+-\S+)-(\S+)-(\S+).bqsr.bam"),
+         r"gatk/\1.merged.bam")
+def mergeBAMs(infiles, outfile):
+    '''merges BAMs for a single sample over multiple lanes'''
+    inputfiles = " INPUT=".join(infiles)
+    outf = open(outfile + ".count", "w")
+    outf.write(str(len(infiles)))
+    outf.close()
+    statement = '''MergeSamFiles 
+                   INPUT=%(inputfiles)s 
+                   OUTPUT=%(outfile)s 
+                   ASSUME_SORTED=true; '''
+    statement += '''samtools index %(outfile)s ;''' % locals()
+    P.run()
+
+###############################################################################
+###############################################################################
+###############################################################################
+# Remove duplicates sample-by-sample
+
+
+@transform(mergeBAMs, 
+           regex(r"gatk/(\S+).merged.bam"),
+           add_inputs(r"gatk/\1.merged.bam.count"),
+           r"gatk/\1.dedup.bam")
+def RemoveDuplicatesSample(infiles, outfile):
+    '''Merge Picard duplicate stats into single table and load into SQLite.'''
+    infile, countfile = infiles
+    countf = open(countfile, "r")
+    if countf.read() != '1':
+        PipelineMappingQC.buildPicardDuplicateStats(infile, outfile)
+    else:
+        shutil.copyfile(infile, outfile)
+        shutil.copyfile(infile + ".bai", outfile + ".bai")
+    IOTools.zapFile(infile)
+
+###############################################################################
+
+
+@jobs_limit(1, "db")
+@merge(RemoveDuplicatesSample, "picard_duplicate_stats_sample.load")
+def loadPicardDuplicateStatsSample(infiles, outfile):
+    '''Merge Picard duplicate stats into single table and load into SQLite.'''
+    PipelineMappingQC.loadPicardDuplicateStats(infiles, outfile)
+
+###############################################################################
+###############################################################################
+###############################################################################
 # Coverage of targetted area
 
 
-@transform(mapReads, regex(r"bam/(\S+).bam"), r"bam/\1.cov")
+@transform(RemoveDuplicatesSample, 
+           regex(r"gatk/(\S+).dedup.bam"), 
+           r"gatk/\1.cov")
 def buildCoverageStats(infile, outfile):
     '''Generate coverage statistics for regions of interest from a bed
     file using Picard'''
@@ -321,80 +458,25 @@ def loadCoverageStats(infiles, outfile):
 ###############################################################################
 ###############################################################################
 ###############################################################################
-# GATK
+# Realign sample-by-sample
 
-
-@follows(mkdir("gatk"))
-@transform(mapReads, regex(r"bam/(\S+).bam"), r"gatk/\1.readgroups.bam")
-def GATKReadGroups(infile, outfile):
-    '''Reorders BAM according to reference fasta and adds read groups using
-    GATK'''
-    '''Reorders BAM according to reference fasta and add read groups using
-    SAMtools, realigns around indels and recalibrates base quality
-    scores using GATK
-
-    '''
-
-    track = P.snip(os.path.basename(infile), ".bam")
-    tmpdir_gatk = P.getTempDir('.')
-    job_options = getGATKOptions()
-    job_threads = 3
-
-    library = PARAMS["readgroup_library"]
-    platform = PARAMS["readgroup_platform"]
-    platform_unit = PARAMS["readgroup_platform_unit"]
-    genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
-    PipelineExome.GATKreadGroups(infile, outfile, genome,
-                                 library, platform,
-                                 platform_unit)
-
-###############################################################################
-
-
-@transform(GATKReadGroups,
-           regex(r"gatk/(\S+).readgroups.bam"),
+@follows(buildCoverageStats)
+@transform(RemoveDuplicatesSample,
+           regex(r"gatk/(\S+).dedup.bam"),
+           add_inputs(r"gatk/\1.merged.bam.count"),
            r"gatk/\1.realigned.bam")
-def GATKIndelRealign(infile, outfile):
+def GATKIndelRealignSample(infiles, outfile):
     '''realigns around indels using GATK'''
+    infile, countfile = infiles
     threads = PARAMS["gatk_threads"]
     genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
-    PipelineExome.GATKIndelRealign(infile, outfile, genome, threads)
-
-###############################################################################
-
-
-@transform(GATKIndelRealign,
-           regex(r"gatk/(\S+).realigned.bam"),
-           r"gatk/\1.bqsr.bam")
-def GATKBaseRecal(infile, outfile):
-    '''recalibrates base quality scores using GATK'''
-    dbsnp = PARAMS["gatk_dbsnp"]
-    solid_options = PARAMS["gatk_solid_options"]
-    genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
-    PipelineExome.GATKBaseRecal(infile, outfile, genome,
-                                dbsnp, solid_options)
-
-###############################################################################
-###############################################################################
-###############################################################################
-# Remove duplicates
-
-
-@follows(PicardAlignStats)
-@transform(GATKBaseRecal, regex(r"gatk/(\S+).bqsr.bam"), r"gatk/\1.dedup.bam")
-def RemoveDuplicates(infile, outfile):
-    '''Merge Picard duplicate stats into single table and load into SQLite.'''
-    PipelineMappingQC.buildPicardDuplicateStats(infile, outfile)
+    countf = open(countfile, "r")
+    if countf.read() > '1':
+        PipelineExome.GATKIndelRealign(infiles[0], outfile, genome, threads)
+    else:
+        shutil.copyfile(infile, outfile)
+        shutil.copyfile(infile + ".bai", outfile + ".bai")
     IOTools.zapFile(infile)
-
-###############################################################################
-
-
-@jobs_limit(1, "db")
-@merge(RemoveDuplicates, "picard_duplicate_stats.load")
-def loadPicardDuplicateStats(infiles, outfile):
-    '''Merge Picard duplicate stats into single table and load into SQLite.'''
-    PipelineMappingQC.loadPicardDuplicateStats(infiles, outfile)
 
 ###############################################################################
 ###############################################################################
@@ -403,7 +485,8 @@ def loadPicardDuplicateStats(infiles, outfile):
 
 
 @follows(mkdir("xy_ratio"))
-@transform(RemoveDuplicates, regex(r"gatk/(\S+).dedup.bam"),
+@transform(GATKIndelRealignSample, 
+           regex(r"gatk/(\S+).realigned.bam"),
            r"xy_ratio/\1.sex")
 def calcXYratio(infile, outfile):
     '''Guess the sex of a sample based on ratio of reads
@@ -418,7 +501,7 @@ def mergeXYRatio(infiles, outfile):
     '''merge XY ratios from all samples and load into database'''
     inlist = " ".join(infiles)
     statement = '''python %(scriptsdir)s/combine_tables.py
-                   --add-file-prefix --regex-filename="sex/(\S+).sex"
+                   --add-file-prefix --regex-filename="xy_ratio/(\S+).sex"
                    --no-titles --missing-value=0 --ignore-empty
                    -L %(outfile)s.log -v 6
                    --cat=Track %(inlist)s
@@ -440,7 +523,8 @@ def loadXYRatio(infile, outfile):
 # Variant Calling
 
 
-@collate(RemoveDuplicates, regex(r"gatk/(\S+?)-(\S+).dedup.bam"),
+@collate(GATKIndelRealignSample, 
+         regex(r"gatk/(\S+?)-(\S+).realigned.bam"),
          r"gatk/\1.list")
 def listOfBAMs(infiles, outfile):
     '''generates a file containing a list of BAMs for each family,
@@ -489,11 +573,12 @@ def SelectExonicHapmapVariants(infile, outfile):
 
 
 @follows(SelectExonicHapmapVariants)
-@transform(RemoveDuplicates, regex(r"gatk/(\S+).dedup.bam"),
+@transform(GATKIndelRealignSample, 
+           regex(r"gatk/(\S+).realigned.bam"),
            add_inputs("hapmap/hapmap_exome.bed"),
            r"hapmap/\1.hapmap.vcf")
 def HapMapGenotype(infiles, outfile):
-    '''Genotpye HapMap SNPs using HaplotypeCaller in each individual'''
+    '''Genotype HapMap SNPs using HaplotypeCaller in each individual'''
     infile, intervals = infiles
     genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
     dbsnp = PARAMS["gatk_dbsnp"]
@@ -508,7 +593,7 @@ def HapMapGenotype(infiles, outfile):
 @transform(HapMapGenotype, regex(r"hapmap/(\S+).hapmap.vcf"),
            r"hapmap/\1.hapmap.vcf.gz")
 def indexVCFs(infile, outfile):
-    '''Genotpye HapMap SNPs using HaplotypeCaller in each individual'''
+    '''Genotype HapMap SNPs using HaplotypeCaller in each individual'''
     statement = '''bgzip -c %(infile)s > %(outfile)s;
                    tabix -p vcf %(outfile)s; '''
     P.run()
@@ -519,7 +604,7 @@ def indexVCFs(infile, outfile):
 # Compare Hapmap genotypes to assess relatedness
 
 
-@follows(mkdir("hapmap/vcfcompare"))
+@follows(indexVCFs, mkdir("hapmap/vcfcompare"))
 @permutations("hapmap/*.hapmap.vcf.gz",
               formatter("hapmap/(\S+).hapmap.vcf.gz$"),
               2,
@@ -589,11 +674,32 @@ def annotateVariantsSNPeff(infile, outfile):
     job_threads = 4
     snpeff_genome = PARAMS["annotation_snpeff_genome"]
     config = PARAMS["annotation_snpeff_config"]
-    statement = '''snpEff.sh eff
+    statement = '''/ifs/apps/bio/snpEff-3.3-dev/snpEff.sh eff
                     -c %(config)s
                     -v %(snpeff_genome)s
                     -o gatk %(infile)s > %(outfile)s''' % locals()
     P.run()
+
+###############################################################################
+
+
+@transform(annotateVariantsSNPeff,
+           regex(r"variants/(\S+).haplotypeCaller.snpeff.vcf"),
+           r"variants/\1.haplotypeCaller.snpeff.table")
+def vcfToTableSnpEff(infile, outfile):
+    '''Converts vcf to tab-delimited file'''
+    genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
+    columns = PARAMS["annotation_snpeff_to_table"]
+    PipelineExome.vcfToTable(infile, outfile, genome, columns)
+
+
+@jobs_limit(1, "db")
+@transform(vcfToTableSnpEff, regex(r"variants/(\S+).table"),
+           r"variants/\1.table.load")
+def loadTableSnpEff(infile, outfile):
+    '''Load VCF annotations into database'''
+    P.load(infile, outfile, options="--retry --ignore-empty")
+
 
 ###############################################################################
 # GATK Variant Annotator
@@ -616,45 +722,84 @@ def variantAnnotator(infiles, outfile):
 
 
 ###############################################################################
-# Variant Recalibration
+# SNP Recalibration
 
 
 @transform(variantAnnotator,
            regex(r"variants/(\S+).haplotypeCaller.annotated.vcf"),
-           r"variants/\1.haplotypeCaller.vqsr.recal")
-def variantRecalibrator(infile, outfile):
+           r"variants/\1.haplotypeCaller.snp_vqsr.recal")
+def variantRecalibratorSnps(infile, outfile):
     '''Create variant recalibration file'''
     genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
     dbsnp = PARAMS["gatk_dbsnp"]
     job_options = getGATKOptions()
     job_threads = 3
     track = P.snip(outfile, ".recal")
+    kgenomes = PARAMS["gatk_kgenomes"]
     hapmap = PARAMS["gatk_hapmap"]
     omni = PARAMS["gatk_omni"]
-    PipelineExome.variantRecalibrator(infile, outfile, genome,
-                                      dbsnp, hapmap, omni)
+    mode = 'SNP'
+    PipelineExome.variantRecalibrator(infile, outfile, genome, mode, dbsnp,
+                                      kgenomes, hapmap, omni)
 
 ###############################################################################
 
 
-@follows(variantRecalibrator)
+@follows(variantRecalibratorSnps)
 @transform(variantAnnotator,
            regex(r"variants/(\S+).haplotypeCaller.annotated.vcf"),
-           add_inputs(r"variants/\1.haplotypeCaller.vqsr.recal",
-                      r"variants/\1.haplotypeCaller.vqsr.tranches"),
-           r"variants/\1.haplotypeCaller.vqsr.vcf")
-def applyVariantRecalibration(infiles, outfile):
+           add_inputs(r"variants/\1.haplotypeCaller.snp_vqsr.recal",
+                      r"variants/\1.haplotypeCaller.snp_vqsr.tranches"),
+           r"variants/\1.haplotypeCaller.snp_vqsr.vcf")
+def applyVariantRecalibrationSnps(infiles, outfile):
     '''Perform variant quality score recalibration using GATK '''
     vcf, recal, tranches = infiles
     genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
+    mode = 'SNP'
     PipelineExome.applyVariantRecalibration(vcf, recal, tranches,
-                                            outfile, genome)
+                                            outfile, genome, mode)
+
+###############################################################################
+# Indel recalibration
+
+@transform(applyVariantRecalibrationSnps,
+           regex(r"variants/(\S+).haplotypeCaller.snp_vqsr.vcf"),
+           r"variants/\1.haplotypeCaller.vqsr.recal")
+def variantRecalibratorIndels(infile, outfile):
+    '''Create variant recalibration file'''
+    genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
+    job_options = getGATKOptions()
+    job_threads = 3
+    track = P.snip(outfile, ".recal")
+    mills = PARAMS["gatk_mills"]
+    dbsnp = PARAMS["gatk_dbsnp"]
+    mode = 'INDEL'
+    PipelineExome.variantRecalibrator(infile, outfile, genome, mode,
+                                      mills=mills)
+
+###############################################################################
+
+
+@follows(variantRecalibratorIndels)
+@transform(applyVariantRecalibrationSnps,
+           regex(r"variants/(\S+).haplotypeCaller.snp_vqsr.vcf"),
+           add_inputs(r"variants/\1.haplotypeCaller.vqsr.recal",
+                      r"variants/\1.haplotypeCaller.vqsr.tranches"),
+           r"variants/\1.haplotypeCaller.vqsr.vcf")
+def applyVariantRecalibrationIndels(infiles, outfile):
+    '''Perform variant quality score recalibration using GATK '''
+    vcf, recal, tranches = infiles
+    genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
+    mode = 'INDEL'
+    PipelineExome.applyVariantRecalibration(vcf, recal, tranches,
+                                            outfile, genome, mode)
+
 
 ###############################################################################
 # SnpSift
 
 
-@transform(applyVariantRecalibration,
+@transform(applyVariantRecalibrationIndels,
            regex(r"variants/(\S+).haplotypeCaller.vqsr.vcf"),
            r"variants/\1.haplotypeCaller.snpsift.vcf")
 def annotateVariantsSNPsift(infile, outfile):
@@ -667,7 +812,7 @@ def annotateVariantsSNPsift(infile, outfile):
     # The following statement is not fully implemented yet
     # statement = '''SnpSift.sh geneSets -v /ifs/projects/proj016/data/1000Genomes/msigdb.v4.0.symbols.gmt %(infile)s > variants/%(track)s_temp1.vcf; checkpoint;''' % locals()
 
-    statement = '''SnpSift.sh dbnsfp -v %(dbNSFP)s %(infile)s
+    statement = '''SnpSift.sh dbnsfp -v -db %(dbNSFP)s %(infile)s
                     > variants/%(track)s_temp1.vcf; checkpoint;
                     SnpSift.sh annotate %(thousand_genomes)s
                     variants/%(track)s_temp1.vcf > %(outfile)s;
@@ -703,10 +848,10 @@ def findGenes(infile, outfile):
 # Tabulation
 
 
-CALIBRATION = {0: annotateVariantsSNPsift, 1: findGenes}
+TABULATION_INPUT = {0: annotateVariantsSNPsift, 1: findGenes}
 
 
-@transform(CALIBRATION[PARAMS["annotation_add_genes_of_interest"]],
+@transform(TABULATION_INPUT[PARAMS["annotation_add_genes_of_interest"]],
            regex(r"variants/((\S+).haplotypeCaller.snpsift|(\S+).genes).vcf"),
            r"variants/\1.table")
 def vcfToTable(infile, outfile):
@@ -728,7 +873,7 @@ def loadVariantAnnotation(infile, outfile):
 ###############################################################################
 # Confirm parentage (do novo trios only)
 
-
+@follows(loadVariantAnnotation)
 @transform(annotateVariantsSNPsift,
            regex(r"variants/(\S*Trio\S+).haplotypeCaller.snpsift.vcf"),
            add_inputs(r"\1.ped"),
@@ -825,6 +970,7 @@ def confirmParentage(infiles, outfile):
            add_inputs(r"\1.ped"), r"variants/\1.filtered.vcf")
 def deNovoVariants(infiles, outfile):
     '''Filter de novo variants based on provided jexl expression'''
+    job_options = getGATKOptions()
     genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
     infile, pedfile = infiles
     pedigree = csv.DictReader(
@@ -935,7 +1081,7 @@ def dominantVariants(infiles, outfile):
     # for some weird reason the 1000G filter doesn't work on these particular
     # files - will add later when I've figured out what's wrong
     # currently 1000G filter is performed at the report stage (not in csvdb)
-    select = '''vc.getGenotype("%(affecteds_exp)s").getPL().1==0%(unaffecteds_exp)s&&(SNPEFF_IMPACT=="HIGH"||SNPEFF_IMPACT=="MODERATE")&&(dbNSFP_1000Gp1_AF<0.05)''' % locals()
+    select = '''vc.getGenotype("%(affecteds_exp)s").getPL().1==0%(unaffecteds_exp)s&&(SNPEFF_IMPACT=="HIGH"||SNPEFF_IMPACT=="MODERATE")''' % locals()
     PipelineExome.selectVariants(infile, outfile, genome, select)
 
 ###############################################################################
@@ -984,11 +1130,19 @@ def recessiveVariants(infiles, outfile):
     for row in pedigree:
         if row['status'] == '2':
             affecteds += [row['sample']]
-            parents += [row['father'], row['mother']]
+            if row['father'] != '0':
+                parents += [row['father']]
+            if row['mother'] != '0':
+                parents += [row['mother']]
         elif row['status'] == '1' and row['sample'] not in parents:
             unaffecteds += [row['sample']]
     affecteds_exp = '").getPL().2==0&&vc.getGenotype("'.join(affecteds)
-    unaffecteds_exp = '").getPL().2!=0&&vc.getGenotype("'.join(unaffecteds)
+    if len(unaffecteds) == 0:
+        unaffecteds_exp = ''
+    else:
+        unaffecteds_exp = '&&vc.getGenotype("' + \
+            ('").getPL().2!=0&&vc.getGenotype("'.join(unaffecteds)) + \
+            '").getPL().2!=0'
     if len(parents) == 0:
         parents_exp = ''
     else:
@@ -997,7 +1151,7 @@ def recessiveVariants(infiles, outfile):
             '").getPL().1==0'
     # need a way of specifying that other unaffecteds eg. sibs can't be
     # homozygous for alt allele
-    select = '''vc.getGenotype("%(affecteds_exp)s").getPL().2==0&&vc.getGenotype("%(unaffecteds_exp)s").getPL().2!=0%(parents_exp)s&&(SNPEFF_IMPACT=="HIGH"||SNPEFF_IMPACT=="MODERATE")''' % locals(
+    select = '''vc.getGenotype("%(affecteds_exp)s").getPL().2==0%(unaffecteds_exp)s%(parents_exp)s&&(SNPEFF_IMPACT=="HIGH"||SNPEFF_IMPACT=="MODERATE")''' % locals(
     )
     PipelineExome.selectVariants(infile, outfile, genome, select)
 
@@ -1037,29 +1191,41 @@ def loadRecs(infile, outfile):
            regex(
                r"variants/(\S*Multiplex\S+|\S*Trio\S+).haplotypeCaller.snpeff.vcf"),
            add_inputs(r"\1.ped", r"gatk/\1.list"),
-           r"variants/\1.phased_rbp.vcf")
+           r"variants/\1.phased.vcf")
 def phasing(infiles, outfile):
     '''phase variants with GATK'''
     infile, pedfile, bamlist = infiles
+    genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa" 
     statement = '''GenomeAnalysisTK -T PhaseByTransmission
-                   -R %%(bwa_index_dir)s/%%(genome)s.fa
+                   -R %(genome)s
                    -V %(infile)s
                    -ped %(pedfile)s
                    -mvf %(infile)s.mvf
-                   -o %(infile)s.phased.vcf ;
-                   GenomeAnalysisTK -T ReadBackedPhasing
-                   -R %%(bwa_index_dir)s/%%(genome)s.fa
-                   -I %(bamlist)s
-                   -V %(infile)s.phased.vcf
-                   -o %(outfile)s
-                   --respectPhaseInInput; '''
+                   -o %(outfile)s ;''' % locals()
     P.run()
 
 ###############################################################################
 
 
-@transform(phasing,
-           regex(r"variants/(\S*Multiplex\S+|\S*Trio\S+).phased_rbp.vcf"),
+@transform(phasing, regex(r"variants/(\S+).phased.vcf"),
+                          add_inputs(r"gatk/\1.list"), r"variants/\1.rbp.vcf")
+def readbackedphasing(infiles, outfile):
+    '''phase variants with ReadBackedPhasing'''
+    job_options = getGATKOptions()
+    infile, bamlist = infiles
+    genome = PARAMS["bwa_index_dir"] + "/" + PARAMS["genome"] + ".fa"
+    statement = '''GenomeAnalysisTK -T ReadBackedPhasing
+                   -R %(genome)s
+                   -I %(bamlist)s
+                   -V %(infile)s
+                   -o %(outfile)s; ''' % locals()
+    P.run()
+
+###############################################################################
+
+
+@transform(readbackedphasing,
+           regex(r"variants/(\S*Multiplex\S+|\S*Trio\S+).rbp.vcf"),
            add_inputs(r"\1.ped"),
            r"variants/\1.compound_hets.table")
 def compoundHets(infiles, outfile):
@@ -1070,8 +1236,7 @@ def compoundHets(infiles, outfile):
                    -p %(pedfile)s -t snpEff %(infile)s.db ;
                    gemini comp_hets
                    --only-affected
-                   --method=filter
-                   --filter-method
+                   --filter
                    "(impact_severity = 'HIGH' OR impact_severity = 'MED')
                    AND (in_esp = 0 OR aaf_esp_all < 0.01)
                    AND (in_1kg = 0 OR aaf_1kg_all < 0.01)"
@@ -1135,18 +1300,22 @@ def loadMetadata():
 
 
 @follows(mapReads,
-         loadPicardAlignStats,
-         buildCoverageStats,
-         loadCoverageStats)
+         loadPicardAlignStats)
 def mapping():
     pass
 
 
 @follows(GATKBaseRecal,
-         loadPicardDuplicateStats,
-         listOfBAMs,
-         loadXYRatio)
+         loadPicardDuplicateStatsLane,
+         loadCoverageStats)
 def gatk():
+    pass
+
+
+@follows(loadXYRatio,
+         indexVCFs,
+         loadNDR)
+def sampleFeatures():
     pass
 
 
@@ -1155,56 +1324,33 @@ def callVariants():
     pass
 
 
-@follows(annotateVariantsSNPeff,
-         variantAnnotator,
-         variantRecalibrator,
-         applyVariantRecalibration,
-         annotateVariantsSNPsift)
+@follows(loadTableSnpEff,
+         loadVariantAnnotation)
 def annotation():
     pass
 
 
-@follows(findGenes)
-def genesOfInterest():
-    pass
-
-
-@follows(vcfToTable,
-         loadVariantAnnotation)
-def tabulation():
-    pass
-
-
-@follows(deNovoVariants,
-         tabulateDeNovos,
-         loadDeNovos)
+@follows(loadDeNovos)
 def denovo():
     pass
 
 
-@follows(lowerStringencyDeNovos,
-         tabulateLowerStringencyDeNovos,
-         loadLowerStringencyDeNovos)
+@follows(loadLowerStringencyDeNovos)
 def denovo2():
     pass
 
 
-@follows(dominantVariants,
-         tabulateDoms,
-         loadDoms)
+@follows(loadDoms)
 def dominant():
     pass
 
 
-@follows(recessiveVariants,
-         tabulateRecs,
-         loadRecs)
+@follows(loadRecs)
 def recessive():
     pass
 
 
-@follows(compoundHets,
-         loadCompoundHets)
+@follows(loadCompoundHets)
 def compoundHet():
     pass
 
@@ -1226,10 +1372,10 @@ def vcfstats():
 
 @follows(mapping,
          gatk,
+         # sampleFeatures,
          callVariants,
          annotation,
-         genesOfInterest,
-         tabulation,
+         confirmParentage,
          filtering)
 def full():
     pass
