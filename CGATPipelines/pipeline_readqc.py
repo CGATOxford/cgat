@@ -104,13 +104,10 @@ To run the example, simply unpack and untar::
 
 Requirements
 ==============
-+--------------------+---------------+---------------------------------+
-|*Program*           |*Version*      |*Purpose*                        |
-+--------------------+---------------+---------------------------------+
-|fastqc              |?              |read qc                          |
-+--------------------+---------------+---------------------------------+
-|sickle              |1.33           |Read trimming by quality score   |
-+--------------------+---------------+---------------------------------+
+
+* fastqc
+* sickle >= 1.33
+* cutadapt >= 1.7.1
 
 Code
 ====
@@ -130,124 +127,144 @@ from ruffus import *
 import sys
 import os
 import glob
+import sqlite3
 
 # import modules from the CGAT code collection
 import CGAT.Experiment as E
 import CGATPipelines.PipelineMapping as PipelineMapping
-import CGATPipelines.PipelineTracks as PipelineTracks
 import CGAT.Pipeline as P
 import CGATPipelines.PipelineReadqc as PipelineReadqc
 import CGATPipelines.PipelinePreprocess as PipelinePreprocess
 
-#########################################################################
-#########################################################################
-#########################################################################
 # load options from the config file
-
 P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
      "pipeline.ini"])
 PARAMS = P.PARAMS
 
-#########################################################################
-#########################################################################
-#########################################################################
 # define input files and preprocessing steps
-
-
 INPUT_FORMATS = ("*.fastq.1.gz", "*.fastq.gz", "*.sra", "*.csfasta.gz")
 REGEX_FORMATS = regex(r"(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
 SEQUENCEFILES_REGEX = regex(
     r"(\S+).(?P<suffix>fastq.1.gz|fastq.gz|sra|csfasta.gz)")
 
-#########################################################################
-# Get TRACKS grouped on either Sample3 or Sample4 track ids
 
-Sample = PipelineTracks.AutoSample
-TRACKS = PipelineTracks.Tracks(Sample).loadFromDirectory(
-    files=glob.glob("./*fastq.1.gz")
-    + glob.glob("./*fastq.gz")
-    + glob.glob("./*sra")
-    + glob.glob("./*csfasta.gz"),
-    pattern="(\S+).(fastq.1.gz|fastq.gz|sra|csfasta.gz)")
-if TRACKS:
-    if len(TRACKS.getTracks()[0].asList()) == 4:
-        EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",
-                                                               "attribute1",
-                                                               "attribute2"))
-        TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute1",))
-        CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("attribute2",))
+def connect():
+    '''
+    Setup a connection to an sqlite database
+    '''
 
-    elif len(TRACKS.getTracks()[0].asList()) == 3:
-        EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",
-                                                               "attribute1"))
-        TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("attribute0",))
-        CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("attribute1",))
-    else:
-        raise ValueError("Unrecognised PipelineTracks.AutoSample instance")
-else:
-    TISSUES = []
-    CONDITIONS = []
-    EXPERIMENTS = []
-
-#########################################################################
-#########################################################################
-#########################################################################
-# Run Fastqc on each input file
+    dbh = sqlite3.connect(PARAMS['database'])
+    return dbh
 
 
-@follows(mkdir(PARAMS["exportdir"]), mkdir(os.path.join(PARAMS["exportdir"],
-                                                        "fastqc")))
+@follows(mkdir(PARAMS["exportdir"]),
+         mkdir(os.path.join(PARAMS["exportdir"], "fastqc")))
 @transform(INPUT_FORMATS,
            REGEX_FORMATS,
            r"\1.fastqc")
 def runFastqc(infiles, outfile):
-    '''convert sra files to fastq and check mapping qualities are in solexa format.
-    Perform quality control checks on reads from .fastq files.'''
+    '''run Fastqc on each input file.
+
+    convert sra files to fastq and check mapping qualities are in
+    solexa format.  Perform quality control checks on reads from
+    .fastq files.
+    '''
     m = PipelineMapping.FastQc(nogroup=PARAMS["readqc_no_group"],
                                outdir=PARAMS["exportdir"] + "/fastqc")
     statement = m.build((infiles,), outfile)
     P.run()
 
-#########################################################################
-# parse results files and load into database
-
 
 @jobs_limit(1, "db")
 @transform(runFastqc, suffix(".fastqc"), "_fastqc.load")
 def loadFastqc(infile, outfile):
-    '''load FASTQC stats.'''
+    '''load FASTQC stats into database.'''
     track = P.snip(infile, ".fastqc")
     filename = os.path.join(
         PARAMS["exportdir"], "fastqc", track + "*_fastqc", "fastqc_data.txt")
     PipelineReadqc.loadFastqc(filename)
     P.touch(outfile)
 
-#########################################################################
 # if preprocess tools are specified, process reads and run fastqc on output
-
-
 if PARAMS["preprocessors"]:
     PREPROCESSTOOLS = [tool for tool
                        in P.asList(PARAMS["preprocessors"])]
     preprocess_prefix = ("-".join(PREPROCESSTOOLS[::-1]) + "-")
 
+    if PARAMS["auto_remove"]:
+        @follows(loadFastqc,
+                 mkdir("fasta.dir"))
+        @transform(INPUT_FORMATS,
+                   SEQUENCEFILES_REGEX,
+                   r"fasta.dir/\1.fasta")
+        def makeAdaptorFasta(infile, outfile):
+            '''
+            Make a single fasta file for each sample of all contaminant adaptor
+            sequences for removal
+            '''
+            contams = PARAMS['contaminants']
+            PipelinePreprocess.makeAdaptorFasta(infile=infile,
+                                                dbh=connect(),
+                                                contaminants_file=contams,
+                                                outfile=outfile)
+
+        @follows(makeAdaptorFasta)
+        @collate(makeAdaptorFasta,
+                 regex("fasta.dir/(.+).fasta"),
+                 r"%s" % PARAMS['adapter_file'])
+        def aggregateAdaptors(infiles, outfile):
+            '''
+            Collate fasta files into a single contaminants file for
+            adapter removal.
+            '''
+
+            PipelinePreprocess.mergeAdaptorFasta(infiles, outfile)
+
+    else:
+        @follows(loadFastqc,
+                 mkdir("fasta.dir"))
+        @transform(INPUT_FORMATS,
+                   SEQUENCEFILES_REGEX,
+                   r"fasta.dir/\1.fasta")
+        def aggregateAdaptors(infile, outfile):
+
+            P.touch(outfile)
+
     @follows(mkdir("processed.dir"),
              mkdir("log.dir"),
-             mkdir("summary.dir"))
+             mkdir("summary.dir"),
+             aggregateAdaptors)
     @transform(INPUT_FORMATS,
                SEQUENCEFILES_REGEX,
                r"processed.dir/%s\1.\g<suffix>" % preprocess_prefix)
     def processReads(infile, outfile):
-        '''process reads from .fastq files
-        .sra/csfasta not currently implemented
+        '''process reads from .fastq format files
         Tasks specified in PREPROCESSTOOLS are run in order
         '''
+        if ((infile.endswith(".csfasta.gz") or
+             infile.endswith(".csfasta.F3.gz") or
+             infile.endswith(".sra") or
+             infile.endswith(".export.txt.gz") or
+             infile.endswith(".fa.gz"))):
+            raise NotImplementedError('''preprocessing of ".sra", "csfasta" (solid)
+            ".export.txt.gz" or ".fa.gz" files is not currently implemented.
+            Infile: %(infile)s''' % locals())
+        else:
+            pass
+
         trimmomatic_options = PARAMS["trimmomatic_options"]
-        if PARAMS["trimmomatic_adapter"]:
+        # NB: adapter_file overrides trimmomatic_adapter
+
+        if PARAMS["adapter_file"] or PARAMS["trimmomatic_adapter"]:
+            if PARAMS["adapter_file"]:
+                adapter_file = PARAMS["adapter_file"]
+            else:
+                adapter_file = PARAMS["trimmomatic_adapter"]
+
             adapter_options = " ILLUMINACLIP:%s:%s:%s:%s " % (
-                PARAMS["trimmomatic_adapter"],
+                adapter_file,
                 PARAMS["trimmomatic_mismatches"],
                 PARAMS["trimmomatic_p_thresh"], PARAMS["trimmomatic_c_thresh"])
             trimmomatic_options = adapter_options + trimmomatic_options
@@ -256,15 +273,19 @@ if PARAMS["preprocessors"]:
         job_options = "-l mem_free=%s" % PARAMS["general_memory"]
 
         m = PipelinePreprocess.MasterProcessor(
-            save=PARAMS["save"], summarise=PARAMS["summarise"],
-            threads=PARAMS["threads"], scriptsdir=PARAMS["scriptsdir"],
+            save=PARAMS["save"],
+            summarise=PARAMS["summarise"],
+            threads=PARAMS["threads"],
             trimgalore_options=PARAMS["trimgalore_options"],
             trimmomatic_options=trimmomatic_options,
             sickle_options=PARAMS["sickle_options"],
             flash_options=PARAMS["flash_options"],
-            fastx_trimmer_options=PARAMS["fastx_trimmer_options"])
+            fastx_trimmer_options=PARAMS["fastx_trimmer_options"],
+            cutadapt_options=PARAMS["cutadapt_options"],
+            adapter_file=PARAMS['adapter_file'])
 
         statement = m.build((infile,), outfile, PREPROCESSTOOLS)
+
         P.run()
 
     @follows(runFastqc)
@@ -302,7 +323,7 @@ else:
 
 #########################################################################
 
-@follows(runFastqcFinal, runFastqc)
+@follows(loadFastqcFinal, loadFastqc)
 # @merge(runFastqc, "status_summary.tsv.gz")
 @merge((runFastqcFinal, runFastqc), "status_summary.tsv.gz")
 def buildFastQCSummaryStatus(infiles, outfile):
@@ -310,10 +331,8 @@ def buildFastQCSummaryStatus(infiles, outfile):
     exportdir = os.path.join(PARAMS["exportdir"], "fastqc")
     PipelineReadqc.buildFastQCSummaryStatus(infiles, outfile, exportdir)
 
-#########################################################################
 
-
-@follows(runFastqcFinal, runFastqc)
+@follows(loadFastqcFinal, loadFastqc)
 @merge((runFastqcFinal, runFastqc), "basic_statistics_summary.tsv.gz")
 def buildFastQCSummaryBasicStatistics(infiles, outfile):
     '''load fastqc summaries into a single table.'''
@@ -321,19 +340,16 @@ def buildFastQCSummaryBasicStatistics(infiles, outfile):
     PipelineReadqc.buildFastQCSummaryBasicStatistics(infiles, outfile,
                                                      exportdir)
 
-#########################################################################
-
-
-regex_exp = "|".join([x.__str__()[:-len("-agg")] for x in EXPERIMENTS])
-
 
 @follows(mkdir("experiment.dir"))
 @collate(runFastqc,
-         regex("(" + regex_exp + ").+"),
+         regex("(.*)-([^-]*).fastqc"),
          r"experiment.dir/\1_per_sequence_quality.tsv")
 def buildExperimentLevelReadQuality(infiles, outfile):
     """
-    Collate per sequence read qualities for all samples in EXPERIMENT
+    Collate per sequence read qualities for all replicates per experiment.
+    Replicates are the last part of a filename, eg. Experiment-R1,
+    Experiment-R2, etc.
     """
     exportdir = os.path.join(PARAMS["exportdir"], "fastqc")
     PipelineReadqc.buildExperimentReadQuality(infiles, outfile, exportdir)
@@ -347,11 +363,11 @@ def combineExperimentLevelReadQualities(infiles, outfile):
     Combine summaries of read quality for different experiments
     """
     infiles = " ".join(infiles)
-    statement = ("python %(scriptsdir)s/combine_tables.py"
-                 "  --log=%(outfile)s.log"
-                 "  --regex-filename='.+/(.+)_per_sequence_quality.tsv'"
-                 " %(infiles)s"
-                 " > %(outfile)s")
+    statement = ("python %(scriptsdir)s/combine_tables.py "
+                 "  --log=%(outfile)s.log "
+                 "  --regex-filename='.+/(.+)_per_sequence_quality.tsv' "
+                 "%(infiles)s"
+                 "> %(outfile)s")
     P.run()
 
 
@@ -368,12 +384,15 @@ def loadFastqcSummary(infile, outfile):
     P.load(infile, outfile, options="--add-index=track")
 
 
-@follows(loadFastqc, loadFastqcSummary, loadFastqcFinal)
+@follows(loadFastqc,
+         loadFastqcSummary,
+         loadFastqcFinal,
+         loadExperimentLevelReadQualities)
 def full():
     pass
 
 
-@follows(buildFastQCSummaryBasicStatistics)
+@follows(processReads)
 def test():
     pass
 

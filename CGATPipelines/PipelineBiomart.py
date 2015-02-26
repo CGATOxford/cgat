@@ -78,7 +78,7 @@ def biomart_iterator(columns,
                      archive=archive)
 
     if filters is not None:
-        filter_names = R.StrVector(filters)
+        filter_names = rpy2.robjects.vectors.StrVector(filters)
     else:
         filter_names = ""
 

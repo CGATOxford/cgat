@@ -10,3 +10,12 @@ paired:
         outputs: [stdout]
         references: [paired.tsv]
         options: <DIR>/paired.bam <DIR>/context.paired.bed.gz
+
+paired_unsorted:
+        stdin: null
+        outputs: [stdout]
+        references: [paired.tsv]
+        options: --sort-bed <DIR>/paired.bam <DIR>/context.paired_unsorted.bed.gz
+
+
+

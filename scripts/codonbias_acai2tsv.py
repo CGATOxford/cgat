@@ -11,7 +11,7 @@ Purpose
 -------
 
 .. todo::
-   
+
    describe purpose of the script.
 
 Usage
@@ -31,24 +31,17 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
 import string
 import re
-import tempfile
-import subprocess
-import optparse
 import random
+import CGAT.Experiment as E
+import CGAT.Genomics as Genomics
+import CGAT.WrapperAdaptiveCAI as WrapperAdaptiveCAI
+import CGAT.IOTools as IOTools
 
 """Wrapper for adaptive codon bias program
 """
-
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-
-import CGAT.WrapperAdaptiveCAI as WrapperAdaptiveCAI
-import CGAT.IOTools as IOTools
-import CGAT.CSV as CSV
 
 # order of codon matrix as expected by caijava.
 OUTPUT_ORDER_CODON_MATRIX = (
@@ -144,35 +137,44 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: codonbias_acai2tsv.py 865 2007-01-15 13:44:43Z andreas $")
+        version="%prog version: $Id: codonbias_acai2tsv.py "
+        "865 2007-01-15 13:44:43Z andreas $")
 
-    parser.add_option("-o", "--trace-tsv-file", dest="input_filename_trace", type="string",
+    parser.add_option("-o", "--trace-tsv-file", dest="input_filename_trace",
+                      type="string",
                       help="input filename for cai.",
                       metavar="FILE")
 
-    parser.add_option("-e", "--genes-tsv-file", dest="input_filename_genes", type="string",
+    parser.add_option("-e", "--genes-tsv-file", dest="input_filename_genes",
+                      type="string",
                       help="input filename for genes information from cai.",
                       metavar="FILE")
 
-    parser.add_option("-c", "--codons-tsv-file", dest="input_filename_codons", type="string",
+    parser.add_option("-c", "--codons-tsv-file", dest="input_filename_codons",
+                      type="string",
                       help="input filename for codon usage information.",
                       metavar="FILE")
 
-    parser.add_option("--fasta-file", dest="input_filename_sequences", type="string",
+    parser.add_option("--fasta-file", dest="input_filename_sequences",
+                      type="string",
                       help="input filename with sequences.",
                       metavar="FILE")
 
-    parser.add_option("-t", "--subset-tsv-file", dest="input_filename_subset", type="string",
+    parser.add_option("-t", "--subset-tsv-file", dest="input_filename_subset",
+                      type="string",
                       help="input filename with subset.",
                       metavar="FILE")
 
-    parser.add_option("--codon-table-format", dest="codon_table_format", type="choice",
+    parser.add_option("--codon-table-format", dest="codon_table_format",
+                      type="choice",
                       choices=("list", "matrix"),
                       help="output options for output codon tables.")
 
-    parser.add_option("--codon-table-type", dest="codon_table_type", type="choice",
+    parser.add_option("--codon-table-type", dest="codon_table_type",
+                      type="choice",
                       choices=(
-                          "counts", "frequencies", "weights", "absolute-frequencies"),
+                          "counts", "frequencies", "weights",
+                          "absolute-frequencies"),
                       help="type of codon table.")
 
     parser.add_option("-r", "--reference", dest="reference", type="string",
@@ -185,25 +187,34 @@ def main(argv=None):
                       help="filename with mapping information for gene names.",
                       metavar="FILE")
 
-    parser.add_option("-i", "--invert-map", dest="invert_map", action="store_true",
+    parser.add_option("-i", "--invert-map", dest="invert_map",
+                      action="store_true",
                       help="invert map.")
 
-    parser.add_option("-d", "--dominant-set", dest="dominant_set", type="float",
-                      help="only print out dominant set (# fraction of most biased genes).")
+    parser.add_option("-d", "--dominant-set", dest="dominant_set",
+                      type="float",
+                      help="only print out"
+                           " dominant set (# fraction of most biased genes).")
 
     parser.add_option("--reverse-set", dest="reverse_set", action="store_true",
-                      help="print the reverse set, i.e., then non-dominant set.")
+                      help="print the reverse set, ie, then non-dominant set.")
 
     parser.add_option("-u", "--codon-usage", dest="codon_usage", type="string",
-                      help="print codon usage for the full/biased set of genes [full|biased].")
+                      help="print codon usage for the full/biased "
+                           "set of genes [full|biased].")
 
-    parser.add_option("-w", "--weights-tsv-file", dest="weights", type="string",
-                      help="print weights [final-list|final-matrix|random|compute|weights|frequencies|absolute-frequencies].")
+    parser.add_option("-w", "--weights-tsv-file", dest="weights",
+                      type="string",
+                      help="print weights [final-list|final-matrix|random|"
+                           "compute|weights|frequencies|"
+                           "absolute-frequencies].")
 
-    parser.add_option("--weights-matrix2table", dest="weights_matrix2table", action="store_true",
+    parser.add_option("--weights-matrix2table", dest="weights_matrix2table",
+                      action="store_true",
                       help="convert a weights matrix to a weights table.")
 
-    parser.add_option("--get-preferred-codons", dest="get_preferred_codons", type="string",
+    parser.add_option("--get-preferred-codons", dest="get_preferred_codons",
+                      type="string",
                       help="compute overview of preferred codons.")
 
     parser.set_defaults(
@@ -263,8 +274,9 @@ def main(argv=None):
     map_genes = {}
 
     if options.input_filename_map:
-        data = map(lambda x: x[:-1].split("\t")[:2], filter(lambda x: x[0]
-                                                            != "#", open(options.input_filename_map, "r").readlines()))
+        data = map(lambda x: x[:-1].split("\t")[:2],
+                   filter(lambda x: x[0] != "#",
+                          open(options.input_filename_map, "r").readlines()))
 
         for a, b in data:
             if options.invert_map:
@@ -310,14 +322,15 @@ def main(argv=None):
     if options.reference:
         if options.reference not in CODON_PREFERENCES:
             raise "unknown species %s: possibles species are: %s" % (
-                options.reference, str(CODON_PREFERNCES.keys()))
+                options.reference, str(CODON_PREFERENCES.keys()))
 
         weights = Genomics.CalculateCAIWeightsFromCounts(
             CODON_PREFERENCES[options.reference], options.pseudocounts)
 
         for x in range(len(OUTPUT_ORDER_CODON_MATRIX)):
             outfile.write(",".join(map(lambda z: "%5.3f" % z, [
-                          weights[codon.upper()] for codon in OUTPUT_ORDER_CODON_MATRIX[x]])))
+                          weights[codon.upper()]
+                          for codon in OUTPUT_ORDER_CODON_MATRIX[x]])))
             outfile.write("\n")
 
     if options.dominant_set and gene_file:
@@ -363,7 +376,9 @@ def main(argv=None):
 
         format = options.codon_table_format
 
-        if options.weights in ("compute-counts", "compute-weights", "compute-frequencies"):
+        if options.weights in ("compute-counts",
+                               "compute-weights",
+                               "compute-frequencies"):
             # compute codon usage weights from a set of sequences
             codons = CODON_PREFERENCES["dmelanogaster"].keys()
             counts = {}
@@ -377,7 +392,8 @@ def main(argv=None):
                     sequence = re.sub(" ", "", sequence)
                     if len(sequence) % 3 != 0:
                         raise "warning: sequence %s is not multiple of 3" % key
-                    for codon in [sequence[x:x + 3] for x in range(0, len(sequence), 3)]:
+                    for codon in [sequence[x:x + 3]
+                                  for x in range(0, len(sequence), 3)]:
                         counts[codon.upper()] += 1
 
             if options.weights == "compute-frequencies":
@@ -428,10 +444,13 @@ def main(argv=None):
                 weights = codons
                 format = "list"
 
-        elif options.weights in ("counts", "frequencies", "absolute-frequencies"):
+        elif options.weights in ("counts",
+                                 "frequencies",
+                                 "absolute-frequencies"):
             # get weights as frequencies
-            # compute from scratch. In the caijava file, the absolute frequencey f / gene_length is
-            # given. Thus the total number of codons is f * gene_length.
+            # compute from scratch. In the caijava file,
+            # the absolute frequencey f / gene_length is given.
+            # Thus the total number of codons is f * gene_length.
             codons = CODON_PREFERENCES["dmelanogaster"].keys()
             counts = {}
             for c in codons:
@@ -475,7 +494,8 @@ def main(argv=None):
             for genename, data in result.mGeneInfo.items():
 
                 found = genename in subset
-                if (not found and not options.reverse_set) or (found and options.reverse_set):
+                if ((not found and not options.reverse_set) or
+                   (found and options.reverse_set)):
                     continue
 
                 l = data["GENELENGTH"]
@@ -512,7 +532,8 @@ def main(argv=None):
 
             for x in range(len(OUTPUT_ORDER_CODON_MATRIX)):
                 outfile.write(",".join(map(lambda z: "%5.3f" % z, [
-                              weights[codon.upper()] for codon in OUTPUT_ORDER_CODON_MATRIX[x]])))
+                              weights[codon.upper()]
+                              for codon in OUTPUT_ORDER_CODON_MATRIX[x]])))
                 outfile.write("\n")
 
     if options.codon_usage:

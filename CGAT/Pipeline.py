@@ -76,6 +76,7 @@ import logging as L
 from CGAT import Experiment as E
 from CGAT import IOTools as IOTools
 from CGAT import Requirements as Requirements
+from CGAT import Local as Local
 
 # global options and arguments - set but currently not
 # used as relevant sections are entered into the PARAMS
@@ -144,7 +145,6 @@ INTERPOLATE_PARAMS = ('cmd-farm', 'cmd-run')
 # drop PARAMS variable into the Local module until parameter
 # sharing is resolved between the Local module
 # and the Pipeline module.
-from CGAT import Local as Local
 Local.PARAMS = PARAMS
 Local.CONFIG = CONFIG
 
@@ -161,8 +161,9 @@ def configToDictionary(config):
             try:
                 v = IOTools.convertValue(value)
             except TypeError:
-                E.error("Error converting key %s, value %s" % (key, value))
-                E.error("Possilbe multiple concorent attempts to read configureation")
+                E.error("error converting key %s, value %s" % (key, value))
+                E.error("Possible multiple concurrent attempts to "
+                        "read configuration")
                 raise
 
             p["%s_%s" % (section, key)] = v
@@ -207,6 +208,7 @@ def getParameters(filenames=["pipeline.ini", ],
     file called :file:`.cgat` in the user`s home directory.
 
     The order of initialization is as follows:
+
     1. hard-coded defaults
     2. pipeline specific default file in the CGAT code installation
     3. :file:`.cgat` in the users home directory
@@ -222,6 +224,10 @@ def getParameters(filenames=["pipeline.ini", ],
     but not executed and there might not be appropriate .ini
     files available.
 
+    Path names are expanded to the absolute pathname to avoid
+    ambiguity with relative path names. Path names are updated
+    for parameters that end in the suffix "dir" and start with
+    a "." such as "." or "../data".
     '''
 
     global CONFIG
@@ -270,6 +276,13 @@ def getParameters(filenames=["pipeline.ini", ],
         except TypeError(msg):
             raise TypeError('could not interpolate %s: %s' %
                             (PARAMS[param], msg))
+
+    # expand pathnames
+    for param, value in PARAMS.items():
+        if param.endswith("dir"):
+            if value.startswith("."):
+                PARAMS[param] = os.path.abspath(value)
+
     return PARAMS
 
 
@@ -756,10 +769,10 @@ def mergeAndLoad(infiles,
                  outfile,
                  suffix=None,
                  columns=(0, 1),
-                 regex = None,
-                 row_wise = True,
-                 options = "",
-                 prefixes = None):
+                 regex=None,
+                 row_wise=True,
+                 options="",
+                 prefixes=None):
     '''merge categorical tables and load into a database.
 
     The tables are merged and entered row-wise, i.e each file is a

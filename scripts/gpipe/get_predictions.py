@@ -56,18 +56,9 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
-import re
-import getopt
-import time
-import sets
-import optparse
-import math
-import tempfile
-
 import pgdb
+import CGAT.Experiment as E
 
 """ program $Id: gpipe/get_predictions.py 2781 2009-09-10 11:33:14Z andreas $
 
@@ -76,8 +67,6 @@ gpipe/get_predictions.py
 retrieve predictions/exons
 
 """
-
-import CGAT.Experiment as E
 
 
 def GetResult(dbhandle, keys, options):

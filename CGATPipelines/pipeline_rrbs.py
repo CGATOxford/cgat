@@ -157,23 +157,14 @@ import os
 import re
 import itertools
 import glob
-import cStringIO
 import sqlite3
 import CGAT.Experiment as E
-import string
 import CGAT.IOTools as IOTools
-import CGAT.FastaIterator as FastaIterator
 import CGATPipelines.PipelineMapping as PipelineMapping
 import CGAT.Pipeline as P
-import CGAT.Fastq as Fastq
-import CGAT.CSV2DB as CSV2DB
-import CGAT.Fasta as Fa
 import CGATPipelines.PipelineRrbs as RRBS
 import pandas as pd
-from rpy2.robjects import r
-from rpy2.robjects.packages import importr
 import CGATPipelines.PipelineTracks as PipelineTracks
-import warnings
 
 ###################################################
 ###################################################
@@ -187,8 +178,6 @@ P.getParameters(
      "../pipeline.ini",
      "pipeline.ini"])
 PARAMS = P.PARAMS
-
-scriptsdir = PARAMS["general_scriptsdir"]
 
 
 #########################################################################
@@ -319,10 +308,9 @@ def loadStartSummary(infile, outfile):
 
     dbh = connect()
     tablename = P.toTable(outfile)
-    scriptsdir = PARAMS["general_scriptsdir"]
 
     statement = '''cat %(infile)s |
-                python %(scriptsdir)s/csv2db.py
+                python %%(scriptsdir)s/csv2db.py
                 --table %(tablename)s --retry --ignore-empty
                  > %(outfile)s''' % locals()
     P.run()
@@ -347,6 +335,7 @@ def mapReadsWithBismark(infile, outfile):
     bismark_options = PARAMS["bismark_options"]
     m = PipelineMapping.Bismark()
     statement = m.build((infile,), outfile)
+    # print statement
     P.run()
 
 #########################################################################
@@ -437,8 +426,8 @@ def sortAndIndexBams(infile, outfile):
 @originate("coverage.dir/cpgIslands.bed")
 def makeCpgIslandsBed(outfile):
     infile = PARAMS["methylation_summary_cpgislands"]
-    out = open(outfile, "w")
-    with open(infile, "r") as f:
+    out = IOTools.openFile(outfile, "w")
+    with IOTools.openFile(infile, "r") as f:
         for line in f.readlines():
             # this assumes location of req. values
             contig, start, end = line.split()[1:4]
@@ -459,10 +448,10 @@ def make1basedCpgIslands(infile, outfile):
 
     # outfile, loadfile = outfiles
 
-    out = open(outfile, "w")
+    out = IOTools.openFile(outfile, "w")
     out.write("%s\t%s\t%s\n" % ("contig", "position", "cpgi"))
 
-    with open(infile, "r") as f:
+    with IOTools.openFile(infile, "r") as f:
         lines = f.readlines()
         for line in lines:
             contig, start, stop = line.split()
@@ -472,10 +461,9 @@ def make1basedCpgIslands(infile, outfile):
     # this file takes hours(!) to load and it's not being used from csvdb
     # dbh = connect()
     # tablename = P.toTable(loadfile)
-    # scriptsdir = PARAMS["general_scriptsdir"]
 
     # statement = '''cat %(outfile)s |
-    #            python %(scriptsdir)s/csv2db.py
+    #            python %%(scriptsdir)s/csv2db.py
     #            --table %(tablename)s --retry --ignore-empty
     #             > %(loadfile)s''' % locals()
     # P.run()
@@ -539,10 +527,10 @@ def mergeCoverage(infiles, outfile):
            add_inputs(make1basedCpgIslands),
            "_meth_cpgi.tsv")
 def addCpGIs(infiles, outfile):
-    infile, CpGI_load, CpGI = infiles
-    # memory intensive!
-    job_options = "-l mem_free=20G"
-    job_threads = 2
+    infile, CpGI = infiles
+    # still memory intensive even after supplying data types for all columns!
+    job_options = "-l mem_free=30G"
+    job_threads = 1
 
     RRBS.pandasMerge(infile, CpGI, outfile, merge_type="left",
                      left=['contig', 'position'],
@@ -550,6 +538,7 @@ def addCpGIs(infiles, outfile):
                      submit=True, job_options=job_options)
 
 
+# not currently in target full as table never queried from csvdb
 @transform(addCpGIs,
            suffix(".tsv"),
            ".load")
@@ -557,12 +546,11 @@ def loadMergeCoverage(infile, outfile):
 
     dbh = connect()
     tablename = P.toTable(outfile)
-    scriptsdir = PARAMS["general_scriptsdir"]
     job_options = "-l mem_free=23G"
     job_threads = 2
 
     statement = '''cat %(infile)s |
-                python %(scriptsdir)s/csv2db.py
+                python %%(scriptsdir)s/csv2db.py
                 --table %(tablename)s --retry --ignore-empty
                  > %(outfile)s''' % locals()
     P.run()
@@ -598,10 +586,9 @@ def summariseCoverage(infile, outfile):
 def concatenateCoverage(infiles, outfile):
     '''concatenate coverage output'''
 
-    scriptsdir = PARAMS["general_scriptsdir"]
     statement = '''echo -e "file\\tfreq\\tcov\\tsample\\tcondition\\trep"
                 > %(outfile)s;
-                python %(scriptsdir)s/combine_tables.py -v0
+                python %%(scriptsdir)s/combine_tables.py -v0
                 --glob="methylation.dir/*.coverage.tsv" -a CAT -t|
                 sed -e 's/methylation.dir\///g'
                 -e 's/_bismark.*.coverage.tsv//g'|
@@ -618,10 +605,9 @@ def loadCoverage(infile, outfile):
 
     dbh = connect()
     tablename = P.toTable(outfile)
-    scriptsdir = PARAMS["general_scriptsdir"]
 
     statement = '''cat %(infile)s |
-                python %(scriptsdir)s/csv2db.py
+                python %%(scriptsdir)s/csv2db.py
                 --table %(tablename)s --retry --ignore-empty
                  > %(outfile)s''' % locals()
     P.run()
@@ -658,10 +644,9 @@ def loadCpGOverlap(infile, outfile):
 
     dbh = connect()
     tablename = P.toTable(outfile)
-    scriptsdir = PARAMS["general_scriptsdir"]
 
     statement = '''cat %(infile)s |
-                python %(scriptsdir)s/csv2db.py
+                python %%(scriptsdir)s/csv2db.py
                 --table %(tablename)s --retry --ignore-empty
                  > %(outfile)s''' % locals()
     P.run()
@@ -688,11 +673,11 @@ def concatenateRemainingReads(infiles, outfile):
     '''concatenate coverage output'''
 
     # change statement to use infiles rather than glob
-    scriptsdir = PARAMS["general_scriptsdir"]
+
     statement = '''echo -e
                 "file\\tthreshold\\treads\\tpercentage\\tsample\\tcondition\\trep"
                 > %(outfile)s;
-                python %(scriptsdir)s/combine_tables.py -v0
+                python %%(scriptsdir)s/combine_tables.py -v0
                 --glob="methylation.dir/*.reads_by_threshold.tsv" -a CAT -t|
                 sed -e 's/methylation.dir\///g'
                 -e 's/_bismark.*.reads_by_threshold.tsv//g'|
@@ -709,10 +694,9 @@ def loadRemainingReads(infile, outfile):
 
     dbh = connect()
     tablename = P.toTable(outfile)
-    scriptsdir = PARAMS["general_scriptsdir"]
 
     statement = '''cat %(infile)s |
-                python %(scriptsdir)s/csv2db.py
+                python %%(scriptsdir)s/csv2db.py
                 --table %(tablename)s --retry --ignore-empty
                  > %(outfile)s''' % locals()
     P.run()
@@ -733,12 +717,11 @@ def loadRemainingReads(infile, outfile):
 def makeGeneProfiles(infiles, outfile):
     outname = P.snip(os.path.basename(outfile), ".png")
     infile, genes_gtf = infiles
-    scriptsdir = PARAMS["general_scriptsdir"]
 
     # ensures only large RAM nodes used
     job_options = "-l mem_free=24G"
 
-    statement = '''python %(scriptsdir)s/bam2geneprofile.py
+    statement = '''python %%(scriptsdir)s/bam2geneprofile.py
                   --bamfile=%(infile)s --gtffile=%(genes_gtf)s
                   --method=tssprofile --reporter=gene
                   -P %(outname)s
@@ -764,7 +747,7 @@ def subsetCpGsToCovered(infile, outfile):
     job_options = "-l mem_free=48G"
 
     RRBS.subsetToCovered(infile, outfile,
-                         submit=True, jobOptions=job_options)
+                         submit=True, job_options=job_options)
 
 
 @transform(subsetCpGsToCovered,
@@ -817,16 +800,21 @@ def runBiSeq(infiles, outfile):
 def generateClusterSpikeIns(infile, outfile):
     # parametrise binning in pipeline.ini
     job_options = "-l mem_free=4G"
-    scriptsdir = PARAMS['scriptsdir']
+
     statement = '''cat %(infile)s |
-    python %(scriptsdir)s/data2spike.py --design-file-tsv=design.tsv
-    --shuffle-column-suffix=-perc --keep-column-suffix=-meth,-unmeth
-    --difference-method=relative --spike-minimum=100 --spike-maximum=100
-    --output-method=seperate --cluster-maximum-distance=150
-    --cluster-minimum-size=10 --iterations=50 --spike-type=cluster
-    --change-bin-min=-100 --change-bin-max=100 --change-bin-width=10
-    --initial-bin-min=0 --initial-bin-max=100 --initial-bin-width=100
-    --subcluster-min-size=1 --subcluster-max-size=9 --subcluster-bin-width=1
+    python %%(scriptsdir)s/data2spike.py --method=spike
+    --design-tsv-file=design.tsv --difference-method=relative
+    --spike-shuffle-column-suffix=-perc
+    --spike-keep-column-suffix=-meth,-unmeth
+    --spike-minimum=100 --spike-maximum=100
+    --spike-output-method=seperate
+    --spike-cluster-maximum-distance=150
+    --spike-cluster-minimum-size=10 --spike-iterations=50
+    --spike-type=cluster --spike-change-bin-min=-100
+    --spike-change-bin-max=100 --spike-change-bin-width=10
+    --spike-initial-bin-min=0 --spike-initial-bin-max=100
+    --spike-initial-bin-width=100 --spike-subcluster-min-size=1
+    --spike-subcluster-max-size=9 --spike-subcluster-bin-width=1
     > %(outfile)s_tmp; mv %(outfile)s_tmp %(outfile)s''' % locals()
     P.run()
 
@@ -1001,10 +989,9 @@ def calculateM3DClustersPvalue(infiles, outfile, pair1, pair2):
 def loadM3DClusters(infile, outfile):
     dbh = connect()
     tablename = P.toTable(outfile)
-    scriptsdir = PARAMS["general_scriptsdir"]
 
     statement = '''cat %(infile)s |
-                python %(scriptsdir)s/csv2db.py
+                python %%(scriptsdir)s/csv2db.py
                 --table %(tablename)s --retry --ignore-empty
                  > %(outfile)s''' % locals()
     P.run()
@@ -1027,13 +1014,13 @@ def combineM3Dsummaries(infiles, outfiles):
     ''' combine M3D summary tables'''
     outfile1, outfile2 = outfiles
     print outfile1, outfile2
-    scriptsdir = PARAMS["general_scriptsdir"]
+
     tablename = P.toTable(outfile2)
 
     statement = ''' python %%(scriptsdir)s/combine_tables.py -v0  -a file
                     --glob=M3D_plots.dir/*between_summary.tsv > %(outfile1)s;
                     cat %(outfile1)s |
-                    python %(scriptsdir)s/csv2db.py
+                    python %%(scriptsdir)s/csv2db.py
                     --table %(tablename)s --retry --ignore-empty
                     > %(outfile2)s''' % locals()
     print statement
@@ -1069,7 +1056,6 @@ def startSummary():
          sortAndIndexBams,
          makeCpgIslandsBed,
          make1basedCpgIslands,
-         loadMergeCoverage,
          makeSummaryPlots,
          mergeCoverage,
          plotReadBias,
@@ -1084,8 +1070,7 @@ def mapReads():
     pass
 
 
-@follows(loadM3DClusters,
-         combineM3Dsummaries)
+@follows(mapReadsWithBismark)
 def test():
     pass
 

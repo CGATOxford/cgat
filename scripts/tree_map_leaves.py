@@ -31,18 +31,10 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
 import getopt
-import tempfile
-import time
-import popen2
-
-from Bio.Nexus import Nexus
-from Bio.Nexus.Nodes import Node
-
+import CGAT.Experiment as E
+import CGAT.TreeTools as TreeTools
 
 USAGE = """python %s [OPTIONS] < tree.in > tree.out
 
@@ -58,9 +50,6 @@ Options:
 -i, --invert=                   invert map
 -b, --strip-branches            remove branch lengths
 """ % sys.argv[0]
-
-import CGAT.Experiment as E
-import CGAT.TreeTools as TreeTools
 
 param_loglevel = 1
 

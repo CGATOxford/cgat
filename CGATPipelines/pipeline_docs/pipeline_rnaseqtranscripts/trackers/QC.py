@@ -7,12 +7,6 @@ from RnaseqTranscriptsReport import *
 class AnnotationsAssociated:
     pass
 
-##########################################################################
-##########################################################################
-##########################################################################
-# Coverage of transcript models
-##########################################################################
-
 
 class ContaminationCoverage(AnnotationsAssociated):
 
@@ -26,13 +20,8 @@ class ContaminationCoverage(AnnotationsAssociated):
         if not statement:
             return []
         data = self.getFirstRow(statement)
-        return odict(zip(("nmatches > 1", "nmatches = 1"), (data[1], data[0] - data[1])))
-
-##########################################################################
-##########################################################################
-##########################################################################
-# Coverage of transcript models
-##########################################################################
+        return odict(zip(("nmatches > 1", "nmatches = 1"),
+                         (data[1], data[0] - data[1])))
 
 
 class PolyATailCounts(AnnotationsAssociated):
@@ -47,14 +36,10 @@ class PolyATailCounts(AnnotationsAssociated):
         if not statement:
             return []
         data = self.getFirstRow(statement)
-        return odict(zip(("no tail", "with motif", "without motif"), (data[0] - data[2], data[1], data[2] - data[1])))
+        return odict(zip(("no tail", "with motif", "without motif"),
+                         (data[0] - data[2], data[1], data[2] - data[1])))
 
 
-##########################################################################
-##########################################################################
-##########################################################################
-## Contamination and repeats
-##########################################################################
 class ContaminationRepeats(TrackerSQL):
 
     """Estimate contamination based on the overlap with repeats.
@@ -76,13 +61,15 @@ class ContaminationRepeats(TrackerSQL):
     nspliced_ovl
        number of unknown transcript models with introns
     pspliced
-       proportion of unknown transcript models with introns that overlap repeats
+       proportion of unknown transcript models with introns that overlap
+       repeats
     """
 
     pattern = "(.*)_repeats$"
 
     def getTracks(self, subset=None):
-        return [x for x in TrackerSQL.getTracks(self, subset) if "_vs" not in x]
+        return [x for x in TrackerSQL.getTracks(self, subset)
+                if "_vs" not in x]
 
     def __call__(self, track, slice=None):
         genome_size = self.getValue("SELECT SUM(length) FROM repeats_table")
@@ -90,7 +77,9 @@ class ContaminationRepeats(TrackerSQL):
             "SELECT SUM(nover_bases) FROM repeats_table")
 
         novl_repeats = self.getValue(
-            "SELECT SUM(nover) FROM %(track)s_repeats as r, %(track)s_annotation as a where a.gene_id = r.gene_id and is_unknown" % locals())
+            "SELECT SUM(nover) FROM %(track)s_repeats as r, "
+            "%(track)s_annotation as a where a.gene_id = r.gene_id "
+            "and is_unknown" % locals())
         nlength = self.getValue(
             "SELECT SUM(exons_sum) FROM %(track)s_repeats as r, %(track)s_annotation as a where a.gene_id = r.gene_id and is_unknown" % locals())
         nspliced = self.getValue(

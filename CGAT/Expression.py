@@ -78,9 +78,11 @@ import collections
 import itertools
 import re
 import pandas
+import pandas.rpy.common as com
 import ggplot
 
 from rpy2.robjects import r as R
+from rpy2.robjects import numpy2ri as rpyn
 import rpy2.robjects as ro
 import rpy2.robjects.numpy2ri
 
@@ -323,10 +325,12 @@ class SAM(object):
         kwargs = {}
         # kwargs set to replicate excel SAM
         if use_excel_sam:
-            kwargs.update({"control":
-                           R('''samControl( lambda = 0.5, n.delta = %(ndelta)s ) ''' % locals()),
-                           "med": True,
-                           "var.equal": True})
+            kwargs.update(
+                {"control":
+                 R('''samControl( lambda = 0.5, n.delta = %(ndelta)s) ''' %
+                   locals()),
+                 "med": True,
+                 "var.equal": True})
         else:
             kwargs.update({"control":
                            R('''samControl( n.delta = %(ndelta)s ) ''' %
@@ -497,7 +501,7 @@ def loadTagData(tags_filename, design_filename):
     *Infile* is a tab-separated file with counts.
 
     *design_file* is a tab-separated file with the
-    experimental design with four columns::
+    experimental design with a minimum of four columns::
 
       track   include group   pair
       CW-CD14-R1      0       CD14    1
@@ -518,31 +522,38 @@ def loadTagData(tags_filename, design_filename):
     pair
         pair that sample belongs to (for paired tests)
 
+    Additional columns in design file are taken to contain levels for
+    additional factors and may be included for tests that allow multi-factor
+    model designs.
+
     This method creates various R objects:
 
     countsTable : data frame with counts.
     groups : vector with groups
     pairs  : vector with pairs
+    factors : df of additional factors for more complex model designs
 
     '''
 
+    # Load counts table
     E.info("loading tag data from %s" % tags_filename)
 
-    R('''counts_table = read.delim( '%(tags_filename)s',
-    header = TRUE,
-    row.names = 1,
-    stringsAsFactors = TRUE,
-    comment.char = '#' )''' % locals())
+    R('''counts_table = read.table('%(tags_filename)s',
+    header=TRUE,
+    row.names=1,
+    stringsAsFactors=TRUE,
+    comment.char='#')''' % locals())
 
     E.info("read data: %i observations for %i samples" %
            tuple(R('''dim(counts_table)''')))
     E.debug("sample names: %s" % R('''colnames(counts_table)'''))
 
     # Load comparisons from file
-    R('''pheno = read.delim( '%(design_filename)s',
-                             header = TRUE,
-                             stringsAsFactors = TRUE,
-                             comment.char = '#')''' % locals())
+    R('''pheno = read.delim(
+    '%(design_filename)s',
+    header=TRUE,
+    stringsAsFactors=TRUE,
+    comment.char='#')''' % locals())
 
     # Make sample names R-like - substitute - for .
     R('''pheno[,1] = gsub('-', '.', pheno[,1]) ''')
@@ -553,7 +564,8 @@ def loadTagData(tags_filename, design_filename):
         '''pheno2 = pheno[match(colnames(counts_table),pheno[,1]),,drop=FALSE]''')
     missing = R('''colnames(counts_table)[is.na(pheno2)][1]''')
     if missing:
-        E.warn("missing samples from design file are ignored: %s" % missing)
+        E.warn("missing samples from design file are ignored: %s" %
+               missing)
 
     # Subset data & set conditions
     R('''includedSamples <- !(is.na(pheno2$include) | pheno2$include == '0') ''')
@@ -562,7 +574,14 @@ def loadTagData(tags_filename, design_filename):
     R('''countsTable <- counts_table[ , includedSamples ]''')
     R('''groups <- factor(pheno2$group[ includedSamples ])''')
     R('''conds <- pheno2$group[ includedSamples ]''')
-    R('''pairs = factor(pheno2$pair[ includedSamples ])''')
+    R('''pairs <- factor(pheno2$pair[ includedSamples ])''')
+
+    # JJ if additional columns present, pass to 'factors'
+    R('''if (length(names(pheno2)) > 4) {
+           factors <- data.frame(pheno2[includedSamples,5:length(names(pheno2))])
+         } else {
+           factors <- NA
+         }''')
 
     E.info("filtered data: %i observations for %i samples" %
            tuple(R('''dim(countsTable)''')))
@@ -573,9 +592,9 @@ def filterTagData(filter_min_counts_per_row=1,
                   filter_percentile_rowsums=0):
     '''filter tag data.
 
-    * remove rows with at least x number of counts
+    * remove rows with fewer than x counts in most highly expressed sample
 
-    * remove samples with a maximum of *min_sample_counts*
+    * remove samples with fewer than x counts in most highly expressed row
 
     * remove the lowest percentile of rows in the table, sorted
        by total tags per row
@@ -583,7 +602,7 @@ def filterTagData(filter_min_counts_per_row=1,
 
     # Remove windows with no data
     R('''max_counts = apply(countsTable,1,max)''')
-    R('''countsTable = countsTable[max_counts>%i,]''' %
+    R('''countsTable = countsTable[max_counts>=%i,]''' %
       filter_min_counts_per_row)
     E.info("removed %i empty rows" %
            tuple(R('''sum(max_counts == 0)''')))
@@ -609,6 +628,8 @@ def filterTagData(filter_min_counts_per_row=1,
         R('''groups <- groups[max_counts >= %i]''' %
           filter_min_counts_per_sample)
         R('''pairs <- pairs[max_counts >= %i]''' %
+          filter_min_counts_per_sample)
+        R('''if (!is.na(factors)) {factors <- factors[max_counts >= %i,]}''' %
           filter_min_counts_per_sample)
         observations, samples = tuple(R('''dim(countsTable)'''))
 
@@ -638,6 +659,17 @@ def groupTagData(ref_group=None):
 
     groups = R('''levels(groups)''')
     pairs = R('''levels(pairs)''')
+    factors = R('''factors''')
+
+    # JJ - check whether there are additional factors in design file...
+    # warning... isintance(df, rpy.robjects.vectors.Vector) returns True
+    if isinstance(factors, rpy2.robjects.vectors.DataFrame):
+        E.warn("There are additional factors in design file that are ignored"
+               " by groupTagData: %s" % factors.r_repr())
+    else:
+        # Hack... must be a better way to evaluate r NA instance in python?
+        assert len(list(factors)) == 1 and bool(list(factors)[0]) is False, \
+            "factors must either be DataFrame or NA in R global namespace"
 
     # Test if replicates exist - at least one group must have multiple samples
     max_per_group = R('''max(table(groups)) ''')[0]
@@ -688,18 +720,21 @@ def plotPairs():
             text(x, y, txt, cex = cex);
             }
        ''')
-    R('''pairs(countsTable,
-               lower.panel = panel.pearson,
-               pch=".",
-               labels=colnames(countsTable),
-               log="xy")''')
+    try:
+        R('''pairs(countsTable,
+        lower.panel = panel.pearson,
+        pch=".",
+        labels=colnames(countsTable),
+        log="xy")''')
+    except rpy2.rinterface.RRuntimeError, msg:
+        E.warn("can not plot pairwise scatter plot: %s" % msg)
 
 
 def plotPCA(groups=True):
     '''plot a PCA plot from countsTable using ggplot.
 
     If groups is *True*, the variable ``groups`` is
-    used for colouring. If *False*, the groups are 
+    used for colouring. If *False*, the groups are
     determined by sample labels.
     '''
     R('''suppressMessages(library(ggplot2))''')
@@ -719,32 +754,35 @@ def plotPCA(groups=True):
         if nlevels > 2:
             R('''shape=mm[,2]''')
 
-    R('''p1 = ggplot(
-    as.data.frame(pca$x),
-    aes(x=PC1, y=PC2,
-    colour=colour,
-    shape=shape,
-    label=rownames(pca$x))) \
-    + geom_text(size=4, vjust=1) \
-    + geom_point()''')
-    R('''p2 = qplot(x=PC1, y=PC3,
-    data = as.data.frame(pca$x),
-    label=rownames(pca$x),
-    shape=shape,
-    colour=colour)''')
-    R('''p3 = qplot(x=PC2, y=PC3,
-    data = as.data.frame(pca$x),
-    label=rownames(pca$x),
-    shape=shape,
-    colour=colour)''')
-    # TODO: plot all in a multi-plot with proper scale
-    # the following squishes the plots
-    # R('''source('%s')''' %
-    #   os.path.join(os.path.dirname(E.__file__),
-    #                "../R",
-    #                "multiplot.R"))
-    # R('''multiplot(p1, p2, p3, cols=2)''')
-    R('''plot(p1)''')
+    try:
+        R('''p1 = ggplot(
+        as.data.frame(pca$x),
+        aes(x=PC1, y=PC2,
+        colour=colour,
+        shape=shape,
+        label=rownames(pca$x))) \
+        + geom_text(size=4, vjust=1) \
+        + geom_point()''')
+        R('''p2 = qplot(x=PC1, y=PC3,
+        data = as.data.frame(pca$x),
+        label=rownames(pca$x),
+        shape=shape,
+        colour=colour)''')
+        R('''p3 = qplot(x=PC2, y=PC3,
+        data = as.data.frame(pca$x),
+        label=rownames(pca$x),
+        shape=shape,
+        colour=colour)''')
+        # TODO: plot all in a multi-plot with proper scale
+        # the following squishes the plots
+        # R('''source('%s')''' %
+        #   os.path.join(os.path.dirname(E.__file__),
+        #                "../R",
+        #                "multiplot.R"))
+        # R('''multiplot(p1, p2, p3, cols=2)''')
+        R('''plot(p1)''')
+    except rpy2.rinterface.RRuntimeError, msg:
+        E.warn("could not plot in plotPCA(): %s" % msg)
 
 
 def runEdgeR(outfile,
@@ -1053,7 +1091,7 @@ def deseqPlotGeneHeatmap(outfile,
 
     # do not print if not enough values in one
     # direction (single row or column)
-    if min(data.shape) < 2:
+    if min(R.dim(data)) < 2:
         return
 
     R.png(outfile, width=500, height=2000)
@@ -1074,7 +1112,7 @@ def deseqPlotGeneHeatmap(outfile,
     R['dev.off']()
 
 
-def deseqPlotPCA(outfile, vsd):
+def deseqPlotPCA(outfile, vsd, max_genes=500):
     '''plot a PCA
 
     Use variance stabilized data in object vsd.
@@ -1082,7 +1120,16 @@ def deseqPlotPCA(outfile, vsd):
     not informed by the experimental design.
     '''
     R.png(outfile)
-    R('''plotPCA(vsd)''')
+    #  if there are more than 500 genes (after filtering)
+    #  use the 500 most variable in the PCA
+    #  else use the number of genes
+    R('''ntop = ifelse(as.integer(dim(vsd))[1] >= %(max_genes)i,
+    %(max_genes)i,
+    as.integer(dim(vsd))[1])''' % locals())
+    try:
+        R('''plotPCA(vsd)''')
+    except rpy2.rinterface.RRuntimeError, msg:
+        E.warn("can not plot PCA: %s" % msg)
     R['dev.off']()
 
 
@@ -1331,14 +1378,13 @@ def runDESeq(outfile,
 
     # perform variance stabilization for log2 fold changes
     vsd = R('''vsd = varianceStabilizingTransformation(cds_blind)''')
-
     # output normalized counts (in order)
     # gzfile does not work with rpy 2.4.2 in python namespace
     # using R.gzfile, so do it in R-space
 
     R('''t = counts(cds, normalized=TRUE);
     write.table(t[order(rownames(t)),],
-    file=gzfile('%(outfile_prefix)scounts.tsv.gz', 'w'),
+    file=gzfile('%(outfile_prefix)scounts.tsv.gz'),
     row.names=TRUE,
     col.names=NA,
     quote=FALSE,
@@ -1347,7 +1393,7 @@ def runDESeq(outfile,
     # output variance stabilized counts (in order)
     R('''t = exprs(vsd);
     write.table(t[order(rownames(t)),],
-    file=gzfile('%(outfile_prefix)svsd.tsv.gz', 'w'),
+    file=gzfile('%(outfile_prefix)svsd.tsv.gz'),
     row.names=TRUE,
     col.names=NA,
     quote=FALSE,
@@ -1365,15 +1411,16 @@ def runDESeq(outfile,
 
     # plot gene heatmap for all genes - order by average expression
     # subtract one to get numpy indices
-    select = R.order(R.rowMeans(R.counts(cds)), decreasing=True) - 1
+    select = R.order(R.rowMeans(R.counts(cds)), decreasing=True)
+    # the following uses R-based indexing
     deseqPlotGeneHeatmap(
         '%sgene_heatmap.png' % outfile_prefix,
-        R['as.matrix'](R.exprs(vsd)[select]))
+        R['as.matrix'](R.exprs(vsd).rx(select)))
 
     # plot heatmap of top 200 expressed genes
     deseqPlotGeneHeatmap(
         '%sgene_heatmap_top200.png' % outfile_prefix,
-        R['as.matrix'](R.exprs(vsd)[select[:200]]))
+        R['as.matrix'](R.exprs(vsd).rx(select[:200])))
 
     # Call diffential expression for all pairings of groups included in the
     # design
@@ -1389,27 +1436,30 @@ def runDESeq(outfile,
                (control, treatment))
         res = R('''res = nbinomTest(cds, '%s', '%s')''' % (control, treatment))
 
-        # Plot significance
+        # plot significance
         R.png('''%(outfile_groups_prefix)ssignificance.png''' % locals())
-        R('''plot( res$baseMean, res$log2FoldChange, log="x",
+        R('''plot(
+        res$baseMean,
+        res$log2FoldChange,
+        log="x",
         pch=20, cex=.1,
-        col = ifelse( res$padj < %(fdr)s, "red", "black" ) )''' % locals())
+        col = ifelse( res$padj < %(fdr)s, "red", "black"))''' % locals())
         R['dev.off']()
 
-        # Plot pvalues against rowsums
+        # plot pvalues against rowsums
         deseqPlotPvaluesAgainstRowsums(
             '%(outfile_groups_prefix)spvalue_rowsums.png' % locals())
 
         E.info("Generating output (%s vs %s)" % (control, treatment))
 
-        # Get variance stabilized fold changes - note the reversal of
+        # get variance stabilized fold changes - note the reversal of
         # treatment/control
         R('''vsd_l2f =
         (rowMeans(exprs(vsd)[,conditions(cds) == '%s', drop=FALSE])
         - rowMeans( exprs(vsd)[,conditions(cds) == '%s', drop=FALSE]))''' %
           (treatment, control))
 
-        # Plot vsd correlation, see Figure 14 in the DESeq manual
+        # plot vsd correlation, see Figure 14 in the DESeq manual
         # if you also want to colour by expression level
         R.png('''%(outfile_groups_prefix)sfold_transformation.png''' %
               locals())
@@ -1422,13 +1472,15 @@ def runDESeq(outfile,
         # plot heatmap of differentially expressed genes
         # plot gene heatmap for all genes - order by average expression
         padj_column = list(res.colnames).index('padj')
-        select = res[padj_column] < fdr
-        if len(select) > 0:
+        select = R('''select = res['padj'] < %f''' % fdr)
+
+        if R('''sum(select)''')[0] > 0:
             E.info('%s vs %s: plotting %i genes in heatmap' %
                    (treatment, control, len(select)))
-            data = R.exprs(vsd)[select]
+            data = R.exprs(vsd).rx(select)
+
             if not isinstance(data, rpy2.robjects.vectors.FloatVector):
-                order = R.order(R.rowMeans(data), decreasing=True) - 1
+                order = R.order(R.rowMeans(data), decreasing=True)
                 deseqPlotGeneHeatmap(
                     '%sgene_heatmap.png' % outfile_groups_prefix,
                     R['as.matrix'](data[order]),
@@ -1447,7 +1499,6 @@ def runDESeq(outfile,
 
         # Plot diagnostic plots for FDR
         if has_replicates:
-            R.png('''%(outfile_groups_prefix)sfdr.png''' % locals())
             R('''orderInPlot = order(pvalues)''')
             R('''showInPlot = (pvalues[orderInPlot] < 0.08)''')
             # Jethro - previously plotting x =
@@ -1457,18 +1508,21 @@ def runDESeq(outfile,
             # values
             R('''true.pvalues <- pvalues[orderInPlot][showInPlot]''')
             R('''true.pvalues <- true.pvalues[is.finite(true.pvalues)]''')
-
-            # failure when no replicates:
-            # rpy2.rinterface.RRuntimeError:
-            # Error in plot.window(...) : need finite 'xlim' values
-            R('''plot( seq( along=which(showInPlot)),
-                       true.pvalues,
-                       pch='.',
-                       xlab=expression(rank(p[i])),
-                       ylab=expression(p[i]))''')
-            R('''abline(a=0, b=%(fdr)f / length(pvalues), col="red")''' %
-              locals())
-            R['dev.off']()
+            if R('''sum(showInPlot)''')[0] > 0:
+                R.png('''%(outfile_groups_prefix)sfdr.png''' % locals())
+                # failure when no replicates:
+                # rpy2.rinterface.RRuntimeError:
+                # Error in plot.window(...) : need finite 'xlim' values
+                R('''plot( seq( along=which(showInPlot)),
+                           true.pvalues,
+                           pch='.',
+                           xlab=expression(rank(p[i])),
+                           ylab=expression(p[i]))''')
+                R('''abline(a = 0, b = %(fdr)f / length(pvalues), col = "red")
+                ''' % locals())
+                R['dev.off']()
+            else:
+                E.warn('no p-values < 0.08')
 
         # Add log2 fold with variance stabilized l2fold value
         R('''res$transformed_log2FoldChange = vsd_l2f''')
@@ -1488,6 +1542,126 @@ def runDESeq(outfile,
 
     writeExpressionResults(outfile, all_results)
 
+
+def runDESeq2(outfile,
+              outfile_prefix="deseq2.",
+              fdr=0.1,
+              ref_group=None,
+              model=None,
+              contrasts=None
+              ):
+    """
+    Run DESeq2 on counts table.
+
+    If no model is passed, then defaults to the group column in design file
+
+    Does not make use of group tag data bc function doesn't accomodate
+    multi-factor designs
+
+    To Do: Parse results into standard output format.
+    """
+
+    # load libraries
+    R('''suppressMessages(library('DESeq2'))''')
+
+    # Create metadata... this will eventually be a pandas dataframe
+    if isinstance(R('''factors'''), rpy2.robjects.vectors.DataFrame):
+        E.info("DESeq2: Merging additional factors in design file to"
+               "create metadata table")
+        R('''mdata <- cbind(groups, factors)''')
+        mdata = tuple(R('''names(mdata)'''))
+    else:
+        R('''mdata <- data.frame(group=groups)''')
+        mdata = "group"
+    E.info("DESeq2 colData headers are: %s" % mdata)
+
+    R('''design="~ group"''')
+
+    # Check for model and that model terms are in metadata table
+    if model:
+        assert contrasts, "Must specifiy contrasts is model design provided"
+        terms = set([x for x in re.split("\W", model) if x != ''])
+        assert terms.issubset(mdata), \
+            "DESeq2: design formula has terms not present in colData"
+    else:
+        if mdata != "group":
+            E.warn("DESeq2 model specified, with no metadata in design file")
+        terms = ["group", ]
+        model = "~ group"
+    E.info("DESeq2 design formula is: %s" % model)
+
+    # Create DESeqDataSet, using countsTable, mdata, model
+    R('''dds <- DESeqDataSetFromMatrix(countData=countsTable,
+                                       colData=mdata,
+                                       design=%(model)s)''' % locals())
+    # WARNING: This is not done automatically
+    R('''colnames(dds) <- colnames(countsTable)''')
+    E.info("Combined colData, design formula and counts table to create"
+           " DESeqDataSet instance")
+
+    # Run DESeq2
+    R('''dds <- DESeq(dds)''')
+    E.info("Completed DESeq2 differential expression analysis")
+
+    # Extract contrasts...
+    if contrasts:
+        contrasts = (x.split(":") for x in contrasts.split(","))
+    else:
+        # created by loadTagData...
+        groups = R('''levels(groups)''')
+        contrasts = (("group",) + x for x in itertools.combinations(groups, 2))
+
+    df_final = pandas.DataFrame()
+    for combination in contrasts:
+        variable, control, treatment = combination
+
+        # Fetch results
+        gfix = "%s_%s_vs_%s_" % (variable, control, treatment)
+        outfile_groups_prefix = outfile_prefix + gfix + "MAplot.png"
+        R('''res <- results(dds, contrast=c("%(variable)s",
+                                            "%(treatment)s",
+                                            "%(control)s"))''' % locals())
+        E.info("Extracting contrast for levels %s (treatment) vs %s (control)"
+               " for factor %s" % (treatment, control, variable))
+
+        # plot MA plot
+        R('''png("%(outfile_groups_prefix)s")''' % locals())
+        R('''plotMA(res)''')
+        R('''dev.off()''')
+        E.info("Plotted MA plot for levels %s (treatment) vs %s (control)"
+               " for factor %s" % (treatment, control, variable))
+
+        # write data to outfile
+        res_df = R('''res_df <- as.data.frame(res)''')
+        df_out = com.load_data("res_df")
+        df_out["treatment"] = [treatment, ]*len(df_out.index)
+        df_out["control"] = [control, ]*len(df_out.index)
+        df_out["variable"] = [variable, ]*len(df_out.index)
+        df_out.to_csv(IOTools.openFile(outfile_groups_prefix + "tsv.gz", "w"),
+                      sep="\t",
+                      index_label="gene_id")
+        E.info("Extracted results table for contrast  '%s' (treatment) vs '%s'"
+               " (control) for factor '%s'" % (treatment, control, variable))
+
+        # append to final dataframe
+        df_out.reset_index(inplace=True)
+        df_out.rename(columns={"index": "gene_id"}, inplace=True)
+        df_final = df_final.append(df_out, ignore_index=True)
+
+    # Extract rlog transformed count data...
+    rld = R('''rld <- rlog(dds)''')
+    R('''saveRDS(rld, "Rlog.rds")''')
+
+    # Plot PCA of rlog transformed count data for top 500
+    for factor in terms:
+        outf = outfile_prefix + factor + "_PCAplot500.png"
+        R('''png("%s")''' % outf)
+        R('''plotPCA(rld, intgroup="%(factor)s")''' % locals())
+        R('''dev.off()''')
+
+    # write final dataframe
+    df_final.to_csv(IOTools.openFile(outfile, "w"), sep="\t", index=False)
+
 Design = collections.namedtuple("Design", ("include", "group", "pair"))
 
 
@@ -1499,7 +1673,7 @@ def readDesignFile(design_file):
         for line in inf:
             if line.startswith("track"):
                 continue
-            track, include, group, pair = line[:-1].split("\t")
+            track, include, group, pair = line.split("\t")[:4]
             if track in design:
                 raise ValueError("duplicate track '%s'" % track)
             design[track] = Design._make((int(include), group, pair))
@@ -1566,11 +1740,6 @@ def plotDETagStats(infile, outfile_prefix,
     columns will be output as well.
     '''
 
-    # import rpy2.robjects.lib.ggplot2 as ggplot2
-
-    R('''suppressMessages(library('ggplot2'))''')
-    R('''suppressMessages(library('grid'))''')
-
     table = pandas.read_csv(IOTools.openFile(infile),
                             sep="\t")
 
@@ -1606,7 +1775,10 @@ def plotDETagStats(infile, outfile_prefix,
             data=table) + \
             ggplot.geom_density(alpha=0.5)
 
-        ggplot.ggsave(filename=outfile, plot=plot)
+        try:
+            ggplot.ggsave(filename=outfile, plot=plot)
+        except Exception, msg:
+            E.warn("no plot for %s: %s" % (column, msg))
 
     def _bplot(table, outfile, column):
 
@@ -1615,7 +1787,12 @@ def plotDETagStats(infile, outfile_prefix,
             data=table) + \
             ggplot.geom_boxplot()
 
-        ggplot.ggsave(filename=outfile, plot=plot)
+        try:
+            ggplot.ggsave(filename=outfile, plot=plot)
+        except ValueError, msg:
+            # boxplot fails if all values are the same
+            # see https://github.com/yhat/ggplot/issues/393
+            E.warn(msg)
 
     _dplot(table,
            outfile_prefix + ".densities_tags_control.png",
@@ -1630,13 +1807,14 @@ def plotDETagStats(infile, outfile_prefix,
            outfile_prefix + ".boxplot_tags_treatment.png",
            "log10_treatment_mean")
 
-    for column in additional_columns:
-        _dplot(table,
-               outfile_prefix + ".densities_%s.png" % column,
-               column)
-        _bplot(table,
-               outfile_prefix + ".boxplot_%s.png" % column,
-               column)
+    if additional_columns:
+        for column in additional_columns:
+            _dplot(table,
+                   outfile_prefix + ".densities_%s.png" % column,
+                   column)
+            _bplot(table,
+                   outfile_prefix + ".boxplot_%s.png" % column,
+                   column)
     return
 
 
@@ -2153,7 +2331,10 @@ def outputTagSummary(filename_tags,
     outfilename = output_filename_pattern + "mds.svg"
     E.info("outputting mds plot to %s" % outfilename)
     R.svg(outfilename)
-    R('''plotMDS( countsTable )''')
+    try:
+        R('''plotMDS(countsTable)''')
+    except rpy2.rinterface.RRuntimeError, msg:
+        E.warn("can not plot mds: %s" % msg)
     R['dev.off']()
 
 
@@ -2216,10 +2397,14 @@ def loadTagDataPandas(tags_filename, design_filename):
     E.info("loading tag data from %s" % tags_filename)
 
     inf = IOTools.openFile(tags_filename)
-    counts_table = pandas.read_csv(inf, sep="\t", index_col=0)
+    counts_table = pandas.read_csv(inf,
+                                   sep="\t",
+                                   index_col=0,
+                                   comment="#")
     inf.close()
 
-    E.info("read data: %i observations for %i samples" % counts_table.shape)
+    E.info("read data: %i observations for %i samples" %
+           counts_table.shape)
 
     E.debug("sample names: %s" % list(counts_table.columns))
 
@@ -2294,8 +2479,8 @@ def filterTagDataPandas(counts_table,
         take = sum_counts > sum_counts.quantile(percentile)
         E.info("percentile filtering at level %f: keep=%i, discard=%i" %
                (filter_percentile_rowsums,
-                sum(take is True),
-                sum(take=False)))
+                sum(take),
+                len(take) - sum(take)))
         counts_table = counts_table[take]
 
     return counts_table

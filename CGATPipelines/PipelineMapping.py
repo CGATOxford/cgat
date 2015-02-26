@@ -47,6 +47,7 @@ Requirements:
 * star >= 2.3.0e (optional)
 * bismark >= 0.12.5 (optional)
 * stampy >= 1.0.23 (optional)
+* butter >= 0.3.2 (optional)
 
 Code
 ----
@@ -69,6 +70,7 @@ import CGAT.Fastq as Fastq
 import CGAT.IndexedFasta as IndexedFasta
 import CGATPipelines.PipelineGeneset as PipelineGeneset
 import pysam
+import CGAT.Sra as Sra
 
 SequenceInformation = collections.namedtuple("SequenceInformation",
                                              """paired_end
@@ -468,49 +470,13 @@ class Mapper(object):
             elif infile.endswith(".sra"):
                 # sneak preview to determine if paired end or single end
                 outdir = P.getTempDir()
-                # --split-files is present in fastq-dump 2.1.7
-                P.execute(
-                    """fastq-dump --split-files --gzip -X 1000
-                    --outdir %(outdir)s %(infile)s""" % locals())
-                # --split-files will create files called prefix_#.fastq.gz
-                # where # is the read number.
-                # The following cases are:
-
-                # * file cotains paired end data:
-                #      output = prefix_1.fastq.gz, prefix_2.fastq.gz
-                #
-                #    * special case: unpaired reads in a paired end
-                #                    run end up in prefix.fastq.gz
-                #    * special case: if paired reads are stored in
-                #                    a single read, fastq-dump will split.
-                #       There might be a joining sequence. The output
-                #                 would thus be:
-                #       prefix_1.fastq.gz, prefix_2.fastq.gz, prefix_3.fastq.gz
-                #
-                #      You want files 1 and 3.
-                f = sorted(glob.glob(os.path.join(outdir, "*.fastq.gz")))
-                ff = [os.path.basename(x) for x in f]
-                if len(f) == 1:
-                    # sra file contains one read: output = prefix.fastq.gz
-                    pass
-                elif len(f) == 2:
-                    # sra file contains read pairs: output = prefix_1.fastq.gz,
-                    # prefix_2.fastq.gz
-                    assert ff[0].endswith(
-                        "_1.fastq.gz") and ff[1].endswith("_2.fastq.gz")
-                elif len(f) == 3:
-                    if ff[2].endswith("_3.fastq.gz"):
-                        f = glob.glob(os.path.join(outdir, "*_[13].fastq.gz"))
-                    else:
-                        f = glob.glob(os.path.join(outdir, "*_[13].fastq.gz"))
+                f = Sra.sneak(infile, outdir)
                 E.info("sra file contains the following files: %s" % f)
                 shutil.rmtree(outdir)
                 fastqfiles.append(
                     ["%s/%s" % (tmpdir_fastq, os.path.basename(x))
                      for x in sorted(f)])
-                statement.append(
-                    """fastq-dump --split-files --gzip --outdir
-                    %(tmpdir_fastq)s %(infile)s""" % locals())
+                Sra.exract(infile, tmpdir_fastq)
 
             elif infile.endswith(".fastq.gz"):
                 format = Fastq.guessFormat(
@@ -903,6 +869,7 @@ class BWA(Mapper):
 
     def postprocess(self, infiles, outfile):
         '''collect output data and postprocess.'''
+        # note, this postprocess method is inherited by multiple mappers
 
         track = P.snip(os.path.basename(outfile), ".bam")
         outf = P.snip(outfile, ".bam")
@@ -1059,7 +1026,7 @@ class Bismark(Mapper):
 
         return statement
 
-    # Postprocessing can identify .sra input from the infiles, the use
+    # Postprocessing can identify .sra input from the infiles, then use
     # mapfiles to identify whether the input was single or paired end, then
     # remove reads with low CHH/CHG conversions (i.e more than one unconverted)
     # and rename the bismark outfile to fit ruffus expectations.
@@ -1068,21 +1035,25 @@ class Bismark(Mapper):
         tmpdir_fastq = "."
         track = P.snip(os.path.basename(outfile), ".bam")
         infile = infiles[0]
+        base = os.path.basename(infile).split(".")[0]
         if infile.endswith(".fastq.gz"):
-            statement = '''samtools view -h %(tmpdir_fastq)s/%(track)s.bam|
+            statement = '''samtools view -h
+            %(tmpdir_fastq)s/%(base)s.fastq.gz_bismark_bt2.bam|
             awk -F" " '$14!~/^XM:Z:[zZhxUu\.]*[HX][zZhxUu\.]*[HX]/ ||
             $1=="@SQ" || $1=="@PG"' | samtools view -b - >
             %%(outdir)s/%(track)s.bam;
-            mv %(tmpdir_fastq)s/%(track)s_SE_report.txt
-            %%(outdir)s/%(track)s_SE_report.txt;''' % locals()
+            mv %(tmpdir_fastq)s/%(base)s.fastq.gz_bismark_bt2_SE_report.txt
+            %%(outdir)s/%(track)s_bismark_bt2_SE_report.txt;''' % locals()
         elif infile.endswith(".fastq.1.gz"):
-            statement = '''samtools view -h %(tmpdir_fastq)s/%(track)s_pe.bam|
+            statement = '''samtools view -h
+            %(tmpdir_fastq)s/%(base)s.fastq.1.gz_bismark_bt2_pe.bam|
             awk -F" " '$14!~/^XM:Z:[zZhxUu\.]*[HX][zZhxUu\.]*[HX]/ ||
             $1=="@SQ" || $1=="@PG"' | samtools view -b - >
             %%(outdir)s/%(track)s.bam;
-            mv %(tmpdir_fastq)s/%(track)s_PE_report.txt
-            %%(outdir)s/%(track)s_PE_report.txt;''' % locals()
+            mv %(tmpdir_fastq)s/%(base)s.fastq.gz_bismark_bt2_PE_report.txt
+            %%(outdir)s/%(track)s_bismark_bt2_SE_report.txt;''' % locals()
         elif infile.endswith(".sra"):
+            # this should use Sra module to identify single or paired end
             for mapfile in mapfiles:
                 mapfile = os.path.basename(mapfile[0])
                 if mapfile.endswith(".fastq.1.gz"):
@@ -1204,6 +1175,66 @@ class Stampy(BWA):
         self.tmpdir = tmpdir
 
         return " ".join(statement)
+
+
+class Butter(BWA):
+
+    '''map reads against genome using Butter.
+    '''
+
+    def mapper(self, infiles, outfile):
+        '''build mapping statement on infiles.'''
+
+        if len(infiles) > 1:
+            raise ValueError(
+                "butter can only operate on one fastq file at a time")
+
+        num_files = [len(x) for x in infiles]
+
+        if max(num_files) != min(num_files):
+            raise ValueError(
+                "mixing single and paired-ended data not possible.")
+
+        nfiles = max(num_files)
+
+        tmpdir = os.path.join(self.tmpdir_fastq + "butter")
+        statement = ["mkdir -p %s;" % tmpdir]
+        tmpdir_fastq = self.tmpdir_fastq
+
+        track = P.snip(os.path.basename(outfile), ".bam")
+
+        if nfiles == 1:
+            infiles = infiles[0][0]
+            track_infile = ".".join(infiles.split(".")[:-1])
+
+            statement.append('''
+            butter %%(butter_options)s
+            %(infiles)s
+            %%(butter_index_dir)s/%%(genome)s.fa
+            --aln_cores=%%(job_threads)s
+            --bam2wig=none
+            >%(outfile)s.log;
+            samtools view -h %(track_infile)s.bam >
+            %(tmpdir)s/%(track)s.sam;
+            rm -rf ./%(track)s.bam ./%(track)s.bam.bai;
+            ''' % locals())
+
+        elif nfiles == 2:
+            raise ValueError(
+                "Butter does not support paired end reads ")
+        else:
+            raise ValueError(
+                "unexpected number of read files to map: %i " % nfiles)
+
+        self.tmpdir = tmpdir
+
+        return " ".join(statement)
+
+    def cleanup(self, outfile):
+        '''clean up.'''
+        statement = '''rm -rf %s %s;''' % (self.tmpdir_fastq, self.tmpdir)
+
+        return statement
 
 
 class Tophat(Mapper):

@@ -23,6 +23,9 @@ data to apply some common filtering methods.
 
 The methods implemented are:
 
+deseq2
+   Application of DESeq2
+
 deseq
    Application of DESeq
 
@@ -73,6 +76,9 @@ be performed. The design table has for columns::
       FM-CD4-R2       0       CD4     2
       FM-CD4-R3       0       CD4     2
       FM-CD4-R4       0       CD4     2
+
+These files should be tab separated as this is enforced in downstream
+analyses and will cause the script to error.
 
 track
      name of track - should correspond to column header in the counts
@@ -162,6 +168,12 @@ def main(argv=None):
                       type="string",
                       help="input file with tag counts [default=%default].")
 
+    parser.add_option(
+        "--result-tsv-file", dest="input_filename_result",
+        type="string",
+        help="input file with results (for plotdetagstats) "
+        "[default=%default].")
+
     parser.add_option("-d", "--design-tsv-file", dest="input_filename_design",
                       type="string",
                       help="input file with experimental design "
@@ -172,10 +184,12 @@ def main(argv=None):
 
     parser.add_option("-m", "--method", dest="method", type="choice",
                       choices=(
-                          "deseq", "edger",
+                          "deseq", "edger", "deseq2",
                           "ttest",
-                          "mock", "summary", "dump", "spike",
-                          "plottagstats"),
+                          "mock", "summary",
+                          "dump", "spike",
+                          "plottagstats",
+                          "plotdetagstats"),
                       help="differential expression method to apply "
                       "[default=%default].")
 
@@ -228,16 +242,26 @@ def main(argv=None):
                       dest="filter_min_counts_per_sample",
                       type="int",
                       help="remove samples with a maximum count per sample of "
-                      "less than this numer   [default=%default].")
+                      "less than this number   [default=%default].")
 
     parser.add_option("--filter-percentile-rowsums",
                       dest="filter_percentile_rowsums",
                       type="int",
                       help="remove percent of rows with "
                       "lowest total counts [default=%default].")
+    parser.add_option("--deseq2-design-formula",
+                      dest="model",
+                      type="string",
+                      help="Design formula for DESeq2")
+    parser.add_option("--deseq2-contrasts",
+                      dest="contrasts",
+                      type="string",
+                      help=("contrasts for post-hoc testing writen"
+                            " variable:control:treatment,..."))
 
     parser.set_defaults(
-        input_filename_tags="-",
+        input_filename_tags=None,
+        input_filename_result=None,
         input_filename_design=None,
         output_filename=sys.stdout,
         method="deseq",
@@ -257,6 +281,7 @@ def main(argv=None):
         spike_expression_bin_width=0.5,
         spike_foldchange_bin_width=0.5,
         spike_max_counts_per_bin=50,
+        model=None,
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -271,7 +296,7 @@ def main(argv=None):
         fh = None
 
     # load tag data and filter
-    if options.method in ("deseq", "edger", "mock", "ttest"):
+    if options.method in ("deseq2", "deseq", "edger", "mock", "ttest"):
         assert options.input_filename_tags and os.path.exists(
             options.input_filename_tags)
         assert options.input_filename_design and os.path.exists(
@@ -299,7 +324,17 @@ def main(argv=None):
                 ",".join(sample_names)))
 
     try:
-        if options.method == "deseq":
+        if options.method == "deseq2":
+            Expression.runDESeq2(
+                outfile=options.output_filename,
+                outfile_prefix=options.output_filename_pattern,
+                fdr=options.fdr,
+                ref_group=options.ref_group,
+                model=options.model,
+                contrasts=options.contrasts,
+            )
+
+        elif options.method == "deseq":
             Expression.runDESeq(
                 outfile=options.output_filename,
                 outfile_prefix=options.output_filename_pattern,
@@ -347,6 +382,13 @@ def main(argv=None):
             Expression.plotTagStats(
                 options.input_filename_tags,
                 options.input_filename_design,
+                outfile_prefix=options.output_filename_pattern)
+
+        elif options.method == "plotdetagstats":
+            assert options.input_filename_result and os.path.exists(
+                options.input_filename_result)
+            Expression.plotDETagStats(
+                options.input_filename_result,
                 outfile_prefix=options.output_filename_pattern)
 
         elif options.method == "spike":

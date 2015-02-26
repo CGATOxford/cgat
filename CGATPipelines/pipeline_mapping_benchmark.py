@@ -1,5 +1,4 @@
-"""
-=========================================
+"""=========================================
 Read Mapping parameter titration pipeline
 =========================================
 
@@ -14,8 +13,8 @@ Read Mapping parameter titration pipeline
 Requirements
 ------------
 
-On top of the default CGAT setup, the pipeline requires the following software to be in the 
-path:
+On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:
 
 +--------------------+-------------------+------------------------------------------------+
 |*Program*           |*Version*          |*Purpose*                                       |
@@ -45,38 +44,12 @@ Code
 
 """
 import sys
-import tempfile
-import optparse
-import shutil
-import itertools
-import csv
-import math
-import random
-import re
-import glob
 import os
-import shutil
-import collections
 import CGAT.Experiment as E
-import logging as L
 from ruffus import *
-import csv
-import sqlite3
-import CGAT.IndexedFasta as IndexedFasta
-import CGAT.IndexedGenome as IndexedGenome
-import CGAT.FastaIterator as FastaIterator
-import CGAT.Genomics as Genomics
-import CGAT.IOTools as IOTools
-import CGAT.MAST as MAST
-import CGAT.GTF as GTF
-import CGAT.Bed as Bed
-import cStringIO
 import pysam
-import numpy
-import gzip
-import fileinput
-import CGATPipelines.PipelineTracks as PipelineTracks
 import CGATPipelines.PipelineMapping as PipelineMapping
+import CGAT.Pipeline as P
 
 USECLUSTER = True
 
@@ -85,7 +58,6 @@ USECLUSTER = True
 ###################################################
 # Pipeline configuration
 ###################################################
-import CGAT.Pipeline as P
 P.getParameters(["%s/pipeline.ini" %
                 os.path.splitext(__file__)[0],  "../pipeline.ini", "pipeline.ini"])
 PARAMS = P.PARAMS

@@ -7,16 +7,16 @@ Optimizing cufflinks parameters
 :Date: |today|
 :Tags: Python
 
-The cufflinks optimization pipeline attempts to assess the quality of a variety of transcript
-assemblies using various sets of parameters.
-
+The cufflinks optimization pipeline attempts to assess the quality of
+a variety of transcript assemblies using various sets of parameters.
 
 Overview
 ==========
 
-Building transcripts is an important prerequisite for a number of projects that we undertake,
-especially where the emphasis is on transcript structure or the identification of non-coding
-transcripts (often lowly expressed).
+Building transcripts is an important prerequisite for a number of
+projects that we undertake, especially where the emphasis is on
+transcript structure or the identification of non-coding transcripts
+(often lowly expressed).
 
 In addition to the general issues associated with transcript building,
 we are often working on a variety of data from different library types
@@ -82,7 +82,7 @@ The default file format assumes the following convention:
 ``replicate`` denotes the :term:`replicate` within an
 :term:`experiment`.
 
-  
+
 Requirements
 ------------
 
@@ -170,9 +170,6 @@ PARAMS_ANNOTATIONS = P.peekParameters(
     "pipeline_annotations.py",
     on_error_raise=__name__ == "__main__")
 
-###################################################################
-###################################################################
-###################################################################
 # get options that are to be tested
 cufflinks_options = {}
 if "cufflinks_test_options" in PARAMS:
@@ -194,7 +191,8 @@ if "cufflinks_test_options" in PARAMS:
             cufflinks_options[option] = [50, 100, 200]
         else:
             raise ValueError(
-                "pipeline_cufflinks_optimization does not support parameter %s" % option)
+                "pipeline_cufflinks_optimization does not "
+                "support parameter %s" % option)
 
 if len(cufflinks_options) == 0:
     raise ValueError("no options to optimize specified")
@@ -204,20 +202,6 @@ if len(cufflinks_options) == 0:
 #####################
 
 TRACKS = glob.glob("*.accepted.bam")
-
-#############################################################
-# ask the user to decide whether to continue with the number
-# of assemblies
-#############################################################
-
-c = 0
-for x in itertools.product(*cufflinks_options.values()):
-    c += 1
-#raw_input("pipeline_cufflinks_optimization will run %i trancript assemblies: hit enter to continue\n""" % c)
-
-###################################################################
-###################################################################
-###################################################################
 
 
 def connect():
@@ -235,10 +219,6 @@ def connect():
 
     return dbh
 
-###################################################################
-###################################################################
-###################################################################
-
 
 def updateFile(filename):
     '''
@@ -249,10 +229,6 @@ def updateFile(filename):
     outf.write("file created for ruffus update")
     outf.close()
 
-###################################################################
-###################################################################
-###################################################################
-
 
 def options_generator(cufflinks_options):
     '''
@@ -261,10 +237,6 @@ def options_generator(cufflinks_options):
     '''
     for option_values in itertools.product(*cufflinks_options.values()):
         yield " ".join(map(str, reduce(operator.add, zip(cufflinks_options.keys(), list(option_values)))))
-
-###################################################################
-###################################################################
-###################################################################
 
 
 def getDirectoryNames(options_generator):
@@ -434,12 +406,14 @@ def executePipelineRnaseqTranscripts(infile, outfile):
     '''
 
     directory = os.path.dirname(infile)
-    statement = '''cd ./%(directory)s; 
-                   python %(scriptsdir)s/pipeline_rnaseqtranscripts.py -v5 -p10 make full'''
+    statement = '''cd ./%(directory)s;
+                   python %(scriptsdir)s/pipeline_rnaseqtranscripts.py -v5
+                   -p10 make full'''
     P.run()
 
-    statement = '''cd ./%(directory)s; 
-                   python %(scriptsdir)s/pipeline_rnaseqtranscripts.py -v5 -p10 make build_report'''
+    statement = '''cd ./%(directory)s;
+                   python %(scriptsdir)s/pipeline_rnaseqtranscripts.py
+                   -v5 -p10 make build_report'''
     P.run()
 
 ###################################################################
@@ -448,7 +422,9 @@ def executePipelineRnaseqTranscripts(infile, outfile):
 
 
 @follows(executePipelineRnaseqTranscripts)
-@transform(os.path.join(DIRECTORIES[0], "reference.gtf.gz"), regex(r"(\S+).gtf.gz"), "reference.%s.gtf.gz" % PARAMS["chromosome"])
+@transform(os.path.join(DIRECTORIES[0], "reference.gtf.gz"),
+           regex(r"(\S+).gtf.gz"),
+           "reference.%s.gtf.gz" % PARAMS["chromosome"])
 def filterReferenceGtfForChr19(infile, outfile):
     '''
     for reporting purposes get the chr19 filtered reference gtf file;
@@ -479,12 +455,19 @@ def splitMultiAndSingleExonLincRna(infile, outfiles):
     for entry in GTF.transcript_iterator(GTF.iterator(inf)):
         if len(entry) > 1:
             for exon in entry:
-                multi.write("\t".join(map(str, [exon.contig, exon.source, exon.feature, exon.start, exon.end, ".", exon.strand, "."]))
-                            + "\t" + exon.attributes + "\n")
+                multi.write(
+                    "\t".join(map(str, [exon.contig, exon.source, exon.feature,
+                                        exon.start, exon.end, ".", exon.strand,
+                                        "."])) +
+                    "\t" + exon.attributes + "\n")
+
         elif len(entry) == 1:
             for exon in entry:
-                single.write("\t".join(map(str, [exon.contig, exon.source, exon.feature, exon.start, exon.end, ".", exon.strand, "."]))
-                             + "\t" + exon.attributes + "\n")
+                single.write(
+                    "\t".join(map(str, [exon.contig, exon.source, exon.feature,
+                                        exon.start, exon.end, ".",
+                                        exon.strand, "."])) +
+                    "\t" + exon.attributes + "\n")
 
     for outfile in outfiles:
         outf = P.snip(outfile, ".gz")
@@ -542,7 +525,7 @@ def summariseReadsContributingToTranscripts(infile, outfile):
 @transform([os.path.join(directory, "abinitio_lincrna.multi_exon.gtf.gz") for directory in getDirectoryNames(options_generator(cufflinks_options))], suffix(".gtf.gz"), ".stats")
 def summariseExonCountsAndLengthOfMultiExonicLincRNA(infile, outfile):
     '''
-    summarizes some basic statistics on the length and number of exons 
+    summarizes some basic statistics on the length and number of exons
     for each set of parameter values
     '''
     outf = open(outfile, "w")
@@ -583,10 +566,6 @@ def loadSummariseReadsContributingToTranscripts(infile, outfile):
     statement = '''python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log < %(infile)s > %(outfile)s'''
     P.run()
 
-###################################################################
-###################################################################
-###################################################################
-
 
 @transform(summariseExonCountsAndLengthOfMultiExonicLincRNA, regex(r"(\S+).stats"), r"\1.load")
 def loadNumberExonsLengthSummaryStats(infile, outfile):
@@ -611,15 +590,11 @@ def loadNumberExonsLengthSummaryStats(infile, outfile):
 #     statement = '''zcat %(infile)s | python %(scriptsdir)s/csv2db.py -t %(tablename)s --log=%(outfile)s.log > %(outfile)s'''
 #     P.run()
 
-###################################################################
-###################################################################
-###################################################################
-
 
 @files(loadNumberExonsLengthSummaryStats, "NumberExonsLength.tsv")
 def outputAllNumberExonsLengthSummaryStats(infiles, outfile):
     '''
-    outputs a flat file containing the exon lengths and number of 
+    outputs a flat file containing the exon lengths and number of
     exons for multi-exon transcripts for each track
     '''
     dbh = connect()
@@ -735,36 +710,20 @@ def loadRankedAllStats(infile, outfile):
     '''
     P.load(infile, outfile)
 
-###################################################################
-###################################################################
-###################################################################
-## TARGETS ##
-#############
-
 
 @follows(loadNumberExonsLengthSummaryStats, loadSummariseReadsContributingToTranscripts, loadCountSingleAndMultiExonLincRNA)
 def summary():
     pass
-
-#------------------------------------------------------------------
 
 
 @follows(loadRankedAllStats)
 def rankData():
     pass
 
-###################################################################
-###################################################################
-###################################################################
-
 
 @follows(summary, rankData)
 def full():
     pass
-
-###################################################################
-###################################################################
-###################################################################
 
 
 @follows(mkdir("report"))
@@ -773,10 +732,6 @@ def build_report():
 
     E.info("starting documentation build process from scratch")
     P.run_report(clean=True)
-
-###################################################################
-###################################################################
-###################################################################
 
 
 @follows(build_report)

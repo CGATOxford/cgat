@@ -31,15 +31,9 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
 import string
-import re
-import tempfile
-import subprocess
-import optparse
-import time
-import math
+import CGAT.Experiment as E
 
 """read in data and append columns to a density histogram
 
@@ -49,12 +43,8 @@ import math
 '#' at start of line is a comment
 """
 
-import CGAT.Experiment as E
-import numpy
-import scipy
-
 parser = E.OptionParser(
-    version="%prog version: $Id: modify_table.py 2782 2009-09-10 11:40:29Z andreas $")
+    version="%prog version: $Id$")
 
 # ------------------------------------------------------------------------
 

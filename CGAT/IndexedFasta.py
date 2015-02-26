@@ -54,8 +54,6 @@ from CGAT import Experiment as E
 from AString import AString
 import pysam
 
-# ------------------------------------------------------------
-
 
 class Uncompressor:
 
@@ -90,8 +88,6 @@ class Uncompressor:
 
         return u[r:r + end - start]
 
-# ------------------------------------------------------------
-
 
 def writeFragments(outfile_fasta,
                    outfile_index,
@@ -101,7 +97,7 @@ def writeFragments(outfile_fasta,
     """write mangled fragments to *outfile_fasta* in chunks of *size*
     updating *outfile_index*.
 
-    returns part of last fragment that has not been written and is 
+    returns part of last fragment that has not been written and is
     less than *size* and the number of fragments output.
 
     If *write_all* is True, all of the fragments are written to
@@ -323,8 +319,8 @@ class MultipleFastaIterator:
                 if tf != sys.stdin:
                     tf.close()
                 continue
-            elif self.format == "fasta.gz" or (self.format == "auto"
-                                               and filename.endswith(".gz")):
+            elif self.format == "fasta.gz" or (self.format == "auto" and
+                                               filename.endswith(".gz")):
                 infile = gzip.open(filename, "r")
             elif filename == "-":
                 infile = sys.stdin
@@ -390,19 +386,21 @@ def createDatabase(db, iterator,
             write_chunks = True
         elif compression == "dictzip":
             import dictzip
-            mangler = lambda x: x
+
+            def mangler(x): return x
             db_name = db + ".dz"
             write_chunks = False
         elif compression == "bzip2":
             import bz2
 
-            def bzip_mangler(s):
-                return bz2.compress(s, 9)
+            def bzip_mangler(x):
+                return bz2.compress(x, 9)
             mangler = bzip_mangler
             db_name = db + ".bz2"
             write_chunks = True
         elif compression == "debug":
-            mangler = lambda x: x
+
+            def mangler(x): return x
             db_name = db + ".debug"
             write_chunks = True
         elif compression == "rle":
@@ -420,7 +418,7 @@ def createDatabase(db, iterator,
             raise ValueError("specify chunksize in --random-access-points")
 
     else:
-        mangler = lambda x: x
+        def mangler(x): return x
         db_name = db + ".fasta"
         write_chunks = False
         index_name = db + ".idx"
@@ -737,7 +735,7 @@ class CGATIndexedFasta:
             contig = self.mSynonyms[contig]
 
         if contig not in self.mIndex:
-            raise KeyError, "%s not in index" % contig
+            raise KeyError("%s not in index" % contig)
 
         return contig
 

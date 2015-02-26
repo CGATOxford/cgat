@@ -56,28 +56,8 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
-import re
-import getopt
-import time
-import sets
-import optparse
-import math
-import tempfile
-import bisect
-
-""" program $Id: optic/analyze_synteny.py 2781 2009-09-10 11:33:14Z andreas $
-
-Methods:
-
-counts = count number of orthologs per contig pair.
-
-"""
 import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
-import numpy
 import CGAT.Synteny as Synteny
 import scipy
 import scipy.stats

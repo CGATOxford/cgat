@@ -51,6 +51,11 @@ cufflinks:
     executable: cufflinks
     regex: 'cufflinks v(\S+)'
 
+butter:
+    executable: butter
+    version: --version
+    regex: 'butter version (\S+)'
+
 # part of sra-tools
 fastq-dump:
     executable: fastq-dump

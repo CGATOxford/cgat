@@ -124,7 +124,8 @@ class callerIDRPeaks(object):
         Otherwise will return ValueError
         """
         n = track.clone()
-        n.data["attribute1"] = "input"  # is hardcoded into regex for ruffus tasks
+        # is hardcoded into regex for ruffus tasks
+        n.data["attribute1"] = "input"
 
         if n.replicate == "R0":
             # if track is pooled, then select pooled input
@@ -234,7 +235,7 @@ class macs2IDRPeaks(callerIDRPeaks):
         # add additional parameters
         # currently the input read format has to be bam bc of ruffus regex
         statement.append("--format BAM")
-        statement.append("--set-name %s" % outfile_stub)
+        statement.append("--name %s" % outfile_stub)
         # require genome size, if it is not specified try to take from genome
         if not re.search("-g\s|--gsize",
                          self.PARAMS_PEAKCALLER["macs2_options_parameters"]):
@@ -505,12 +506,12 @@ def findNPeaks(infiles, outfile, params):
                 n_peaks += 1
             else:
                 continue
-        outf.write(tissue + "\t"
-                   + condition + "\t"
-                   + experiment + "\t"
-                   + inf_name + "\t"
-                   + sample1 + "\t"
-                   + sample2 + "\t"
-                   + str(n_peaks) + "\n")
+        outf.write(tissue + "\t" +
+                   condition + "\t" +
+                   experiment + "\t" +
+                   inf_name + "\t" +
+                   sample1 + "\t" +
+                   sample2 + "\t" +
+                   str(n_peaks) + "\n")
 
     outf.close()

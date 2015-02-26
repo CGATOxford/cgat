@@ -147,9 +147,6 @@ def getPeakShift(track):
         return getPeakShiftFromSPP("%s.spp" % track)
 
 
-############################################################
-############################################################
-############################################################
 def getMappedReads(infile):
     '''return number of reads mapped. '''
     for lines in IOTools.openFile(infile, "r"):
@@ -234,7 +231,7 @@ def getBedLocations(filename):
 
 def buildQuicksectMask(bed_file):
     '''return Quicksect object containing the regions specified
-       takes a bed file listing the regions to mask 
+       takes a bed file listing the regions to mask
     '''
     mask = IndexedGenome.Quicksect()
 
@@ -329,18 +326,18 @@ def countPeaks(contig, start, end, samfiles, offsets=None):
 def buildBAMforPeakCalling(infiles, outfile, dedup, mask):
     ''' Make a BAM file suitable for peak calling.
 
-        Infiles are merged and unmapped reads removed. 
+    Infiles are merged and unmapped reads removed.
 
-        If specificied duplicate reads are removed. 
-        This method use Picard.
+    If specificied duplicate reads are removed.
+    This method use Picard.
 
-        If a mask is specified, reads falling within
-        the mask are filtered out. 
+    If a mask is specified, reads falling within
+    the mask are filtered out.
 
-        This uses bedtools.
+    This uses bedtools.
 
-        The mask is a quicksect object containing
-        the regions from which reads are to be excluded.
+    The mask is a quicksect object containing
+    the regions from which reads are to be excluded.
     '''
 
     # open the infiles, if more than one merge and sort first using samtools.
@@ -348,9 +345,6 @@ def buildBAMforPeakCalling(infiles, outfile, dedup, mask):
     samfiles = []
     num_reads = 0
     nfiles = 0
-
-    to_cluster = True
-
     statement = []
 
     tmpfile = P.getTempFilename()
@@ -358,34 +352,30 @@ def buildBAMforPeakCalling(infiles, outfile, dedup, mask):
     if len(infiles) > 1 and isinstance(infiles, str) == 0:
         # assume: samtools merge output is sorted
         # assume: sam files are sorted already
-        statement.append( '''samtools merge @OUT@ %s''' % (infiles.join(" ")) )
-        statement.append( '''samtools sort @IN@ @OUT@''')
+        statement.append('''samtools merge @OUT@ %s''' % (infiles.join(" ")))
+        statement.append('''samtools sort @IN@ @OUT@''')
 
     if dedup:
         job_options = "-l mem_free=16G -l picard=1"
-        statement.append( '''MarkDuplicates
-                                       INPUT=@IN@
-                                       ASSUME_SORTED=true 
-                                       REMOVE_DUPLICATES=true
-                                       QUIET=true
-                                       OUTPUT=@OUT@
-                                       METRICS_FILE=%(outfile)s.picardmetrics
-                                       VALIDATION_STRINGENCY=SILENT 
-                   >& %(outfile)s.picardlog ''' )
+        statement.append('''MarkDuplicates
+        INPUT=@IN@
+        ASSUME_SORTED=true
+        REMOVE_DUPLICATES=true
+        QUIET=true
+        OUTPUT=@OUT@
+        METRICS_FILE=%(outfile)s.picardmetrics
+        VALIDATION_STRINGENCY=SILENT
+        >& %(outfile)s.picardlog''')
 
     if mask:
         statement.append(
-            '''intersectBed -abam @IN@ -b %(mask)s -wa -v > @OUT@''' )
+            '''intersectBed -abam @IN@ -b %(mask)s -wa -v > @OUT@''')
 
-    statement.append('''mv @IN@ %(outfile)s''' )
-    statement.append('''samtools index %(outfile)s''' )
+    statement.append('''mv @IN@ %(outfile)s''')
+    statement.append('''samtools index %(outfile)s''')
 
     statement = P.joinStatements(statement, infiles)
     P.run()
-
-############################################################
-############################################################
-############################################################
 
 
 def buildSimpleNormalizedBAM(infiles, outfile, nreads):
@@ -419,22 +409,17 @@ def buildSimpleNormalizedBAM(infiles, outfile, nreads):
     E.info("buildNormalizedBam: %i input, %i output (%5.2f%%), should be %i" %
            (ninput, noutput, 100.0 * noutput / ninput, nreads))
 
-############################################################
-############################################################
-############################################################
-####### Depreciate this function? ##########################
-############################################################
-
 
 def buildNormalizedBAM(infiles, outfile, normalize=True):
     '''build a normalized BAM file.
 
-    Infiles are merged and duplicated reads are removed. 
-    If *normalize* is set, reads are removed such that all 
-    files will have approximately the same number of reads.
+    Infiles are merged and duplicated reads are removed.  If
+    *normalize* is set, reads are removed such that all files will
+    have approximately the same number of reads.
 
     Note that the duplication here is wrong as there
     is no sense of strandedness preserved.
+
     '''
 
     min_reads = getMinimumMappedReads(glob.glob("*.readstats"))
@@ -504,9 +489,6 @@ def buildNormalizedBAM(infiles, outfile, normalize=True):
            (ninput, noutput, 100.0 * noutput / ninput, min_reads))
 
 
-############################################################
-############################################################
-############################################################
 def buildBAMStats(infile, outfile):
     '''calculate bamfile statistics - currently only single-ended
     duplicates.
@@ -556,8 +538,9 @@ def buildBAMStats(infile, outfile):
 
     outs.write("%i\tduplicates (%5.2f%%)\n" %
                (nduplicates, 100.0 * nduplicates / ninput))
-    outs.write("%i\twithout duplicates (%5.2f%%)\n" % (ninput - nduplicates,
-                                                       100.0 * (ninput - nduplicates) / ninput))
+    outs.write("%i\twithout duplicates (%5.2f%%)\n" % (
+        ninput - nduplicates,
+        100.0 * (ninput - nduplicates) / ninput))
     pysam_in.close()
     outs.close()
     outs_dupl.close()
@@ -624,7 +607,6 @@ def exportIntervalsAsBed(infile, outfile,
 
         c.after_bedfilter = len(bd)
         bd = pybedtools.BedTool(tmpfile)
-        
         c.removed_bedfilter = latest - c.after_bedfilter
         latest = c.after_bedfilter
 
@@ -645,7 +627,7 @@ def exportIntervalsAsBed(infile, outfile,
         c.removed_merging = latest - c.after_merging
         latest = c.after_merging
 
-    c.output = latest        
+    c.output = latest
 
     # one final sort
     bd = bd.sort()
@@ -660,10 +642,6 @@ def exportIntervalsAsBed(infile, outfile,
 
     os.unlink(tmpfile)
     return c
-
-############################################################
-############################################################
-############################################################
 
 
 def exportMacsIntervalsAsBed(infile, outfile, foldchange):
@@ -690,10 +668,6 @@ def exportMacsIntervalsAsBed(infile, outfile, foldchange):
     cc.close()
     outs.close()
 
-############################################################
-############################################################
-############################################################
-
 
 def exportPeaksAsBed(infile, outfile):
     '''export peaks as bed files.'''
@@ -712,7 +686,8 @@ def exportPeaksAsBed(infile, outfile):
 
     cc = dbhandle.cursor()
     statement = '''SELECT contig, peakcenter - %(peakwidth)i, peakcenter + %(peakwidth)i,
-                          interval_id, peakval FROM %(track)s_intervals ORDER by contig, start''' % locals()
+    interval_id, peakval FROM %(track)s_intervals
+    ORDER by contig, start''' % locals()
     cc.execute(statement)
 
     outs = IOTools.openFile(outfile, "w")
@@ -728,10 +703,6 @@ def exportPeaksAsBed(infile, outfile):
     cc.close()
     outs.close()
 
-############################################################
-############################################################
-############################################################
-
 
 def mergeBedFiles(infiles, outfile):
     '''generic method for merging bed files. '''
@@ -742,25 +713,24 @@ def mergeBedFiles(infiles, outfile):
 
     infile = " ".join(infiles)
     statement = '''
-        zcat %(infile)s 
-        | mergeBed -i stdin 
-        | cut -f 1-3 
-        | awk '{printf("%%s\\t%%i\\n",$0, ++a); }'
-        | bgzip
-        > %(outfile)s 
-        '''
+    zcat %(infile)s
+    | mergeBed -i stdin
+    | cut -f 1-3
+    | awk '{printf("%%s\\t%%i\\n",$0, ++a); }'
+    | bgzip
+    > %(outfile)s
+    '''
 
     P.run()
 
-############################################################
-############################################################
-############################################################
-
 
 def mergeIntervalsWithScores(infile, outfile, dist, method):
-    '''merge adjacent intervals (within dist) and integrate scores (using method) from merged peaks.
-       Assume bed file sorted by position and score in column 5.
-       Methods: mean, max, length weighted mean'''
+    '''merge adjacent intervals (within dist) and integrate scores (using
+       method) from merged peaks.  Assume bed file sorted by position
+       and score in column 5.  Methods: mean, max, length weighted
+       mean
+
+    '''
 
     intervals = open(infile, "r")
     merged = open(outfile, "w")
@@ -783,8 +753,9 @@ def mergeIntervalsWithScores(infile, outfile, dist, method):
             elif method == "length_weighted_mean":
                 length1 = end - start
                 length2 = last_end - last_start
-                newscore = (
-                    (score * length1) + (last_score * length2)) / (length1 + length2)
+                newscore = ((
+                    (score * length1) + (last_score * length2)) /
+                            (length1 + length2))
             elif method == "max":
                 newscore = max(last_score, score)
             last_end = end
@@ -812,8 +783,8 @@ def intersectBedFiles(infiles, outfile):
     Only intervals that overlap in all files are retained.
     Interval coordinates are given by the first file in *infiles*.
 
-    Bed files are normalized (overlapping intervals within 
-    a file are merged) before intersection. 
+    Bed files are normalized (overlapping intervals within
+    a file are merged) before intersection.
 
     Intervals are renumbered starting from 1.
     '''
@@ -828,10 +799,10 @@ def intersectBedFiles(infiles, outfile):
             P.touch(outfile)
         else:
             statement = '''
-        intersectBed -u -a %s -b %s 
-        | cut -f 1,2,3,4,5 
+        intersectBed -u -a %s -b %s
+        | cut -f 1,2,3,4,5
         | awk 'BEGIN { OFS="\\t"; } {$4=++a; print;}'
-        | bgzip > %%(outfile)s 
+        | bgzip > %%(outfile)s
         ''' % (infiles[0], infiles[1])
             P.run()
 
@@ -858,17 +829,13 @@ def intersectBedFiles(infiles, outfile):
             P.run()
 
         statement = '''cat %(tmpfile)s
-        | cut -f 1,2,3,4,5 
+        | cut -f 1,2,3,4,5
         | awk 'BEGIN { OFS="\\t"; } {$4=++a; print;}'
         | bgzip
         > %(outfile)s '''
         P.run()
 
         os.unlink(tmpfile)
-
-############################################################
-############################################################
-############################################################
 
 
 def subtractBedFiles(infile, subtractfile, outfile):
@@ -884,11 +851,11 @@ def subtractBedFiles(infile, subtractfile, outfile):
         return
 
     statement = '''
-        intersectBed -v -a %(infile)s -b %(subtractfile)s 
-        | cut -f 1,2,3,4,5 
-        | awk 'BEGIN { OFS="\\t"; } {$4=++a; print;}'
-        | bgzip > %(outfile)s ; tabix -p bed %(outfile)s
-        '''
+    intersectBed -v -a %(infile)s -b %(subtractfile)s
+    | cut -f 1,2,3,4,5
+    | awk 'BEGIN { OFS="\\t"; } {$4=++a; print;}'
+    | bgzip > %(outfile)s ; tabix -p bed %(outfile)s
+    '''
 
     P.run()
 
@@ -900,8 +867,9 @@ def subtractBedFiles(infile, subtractfile, outfile):
 def summarizeMACS(infiles, outfile):
     '''run MACS for peak detection.
 
-    This script parses the MACS logfile to extract 
-    peak calling parameters and results.
+    This script parses the MACS logfile to extract peak calling
+    parameters and results.
+
     '''
 
     def __get(line, stmt):
@@ -923,7 +891,8 @@ def summarizeMACS(infiles, outfile):
         ("#2   scan_window: (\d+)", "scan_window", ()),
         ("#3 Total number of candidates: (\d+)",
          "ncandidates", ("positive", "negative")),
-        ("#3 Finally, (\d+) peaks are called!",  "called", ("positive", "negative"))]
+        ("#3 Finally, (\d+) peaks are called!",  "called",
+         ("positive", "negative"))]
 
     mapper, mapper_header = {}, {}
     for x, y, z in map_targets:
@@ -1038,10 +1007,6 @@ def summarizeMACSsolo(infiles, outfile):
 
     outs.close()
 
-############################################################
-############################################################
-############################################################
-
 
 def summarizeMACSFDR(infiles, outfile):
     '''compile table with peaks that would remain after filtering
@@ -1087,7 +1052,7 @@ def runMACS(infile, outfile,
         options.append("--control=%s" % controlfile)
     if tagsize is not None:
         options.append("--tsize %i" % tagsize)
-    
+
     options = " ".join(options)
 
     statement = '''
@@ -1121,10 +1086,6 @@ def runMACS(infile, outfile,
                        rm -f %(outfile)s_%(suffix)s
                     '''
         P.run()
-
-############################################################
-############################################################
-############################################################
 
 
 def summarizeMACS2(infiles, outfile):
@@ -1206,10 +1167,6 @@ def summarizeMACS2(infiles, outfile):
 
     outs.close()
 
-############################################################
-############################################################
-############################################################
-
 
 def summarizeMACS2FDR(infiles, outfile):
     '''compile table with peaks that would remain after filtering
@@ -1235,9 +1192,6 @@ def summarizeMACS2FDR(infiles, outfile):
     outf.close()
 
 
-############################################################
-############################################################
-############################################################
 def bedGraphToBigwig(infile, contigsfile, outfile, remove=True):
     '''convert a bedgraph file to a bigwig file.
 
@@ -1257,10 +1211,6 @@ def bedGraphToBigwig(infile, contigsfile, outfile, remove=True):
 
     if os.path.exists(outfile) and not P.isEmpty(outfile):
         os.remove(infile)
-
-############################################################
-############################################################
-############################################################
 
 
 def runMACS2(infile, outfile,
@@ -1283,7 +1233,7 @@ def runMACS2(infile, outfile,
         options.append("--control %s" % controlfile)
     if tagsize is not None:
         options.append("--tsize %i" % tagsize)
-    
+
     options = " ".join(options)
 
     job_options = "-l mem_free=8G"
@@ -1354,10 +1304,6 @@ def runMACS2(infile, outfile,
                 '''
     P.run()
 
-############################################################
-############################################################
-############################################################
-
 
 def runZinba(infile,
              outfile,
@@ -1420,10 +1366,6 @@ def runZinba(infile,
 
     P.run()
 
-############################################################
-############################################################
-############################################################
-
 
 def loadMACS(infile, outfile, bamfile, controlfile=None):
     '''load MACS results into database.
@@ -1438,7 +1380,7 @@ def loadMACS(infile, outfile, bamfile, controlfile=None):
 
     This method creates two optional additional files:
 
-       * if the file :file:`<track>_diag.xls` is present, load MACS 
+       * if the file :file:`<track>_diag.xls` is present, load MACS
          diagnostic data into the table :file:`<track>_macsdiag`.
 
        * if the file :file:`<track>_model.r` is present, call R to
@@ -1542,7 +1484,7 @@ def loadMACS(infile, outfile, bamfile, controlfile=None):
     else:
         control = ""
 
-    statement = '''python %(scriptsdir)s/bed2table.py 
+    statement = '''python %(scriptsdir)s/bed2table.py
                            --counter=peaks
                            --bam-file=%(bamfile)s
                            --offset=%(shift)i
@@ -1610,9 +1552,6 @@ def loadMACS(infile, outfile, bamfile, controlfile=None):
         P.run()
 
 
-############################################################
-############################################################
-############################################################
 def loadMACS2(infile, outfile, bamfile, controlfile=None):
     '''load MACS 2 results.
 
@@ -1769,19 +1708,19 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
         statement = '''
                     zcat %(filename_subpeaks)s
                     | awk '/Chromosome/ {next; } {printf("%%s\\t%%i\\t%%i\\t%%i\\t%%i\\t%%i\\n", $1,$2,$3,++a,$4,$5)}'
-                    | python %(scriptsdir)s/bed2table.py 
+                    | python %(scriptsdir)s/bed2table.py
                                --counter=peaks
                                --bam-file=%(bamfile)s
                                --offset=%(shift)i
                                %(control)s
-                               --output-all-fields 
+                               --output-all-fields
                                --output-bed-headers=%(headers)s
                                --log=%(outfile)s
-                    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+                    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
                            --add-index=contig,start
                            --add-index=interval_id
                            --table=%(tablename)s
-                           --allow-empty-file 
+                           --allow-empty-file
                     > %(outfile)s'''
 
         P.run()
@@ -1800,19 +1739,19 @@ def loadMACS2(infile, outfile, bamfile, controlfile=None):
         statement = '''
                     cat %(filename_broadpeaks)s
                     | awk '/Chromosome/ {next; } {printf("%%s\\t%%i\\t%%i\\t%%i\\t%%i\\n", $1,$2,$3,++a,$4)}'
-                    | python %(scriptsdir)s/bed2table.py 
+                    | python %(scriptsdir)s/bed2table.py
                                --counter=peaks
                                --bam-file=%(bamfile)s
                                --offset=%(shift)i
                                %(control)s
-                               --output-all-fields 
+                               --output-all-fields
                                --output-bed-headers=%(headers)s
                                --log=%(outfile)s
-                    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
+                    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
                            --add-index=contig,start
                            --add-index=interval_id
                            --table=%(tablename)s
-                           --allow-empty-file 
+                           --allow-empty-file
                     > %(outfile)s'''
 
         P.run()
@@ -1842,7 +1781,7 @@ def loadZinba(infile, outfile, bamfile,
     overlapping intervals.
 
     Zinba calls peaks in regions where there are many reads inside
-    the control. Thus this method applies a filtering step 
+    the control. Thus this method applies a filtering step
     removing all intervals in which there is a peak of
     more than readlength / 2 height in the control.
     '''
@@ -1856,7 +1795,7 @@ def loadZinba(infile, outfile, bamfile,
     if not os.path.exists(infilename):
         E.warn("could not find %s" % infilename)
     elif P.isEmpty(infile):
-        E.warn("no data in %s" % filename)
+        E.warn("no data in %s" % infilename)
     else:
 
         # filter peaks
@@ -1896,7 +1835,7 @@ def loadZinba(infile, outfile, bamfile,
         --table=%(tablename)s
         --allow-empty-file
         > %(outfile)s'''
-        
+
         P.run()
 
         tablename = P.toTable(outfile) + "_summits"
@@ -1924,9 +1863,6 @@ def loadZinba(infile, outfile, bamfile,
         P.run()
 
 
-############################################################
-############################################################
-############################################################
 def runSICER(infile,
              outfile,
              controlfile=None,
@@ -1971,24 +1907,24 @@ def runSICER(infile,
         statement.append(
             'bamToBed -i %(controlfile)s > %(workdir)s/control.bed')
         statement.append('cd %(workdir)s')
-        statement.append( '''SICER.sh . foreground.bed control.bed . %(genome)s 
+        statement.append('''SICER.sh . foreground.bed control.bed . %(genome)s
                     %(sicer_redundancy_threshold)i
                     %(window_size)i
                     %(fragment_size)i
                     %(sicer_effective_genome_fraction)f
                     %(gap_size)i
                     %(sicer_fdr_threshold)f
-                    >& ../%(outfile)s''' )
+                    >& ../%(outfile)s''')
     else:
         statement.append('cd %(workdir)s')
-        statement.append( '''SICER-rb.sh . foreground.bed . %(genome)s 
+        statement.append('''SICER-rb.sh . foreground.bed . %(genome)s
                     %(sicer_redundancy_threshold)i
                     %(window_size)i
                     %(fragment_size)i
                     %(sicer_effective_genome_fraction)f
                     %(gap_size)i
                     %(sicer_evalue_threshold)f
-                    >& ../%(outfile)s''' )
+                    >& ../%(outfile)s''')
 
     statement.append('rm -f foreground.bed background.bed')
     statement = '; '.join(statement)
@@ -2390,7 +2326,7 @@ def loadSPP(infile, outfile, bamfile, controlfile=None):
     bedfile = infile + ".narrowpeak.txt"
     headers = "contig,start,end,interval_id,peakval1,qvalue,peakpos"
     tablename = P.toTable(outfile) + "_peaks"
-    statement = '''awk '{printf("%%s\\t%%i\\t%%i\\t%%s\\t%%f\\t%%f\\t%%i\\n", $1,$2,$3,++a,$7,$9,$1+$10);}' 
+    statement = '''awk '{printf("%%s\\t%%i\\t%%i\\t%%s\\t%%f\\t%%f\\t%%i\\n", $1,$2,$3,++a,$7,$9,$1+$10);}'
                 < %(bedfile)s
                 | python %(scriptsdir)s/bed2table.py
                            --counter=peaks
@@ -2580,16 +2516,16 @@ def removeBackground(sample_bedgraph, input_bedgraph, outfile):
         line_contf = contf[i].split()
         if line_inf[0] == line_contf[0] and line_inf[1] == line_contf[1]:
             if int(line_inf[3]) >= int(line_contf[3]):
-                outf.write(str(line_inf[0])
-                           + "\t" + str(line_inf[1])
-                           + "\t" + str(line_inf[2])
-                           + "\t" + str(int(line_inf[3])
-                                        - int(line_contf[3])) + "\n")
+                outf.write(str(line_inf[0]) +
+                           "\t" + str(line_inf[1]) +
+                           "\t" + str(line_inf[2]) +
+                           "\t" + str(int(line_inf[3]) -
+                                      int(line_contf[3])) + "\n")
             else:
-                outf.write(str(line_inf[0])
-                           + "\t" + str(line_inf[1])
-                           + "\t" + str(line_inf[2])
-                           + "\t0" + "\n")
+                outf.write(str(line_inf[0]) +
+                           "\t" + str(line_inf[1]) +
+                           "\t" + str(line_inf[2]) +
+                           "\t0" + "\n")
         else:
             raise Exception("Windows in '%s' aren't aligned with windows in %s"
                             % (sample_bedgraph, input_bedgraph))
@@ -2910,15 +2846,14 @@ def loadIntervalsFromBed(bedfile, track, outfile,
                 c.skipped_reads += 1
 
         else:
-            npeaks, peakcenter, length, avgval, peakval, nprobes = (1,
-                                                                    bed.start +
-                                                                    (bed.end -
-                                                                     bed.start) // 2,
-                                                                    bed.end -
-                                                                    bed.start,
-                                                                    1,
-                                                                    1,
-                                                                    1)
+            npeaks, peakcenter, length, avgval, peakval, nprobes = (
+                1,
+                bed.start + (bed.end - bed.start) // 2,
+                bed.end -
+                bed.start,
+                1,
+                1,
+                1)
 
         c.output += 1
         tmpfile.write(
@@ -2947,7 +2882,7 @@ def loadIntervalsFromBed(bedfile, track, outfile,
     P.run()
     os.unlink(tmpfile.name)
 
-    L.info("%s\n" % str(c))
+    E.info("%s\n" % str(c))
 
 
 def makeReproducibility(infiles, outfile):
@@ -2968,10 +2903,10 @@ def makeReproducibility(infiles, outfile):
 
     # note: need to quote track names
     statement = '''
-        python %(scriptsdir)s/diff_bed.py --pattern-identifier='([^/]+).bed.gz' %(options)s %(infiles)s 
-        | awk -v OFS="\\t" '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'
-        > %(outfile)s
-        '''
+    python %(scriptsdir)s/diff_bed.py --pattern-identifier='([^/]+).bed.gz' %(options)s %(infiles)s
+    | awk -v OFS="\\t" '!/^#/ { gsub( /-/,"_", $1); gsub(/-/,"_",$2); } {print}'
+    > %(outfile)s
+    '''
 
     P.run()
 

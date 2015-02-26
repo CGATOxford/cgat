@@ -21,8 +21,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-"""
-===================
+"""===================
 CAPseq pipeline
 ===================
 
@@ -82,9 +81,9 @@ labeled in the following way::
 
    sample-condition-replicate.fastq.gz
 
-Note that neither ``sample``, ``condition`` or ``replicate`` should contain 
-``_`` (underscore) and ``.`` (dot) characters as these are used by the pipeline
-to delineate tasks.
+Note that neither ``sample``, ``condition`` or ``replicate`` should
+contain ``_`` (underscore) and ``.`` (dot) characters as these are
+used by the pipeline to delineate tasks.
 
 Requirements
 ------------
@@ -122,7 +121,8 @@ database :file:`csvdb`.
 Example
 =======
 
-Example data is available at http://www.cgat.org/~andreas/sample_data/pipeline_fastqToBigWig.tgz.
+Example data is available at
+http://www.cgat.org/~andreas/sample_data/pipeline_fastqToBigWig.tgz.
 To run the example, simply unpack and untar::
 
    wget http://www.cgat.org/~andreas/sample_data/pipeline_fastqToBigWig.tgz
@@ -130,7 +130,8 @@ To run the example, simply unpack and untar::
    cd pipeline_fastqToBigWig.dir
    python <srcdir>/pipeline_fastqToBigWig.py make full
 
-.. note:: 
+.. note::
+
    For the pipeline to run, install the :doc:`pipeline_annotations` as well.
 
 
@@ -157,11 +158,10 @@ import CGAT.Experiment as E
 import PipelineChipseq as PIntervals
 import CGATPipelines.PipelineTracks as PipelineTracks
 import CGATPipelines.PipelineMapping as PipelineMapping
-
+import CGAT.Pipeline as P
 
 USECLUSTER = True
 
-import CGAT.Pipeline as P
 P.getParameters(["%s.ini" % os.path.splitext(__file__)[0],  "pipeline.ini"])
 PARAMS = P.PARAMS
 

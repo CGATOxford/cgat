@@ -57,12 +57,7 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
-import re
-import optparse
-
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.IndexedFasta as IndexedFasta
@@ -95,8 +90,6 @@ def findCodonReverse(sequence, start, found_codons, abort_codons=None):
         start -= 3
 
     return found, start
-
-# ------------------------------------------------------------
 
 
 def main(argv=None):
@@ -142,17 +135,17 @@ def main(argv=None):
     parser.set_defaults(
         genome_file="genome",
         start_codons=("ATG"),
-        stop_codons = ("TAG", "TAA", "TGA"),
-        start_codon_boundary = 9999,
-        stop_codon_boundary = 9999,
-        fill_introns = 0,
-        introns_max_stops = 0,
-        left_splice_signals = ("GT",),
-        right_splice_signals = ("AG",),
+        stop_codons=("TAG", "TAA", "TGA"),
+        start_codon_boundary=9999,
+        stop_codon_boundary=9999,
+        fill_introns=0,
+        introns_max_stops=0,
+        left_splice_signals=("GT",),
+        right_splice_signals=("AG",),
         output_format="extensions",
-        left_extension_mode = "first-start",
-        skip_header = False,
-        output_filename_summary = None,
+        left_extension_mode="first-start",
+        skip_header=False,
+        output_filename_summary=None,
     )
 
     (options, args) = E.Start(parser, add_pipe_options=True)

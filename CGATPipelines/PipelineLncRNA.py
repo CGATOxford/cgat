@@ -16,7 +16,13 @@ import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Pipeline as P
 import CGAT.Experiment as E
 import sqlite3
-import CGAT.Experiment as E
+import tempfile
+import string
+from copy import deepcopy
+import bx.intervals.io
+import bx.align.maf
+import bx.intervals
+import bx.interval_index_file
 
 ########################################################
 # gene set building
@@ -969,18 +975,18 @@ def write_to_temp(tempfile, interval_list, transcript, check_strand=True):
     if check_strand:
         for interval in interval_list:
             if interval[2][6] == transcript[0].strand:
-                tempfile.write(transcript[0].gene_id + "\t"
-                               + str(interval[0]) + "\t"
-                               + str(interval[1]) + "\t"
-                               + str(transcript[0]) + "\t"
-                               + "\t".join(interval[2]) + "\n")
+                tempfile.write(transcript[0].gene_id + "\t" +
+                               str(interval[0]) + "\t" +
+                               str(interval[1]) + "\t" +
+                               str(transcript[0]) + "\t" +
+                               "\t".join(interval[2]) + "\n")
     else:
         for interval in interval_list:
-            tempfile.write(transcript[0].gene_id + "\t"
-                           + str(interval[0]) + "\t"
-                           + str(interval[1]) + "\t"
-                           + str(transcript[0]) + "\t"
-                           + "\t".join(interval[2]) + "\n")
+            tempfile.write(transcript[0].gene_id + "\t" +
+                           str(interval[0]) + "\t" +
+                           str(interval[1]) + "\t" +
+                           str(transcript[0]) + "\t" +
+                           "\t".join(interval[2]) + "\n")
 
 
 def reClassifyLncRNAGenes(lncRNA_gtf,
@@ -1516,15 +1522,6 @@ def reClassifyLncRNAGenes(lncRNA_gtf,
 # get_spliced_region_alignment()
 # get_starts_ends_fields_from_gene_bed()
 # iter_components_by_src()
-
-import tempfile
-import string
-from copy import deepcopy
-import bx.intervals.io
-import bx.align.maf
-import bx.intervals
-import bx.interval_index_file
-
 GAP_CHARS = ['-']
 SRC_SPLIT_CHAR = '.'
 
@@ -2092,18 +2089,18 @@ def gtfToBed12(infile, outfile, model):
         blockSizes = ','.join(sizes)
         blockStarts = ','.join(starts)
 
-        outfile.write(chrom + "\t"
-                      + start + "\t"
-                      + end + "\t"
-                      + name + "\t"
-                      + score + "\t"
-                      + strand + "\t"
-                      + thickStart + "\t"
-                      + thickEnd + "\t"
-                      + colourRGB + "\t"
-                      + blockCount + "\t"
-                      + blockSizes + "\t"
-                      + blockStarts + "\n")
+        outfile.write(chrom + "\t" +
+                      start + "\t" +
+                      end + "\t" +
+                      name + "\t" +
+                      score + "\t" +
+                      strand + "\t" +
+                      thickStart + "\t" +
+                      thickEnd + "\t" +
+                      colourRGB + "\t" +
+                      blockCount + "\t" +
+                      blockSizes + "\t" +
+                      blockStarts + "\n")
 
     outfile.close()
 

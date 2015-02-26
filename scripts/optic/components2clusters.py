@@ -61,14 +61,10 @@ Code
 ----
 
 '''
-import os
 import sys
 import string
-import re
 import getopt
-import tempfile
-import time
-import popen2
+import CGAT.Experiment as E
 
 param_long_options = ["verbose=", "help",
                       "equivalences=", "components=", "queries=", "transcripts=", "filter=",
@@ -81,8 +77,6 @@ param_loglevel = 1
 param_filename_map_cluster2queries = None
 param_filename_map_transcript2cluster = None
 param_filename_filter = None
-
-import CGAT.Experiment as E
 
 
 def main(argv=None):

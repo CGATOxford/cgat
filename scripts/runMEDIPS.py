@@ -53,7 +53,6 @@ Command line options
 import os
 import sys
 import tempfile
-import pandas
 import math
 
 from rpy2.robjects import r as R
@@ -62,7 +61,9 @@ import rpy2.rinterface
 import CGAT.Experiment as E
 import CGAT.Expression as Expression
 import CGAT.IOTools as IOTools
+import CGAT.IndexedFasta as IndexedFasta
 import CGAT.CSV as CSV
+import CGAT.BamTools as BamTools
 
 
 def compress(infile):
@@ -89,7 +90,8 @@ def bigwig(infile, contig_sizes):
              for x in contig_sizes.iteritems()]))
     os.close(tmp)
 
-    statement = "wigToBigWig -clip %(infile)s %(filename_sizes)s %(outfile)s " % locals()
+    statement = "wigToBigWig " \
+                "-clip %(infile)s %(filename_sizes)s %(outfile)s " % locals()
 
     E.debug("executing statement '%s'" % statement)
 
@@ -97,6 +99,15 @@ def bigwig(infile, contig_sizes):
         os.unlink(infile)
 
     os.unlink(filename_sizes)
+
+
+def isPaired(filename):
+    '''return "T" if bamfile contains paired end reads.'''
+
+    if BamTools.isPaired(filename):
+        return "T"
+    else:
+        return "F"
 
 
 def main(argv=None):
@@ -119,20 +130,17 @@ def main(argv=None):
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome [default=%default].")
 
-    parser.add_option("-e", "--extend", dest="extension", type="int",
+    parser.add_option("--extend", dest="extension", type="int",
                       help="extend tags by this number of bases "
                       "[default=%default].")
 
-    parser.add_option("-s", "--shift-size", dest="shift", type="int",
+    parser.add_option("--shift-size", dest="shift", type="int",
                       help="shift tags by this number of bases "
                       "[default=%default].")
 
-    parser.add_option("-b", "--bin-size", dest="bin_size", type="int",
-                      help="bin size of genome vector [default=%default].")
-
-    parser.add_option("-l", "--fragment-length", dest="fragment_length",
-                      type="int",
-                      help="bin size of genome vector [default=%default].")
+    parser.add_option("--window-size", dest="window_size", type="int",
+                      help="window size to be used in the analysis"
+                      "[default=%default].")
 
     parser.add_option("--saturation-iterations",
                       dest="saturation_iterations", type="int",
@@ -143,7 +151,7 @@ def main(argv=None):
                       action="append",
                       choices=("saturation", "coverage", "enrichment",
                                "dmr", "rms", "rpm", "all", "convert"),
-                      help = "actions to perform [default=%default].")
+                      help="actions to perform [default=%default].")
 
     parser.add_option("-w", "--bigwig-file", dest="bigwig",
                       action="store_true",
@@ -200,10 +208,8 @@ def main(argv=None):
         genome_file=None,
         extend=0,
         shift=0,
-        bin_size=50,
         window_size=300,
         saturation_iterations=10,
-        fragment_length=700,
         toolset=[],
         bigwig=False,
         treatment_files=[],
@@ -248,7 +254,8 @@ def main(argv=None):
                         float(line['edgeR.logFC']),
                         math.pow(2.0, float(line['edgeR.logFC'])),
                         float(line['edgeR.logFC']),  # no transform
-                        ["0", "1"][float(line['edgeR.adj.p.value']) < options.fdr_threshold],
+                        ["0", "1"][float(line['edgeR.adj.p.value']) <
+                                   options.fdr_threshold],
                         status)))
             except ValueError, msg:
                 raise ValueError("parsing error %s in line: %s" % (msg, line))
@@ -276,17 +283,17 @@ def main(argv=None):
     genome_file = 'BSgenome.%s' % options.ucsc_genome
     R.library(genome_file)
 
-    bin_size = options.bin_size
     window_size = options.window_size
     extend = options.extend
     shift = options.shift
-    fragment_length = options.fragment_length
     saturation_iterations = options.saturation_iterations
+    # TRUE is the default in MEDIPS
     uniq = "TRUE"
 
     if "saturation" in options.toolset or do_all:
         E.info("saturation analysis")
         for fn in options.treatment_files + options.control_files:
+            paired = isPaired(fn)
             R('''sr = MEDIPS.saturation(
             file='%(fn)s',
             BSgenome='%(genome_file)s',
@@ -295,6 +302,7 @@ def main(argv=None):
             window_size=%(window_size)i,
             uniq=%(uniq)s,
             nit = %(saturation_iterations)i,
+            paired = %(paired)s,
             nrit = 1)''' % locals())
 
             R.png(E.getOutputFile("%s_saturation.png" % fn))
@@ -320,12 +328,14 @@ def main(argv=None):
     if "coverage" in options.toolset or do_all:
         E.info("CpG coverage analysis")
         for fn in options.treatment_files + options.control_files:
+            paired = isPaired(fn)
             R('''cr = MEDIPS.seqCoverage(
             file='%(fn)s',
             BSgenome='%(genome_file)s',
             pattern='CG',
             shift=%(shift)i,
             extend=%(extend)i,
+            paired=%(paired)s,
             uniq=%(uniq)s)''' % locals())
 
             R.png(E.getOutputFile("%s_cpg_coverage_pie.png" % fn))
@@ -361,11 +371,13 @@ def main(argv=None):
         outfile.write("\t".join(['sample'] +
                                 [x[1] for x in slotnames]) + "\n")
         for fn in options.treatment_files + options.control_files:
+            paired = isPaired(fn)
             R('''ce = MEDIPS.CpGenrich(
             file='%(fn)s',
             BSgenome='%(genome_file)s',
             shift=%(shift)i,
             extend=%(extend)i,
+            paired=%(paired)s,
             uniq=%(uniq)s)''' % locals())
 
             outfile.write("%s" % fn)
@@ -386,6 +398,7 @@ def main(argv=None):
            or do_all:
             # build four sets
             for x, fn in enumerate(options.treatment_files):
+                paired = isPaired(fn)
                 E.info("loading '%s'" % fn)
                 R('''treatment_R%(x)i = MEDIPS.createSet(
                 file='%(fn)s',
@@ -393,6 +406,7 @@ def main(argv=None):
                 shift=%(shift)i,
                 extend=%(extend)i,
                 window_size=%(window_size)i,
+                paired=%(paired)s,
                 uniq=%(uniq)s)''' % locals())
             R('''treatment_set = c(%s)''' %
               ",".join(["treatment_R%i" % x
@@ -400,6 +414,7 @@ def main(argv=None):
 
             if options.control_files:
                 for x, fn in enumerate(options.control_files):
+                    paired = isPaired(fn)
                     E.info("loading '%s'" % fn)
                     R('''control_R%(x)i = MEDIPS.createSet(
                     file='%(fn)s',
@@ -407,6 +422,7 @@ def main(argv=None):
                     shift=%(shift)i,
                     extend=%(extend)i,
                     window_size=%(window_size)i,
+                    paired=%(paired)s,
                     uniq=%(uniq)s)''' % locals())
                 R('''control_set = c(%s)''' %
                   ",".join(["control_R%i" % x
@@ -428,7 +444,8 @@ def main(argv=None):
                 # Data that does not fit the model causes
                 # "Error in 1:max_signal_index : argument of length 0"
                 # The advice is to set MeDIP=FALSE
-                # See: http://comments.gmane.org/gmane.science.biology.informatics.conductor/52319
+                # See: http://comments.gmane.org/
+                # gmane.science.biology.informatics.conductor/52319
 
                 if options.is_medip:
                     medip = "TRUE"

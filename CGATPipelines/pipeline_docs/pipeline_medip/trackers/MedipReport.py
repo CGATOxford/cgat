@@ -1,12 +1,9 @@
-import os
-import sys
-import re
-import types
 import itertools
 import glob
-
+import Pipeline
 from CGATReport.Tracker import *
-from CGATReport.odict import OrderedDict as odict
+from CGATReport.Utils import PARAMS as P
+import PipelineTracks
 
 # get from config file
 UCSC_DATABASE = "hg19"
@@ -18,7 +15,7 @@ EXPORTDIR = "export"
 ###################################################################
 # Run configuration script
 
-from CGATReport.Utils import PARAMS as P
+
 EXPORTDIR = P.get('medip_exportdir', P.get('exportdir', 'export'))
 DATADIR = P.get('medip_datadir', P.get('datadir', '.'))
 DATABASE = P.get('medip_backend', P.get('sql_backend', 'sqlite:///./csvdb'))
@@ -27,11 +24,8 @@ DATABASE = P.get('medip_backend', P.get('sql_backend', 'sqlite:///./csvdb'))
 # cf. pipeline_medip.py
 # This should be automatically gleaned from pipeline_chipseq.py
 ###################################################################
-import Pipeline
 PARAMS_PIPELINE = Pipeline.peekParameters(".",
                                           "pipeline_medip.py")
-
-import PipelineTracks
 
 Sample = PipelineTracks.Sample3
 
@@ -52,10 +46,6 @@ ALL = PipelineTracks.Aggregate(TRACKS)
 EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("condition", "tissue"))
 CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("condition", ))
 TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("tissue", ))
-
-###########################################################################
-###########################################################################
-###########################################################################
 
 
 class MedipTracker(TrackerSQL):

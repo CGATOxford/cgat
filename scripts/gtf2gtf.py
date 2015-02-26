@@ -63,6 +63,18 @@ Input gtfs need to be sorted so that features for a gene or transcript
 appear consecutively within the file. This can be achevied using
 ``--method=sort``.
 
+
+``find-retained-introns``
+    Finds intervals within a transcript that represent retained-introns,
+    here a retained intron is considered to be an intron in one transcript
+    that is entirely contianed within the exon of another. The retained
+    intron will be assigned to the transcript with the containing exon. Where
+    multiple, overlapping introns are contained within a single exon of a
+    transcript, the union of the introns will be output. Thus when considering
+    an indevidual transcript, outputs will be non-overlapping. However,
+    overlapping, or even identical feature can be output if they belong to
+    different transcripts.
+
 ``merge-exons``
     Merges overlapping exons for all transcripts of a gene, outputting the
     merged exons. Can be used in conjunction with ``merge-exons-distance``
@@ -184,16 +196,18 @@ Options for altering fields within :term:`gtf`.
     not appearing in the tsv file is discarded.
 
 ``renumber-genes``
-    Renumber genes from 1 using the pattern provided in ``--pattern-identifier``.
+    Renumber genes from 1 using the pattern provided in
+    ``--pattern-identifier``.
 
 ``renumber-transcripts``
     Renumber transcripts from 1 using the pattern provided in
     ``--pattern-identifier``.
 
 ``unset-genes``
-    Renumber genes from 1 using the pattern provided in ``--pattern-identifier``.
-    Transcripts with the same gene-id in the input :term:`gtf` file will
-    have different gene-ids in the output :term:`gtf` file.
+    Renumber genes from 1 using the pattern provided in
+    ``--pattern-identifier``. Transcripts with the same gene-id in the
+    input :term:`gtf` file will have different gene-ids in the output
+    :term:`gtf` file.
 
 ``set-transcript-to-gene``
     Will set the transcript-id to the gene-id for each feature.
@@ -260,6 +274,50 @@ import CGAT.IOTools as IOTools
 # ------------------------------------------------------------
 # This script needs some attention.
 # ------------------------------------------------------------
+
+
+def find_retained_introns(gene):
+    '''Given a bundle of transcripts, find intervals matching retained
+    introns. A retained intron is defined as an interval from an exon/intron
+    boundary to the next where both boundaries are in the same exon of another
+    transcript'''
+
+    intron_intervals = [GTF.toIntronIntervals(transcript)
+                        for transcript in gene]
+    intron_intervals = list(set(
+        itertools.chain.from_iterable(intron_intervals)))
+    intron_intervals.sort()
+    
+    for transcript in gene:
+        exons = iter(sorted(GTF.asRanges(transcript)))
+        introns = iter(intron_intervals)
+        retained_introns = []
+        try:
+            intron = introns.next()
+            exon = exons.next()
+            while True:
+
+                if exon[1] < intron[0]:
+
+                    exon = exons.next()
+                    continue
+
+                if intron[0] >= exon[0] and intron[1] <= exon[1]:
+                    E.debug("exon %s of transcript %s contains intron %s" %
+                            (exon, transcript[0].transcript_id, intron))
+                    retained_introns.append(intron)
+                intron = introns.next()
+        except StopIteration:
+            pass
+
+        retained_introns = Intervals.combine(retained_introns)
+
+        for intron in retained_introns:
+            entry = GTF.Entry()
+            entry = entry.copy(transcript[0])
+            entry.start = intron[0]
+            entry.end = intron[1]
+            yield entry
 
 
 def main(argv=None):
@@ -392,6 +450,7 @@ def main(argv=None):
                           "add-protein-id",
                           "exons2introns",
                           "filter",
+                          "find-retained-introns",
                           "intersect-transcripts",
                           "join-exons",
                           "merge-exons",
@@ -935,7 +994,8 @@ def main(argv=None):
                 assert False, "please supply either a filename "
                 "with ids to filter with (--map-tsv-file) or a sample-size."
 
-        elif options.filter_method in ("proteincoding", "lincrna", "processed-pseudogene"):
+        elif options.filter_method in ("proteincoding", "lincrna",
+                                       "processed-pseudogene"):
             # extract entries by transcript/gene biotype.
             # This filter uses a test on the source field (ENSEMBL pre v78)
             # a regular expression on the attributes (ENSEMBL >= v78).
@@ -1228,6 +1288,18 @@ def main(argv=None):
                 options.stdout.write("%s\n" % str(x))
                 nfeatures += 1
             noutput += 1
+    elif options.method == "find-retained-introns":
+
+        for gene in GTF.gene_iterator(GTF.iterator(options.stdin)):
+            ninput += 1
+            found_any = False
+            for intron in find_retained_introns(gene):
+                found_any = True
+                options.stdout.write("%s\n" % str(intron))
+                nfeatures += 1
+            if found_any:
+                noutput += 1
+
     else:
         raise ValueError("unknown method '%s'" % options.method)
 

@@ -239,13 +239,19 @@ def buildDMRStats(infiles, outfile, method, fdr_threshold=None):
     status = collections.defaultdict(lambda: collections.defaultdict(int))
 
     # deseq/edger
-    f_significant = lambda x: x.significant == "1"
-    f_up = lambda x: float(x.l2fold) > 0
-    f_down = lambda x: float(x.l2fold) < 0
-    f_fold2up = lambda x: float(x.l2fold) > 1
-    f_fold2down = lambda x: float(x.l2fold) < -1
-    f_key = lambda x: (x.treatment_name, x.control_name)
-    f_status = lambda x: x.status
+    def f_significant(x): return x.significant == "1"
+
+    def f_up(x): return float(x.l2fold) > 0
+
+    def f_down(x): return float(x.l2fold) < 0
+
+    def f_fold2up(x): return float(x.l2fold) > 1
+
+    def f_fold2down(x): return float(x.l2fold) < -1
+
+    def f_key(x): return (x.treatment_name, x.control_name)
+
+    def f_status(x): return x.status
 
     outf = IOTools.openFile(outfile, "w")
 
@@ -445,13 +451,13 @@ def runDE(infiles, outfile, outdir,
         statement = "zcat %(counts_file)s"
     else:
         statement = '''python %(scriptsdir)s/combine_tables.py
-                           --missing-value=0
-                           --cat=filename
-                           --log=%(outfile)s.log
-                           %(counts_file)s %(spike_file)s
-              | python %(scriptsdir)s/csv_cut.py
-                           --remove filename
-                           --log=%(outfile)s.log
+        --missing-value=0
+        --cat=filename
+        --log=%(outfile)s.log
+        %(counts_file)s %(spike_file)s
+        | python %(scriptsdir)s/csv_cut.py
+        --remove filename
+        --log=%(outfile)s.log
         '''
 
     prefix = os.path.basename(outfile)
@@ -461,16 +467,17 @@ def runDE(infiles, outfile, outdir,
     # and adds a new qvalue column after recomputing
     # over all windows.
     statement += '''
-              | perl %(scriptsdir)s/randomize_lines.pl -h
-              | %(cmd-farm)s
-                  --input-header
-                  --output-header
-                  --split-at-lines=200000
-                  --cluster-options="-l mem_free=8G"
-                  --log=%(outfile)s.log
-                  --output-filename-pattern=%(outdir)s/%%s
-                  --subdirs
-              "python %(scriptsdir)s/runExpression.py
+    | perl %(scriptsdir)s/randomize_lines.pl -h
+    | %(cmd-farm)s
+    --input-header
+    --output-header
+    --split-at-lines=200000
+    --cluster-options="-l mem_free=8G"
+    --log=%(outfile)s.log
+    --output-filename-pattern=%(outdir)s/%%s
+    --subdirs
+    --output-regex-header="^test_id"
+    "python %(scriptsdir)s/runExpression.py
               --method=%(method)s
               --tags-tsv-file=-
               --design-tsv-file=%(design_file)s
@@ -478,22 +485,21 @@ def runDE(infiles, outfile, outdir,
               --deseq-fit-type=%(deseq_fit_type)s
               --deseq-dispersion-method=%(deseq_dispersion_method)s
               --deseq-sharing-mode=%(deseq_sharing_mode)s
+              --edger-dispersion=%(edger_dispersion)f
               --filter-min-counts-per-row=%(tags_filter_min_counts_per_row)i
               --filter-min-counts-per-sample=%(tags_filter_min_counts_per_sample)i
               --filter-percentile-rowsums=%(tags_filter_percentile_rowsums)i
               --log=%(outfile)s.log
               --fdr=%(edger_fdr)f"
-              | grep -v "warnings"
-              | perl %(scriptsdir)s/regtail.pl ^test_id
-              | perl -p -e "s/qvalue/old_qvalue/"
-              | python %(scriptsdir)s/table2table.py
-              --log=%(outfile)s.log
-              --method=fdr
-              --column=pvalue
-              --fdr-method=BH
-              --fdr-add-column=qvalue
-              | gzip
-              > %(outfile)s '''
+    | perl -p -e "s/qvalue/old_qvalue/"
+    | python %(scriptsdir)s/table2table.py
+    --log=%(outfile)s.log
+    --method=fdr
+    --column=pvalue
+    --fdr-method=BH
+    --fdr-add-column=qvalue
+    | gzip
+    > %(outfile)s '''
 
     P.run()
 
@@ -571,7 +577,7 @@ def enrichmentVsInput(infile, outfile):
                                left_on=[0, 1, 2],
                                right_on=[0, 1, 2])
 
-    foldchange = lambda x: math.log((x['3_y'] + 1.0)/(x['3_x'] + 1.0), 2)
+    def foldchange(x): return math.log((x['3_y'] + 1.0)/(x['3_x'] + 1.0), 2)
     merge_frame[4] = merge_frame.apply(foldchange, axis=1)
 
     out_frame = merge_frame[[0, 1, 2, 4]]
@@ -634,6 +640,7 @@ def runMEDIPSDMR(design_file, outfile):
             --toolset=dmr
             --shift=%(medips_shift)s
             --extend=%(medips_extension)s
+            --window-size=%(medips_window_size)i
             --output-filename-pattern="%(outfile)s_%(pair1)s_vs_%(pair2)s_%%s"
             --fdr-threshold=%(medips_fdr)f
             --log=%(outfile)s.log
@@ -719,3 +726,155 @@ def plotDETagStats(infiles, outfile):
                             "length"))
 
     P.touch(outfile)
+
+
+@P.cluster_runnable
+def buildSpikeResults(infile, outfile):
+    '''build matrices with results from spike-in and upload
+    into database.
+
+    The method will output several files:
+
+    .spiked.gz: Number of intervals that have been spiked-in
+               for each bin of expression and fold-change
+
+    .power.gz: Global power analysis - aggregates over all
+        ranges of fold-change and expression and outputs the
+        power, the proportion of intervals overall that
+        could be detected as differentially methylated.
+
+        This is a table with the following columns:
+
+        fdr - fdr threshold
+        power - power level, number of intervals detectable
+        intervals - number of intervals in observed data at given
+                    level of fdr and power.
+        intervals_percent - percentage of intervals in observed data
+              at given level of fdr and power
+
+    '''
+
+    expression_nbins = 10
+    fold_nbins = 10
+
+    spikefile = P.snip(infile, '.tsv.gz') + '.spike.gz'
+
+    if not os.path.exists(spikefile):
+        E.warn('no spike data: %s' % spikefile)
+        P.touch(outfile)
+        return
+
+    ########################################
+    # output and load spiked results
+    tmpfile_name = P.getTempFilename(shared=True)
+
+    statement = '''zcat %(spikefile)s
+    | grep -e "^spike" -e "^test_id"
+    > %(tmpfile_name)s
+    '''
+    P.run()
+
+    E.debug("outputting spiked counts")
+    (spiked, spiked_d2hist_counts, xedges, yedges,
+     spiked_l10average, spiked_l2fold) = \
+        outputSpikeCounts(
+            outfile=P.snip(outfile, ".power.gz") + ".spiked.gz",
+            infile_name=tmpfile_name,
+            expression_nbins=expression_nbins,
+            fold_nbins=fold_nbins)
+
+    ########################################
+    # output and load unspiked results
+    statement = '''zcat %(infile)s
+    | grep -v -e "^spike"
+    > %(tmpfile_name)s
+    '''
+    P.run()
+    E.debug("outputting unspiked counts")
+
+    (unspiked, unspiked_d2hist_counts, unspiked_xedges,
+     unspiked_yedges, unspiked_l10average, unspiked_l2fold) = \
+        outputSpikeCounts(
+            outfile=P.snip(outfile, ".power.gz") + ".unspiked.gz",
+            infile_name=tmpfile_name,
+            expression_bins=xedges,
+            fold_bins=yedges)
+
+    E.debug("computing power")
+
+    assert xedges.all() == unspiked_xedges.all()
+
+    tmpfile = IOTools.openFile(tmpfile_name, "w")
+    tmpfile.write("\t".join(
+        ("expression",
+         "fold",
+         "fdr",
+         "counts",
+         "percent")) + "\n")
+
+    fdr_thresholds = [0.01, 0.05] + list(numpy.arange(0.1, 1.0, 0.1))
+    power_thresholds = numpy.arange(0.1, 1.1, 0.1)
+
+    spiked_total = float(spiked_d2hist_counts.sum().sum())
+    unspiked_total = float(unspiked_d2hist_counts.sum().sum())
+
+    outf = IOTools.openFile(outfile, "w")
+    outf.write("fdr\tpower\tintervals\tintervals_percent\n")
+
+    # significant results
+    for fdr in fdr_thresholds:
+        take = spiked['qvalue'] < fdr
+
+        # compute 2D histogram in spiked data below fdr threshold
+        spiked_d2hist_fdr, xedges, yedges = \
+            numpy.histogram2d(spiked_l10average[take],
+                              spiked_l2fold[take],
+                              bins=(xedges, yedges))
+
+        # convert to percentage of spike-ins per bin
+        spiked_d2hist_fdr_normed = spiked_d2hist_fdr / spiked_d2hist_counts
+        spiked_d2hist_fdr_normed = numpy.nan_to_num(spiked_d2hist_fdr_normed)
+
+        # set values without data to -1
+        spiked_d2hist_fdr_normed[spiked_d2hist_counts == 0] = -1.0
+
+        # output to table for database upload
+        for x, y in itertools.product(range(len(xedges) - 1),
+                                      range(len(yedges) - 1)):
+            tmpfile.write("\t".join(map(
+                str, (xedges[x], yedges[y],
+                      fdr,
+                      spiked_d2hist_fdr[x, y],
+                      100.0 * spiked_d2hist_fdr_normed[x, y]))) + "\n")
+
+        # take elements in spiked_hist_fdr above a certain threshold
+        for power in power_thresholds:
+            # select 2D bins at a given power level
+            power_take = spiked_d2hist_fdr_normed >= power
+
+            # select the counts in the unspiked data according
+            # to this level
+            power_counts = unspiked_d2hist_counts[power_take]
+
+            outf.write("\t".join(map(
+                str, (fdr, power,
+                      power_counts.sum().sum(),
+                      100.0 * power_counts.sum().sum() /
+                      unspiked_total))) + "\n")
+
+    tmpfile.close()
+    outf.close()
+
+    # upload into table
+    method = P.snip(os.path.dirname(outfile), ".dir")
+    tablename = P.toTable(
+        P.snip(outfile, "power.gz") + method + ".spike.load")
+
+    statement = '''cat %(tmpfile_name)s
+    | python %(scriptsdir)s/csv2db.py
+           --table=%(tablename)s
+           --add-index=fdr
+    > %(outfile)s.log'''
+
+    P.run()
+    os.unlink(tmpfile_name)

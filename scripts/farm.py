@@ -11,7 +11,7 @@ Purpose
 -------
 
 .. todo::
-   
+
    describe purpose of the script.
 
 Usage
@@ -126,7 +126,7 @@ def chunk_iterator_lines(infile, args, prefix, use_header=False):
 
 
 def chunk_iterator_column(infile, args, prefix, use_header=False):
-    """split at column. 
+    """split at column.
 
     The table need not be sorted by this column.
     If num_files is given, files will randomly created
@@ -268,6 +268,7 @@ def chunk_iterator_psl_overlap(infile, args, prefix, use_header=False):
     merge_distance = args[0]
     last_sbjct_id = None
     sbjct_end = 0
+    outfile = None
     while 1:
 
         match = iterator.next()
@@ -282,8 +283,10 @@ def chunk_iterator_psl_overlap(infile, args, prefix, use_header=False):
                 yield filename
 
             if last_sbjct_id != match.mSbjctId and match.mSbjctId in processed_contigs:
-                raise ValueError("input not sorted correctly (contig,start): already encountered %s\n%s" % (
-                    match.mSbjctId, str(match)))
+                raise ValueError(
+                    "input not sorted correctly (contig,start): "
+                    "already encountered %s\n%s" %
+                    (match.mSbjctId, str(match)))
 
             last_sbjct_id = match.mSbjctId
             processed_contigs.add(last_sbjct_id)
@@ -292,8 +295,10 @@ def chunk_iterator_psl_overlap(infile, args, prefix, use_header=False):
             sbjct_end = match.mSbjctTo
 
         if match.mSbjctFrom < sbjct_start:
-            raise ValueError("input not sorted correctly (contig,start): %i < %i\n%s" % (
-                match.mSbjctFrom, sbjct_start, str(match)))
+            raise ValueError(
+                "input not sorted correctly (contig,start): "
+                "%i < %i\n%s" %
+                (match.mSbjctFrom, sbjct_start, str(match)))
 
         sbjct_end = max(match.mSbjctTo, sbjct_end)
         outfile.write(str(match) + "\n")
@@ -410,9 +415,10 @@ class ResultBuilder:
 
             for l in infile:
                 nfields = l.count("\t")
+
                 if l[0] == "#":
                     options.stdlog.write(l)
-                elif nfields != self.nfields:
+                elif self.nfields is not None and nfields != self.nfields:
                     # validate number of fields in row, raise warning
                     # for those not matching and skip.
                     E.warn(
@@ -680,7 +686,7 @@ def runDRMAA(data, environment):
             to_stdout = False
 
         cmd = " ".join(re.sub("\t+", " ", cmd).split("\n"))
-        E.debug("running statement:\n%s" % cmd)
+        E.info("running statement:\n%s" % cmd)
 
         tmpfile = tempfile.NamedTemporaryFile(dir=os.getcwd(), delete=False)
         tmpfile.write("#!/bin/bash\n")  # -l -O expand_aliases\n" )
@@ -894,7 +900,7 @@ def getOptionParser():
     parser.add_option(
         "--method", dest="method", type="choice",
         choices=("multiprocessing", "threads", "drmaa"),
-        help = "method to submit jobs [%default]")
+        help="method to submit jobs [%default]")
 
     parser.add_option(
         "-e", "--env", dest="environment", type="string", action="append",
@@ -941,8 +947,6 @@ def getOptionParser():
     parser.disable_interspersed_args()
 
     return parser
-
-# --------------------------------------------------------------------
 
 
 def main(argv=None):
@@ -1036,10 +1040,11 @@ def main(argv=None):
 
             pool = threadpool.ThreadPool(options.cluster_num_jobs)
             for a in data:
-                request = threadpool.WorkRequest(runCommand,
-                                                 args=(a,),
-                                                 callback = saveResult,
-                                                 exc_callback = reportError)
+                request = threadpool.WorkRequest(
+                    runCommand,
+                    args=(a,),
+                    callback=saveResult,
+                    exc_callback=reportError)
 
                 pool.putRequest(request)
             pool.wait()

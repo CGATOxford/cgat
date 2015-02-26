@@ -56,13 +56,15 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
-import re
-import getopt
 import time
-import optparse
+import CGAT.Experiment as E
+import CGAT.IndexedFasta as IndexedFasta
+import CGAT.Exons as Exons
+import CGAT.Intervals as Intervals
+import alignlib_lite
+import CGAT.GTF as GTF
+
 
 USAGE = """python %s < predictions > genes
 
@@ -111,16 +113,6 @@ f: filter by list of transcripts
 
 """ % sys.argv[0]
 
-import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.IndexedFasta as IndexedFasta
-import CGAT.Exons as Exons
-import CGAT.Intervals as Intervals
-import alignlib_lite
-import CGAT.GTF as GTF
-
-# ------------------------------------------------------------------------
-
 
 def getRangesFromExons(exons, both_strands=False, contig_sizes=None):
     """convert a list of exons into a dictionary of ranges.
@@ -156,17 +148,19 @@ def getRangesFromExons(exons, both_strands=False, contig_sizes=None):
     return filter_ranges
 
 
-# ------------------------------------------------------------------------
-def FilterEliminateOverlappingTranscripts(exons, filter_exons, eliminated_predictions, contig_sizes, options):
+def FilterEliminateOverlappingTranscripts(
+        exons, filter_exons,
+        eliminated_predictions, contig_sizes, options):
     """eliminate predictions that overlap or span a positive set of transcripts.
     """
 
     eliminated = []
 
     # convert list of filter exons into a list of ranges.
-    filter_ranges = getRangesFromExons(filter_exons,
-                                       both_strands=options.filter_remove_spanning_both_strands,
-                                       contig_sizes=contig_sizes)
+    filter_ranges = getRangesFromExons(
+        filter_exons,
+        both_strands=options.filter_remove_spanning_both_strands,
+        contig_sizes=contig_sizes)
 
     for k, r in filter_ranges.items():
         filter_ranges[k] = Intervals.combineIntervals(map(lambda x: x[:2], r))
@@ -212,8 +206,6 @@ def FilterEliminateOverlappingTranscripts(exons, filter_exons, eliminated_predic
 
     return eliminated
 
-# ------------------------------------------------------------------------
-
 
 def CheckSuboptimal(rep_id,
                     exons,
@@ -230,7 +222,7 @@ def CheckSuboptimal(rep_id,
             continue
         if id in eliminated_predictions:
             continue
-        if Exons.CheckOverlap( exons[rep_id], exons[id]) and \
+        if Exons.CheckOverlap(exons[rep_id], exons[id]) and \
             not Exons.CheckCoverage(exons[rep_id],
                                     exons[id],
                                     max_slippage=options.max_slippage):
@@ -246,34 +238,35 @@ def CheckSuboptimal(rep_id,
             id2 = overlaps[y]
             d2 = map_prediction2data[id2]
             if options.loglevel >= 3:
-                options.stdlog.write("# suboptimal: %s ? %s + %s: %s %s %s %s %i %i %i\n" %
-                                     (rep_id, id1, id2,
-                                      d1.mQuality in options.quality_remove_suboptimal,
-                                      d2.mQuality in options.quality_remove_suboptimal,
-                                      not Exons.CheckOverlap(
-                                          exons[id1], exons[id2]),
-                                      Exons.CheckCoverageAinB(exons[rep_id], exons[id1] + exons[id2],
-                                                              min_terminal_exon_coverage=0.0),
-                                      rep.mPid, d1.mPid, d2.mPid,
-                                      ))
+                options.stdlog.write(
+                    "# suboptimal: %s ? %s + %s: %s %s %s %s %i %i %i\n" %
+                    (rep_id, id1, id2,
+                     d1.mQuality in options.quality_remove_suboptimal,
+                     d2.mQuality in options.quality_remove_suboptimal,
+                     not Exons.CheckOverlap(
+                         exons[id1], exons[id2]),
+                     Exons.CheckCoverageAinB(exons[rep_id],
+                                             exons[id1] + exons[id2],
+                                             min_terminal_exon_coverage=0.0),
+                     rep.mPid, d1.mPid, d2.mPid))
 
             if (d1.mQuality in options.quality_remove_suboptimal and
-                    d2.mQuality in options.quality_remove_suboptimal ) and \
-                    not Exons.CheckOverlap( exons[id1], exons[id2] ) and \
-                    Exons.CheckContainedAinB(exons[rep_id], exons[id1] + exons[id2],
-                                             min_terminal_exon_coverage=0.0 ) and \
+                d2.mQuality in options.quality_remove_suboptimal) and \
+                not Exons.CheckOverlap(exons[id1], exons[id2]) and \
+                Exons.CheckContainedAinB(
+                    exons[rep_id], exons[id1] + exons[id2],
+                    min_terminal_exon_coverage=0.0) and \
                     (identity < d1.mPid) and \
                     (identity < d2.mPid):
                 if options.loglevel >= 1:
-                    options.stdlog.write("# elimination: %s(%s) joins %s(%s) and %s(%s)\n" %
-                                         (rep_id, rep.mPid,
-                                          id1, d1.mPid,
-                                          id2, d2.mPid))
+                    options.stdlog.write(
+                        "# elimination: %s(%s) joins %s(%s) and %s(%s)\n" %
+                        (rep_id, rep.mPid,
+                         id1, d1.mPid,
+                         id2, d2.mPid))
                 return True
 
     return False
-
-# ------------------------------------------------------------------------
 
 
 def EliminateSuboptimalPredictions(data,
@@ -315,8 +308,6 @@ def EliminateSuboptimalPredictions(data,
 
     return eliminated
 
-# ------------------------------------------------------------------------
-
 
 def CheckExonSwop(rep_id,
                   exons,
@@ -354,15 +345,16 @@ def CheckExonSwop(rep_id,
             continue
         if id in eliminated_predictions:
             continue
-        if Exons.CheckOverlap( exons[rep_id], exons[id]) and \
+        if Exons.CheckOverlap(exons[rep_id], exons[id]) and \
             not Exons.CheckCoverage(exons[rep_id],
                                     exons[id],
                                     max_slippage=options.max_slippage):
             overlaps.append(id)
 
     if options.loglevel >= 3:
-        options.stdlog.write("# exon swop: %s overlaps with %i out of %i predictions\n" % (
-            rep_id, len(overlaps), len(other_ids)))
+        options.stdlog.write(
+            "# exon swop: %s overlaps with %i out of %i predictions\n" %
+            (rep_id, len(overlaps), len(other_ids)))
         options.stdlog.flush()
 
     for x in range(0, len(overlaps) - 1):
@@ -370,37 +362,35 @@ def CheckExonSwop(rep_id,
         for y in range(x + 1, len(overlaps)):
             id2 = overlaps[y]
             if options.loglevel >= 4:
-                options.stdlog.write("# exon swop: %s ? %s + %s: %s %s %s %s\n" %
-                                     (rep_id, id1, id2,
-                                      map_prediction2data[
-                                          id1].mQuality in options.quality_remove_exon_swopper,
-                                         map_prediction2data[
-                                             id2].mQuality in options.quality_remove_exon_swopper,
-                                         not Exons.CheckOverlap(
-                                             exons[id1], exons[id2]),
-                                         Exons.CheckCoverageAinB(exons[rep_id], exons[id1] + exons[id2],
-                                                                 min_terminal_num_exons=0,
-                                                                 min_terminal_exon_coverage=0.7,
-                                                                 max_slippage=options.max_slippage)))
+                options.stdlog.write(
+                    "# exon swop: %s ? %s + %s: %s %s %s %s\n" %
+                    (rep_id, id1, id2,
+                     map_prediction2data[id1].mQuality in options.quality_remove_exon_swopper,
+                     map_prediction2data[id2].mQuality in options.quality_remove_exon_swopper,
+                     not Exons.CheckOverlap(exons[id1], exons[id2]),
+                     Exons.CheckCoverageAinB(
+                         exons[rep_id],
+                         exons[id1] + exons[id2],
+                         min_terminal_num_exons=0,
+                         min_terminal_exon_coverage=0.7,
+                         max_slippage=options.max_slippage)))
 
             if (map_prediction2data[id1].mQuality in options.quality_remove_exon_swopper and
-                map_prediction2data[id2].mQuality in options.quality_remove_exon_swopper ) and \
-                not Exons.CheckOverlap( exons[id1], exons[id2] ) and \
+                map_prediction2data[id2].mQuality in options.quality_remove_exon_swopper) and \
+                not Exons.CheckOverlap(exons[id1], exons[id2]) and \
                 Exons.CheckCoverageAinB(exons[rep_id], exons[id1] + exons[id2],
                                         min_terminal_num_exons=0,
                                         min_terminal_exon_coverage=0.7,
                                         max_slippage=options.max_slippage):
                 if options.loglevel >= 1:
-                    options.stdlog.write("# elimination: %s(%s) joins %s(%s) and %s(%s)\n" %
-                                         (rep_id, map_prediction2data[rep_id].mQuality,
-                                          id1, map_prediction2data[
-                                              id1].mQuality,
-                                          id2, map_prediction2data[id2].mQuality))
+                    options.stdlog.write(
+                        "# elimination: %s(%s) joins %s(%s) and %s(%s)\n" %
+                        (rep_id, map_prediction2data[rep_id].mQuality,
+                         id1, map_prediction2data[id1].mQuality,
+                         id2, map_prediction2data[id2].mQuality))
                 return True
 
     return False
-
-# ------------------------------------------------------------------------
 
 
 def EliminateExonSwoppers(data,
@@ -441,8 +431,6 @@ def EliminateExonSwoppers(data,
 
     return eliminated
 
-# ------------------------------------------------------------------------
-
 
 def EliminateSpanningPredictions(data,
                                  prediction_id,
@@ -450,7 +438,9 @@ def EliminateSpanningPredictions(data,
                                  options,
                                  filter_quality=None,
                                  this_quality=None):
-    """eliminate dubious predictions that contain good predictions inside them without exon overlap.
+    """eliminate dubious predictions that contain good predictions inside
+    them without exon overlap.
+
     """
 
     eliminated = []
@@ -472,11 +462,11 @@ def EliminateSpanningPredictions(data,
 
     return eliminated
 
-# ------------------------------------------------------------------------
-
 
 def EliminateGeneSpanners(data, eliminated_predictions, exons, options):
-    """eliminate predictions spanning full length other predictions without exon overlap.
+    """eliminate predictions spanning full length other predictions
+    without exon overlap.
+
     """
 
     def ProcessChunk(chunk, eliminated_predictions, exons):
@@ -498,13 +488,15 @@ def EliminateGeneSpanners(data, eliminated_predictions, exons, options):
                 # yquality
                 if xfrom < yfrom and \
                         xto > yto and \
-                        not Exons.CheckOverlap(exons[str(xid)], exons[str(yid)] ) and \
+                        not Exons.CheckOverlap(
+                            exons[str(xid)], exons[str(yid)]) and \
                         yquality in options.quality_remove_gene_spanners:
                     eliminated_predictions[xid] = 0
                     eliminated.append((xid, "g"))
                     if options.loglevel >= 1:
-                        options.stdlog.write("# elimination: %s(%s) spans %s(%s)\n" % (
-                            str(xid), xquality, str(yid), yquality))
+                        options.stdlog.write(
+                            "# elimination: %s(%s) spans %s(%s)\n" %
+                            (str(xid), xquality, str(yid), yquality))
                     break
         return eliminated
 
@@ -536,8 +528,6 @@ def EliminateGeneSpanners(data, eliminated_predictions, exons, options):
     eliminated += ProcessChunk(chunk, eliminated_predictions, exons)
 
     return eliminated
-
-# ------------------------------------------------------------------------
 
 
 def EliminateRedundantEntries(rep,
@@ -598,7 +588,8 @@ def EliminateRedundantEntries(rep,
 
                 if options.loglevel >= 5:
                     options.stdlog.write(
-                        "# ali\n%s\n" % alignlib_lite.AlignmentFormatExplicit(result, seq1, seq2))
+                        "# ali\n%s\n" %
+                        alignlib_lite.AlignmentFormatExplicit(result, seq1, seq2))
 
                 pidentity = 100 * \
                     alignlib_lite.calculatePercentIdentity(result, seq1, seq2)
@@ -606,8 +597,9 @@ def EliminateRedundantEntries(rep,
                 num_gaps = result.getNumGaps()
 
                 if options.loglevel >= 4:
-                    options.stdlog.write("# processing: id=%s class=%s pid=%5.2f rep_cov=%i mem_cov=%i\n" %
-                                         (mem_id, mem_quality, pidentity, rep_coverage, mem_coverage))
+                    options.stdlog.write(
+                        "# processing: id=%s class=%s pid=%5.2f rep_cov=%i mem_cov=%i\n" %
+                        (mem_id, mem_quality, pidentity, rep_coverage, mem_coverage))
 
                 if pidentity >= options.min_identity:
 
@@ -626,8 +618,12 @@ def EliminateRedundantEntries(rep,
                         reason = "memcov"
 
                     if keep:
-                        options.stdlog.write("# WARNING: not removing possibly good prediction: %s: rep = %s, mem = %s, rep_cov=%i, rep_pid=%i, mem_cov=%i, mem_pid=%i\n" %
-                                             (reason, rep_id, mem_id, rep_coverage, rep_pid, mem_coverage, mem_pid))
+                        options.stdlog.write(
+                            "# WARNING: not removing possibly good prediction: "
+                            "%s: rep = %s, mem = %s, rep_cov=%i, rep_pid=%i, "
+                            "mem_cov=%i, mem_pid=%i\n" %
+                            (reason, rep_id, mem_id, rep_coverage, rep_pid,
+                             mem_coverage, mem_pid))
                     else:
                         eliminated_predictions[mem_id] = rep_id
                         eliminated.append((mem_id, "h"))
@@ -644,8 +640,6 @@ def EliminateRedundantEntries(rep,
                         eliminated.append((mem_id, "l"))
 
     return eliminated
-
-# ------------------------------------------------------------------------
 
 
 def EliminateRedundantEntriesByRange(rep, data,
@@ -697,8 +691,6 @@ def EliminateRedundantEntriesByRange(rep, data,
 
     return eliminated
 
-# ------------------------------------------------------------------------
-
 
 def EliminateRedundantEntriesByOverlap(rep,
                                        data,
@@ -716,7 +708,8 @@ def EliminateRedundantEntriesByOverlap(rep,
 
     if options.loglevel >= 3:
         options.stdlog.write(
-            "# eliminating transcripts for %s out of %i\n" % (rep.transcript_id, len(data)))
+            "# eliminating transcripts for %s out of %i\n" %
+            (rep.transcript_id, len(data)))
         options.stdlog.flush()
 
     entries = []
@@ -763,7 +756,8 @@ def EliminateRedundantEntriesByOverlap(rep,
 
     if options.loglevel >= 3 and len(eliminated) > 0:
         options.stdlog.write(
-            "# eliminated %i transcripts for %s\n" % (len(eliminated), rep_id))
+            "# eliminated %i transcripts for %s\n" %
+            (len(eliminated), rep_id))
         options.stdlog.flush()
 
     return eliminated
@@ -798,46 +792,63 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: gpipe/select_transcripts.py 2263 2008-11-17 16:36:29Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    parser.add_option("-o", "--overlap", dest="overlap_residues", type="int",
-                      help="overlap residues.")
-    parser.add_option("-t", "--filter-tokens", dest="filename_filter_tokens", type="string",
-                      help="filename to filter tokens.")
-    parser.add_option("-i", "--exon-identity", dest="exon_identity", action="store_true",
-                      help="exon identity.")
-    parser.add_option("--exons-file", dest="filename_exons", type="string",
-                      help="filename with exon information.")
-    parser.add_option("-m", "--output-members", dest="filename_members", type="string",
-                      help="output filename with members.")
-    parser.add_option("--overlap-id", dest="overlap_id", action="store_true",
-                      help="overlap id.")
-    parser.add_option("-s", "--remove-spanning", dest="remove_spanning_predictions", action="store_true",
-                      help="remove spanning predictions.")
-    parser.add_option("-c", "--remove-complement", dest="remove_complementary_predictions", action="store_true",
-                      help="remove complementary predictions.")
-    parser.add_option("--remove-exon-swoppers", dest="remove_exon_swoppers", action="store_true",
-                      help="remove exon swoppers.")
-    parser.add_option("--remove-gene-spanners", dest="remove_gene_spanners", action="store_true",
-                      help="remove gene spanners.")
-    parser.add_option("--remove-suboptimal", dest="remove_suboptimal", action="store_true",
-                      help="remove suboptimal predictions.")
-    parser.add_option("-p", "--peptides-fasta-file", dest="filename_peptides", type="string",
-                      help="filename with peptide information.")
-    parser.add_option("--extended-peptides", dest="filename_extended_peptides", type="string",
-                      help="filename with peptide information - after extension.")
-
+    parser.add_option(
+        "-o", "--overlap", dest="overlap_residues", type="int",
+        help="overlap residues.")
+    parser.add_option(
+        "-t", "--filter-tokens", dest="filename_filter_tokens", type="string",
+        help="filename to filter tokens.")
+    parser.add_option(
+        "-i", "--exon-identity", dest="exon_identity", action="store_true",
+        help="exon identity.")
+    parser.add_option(
+        "--exons-file", dest="filename_exons", type="string",
+        help="filename with exon information.")
+    parser.add_option(
+        "-m", "--output-members", dest="filename_members", type="string",
+        help="output filename with members.")
+    parser.add_option(
+        "--overlap-id", dest="overlap_id", action="store_true",
+        help="overlap id.")
+    parser.add_option(
+        "-s", "--remove-spanning", dest="remove_spanning_predictions", action="store_true",
+        help="remove spanning predictions.")
+    parser.add_option(
+        "-c", "--remove-complement", dest="remove_complementary_predictions", action="store_true",
+        help="remove complementary predictions.")
+    parser.add_option(
+        "--remove-exon-swoppers", dest="remove_exon_swoppers", action="store_true",
+        help="remove exon swoppers.")
+    parser.add_option(
+        "--remove-gene-spanners", dest="remove_gene_spanners", action="store_true",
+        help="remove gene spanners.")
+    parser.add_option(
+        "--remove-suboptimal", dest="remove_suboptimal", action="store_true",
+        help="remove suboptimal predictions.")
+    parser.add_option(
+        "-p", "--peptides-fasta-file", dest="filename_peptides", type="string",
+        help="filename with peptide information.")
+    parser.add_option(
+        "--extended-peptides", dest="filename_extended_peptides", type="string",
+        help="filename with peptide information - after extension.")
     parser.add_option("--test", dest="test_nids", type="string",
                       help="test nids.")
     # filter options
-    parser.add_option("--filter-transcripts", dest="filter_filename_transcripts", type="string",
-                      help="filename with transcripts that are used to filter.")
-    parser.add_option("--filter-remove-spanning", dest="filter_remove_spanning", action="store_true",
-                      help="remove all transcripts that span the filter set.")
-    parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="filename with genomic data (indexed).")
-    parser.add_option("--discard-large-clusters", dest="discard_large_clusters", type="int",
-                      help="if set discard clusters bigger than this size (patch) [default=%default].")
+    parser.add_option(
+        "--filter-transcripts", dest="filter_filename_transcripts", type="string",
+        help="filename with transcripts that are used to filter.")
+    parser.add_option(
+        "--filter-remove-spanning", dest="filter_remove_spanning", action="store_true",
+        help="remove all transcripts that span the filter set.")
+    parser.add_option(
+        "-g", "--genome-file", dest="genome_file", type="string",
+        help="filename with genomic data (indexed).")
+    parser.add_option(
+        "--discard-large-clusters", dest="discard_large_clusters", type="int",
+        help="if set discard clusters bigger than this size (patch) [default=%default].")
 
     parser.set_defaults(
         filename_members=None,
@@ -846,61 +857,61 @@ def main(argv=None):
         filename_exons=None,
         quality_hierarchy=("CG", "PG", "SG", "RG", "CP", "PP", "SP",
                            "RP", "CF", "PF", "SF", "UG", "UP", "UF", "BF", "UK"),
-        # Classes, where redundancy is removed by similarity. When exon structure
-        # is not conserved, I can't predict alternative splice variants, so remove
-        # the redundancy.
-        quality_exclude_same = ("UG", "UP", "UF", "BF", "UK"),
-        quality_genes = ("CG", "SG", "PG", "RG", "UG"),
+        # Classes, where redundancy is removed by similarity. When
+        # exon structure is not conserved, I can't predict alternative
+        # splice variants, so remove the redundancy.
+        quality_exclude_same=("UG", "UP", "UF", "BF", "UK"),
+        quality_genes=("CG", "SG", "PG", "RG", "UG"),
         # class that can be removed in spanning/complementary predictions
-        quality_remove_dubious = ("UG", "UP", "UF", "BF", "UK"),
+        quality_remove_dubious=("UG", "UP", "UF", "BF", "UK"),
         # class that is required for defining exon swopper event
-        quality_remove_exon_swopper = ("CG", "PG"),
+        quality_remove_exon_swopper=("CG", "PG"),
         # class that will kept, in spite of being an exons swopper.
-        quality_keep_exon_swopper = (),
+        quality_keep_exon_swopper=(),
         # class that is required for removing gene spanners
-        quality_remove_gene_spanners = ("CG"),
+        quality_remove_gene_spanners=("CG"),
         # class that will kept, in spite of being a gene spanner
-        quality_keep_gene_spanners = (),
+        quality_keep_gene_spanners=(),
         # class that is required for defining suboptimal matches
-        quality_remove_suboptimal = ("CG", "PG"),
+        quality_remove_suboptimal=("CG", "PG"),
         # class that will be kept, in spite of being a suboptimal match
-        quality_keep_suboptimal = (),
+        quality_keep_suboptimal=(),
         # gap penalties
-        gop = -10.0,
-        gep = -1.0,
+        gop=-10.0,
+        gep=-1.0,
         # maximum number of gaps to allow in alignment
-        max_gaps = 20,
+        max_gaps=20,
         # threshold of percent identity that allows to remove a prediction
         # of a lower class.
         # This allows for insertions/deletions
-        min_identity = 98,
+        min_identity=98,
         # threshold of percent identity that allows to remove a prediction
         # of a non-gene by a gene
-        min_identity_non_genes = 80,
+        min_identity_non_genes=80,
         # safety threshold: do not remove, if coverage of member is by x better
         # than representative
-        safety_pide = 10,
-        safety_coverage = 10,
-        overlap_id = False,
-        remove_spanning_predictions = False,
-        remove_exon_swoppers = False,
-        remove_gene_spanners = False,
-        remove_suboptimal = False,
+        safety_pide=10,
+        safety_coverage=10,
+        overlap_id=False,
+        remove_spanning_predictions=False,
+        remove_exon_swoppers=False,
+        remove_gene_spanners=False,
+        remove_suboptimal=False,
         # nids to use for testing
-        test_nids = None,
+        test_nids=None,
         # remove members with less than maximum coverage
-        max_member_coverage = 90,
+        max_member_coverage=90,
         # maximum allowable exon slippage
-        max_slippage = 9,
+        max_slippage=9,
         # minimum difference in identity for suboptimal predictions to be
         # removed.
-        suboptimal_min_identity_difference = 10,
+        suboptimal_min_identity_difference=10,
         # filter options
-        filter_filename_transcripts = None,
-        filter_remove_spanning = True,
-        filter_remove_spanning_both_strands = True,
-        genome_file = None,
-        discard_large_clusters = None)
+        filter_filename_transcripts=None,
+        filter_remove_spanning=True,
+        filter_remove_spanning_both_strands=True,
+        genome_file=None,
+        discard_large_clusters=None)
 
     (options, args) = E.Start(parser, add_psql_options=True)
 

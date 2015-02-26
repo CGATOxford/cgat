@@ -56,25 +56,9 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
-import re
-import getopt
-import time
-import sets
-import optparse
-import math
-import tempfile
-
 import pgdb
 import csv
-""" program $Id: gpipe/analyze_predictions.py 2781 2009-09-10 11:33:14Z andreas $
-
-analyse a prediction list
-
-
-"""
 import CGAT.Experiment as E
 
 

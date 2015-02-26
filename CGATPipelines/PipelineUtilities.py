@@ -34,7 +34,6 @@ except AttributeError, OSError:
 import CGAT.IOTools as IOTools
 import pickle
 from pandas import DataFrame
-from pandas.io import sql
 
 try:
     PARAMS = P.getParameters()
@@ -151,7 +150,8 @@ def fetch_DataFrame(query,
 def write_DataFrame(dataframe,
                     tablename,
                     database=PARAMS.get("database", ""),
-                    index=False):
+                    index=False,
+                    if_exists='replace'):
     '''write a pandas dataframe to an sqlite db, index on given columns
        index columns given as a string or list eg. "gene_id" or
        ["gene_id", "start"]
@@ -160,10 +160,10 @@ def write_DataFrame(dataframe,
 
     dbhandle = sqlite3.connect(database)
 
-    sql.write_frame(dataframe, tablename, flavour='sqlite',
-                    con=dbhandle, if_exists='replace')
-
-    cc = dbhandle.cursor()
+    dataframe.to_sql(tablename,
+                     con=dbhandle,
+                     flavor='sqlite',
+                     if_exists=if_exists)
 
     def indexStat(tablename, column):
         istat = ('create index %(tablename)s_%(column)s '
@@ -171,6 +171,9 @@ def write_DataFrame(dataframe,
         return istat
 
     if index:
+
+        cc = dbhandle.cursor()
+
         if type(index) is str:
             istat = indexStat(tablename, index)
             print istat
@@ -180,7 +183,7 @@ def write_DataFrame(dataframe,
                 istat = indexStat(tablename, column)
                 db_execute(cc, istat)
 
-    cc.close()
+        cc.close()
 
 
 def write(outfile, lines, header=False):
