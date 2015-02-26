@@ -1,12 +1,6 @@
 import os
-import sys
-import re
-import types
-import itertools
-import math
-import numpy
-
-from ReadqcReport import *
+import collections
+from CGATReport.Tracker import Status
 
 
 class FastqcStatus(Status):

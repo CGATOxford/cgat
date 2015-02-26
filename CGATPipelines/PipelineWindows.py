@@ -239,13 +239,19 @@ def buildDMRStats(infiles, outfile, method, fdr_threshold=None):
     status = collections.defaultdict(lambda: collections.defaultdict(int))
 
     # deseq/edger
-    f_significant = lambda x: x.significant == "1"
-    f_up = lambda x: float(x.l2fold) > 0
-    f_down = lambda x: float(x.l2fold) < 0
-    f_fold2up = lambda x: float(x.l2fold) > 1
-    f_fold2down = lambda x: float(x.l2fold) < -1
-    f_key = lambda x: (x.treatment_name, x.control_name)
-    f_status = lambda x: x.status
+    def f_significant(x): return x.significant == "1"
+
+    def f_up(x): return float(x.l2fold) > 0
+
+    def f_down(x): return float(x.l2fold) < 0
+
+    def f_fold2up(x): return float(x.l2fold) > 1
+
+    def f_fold2down(x): return float(x.l2fold) < -1
+
+    def f_key(x): return (x.treatment_name, x.control_name)
+
+    def f_status(x): return x.status
 
     outf = IOTools.openFile(outfile, "w")
 
@@ -571,7 +577,7 @@ def enrichmentVsInput(infile, outfile):
                                left_on=[0, 1, 2],
                                right_on=[0, 1, 2])
 
-    foldchange = lambda x: math.log((x['3_y'] + 1.0)/(x['3_x'] + 1.0), 2)
+    def foldchange(x): return math.log((x['3_y'] + 1.0)/(x['3_x'] + 1.0), 2)
     merge_frame[4] = merge_frame.apply(foldchange, axis=1)
 
     out_frame = merge_frame[[0, 1, 2, 4]]
@@ -853,8 +859,8 @@ def buildSpikeResults(infile, outfile):
             outf.write("\t".join(map(
                 str, (fdr, power,
                       power_counts.sum().sum(),
-                      100.0 * power_counts.sum().sum()
-                      / unspiked_total))) + "\n")
+                      100.0 * power_counts.sum().sum() /
+                      unspiked_total))) + "\n")
 
     tmpfile.close()
     outf.close()

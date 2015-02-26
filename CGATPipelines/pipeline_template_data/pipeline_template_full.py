@@ -67,6 +67,16 @@ The pipeline requires the results from
 :doc:`pipeline_annotations`. Set the configuration variable
 :py:data:`annotations_database` and :py:data:`annotations_dir`.
 
+On top of the default CGAT setup, the pipeline requires the following
+software to be in the path:
+
+.. Add any additional external requirements such as 3rd party software
+   or R modules below:
+
+Requirements:
+
+* samtools >= 1.1
+
 Pipeline output
 ===============
 
@@ -83,8 +93,10 @@ Code
 
 """
 from ruffus import *
+
 import sys
 import os
+import sqlite3
 import CGAT.Experiment as E
 import CGAT.Pipeline as P
 
@@ -93,6 +105,48 @@ PARAMS = P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
      "../pipeline.ini",
      "pipeline.ini"])
+
+# add configuration values from associated pipelines
+#
+# 1. pipeline_annotations: any parameters will be added with the
+#    prefix "annotations_". The interface will be updated with
+#    "annotations_dir" to point to the absolute path names.
+PARAMS.update(P.peekParameters(
+    PARAMS["annotations_dir"],
+    "pipeline_annotations.py",
+    on_error_raise=__name__ == "__main__",
+    prefix="annotations_",
+    update_interface=True))
+
+
+# if necessary, update the PARAMS dictionary in any modules file.
+# e.g.:
+#
+# import CGATPipelines.PipelineGeneset as PipelineGeneset
+# PipelineGeneset.PARAMS = PARAMS
+#
+# Note that this is a hack and deprecated, better pass all
+# parameters that are needed by a function explicitely.
+
+# -----------------------------------------------
+# Utility functions
+def connect():
+    '''utility function to connect to database.
+
+    Use this method to connect to the pipeline database.
+    Additional databases can be attached here as well.
+
+    Returns an sqlite3 database handle.
+    '''
+
+    dbh = sqlite3.connect(PARAMS["database"])
+    statement = '''ATTACH DATABASE '%s' as annotations''' % (
+        PARAMS["annotations_database"])
+    cc = dbh.cursor()
+    cc.execute(statement)
+    cc.close()
+
+    return dbh
 
 
 # ---------------------------------------------------

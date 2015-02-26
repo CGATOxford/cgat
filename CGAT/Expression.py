@@ -1152,21 +1152,22 @@ def loadTagData(tags_filename, design_filename):
     # Load counts table
     E.info("loading tag data from %s" % tags_filename)
 
-    R('''counts_table = read.table( '%(tags_filename)s',
-    header = TRUE,
-    row.names = 1,
-    stringsAsFactors = TRUE,
-    comment.char = '#' )''' % locals())
+    R('''counts_table = read.table('%(tags_filename)s',
+    header=TRUE,
+    row.names=1,
+    stringsAsFactors=TRUE,
+    comment.char='#')''' % locals())
 
     E.info("read data: %i observations for %i samples" %
            tuple(R('''dim(counts_table)''')))
     E.debug("sample names: %s" % R('''colnames(counts_table)'''))
 
     # Load comparisons from file
-    R('''pheno = read.delim( '%(design_filename)s',
-                             header = TRUE,
-                             stringsAsFactors = TRUE,
-                             comment.char = '#')''' % locals())
+    R('''pheno = read.delim(
+    '%(design_filename)s',
+    header=TRUE,
+    stringsAsFactors=TRUE,
+    comment.char='#')''' % locals())
 
     # Make sample names R-like - substitute - for .
     R('''pheno[,1] = gsub('-', '.', pheno[,1]) ''')
@@ -1177,7 +1178,8 @@ def loadTagData(tags_filename, design_filename):
         '''pheno2 = pheno[match(colnames(counts_table),pheno[,1]),,drop=FALSE]''')
     missing = R('''colnames(counts_table)[is.na(pheno2)][1]''')
     if missing:
-        E.warn("missing samples from design file are ignored: %s" % missing)
+        E.warn("missing samples from design file are ignored: %s" %
+               missing)
 
     # Subset data & set conditions
     R('''includedSamples <- !(is.na(pheno2$include) | pheno2$include == '0') ''')
@@ -1332,11 +1334,14 @@ def plotPairs():
             text(x, y, txt, cex = cex);
             }
        ''')
-    R('''pairs(countsTable,
-               lower.panel = panel.pearson,
-               pch=".",
-               labels=colnames(countsTable),
-               log="xy")''')
+    try:
+        R('''pairs(countsTable,
+        lower.panel = panel.pearson,
+        pch=".",
+        labels=colnames(countsTable),
+        log="xy")''')
+    except rpy2.rinterface.RRuntimeError, msg:
+        E.warn("can not plot pairwise scatter plot: %s" % msg)
 
 
 def plotPCA(groups=True):
@@ -1724,7 +1729,7 @@ def deseqPlotGeneHeatmap(outfile,
     R['dev.off']()
 
 
-def deseqPlotPCA(outfile, vsd):
+def deseqPlotPCA(outfile, vsd, max_genes=500):
     '''plot a PCA
 
     Use variance stabilized data in object vsd.
@@ -1732,7 +1737,16 @@ def deseqPlotPCA(outfile, vsd):
     not informed by the experimental design.
     '''
     R.png(outfile)
-    R('''plotPCA(vsd)''')
+    #  if there are more than 500 genes (after filtering)
+    #  use the 500 most variable in the PCA
+    #  else use the number of genes
+    R('''ntop = ifelse(as.integer(dim(vsd))[1] >= %(max_genes)i,
+    %(max_genes)i,
+    as.integer(dim(vsd))[1])''' % locals())
+    try:
+        R('''plotPCA(vsd)''')
+    except rpy2.rinterface.RRuntimeError, msg:
+        E.warn("can not plot PCA: %s" % msg)
     R['dev.off']()
 
 
@@ -1981,14 +1995,13 @@ def runDESeq(outfile,
 
     # perform variance stabilization for log2 fold changes
     vsd = R('''vsd = varianceStabilizingTransformation(cds_blind)''')
-
     # output normalized counts (in order)
     # gzfile does not work with rpy 2.4.2 in python namespace
     # using R.gzfile, so do it in R-space
 
     R('''t = counts(cds, normalized=TRUE);
     write.table(t[order(rownames(t)),],
-    file=gzfile('%(outfile_prefix)scounts.tsv.gz', 'w'),
+    file=gzfile('%(outfile_prefix)scounts.tsv.gz'),
     row.names=TRUE,
     col.names=NA,
     quote=FALSE,
@@ -1997,7 +2010,7 @@ def runDESeq(outfile,
     # output variance stabilized counts (in order)
     R('''t = exprs(vsd);
     write.table(t[order(rownames(t)),],
-    file=gzfile('%(outfile_prefix)svsd.tsv.gz', 'w'),
+    file=gzfile('%(outfile_prefix)svsd.tsv.gz'),
     row.names=TRUE,
     col.names=NA,
     quote=FALSE,
@@ -2103,7 +2116,6 @@ def runDESeq(outfile,
 
         # Plot diagnostic plots for FDR
         if has_replicates:
-            R.png('''%(outfile_groups_prefix)sfdr.png''' % locals())
             R('''orderInPlot = order(pvalues)''')
             R('''showInPlot = (pvalues[orderInPlot] < 0.08)''')
             # Jethro - previously plotting x =
@@ -2113,18 +2125,21 @@ def runDESeq(outfile,
             # values
             R('''true.pvalues <- pvalues[orderInPlot][showInPlot]''')
             R('''true.pvalues <- true.pvalues[is.finite(true.pvalues)]''')
-
-            # failure when no replicates:
-            # rpy2.rinterface.RRuntimeError:
-            # Error in plot.window(...) : need finite 'xlim' values
-            R('''plot( seq( along=which(showInPlot)),
-                       true.pvalues,
-                       pch='.',
-                       xlab=expression(rank(p[i])),
-                       ylab=expression(p[i]))''')
-            R('''abline(a=0, b=%(fdr)f / length(pvalues), col="red")''' %
-              locals())
-            R['dev.off']()
+            if R('''sum(showInPlot)''')[0] > 0:
+                R.png('''%(outfile_groups_prefix)sfdr.png''' % locals())
+                # failure when no replicates:
+                # rpy2.rinterface.RRuntimeError:
+                # Error in plot.window(...) : need finite 'xlim' values
+                R('''plot( seq( along=which(showInPlot)),
+                           true.pvalues,
+                           pch='.',
+                           xlab=expression(rank(p[i])),
+                           ylab=expression(p[i]))''')
+                R('''abline(a = 0, b = %(fdr)f / length(pvalues), col = "red")
+                ''' % locals())
+                R['dev.off']()
+            else:
+                E.warn('no p-values < 0.08')
 
         # Add log2 fold with variance stabilized l2fold value
         R('''res$transformed_log2FoldChange = vsd_l2f''')
@@ -2387,8 +2402,8 @@ def plotDETagStats(infile, outfile_prefix,
 
         try:
             ggplot.ggsave(filename=outfile, plot=plot)
-        except ValueError, msg:
-            E.warn(msg)
+        except Exception, msg:
+            E.warn("no plot for %s: %s" % (column, msg))
 
     def _bplot(table, outfile, column):
 
@@ -3055,10 +3070,14 @@ def loadTagDataPandas(tags_filename, design_filename):
     E.info("loading tag data from %s" % tags_filename)
 
     inf = IOTools.openFile(tags_filename)
-    counts_table = pandas.read_csv(inf, sep="\t", index_col=0, comment="#")
+    counts_table = pandas.read_csv(inf,
+                                   sep="\t",
+                                   index_col=0,
+                                   comment="#")
     inf.close()
 
-    E.info("read data: %i observations for %i samples" % counts_table.shape)
+    E.info("read data: %i observations for %i samples" %
+           counts_table.shape)
 
     E.debug("sample names: %s" % list(counts_table.columns))
 
