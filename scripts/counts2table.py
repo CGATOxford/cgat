@@ -235,11 +235,16 @@ def main(argv=None):
                       dest="model",
                       type="string",
                       help="Design formula for DESeq2")
+
     parser.add_option("--deseq2-contrasts",
                       dest="contrasts",
                       type="string",
                       help=("contrasts for post-hoc testing writen"
                             " variable:control:treatment,..."))
+    parser.add_option("--model",
+                      dest="model",
+                      type="string",
+                      help=("model for GLM"))
 
     parser.set_defaults(
         input_filename_tags="-",
@@ -267,10 +272,10 @@ def main(argv=None):
         contrasts=None
     )
 
-    print "made it here"
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
+    # TS: if no input filename and nothing on stdin...need to throw error?
     if options.input_filename_tags == "-":
         fh = P.getTempFile()
         fh.write("".join([x for x in options.stdin]))
@@ -284,24 +289,18 @@ def main(argv=None):
     assert options.input_filename_design and os.path.exists(
         options.input_filename_design)
 
-    print "made it here too!"
-
     DEEx = Expression.DEExperiment(
         min_counts_row=options.filter_min_counts_per_row,
         min_counts_sample=options.filter_min_counts_per_sample,
         percentile_rowsums=options.filter_percentile_rowsums,
         ref_group=options.ref_group,
         model=options.model,
-        contrasts=options.contrasts,
-        fdr=options.fdr)
-
-    print "made it here three!"
+        contrasts=options.contrasts)
 
     DEEx.build(
         counts_file=options.input_filename_tags,
         design_file=options.input_filename_design)
 
-    print "made it here four!"
     if options.method == "TTest":
         DEProcessor = Expression.DE_TTest()
         DEProcessor(DEEx,
@@ -316,7 +315,9 @@ def main(argv=None):
         DEProcessor(DEEx,
                     outfile=options.output_filename,
                     outfile_prefix="edgeR.",
-                    dispersion=options.edger_dispersion)
+                    dispersion=options.edger_dispersion,
+                    fdr=options.fdr,
+                    model=options.model)
 
     '''try:
         if options.method == "deseq2":

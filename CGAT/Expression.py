@@ -547,6 +547,8 @@ class DE_edgeR(DECaller):
 
             r_factors_df = com.convert_to_r_dataframe(
                 self.DEExper.design.factors)
+        else:
+            r_factors_df = ro.default_py2ri(False)
 
         if self.DEExper.ref_group is not None:
             r_ref_group = ro.default_py2ri(self.DEExper.ref_group)
