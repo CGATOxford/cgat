@@ -170,14 +170,14 @@ def pandasMerge(infile1, infile2, outfile, merge_type, left, right,
         dtype_dict = {}
 
         for column in columns:
-            if ((column.endswith("-unmeth")
-                 or column.endswith("-meth")
-                 or column.endswith("-perc")
-                 or column == "read_position")):
+            if ((column.endswith("-unmeth") or
+                 column.endswith("-meth") or
+                 column.endswith("-perc") or
+                 column == "read_position")):
                 dtype_dict[column] = float
-            elif (column == "strand"
-                  or column == "contig"
-                  or column == "cpgi"):
+            elif (column == "strand" or
+                  column == "contig" or
+                  column == "cpgi"):
                 dtype_dict[column] = object
             elif column == "position":
                 dtype_dict[column] = float
@@ -1506,7 +1506,7 @@ def runBiSeq(infiles, outfile):
     print(clusters.trimmed)
     DMRs <- findDMRs(clusters.trimmed,max.dist = 100,diff.dir = TRUE)
     # just in case we want to do something else with the results
-    save.image()
+    #save.image()
     write.table(DMRs, paste0("%(base)s", "_trimmed_clusters.tsv"), sep="\t",
     quote=F, row.names=F)
 
