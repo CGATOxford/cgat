@@ -1171,7 +1171,7 @@ def runDESeq2(infiles, outfile):
 @transform(runDESeq2, suffix(".tsv.gz"), "_deseq2.load")
 def loadDESeq2(infile, outfile):
     """
-    Generate globally adjusted pvalue for all contrasts in a design. 
+    Generate globally adjusted pvalue for all contrasts in a design.
     To avoid confusion, drop the DESeq2 generated padj, which is for single contrast.
     Load table
     NB. Empty pvalues are due to DESeq2's default outlier detection
@@ -1194,7 +1194,7 @@ def loadDESeq2(infile, outfile):
     # load table containing adjusted pvalues
     tmpf = P.getTempFilename("/ifs/scratch")
     df.to_csv(tmpf, sep="\t")
-    tablename= P.toTable(outfile) + "_gene_diff"
+    tablename = P.toTable(outfile) + "_gene_diff"
     statement = ("cat %(tmpf)s |"
                  "python %(scriptsdir)s/csv2db.py %(csv2db_options)s"
                  " --add-index=gene_id"
