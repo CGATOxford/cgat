@@ -57,6 +57,24 @@ def geometric_mean(array, axis=0):
     return ma.exp(log_a.mean(axis=axis))
 
 
+# AHC: readCountsFile is restricting the class to tsv files. It could
+# be perfectly legitimate to get counts from a csv file or an
+# excel table or a database.
+#
+# I would instead put it in the constructor:
+#
+# counts = Counts(pd.read_csv(...))
+# AHC: names are unnecessary long. As these are methods of the
+#      Counts class:
+#         normalizeCounts -> normalize
+#         filterCounts -> counts
+#
+# AHC: filterCounts could also be split into separate methods and be
+#      more explicit:
+#
+#      remove_observations(min_counts_per_observation, percentile_rowsums)
+#      remove_samples(min_counts_per_sample)
+
 class Counts(object):
     '''base class to store counts object'''
 

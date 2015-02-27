@@ -133,6 +133,10 @@ def runDETest(raw_DataFrame,
     caller.run(raw_DataFrame, design_file, outfile)
 
 
+# AHC: separate I/O from the functions of this class
+#      design = ExpDesign(pandas.read_csv(...))
+#      it should then automatically do a sanity check
+#      to see if the table is well-formed.
 class ExpDesign(object):
     '''base class for design objects'''
 
@@ -178,6 +182,9 @@ class ExpDesign(object):
             self.has_pairs = False
 
 
+# AHC: remove the "filtering" from the parameterization of
+#      the experiment. The filtering should already have happened.
+#
 class DEExperiment(object):
     ''' base class to store data for a DE experiment
     contains a counts table and a design table'''
