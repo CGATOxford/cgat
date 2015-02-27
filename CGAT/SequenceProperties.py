@@ -359,13 +359,13 @@ class SequencePropertiesCpg(SequencePropertiesNA, SequencePropertiesDN):
         SequencePropertiesDN.loadSequence(self, sequence, seqtype)
 
         if self.mLength > 0:
-            self.mCpG_density = (float(self.mCountsDinuc["CG"])
-                                 / (float(self.mLength) / 2.0))
+            self.mCpG_density = (float(self.mCountsDinuc["CG"]) /
+                                 (float(self.mLength) / 2.0))
             if (self.mCountsNA["C"] * self.mCountsNA["G"]) / self.mLength > 0:
-                self.mCpG_ObsExp = ((float(self.mCountsDinuc["CG"]))
-                                    / ((float(self.mCountsNA["C"])
-                                        * float(self.mCountsNA["G"]))
-                                       / float(self.mLength)))
+                self.mCpG_ObsExp = ((float(self.mCountsDinuc["CG"])) /
+                                    ((float(self.mCountsNA["C"]) *
+                                      float(self.mCountsNA["G"])) /
+                                     float(self.mLength)))
             else:
                 self.mCpG_ObsExp = 0.0
         else:
@@ -581,7 +581,7 @@ class SequencePropertiesDegeneracy (SequencePropertiesLength):
 
         SequencePropertiesLength.updateProperties(self)
         self.mNGC = 0
-        self.mNSites1D, self.mNSites2D, self.mNSites3D, self.mNSites4D = 0, 0, 0, 0
+        self.mNSites1D, self.mNSites2D, self.mNSites3D, self.mNSites4D = (0,)*4
         self.mNSitesD3 = 0
 
         for x in (0, 1, 2):
@@ -689,7 +689,9 @@ class SequencePropertiesDegeneracy (SequencePropertiesLength):
 
 class SequencePropertiesAA(SequenceProperties):
 
-    '''Composition of amino-acies in translated nucleotide sequence (frame 1 only)'''
+    '''Composition of amino-acies in translated nucleotide sequence
+    (frame 1 only)'''
+
     mPseudoCounts = 0
 
     def __init__(self, reference_usage=[]):

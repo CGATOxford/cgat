@@ -125,18 +125,15 @@ import sys
 import os
 
 from rpy2.robjects import r as R
-import rpy2.robjects.numpy2ri
 
 try:
     import CGAT.Experiment as E
     import CGAT.Pipeline as P
     import CGAT.Expression as Expression
-    import CGAT.Counts as Counts
 except ImportError:
     import Experiment as E
     import Pipeline as P
     import Expression
-    import Counts
 
 
 def main(argv=None):
@@ -238,11 +235,16 @@ def main(argv=None):
                       dest="model",
                       type="string",
                       help="Design formula for DESeq2")
+
     parser.add_option("--deseq2-contrasts",
                       dest="contrasts",
                       type="string",
                       help=("contrasts for post-hoc testing writen"
                             " variable:control:treatment,..."))
+    parser.add_option("--model",
+                      dest="model",
+                      type="string",
+                      help=("model for GLM"))
 
     parser.set_defaults(
         input_filename_tags="-",
@@ -273,6 +275,7 @@ def main(argv=None):
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
+    # TS: if no input filename and nothing on stdin...need to throw error?
     if options.input_filename_tags == "-":
         fh = P.getTempFile()
         fh.write("".join([x for x in options.stdin]))
@@ -292,8 +295,7 @@ def main(argv=None):
         percentile_rowsums=options.filter_percentile_rowsums,
         ref_group=options.ref_group,
         model=options.model,
-        contrasts=options.contrasts,
-        fdr=options.fdr)
+        contrasts=options.contrasts)
 
     DEEx.build(
         counts_file=options.input_filename_tags,
@@ -303,7 +305,7 @@ def main(argv=None):
         DEProcessor = Expression.DE_TTest()
         DEProcessor(DEEx,
                     outfile=options.output_filename,
-                    outfile_prefix=options.output_filename_pattern,
+                    outfile_prefix="ttest.",
                     fdr=options.fdr,
                     normalise=True,
                     normalise_method="million-counts")
@@ -312,8 +314,10 @@ def main(argv=None):
         DEProcessor = Expression.DE_edgeR()
         DEProcessor(DEEx,
                     outfile=options.output_filename,
-                    outfile_prefix=options.output_filename_pattern,
-                    dispersion=options.edger_dispersion)
+                    outfile_prefix="edgeR.",
+                    dispersion=options.edger_dispersion,
+                    fdr=options.fdr,
+                    model=options.model)
 
     '''try:
         if options.method == "deseq2":

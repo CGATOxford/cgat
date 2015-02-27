@@ -20,23 +20,24 @@ This pipeline works on a single genome.
 Overview
 ========
 
-The pipeline assumes the data derive from multiple tissues/conditions (:term:`experiment`) 
-with one or more biological and/or technical replicates (:term:`replicate`). A :term:`replicate`
+The pipeline assumes the data derive from multiple tissues/conditions
+(:term:`experiment`) with one or more biological and/or technical
+replicates (:term:`replicate`). A :term:`replicate`
 within each :term:`experiment` is a :term:`track`.
 
 The pipeline performs the following tasks:
 
    * analyse each experiment:
       * for each replicate
-          * map reads using tophat for each term:`replicate` separately. 
+          * map reads using tophat for each term:`replicate` separately.
           * predict splice isoforms and expression levels with :term:`cufflinks`.
           * estimate expression levels of reference gene set with :term:`cufflinks`.
           * annotate isoforms in replicates with genomic annotations
-      * compare isoforms in replicates within each :term:`experiment` (:term:`cuffcompare`) 
+      * compare isoforms in replicates within each :term:`experiment` (:term:`cuffcompare`)
           and to reference gene set.
       * summary statistics on reproducibility within each experiment
    * build a combined gene set including the reference gene set and isoforms predicted by :term:`cufflinks`.
-      * compare all isoforms in all experiments+isoforms (:term:`cuffcompare`) to each other 
+      * compare all isoforms in all experiments+isoforms (:term:`cuffcompare`) to each other
          and the reference gene set
          * summary statistics on isoforms with respect to gene set
    * estimate differential expression levels of transcripts
@@ -59,33 +60,33 @@ best to rely on a set of known splice-junctions. Longer reads map more easily ac
 From the tophat manual::
 
    TopHat finds splice junctions without a reference annotation. TopHat version 1.4 maps RNA-seq reads
-   first to a reference transcriptome. Only those reads that don't map in this initial process are 
+   first to a reference transcriptome. Only those reads that don't map in this initial process are
    mapped against the genome.
 
    Through the second stage of genome mapping, TopHat identifies novel splice junctions and then confirms
    these through mapping to known junctions.
-   
-   Short read sequencing machines can currently produce reads 100bp or longer, but many exons are 
-   shorter than this, and so would be missed in the initial mapping. TopHat solves this problem 
-   by splitting all input reads into smaller segments, and then mapping them independently. The segment 
+
+   Short read sequencing machines can currently produce reads 100bp or longer, but many exons are
+   shorter than this, and so would be missed in the initial mapping. TopHat solves this problem
+   by splitting all input reads into smaller segments, and then mapping them independently. The segment
    alignments are "glued" back together in a final step of the program to produce the end-to-end read alignments.
 
-   TopHat generates its database of possible splice junctions from three sources of evidence. The first 
-   source is pairings of "coverage islands", which are distinct regions of piled up reads in the 
-   initial mapping. Neighboring islands are often spliced together in the transcriptome, so 
-   TopHat looks for ways to join these with an intron. The second source is only used when 
-   TopHat is run with paired end reads. When reads in a pair come from different exons of a 
-   transcript, they will generally be mapped far apart in the genome coordinate space. When 
-   this happens, TopHat tries to "close" the gap between them by looking for subsequences of 
-   the genomic interval between mates with a total length about equal to the expected distance 
-   between mates. The "introns" in this subsequence are added to the database. The third, and 
+   TopHat generates its database of possible splice junctions from three sources of evidence. The first
+   source is pairings of "coverage islands", which are distinct regions of piled up reads in the
+   initial mapping. Neighboring islands are often spliced together in the transcriptome, so
+   TopHat looks for ways to join these with an intron. The second source is only used when
+   TopHat is run with paired end reads. When reads in a pair come from different exons of a
+   transcript, they will generally be mapped far apart in the genome coordinate space. When
+   this happens, TopHat tries to "close" the gap between them by looking for subsequences of
+   the genomic interval between mates with a total length about equal to the expected distance
+   between mates. The "introns" in this subsequence are added to the database. The third, and
    strongest, source of evidence for a splice junction is when two segments from the same read #
-   are mapped far apart, or when an internal segment fails to map. With long (>=75bp) reads, 
-   "GT-AG", "GC-AG" and "AT-AC" introns be found ab initio. With shorter reads, TopHat only 
+   are mapped far apart, or when an internal segment fails to map. With long (>=75bp) reads,
+   "GT-AG", "GC-AG" and "AT-AC" introns be found ab initio. With shorter reads, TopHat only
    reports alignments across "GT-AG" introns
 
-Thus, in order to increase the sensitivity of splice-site detection, it might be best to derive a set of 
-splice-junctions using all reads. This is not done automatically, but can be done manually by 
+Thus, in order to increase the sensitivity of splice-site detection, it might be best to derive a set of
+splice-junctions using all reads. This is not done automatically, but can be done manually by
 adding a file with junctions to the ``tophat_options`` entry in the configuration file.
 
 The pipeline supplies tophat with a list of all coding exons to facilitate mapping across known
@@ -93,8 +94,8 @@ splice-junctions. If they are prioritized, I do not know.
 
 Transcripts are built individually for each :term:`track`. This seems to be the most rigorous way
 as there might be conflicting transcripts between replicates and merging the sets might confuse transcript
-reconstruction. Also, conflicting transcripts between replicates give an idea of the variability of the data. 
-However, if there are only few reads,  there might be a case for building transcript models using reads 
+reconstruction. Also, conflicting transcripts between replicates give an idea of the variability of the data.
+However, if there are only few reads,  there might be a case for building transcript models using reads
 from all replicates of an experiment. However, there is no reason to merge reads between experiments.
 
 LincRNA
@@ -106,7 +107,7 @@ are often expressed at very low levels and possibly in a highly regulated manner
 certain tissues. On top of their low abundance, they frequently seem to be co-localized with protein
 coding genes, making it hard to distinguish them from transcription artifacts.
 
-Success in identifying lincRNA will depend a lot on your input data. Long, paired-end reads are likely 
+Success in identifying lincRNA will depend a lot on your input data. Long, paired-end reads are likely
 to lead to success. Unfortunately, many exploratory studies go for single-ended, short read data.
 With such data, identification of novel spliced transcripts will be rare and the set of novel transcripts
 is likely to contain many false-positives.
@@ -120,12 +121,12 @@ Artifacts in lncRNA analysis
 
 There are several sources of artifacts in lncRNA analysis
 
-Read mapping errors 
+Read mapping errors
 ~~~~~~~~~~~~~~~~~~~
 
 Mapping errors are identifyable as sharp peaks in the
 coverage profile. Mapping errors occur if the true location of a read has more mismatches
-than the original location or it maps across an undetected splice-site. Most of the 
+than the original location or it maps across an undetected splice-site. Most of the
 highly-expressed lncRNA are due to mapping errors. Secondary locations very often overlap
 highly-expressed protein-coding genes. These errors are annoying for two reasons: they
 provide false positives, but at the same time prevent the reads to be counted towards
@@ -133,14 +134,14 @@ the expression of the true gene.
 
 They can be detected in two ways:
 
-1. via a peak-like distribution of reads which should result in a low entropy of start position 
+1. via a peak-like distribution of reads which should result in a low entropy of start position
 density. Note that this possibly can remove transcripts that are close to the length of a single
 read.
-          
+
 2. via mapping against known protein coding transcripts. However, getting this mapping right
 is hard for two reasons. Firstly, mapping errors usually involve reads aligned with mismatches.
-Thus, the mapping has to be done either on the read-level (computationally expensive), or 
-on the transcript level after variant calling. (tricky, and also computationally expensive). 
+Thus, the mapping has to be done either on the read-level (computationally expensive), or
+on the transcript level after variant calling. (tricky, and also computationally expensive).
 Secondly, as cufflinks extends transcripts generously, only a part of a transcript might actually
 be a mismapped part. Distinguishing partial true matches from random matches will be tricky.
 
@@ -161,21 +162,21 @@ Differential expression
 -----------------------
 
 The quality of the rnaseq data (read-length, paired-end) determines the
-quality of transcript models. For instance, if reads are short (35bp) and/or 
+quality of transcript models. For instance, if reads are short (35bp) and/or
 reads are not paired-ended, transcript models will be short and truncated.
 In these cases it might be better to concentrate the analysis on only previously
-known transcript models. 
+known transcript models.
 
 The pipeline offers various sets for downstream analysis of differential expression.
 
-1. A set of previously known transcripts (:file:`reference.gtf.gz`). Use this set if 
+1. A set of previously known transcripts (:file:`reference.gtf.gz`). Use this set if
    only interested in the transcription of previously known transcripts or read length
    does not permit transcript assembly. This does include all transcripts within the
    ENSEMBL gene set, including processed but untranscribed transcripts, transcripts with
    retained introns, pseudogenes, etc.
-   
+
 2. A set of previously known protein coding transcripts (:file:`refcoding.gtf.gz`).
-   This set is derived from (:file:`reference.gtf.gz`) but only includes exons of 
+   This set is derived from (:file:`reference.gtf.gz`) but only includes exons of
    transcripts that are protein coding.
 
 3. An ab-initio gene set (:file:`abinitio.gtf.gz`). The ab-initio set is built by running :term:`cuffcompare` on
@@ -184,14 +185,14 @@ The pipeline offers various sets for downstream analysis of differential express
    to exclude partial transcripts. Use this set if reads are of good length and/or are paired-ended.
 
 4. A set of novel transcribed loci (:file:`novel.gtf.gz`). This gene set is derived from the
-   set of ab-initio transcripts. All ab-initio transcripts overlapping protein coding transcripts 
-   in :file:`refcoding.gtf.gz` are removed. Overlapping transcripts are merged into a single 
-   transcript/gene. This removes individual transcript structure, but retains constitutive 
+   set of ab-initio transcripts. All ab-initio transcripts overlapping protein coding transcripts
+   in :file:`refcoding.gtf.gz` are removed. Overlapping transcripts are merged into a single
+   transcript/gene. This removes individual transcript structure, but retains constitutive
    introns. This set retains transcripts that are only observed in a single experiment. It also
    includes known non-coding transcripts, so a locus might not necessarily be "novel".
 
 Transcripts are the natural choice to measure expression of. However other quantities
-might be of interest. Some quantities are biological meaningful, for example differential 
+might be of interest. Some quantities are biological meaningful, for example differential
 expression from a promotor shared by several trancripts. Other quantities might no biologically
 meaningful but are necessary as a technical comprise.
 For example, the overlapping transcripts might be hard to resolve and thus might need to be
@@ -209,7 +210,7 @@ cds
    Coding sequence expression. Ignore reads overlapping non-coding parts of transcripts (UTRs, etc.). Requires
    annotation of the cds and thus only available for :file:`reference.gtf.gz`.
 
-Methods differ in their ability to measure transcription on all levels. 
+Methods differ in their ability to measure transcription on all levels.
 
 .. todo::
    add promoters and splicing output
@@ -244,9 +245,9 @@ See :ref:`PipelineSettingUp` and :ref:`PipelineRunning` on general information h
 Configuration
 -------------
 
-The pipeline requires a configured :file:`pipeline.ini` file. 
+The pipeline requires a configured :file:`pipeline.ini` file.
 
-The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file 
+The sphinxreport report requires a :file:`conf.py` and :file:`sphinxreport.ini` file
 (see :ref:`PipelineReporting`). To start with, use the files supplied with the
 Example_ data.
 
@@ -286,10 +287,10 @@ Optional inputs
 Requirements
 ------------
 
-The pipeline requires the results from :doc:`pipeline_annotations`. Set the configuration variable 
+The pipeline requires the results from :doc:`pipeline_annotations`. Set the configuration variable
 :py:data:`annotations_database` and :py:data:`annotations_dir`.
 
-On top of the default CGAT setup, the pipeline requires the following software to be in the 
+On top of the default CGAT setup, the pipeline requires the following software to be in the
 path:
 
 +--------------------+-------------------+------------------------------------------------+
@@ -320,7 +321,7 @@ The major output is in the database file :file:`csvdb`.
 
 For each :term:`experiment` there will be the following tables:
 
-<track>_cuffcompare_benchmark 
+<track>_cuffcompare_benchmark
    results from comparing gene models against reference gene set
    primary key: track
 
@@ -331,7 +332,7 @@ For each :term:`experiment` there will be the following tables:
 
 <track>_cuffcompare_tracking
    tracking information linking loci against transcripts.
-   primary key: transfrag_id, 
+   primary key: transfrag_id,
    foreign key: locus_id
 
 <track>_cuffcompare_tracking
@@ -363,7 +364,7 @@ To run the example, simply unpack and untar::
    cd pipeline_rnaseq.dir
    python <srcdir>/pipeline_rnaseq.py make full
 
-.. note:: 
+.. note::
    For the pipeline to run, install the :doc:`pipeline_annotations` as well.
 
 Glossary
@@ -561,8 +562,8 @@ def writePrunedGTF(infile, outfile):
         compress = "cat"
 
     # remove \0 bytes within gtf file
-    statement = '''%(uncompress)s %(infile)s 
-    | %(cmds)s 
+    statement = '''%(uncompress)s %(infile)s
+    | %(cmds)s
     | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=contig+gene --log=%(outfile)s.log
     | %(compress)s > %(outfile)s'''
 
@@ -718,7 +719,7 @@ def buildReferenceGeneSet(infile, outfile):
     Removes unwanted contigs according to configuration
     value ``geneset_remove_contigs``.
 
-    Removes transcripts overlapping ribosomal genes if 
+    Removes transcripts overlapping ribosomal genes if
     ``geneset_remove_repetitive_rna`` is set. Protein
     coding transcripts are not removed.
 
@@ -727,7 +728,7 @@ def buildReferenceGeneSet(infile, outfile):
        * are located on contigs to be ignored (usually: chrM, _random, ...)
 
     The result is run through cuffdiff in order to add the p_id and tss_id tags
-    required by cuffdiff. 
+    required by cuffdiff.
 
     This will only keep sources of the type 'exon'. It will also remove
     any transcripts not in the reference genome.
@@ -757,7 +758,7 @@ def buildReferenceGeneSet(infile, outfile):
     # files
     statement = '''
     cuffcompare -r <( gunzip < %(tmpfilename)s )
-         -T 
+         -T
          -s %(bowtie_index_dir)s/%(genome)s.fa
          -o %(tmpfilename2)s
          <( gunzip < %(tmpfilename)s )
@@ -830,7 +831,7 @@ def buildReferenceGeneSet(infile, outfile):
            suffix("reference.gtf.gz"),
            "refnoncoding.gtf.gz")
 def buildNoncodingGeneSet(infile, outfile):
-    '''build a new gene set without protein coding 
+    '''build a new gene set without protein coding
     transcripts.'''
 
     to_cluster = True
@@ -848,7 +849,7 @@ def buildNoncodingGeneSet(infile, outfile):
                     PARAMS_ANNOTATIONS["interface_geneset_all_gtf"]),
        "reference_with_cds.gtf.gz")
 def buildReferenceGeneSetWithCDS(infile, outfile):
-    '''build a new gene set without protein coding 
+    '''build a new gene set without protein coding
     transcripts.'''
 
     mergeAndFilterGTF(infile, outfile, "%s.removed.gz" % outfile)
@@ -862,7 +863,7 @@ def buildReferenceGeneSetWithCDS(infile, outfile):
            suffix("reference.gtf.gz"),
            "%s.gtf.gz" % REFERENCE)
 def buildCodingGeneSet(infile, outfile):
-    '''build a gene set with only protein coding 
+    '''build a gene set with only protein coding
     transcripts.
 
     Genes are selected via their gene biotype in the GTF file.
@@ -979,20 +980,20 @@ def buildIntronGeneModels(infile, outfile):
                                   PARAMS_ANNOTATIONS["interface_geneset_exons_gtf"])
 
     statement = '''gunzip
-    < %(infile)s 
+    < %(infile)s
     | awk '$2 == "protein_coding"'
-    | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=gene 
-    | python %(scriptsdir)s/gtf2gtf.py 
-    --method=exons2introns 
-    --intron-min-length=100 
-    --intron-border=10 
+    | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=gene
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=exons2introns
+    --intron-min-length=100
+    --intron-border=10
     --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2gff.py
     --crop=%(filename_exons)s
     --log=%(outfile)s.log
-    | python %(scriptsdir)s/gtf2gtf.py 
-    --method=set-transcript-to-gene 
-    --log=%(outfile)s.log 
+    | python %(scriptsdir)s/gtf2gtf.py
+    --method=set-transcript-to-gene
+    --log=%(outfile)s.log
     | perl -p -e 's/intron/exon/'
     | gzip
         > %(outfile)s
@@ -1039,7 +1040,7 @@ def buildJunctions(infile, outfile):
         E.info('found %i junctions before removing duplicates' % njunctions)
 
     # make unique
-    statement = '''mv %(outfile)s %(outfile)s.tmp; 
+    statement = '''mv %(outfile)s %(outfile)s.tmp;
                    cat < %(outfile)s.tmp | sort | uniq > %(outfile)s;
                    rm -f %(outfile)s.tmp; '''
     P.run()
@@ -1051,9 +1052,9 @@ def buildJunctions(infile, outfile):
 
 @transform(buildCodingGeneSet, suffix(".gtf.gz"), ".fa")
 def buildReferenceTranscriptome(infile, outfile):
-    '''build reference transcriptome. 
+    '''build reference transcriptome.
 
-    The reference transcriptome contains all known 
+    The reference transcriptome contains all known
     protein coding transcripts.
 
     The sequences include both UTR and CDS.
@@ -1069,7 +1070,7 @@ def buildReferenceTranscriptome(infile, outfile):
     zcat %(infile)s
     | awk '$3 == "exon"' > %(gtf_file)s;
     gtf_to_fasta %(gtf_file)s %(genome_file)s %(outfile)s;
-    checkpoint; 
+    checkpoint;
     samtools faidx %(outfile)s
     '''
     P.run()
@@ -1106,15 +1107,14 @@ def buildReferenceTranscriptome(infile, outfile):
 @files(os.path.join(PARAMS["annotations_dir"], "geneset_all.gtf.gz"), "geneset_mask.gtf")
 def buildMaskGtf(infile, outfile):
     '''
-    This takes ensembl annotations (geneset_all.gtf.gz) and writes out all entries that 
+    This takes ensembl annotations (geneset_all.gtf.gz) and writes out all entries that
     have a 'source' match to "rRNA" or 'contig' match to "chrM". for use with cufflinks
     '''
     geneset = IOTools.openFile(infile)
     outf = open(outfile, "wb")
     for entry in GTF.iterator(geneset):
         if re.findall("rRNA", entry.source) or re.findall("chrM", entry.contig):
-            outf.write("\t".join((map(str, [entry.contig, entry.source, entry.feature, entry.start, entry.end, ".", entry.strand, ".", "transcript_id" + " " + '"' + entry.transcript_id + '"' + ";" + " " + "gene_id" + " " + '"' + entry.gene_id + '"'])))
-                       + "\n")
+            outf.write("\t".join((map(str, [entry.contig, entry.source, entry.feature, entry.start, entry.end, ".", entry.strand, ".", "transcript_id" + " " + '"' + entry.transcript_id + '"' + ";" + " " + "gene_id" + " " + '"' + entry.gene_id + '"']))) + "\n")
 
     outf.close()
 
@@ -1265,9 +1265,9 @@ def buildJunctionsDB(infiles, outfile):
 
     E.info("building junctions database")
     statement = '''
-    juncs_db %(min_anchor_length)i %(read_length)i 
+    juncs_db %(min_anchor_length)i %(read_length)i
               <( zcat %(outfile_junctions)s )
-              /dev/null /dev/null 
+              /dev/null /dev/null
               %(bowtie_index_dir)s/%(genome)s.fa
               > %(outfile)s
               2> %(outfile)s.log
@@ -1407,8 +1407,8 @@ def buildBAMs(infiles, outfile):
     if os.path.exists("%(outfile)s.log" % locals()):
         os.remove("%(outfile)s.log" % locals())
 
-    statement = ''' 
-      python %(scriptsdir)s/bams2bam.py 
+    statement = '''
+      python %(scriptsdir)s/bams2bam.py
        --force-output
        --gtf-file=%(reffile)s
        --filename-mismapped=%(outfile_mismapped)s
@@ -1505,7 +1505,7 @@ def buildBAMReports(infile, outfile):
     statement = '''
     cd %(exportdir)s/bamstats;
     %(xvfb_command)s
-    %(cmd-run)s bamstats -i ../../%(infile)s -v html -o %(track)s.html 
+    %(cmd-run)s bamstats -i ../../%(infile)s -v html -o %(track)s.html
                          --qualities --mapped --lengths --distances --starts
     >& ../../%(outfile)s
     '''
@@ -1638,7 +1638,7 @@ def loadMappingStats(infiles, outfile):
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
                       --add-index=track
-                      --table=%(tablename)s 
+                      --table=%(tablename)s
                 > %(outfile)s
             """
     P.run()
@@ -1721,7 +1721,7 @@ def loadBAMStats(infiles, outfile):
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
                       --add-index=track
-                      --table=%(tablename)s 
+                      --table=%(tablename)s
                 > %(outfile)s
             """
     P.run()
@@ -1740,7 +1740,7 @@ def loadBAMStats(infiles, outfile):
                 | perl -p -e "s/bin/%(suffix)s/"
                 | python %(scriptsdir)s/csv2db.py
                       --allow-empty-file
-                      --table=%(tname)s 
+                      --table=%(tname)s
                 >> %(outfile)s
                 """
 
@@ -1804,7 +1804,7 @@ def loadContextStats(infiles, outfile):
                 | python %(scriptsdir)s/table2table.py --transpose
                 | python %(scriptsdir)s/csv2db.py
                       --add-index=track
-                      --table=%(tablename)s 
+                      --table=%(tablename)s
                 > %(outfile)s
                 """
     P.run()
@@ -1813,8 +1813,8 @@ def loadContextStats(infiles, outfile):
 
     cc = Database.executewait(
         dbhandle, '''ALTER TABLE %(tablename)s ADD COLUMN mapped INTEGER''' % locals())
-    statement = '''UPDATE %(tablename)s SET mapped = 
-                                       (SELECT b.mapped FROM bam_stats AS b 
+    statement = '''UPDATE %(tablename)s SET mapped =
+                                       (SELECT b.mapped FROM bam_stats AS b
                                             WHERE %(tablename)s.track = b.track)''' % locals()
 
     cc = Database.executewait(dbhandle, statement)
@@ -1869,16 +1869,16 @@ def buildGeneModels(infiles, outfile):
         reference = os.path.abspath("reference.gtf")
         options = options + " --GTF-guide %s" % reference
 
-    statement = '''mkdir %(tmpfilename)s; 
+    statement = '''mkdir %(tmpfilename)s;
         cd %(tmpfilename)s;
-                cufflinks 
-              --label %(track)s           
+                cufflinks
+              --label %(track)s
               --num-threads %(cufflinks_threads)i
               --library-type %(tophat_library_type)s
               --frag-bias-correct %(genome_file)s
               --multi-read-correct
               %(options)s
-              %(infile)s 
+              %(infile)s
         >& %(outfile)s.log;
         perl -p -e "s/\\0/./g" < transcripts.gtf | gzip > %(outfile)s;
        '''
@@ -1906,20 +1906,20 @@ def oldClassifyTranscripts(infiles, outfile):
 
     infile, reffile = infiles
 
-    statement = '''gunzip 
-    < %(infile)s 
+    statement = '''gunzip
+    < %(infile)s
     | python %(scriptsdir)s/gtf2gtf.py --method=sort --sort-order=transcript
-    | %(cmd-farm)s --split-at-column=1 --output-header --log=%(outfile)s.log --max-files=60 
-    "python %(scriptsdir)s/gtf2table.py 
-    --counter=position 
-    --counter=classifier 
-    --section=exons 
-    --counter=length 
-    --counter=splice 
-    --counter=splice-comparison 
-    --log=%(outfile)s.log 
+    | %(cmd-farm)s --split-at-column=1 --output-header --log=%(outfile)s.log --max-files=60
+    "python %(scriptsdir)s/gtf2table.py
+    --counter=position
+    --counter=classifier
+    --section=exons
+    --counter=length
+    --counter=splice
+    --counter=splice-comparison
+    --log=%(outfile)s.log
     --filename-format=gff
-    --gff-file=%(annotation)s 
+    --gff-file=%(annotation)s
     --genome-file=%(genome_dir)s/%(genome)s"
     | gzip
     > %(outfile)s
@@ -1956,15 +1956,15 @@ def estimateExpressionLevelsInReference(infiles, outfile):
     # note: cufflinks adds \0 bytes to gtf file - replace with '.'
     # increase max-bundle-length to 4.5Mb due to Galnt-2 in mm9 with a 4.3Mb
     # intron.
-    statement = '''mkdir %(tmpfilename)s; 
-    cd %(tmpfilename)s; 
-    cufflinks --label %(track)s      
+    statement = '''mkdir %(tmpfilename)s;
+    cd %(tmpfilename)s;
+    cufflinks --label %(track)s
               --GTF=<(gunzip < %(gtffile)s)
               --num-threads=%(cufflinks_threads)i
               --frag-bias-correct %(bowtie_genome_dir)s/%(genome)s.fa
               --library-type %(tophat_library_type)s
               %(cufflinks_options)s
-              %(bamfile)s 
+              %(bamfile)s
     >& %(outfile)s.log;
     perl -p -e "s/\\0/./g" < transcripts.gtf | gzip > %(outfile)s;
     '''
@@ -1994,9 +1994,9 @@ def loadExpressionLevels(infile, outfile):
 
     statement = '''cat %(infile2)s
     | perl -p -e "s/trans_id/transcript_id/"
-    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s 
-              --add-index=transcript_id 
-              --table=%(tablename)s 
+    | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
+              --add-index=transcript_id
+              --table=%(tablename)s
     > %(outfile)s
     '''
 
@@ -2103,7 +2103,7 @@ def loadTranscriptComparison(infile, outfile):
     The following tables are only present if there are
     multiple replicates in a sample:
 
-    <track>_tracking 
+    <track>_tracking
     '''
     tracks, result = Tophat.parseTranscriptComparison(IOTools.openFile(infile))
     tracks = [P.snip(os.path.basename(x), ".gtf.gz") for x in tracks]
@@ -2126,7 +2126,7 @@ def loadTranscriptComparison(infile, outfile):
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --allow-empty-file
               --add-index=track
-              --table=%(tablename)s 
+              --table=%(tablename)s
     > %(outfile)s
     '''
 
@@ -2156,7 +2156,7 @@ def loadTranscriptComparison(infile, outfile):
               --allow-empty-file
               --add-index=track
               --add-index=contig
-              --table=%(tablename)s 
+              --table=%(tablename)s
     > %(outfile)s
     '''
 
@@ -2230,7 +2230,7 @@ def loadTranscriptComparison(infile, outfile):
               --add-index=locus_id
               --add-index=transfrag_id
               --add-index=code
-              --table=%(tablename)s 
+              --table=%(tablename)s
     >> %(outfile)s
     '''
 
@@ -2247,7 +2247,7 @@ def loadTranscriptComparison(infile, outfile):
               --add-index=transcript_id
               --add-index=gene_id
               --add-index=track
-              --table=%(tablename)s 
+              --table=%(tablename)s
     >> %(outfile)s
     '''
 
@@ -2259,7 +2259,7 @@ def loadTranscriptComparison(infile, outfile):
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --allow-empty-file
               --add-index=transfrag_id
-              --table=%(tablename)s 
+              --table=%(tablename)s
     >> %(outfile)s
     '''
 
@@ -2294,7 +2294,7 @@ def loadTranscriptComparison(infile, outfile):
     statement = '''cat %(tmpfile)s
     | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
               --add-index=locus_id
-              --table=%(tablename)s 
+              --table=%(tablename)s
     >> %(outfile)s
     '''
 
@@ -2403,7 +2403,7 @@ def buildNovelGeneSet(infiles, outfile):
     the reference gene set.
 
     Ab-initio transcripts are removed based on features in the reference gene set.
-    Removal is aggressive  - as soon as one transcript of a 
+    Removal is aggressive  - as soon as one transcript of a
     gene/locus overlaps, all transcripts of that gene/locus are gone.
 
     Transcripts that lie exclusively in repetetive sequence are removed, too.
@@ -2469,17 +2469,17 @@ def buildNovelGeneSet(infiles, outfile):
             PARAMS["annotations_dir"], PARAMS_ANNOTATIONS["interface_numts_gtf"]),
         ), "lincrna.gtf.gz")
 def buildLincRNAGeneSet(infiles, outfile):
-    '''build lincRNA gene set. 
+    '''build lincRNA gene set.
 
     The lincRNA gene set contains all known lincRNA transcripts from
     the reference gene set plus all transcripts in the novel set that
-    do not overlap at any protein coding, processed or pseudogene transcripts 
+    do not overlap at any protein coding, processed or pseudogene transcripts
     (exons+introns) in the reference gene set.
 
     Transcripts that lie exclusively in repetetive sequence are removed, too.
 
     lincRNA genes are often expressed at low level and thus the resultant transcript
-    models are fragmentory. To avoid some double counting in downstream analyses, 
+    models are fragmentory. To avoid some double counting in downstream analyses,
     transcripts overlapping on the same strand are merged.
 
     Transcripts need to have a length of at least 200 bp.
@@ -2552,8 +2552,8 @@ def buildLincRNAGeneSet(infiles, outfile):
 
     # add the known lincRNA gene set.
     statement = '''zcat %(reference_gtf)s
-    | awk '$2 == "lincRNA"' 
-    | gzip 
+    | awk '$2 == "lincRNA"'
+    | gzip
     >> %(outfile)s
     '''
     P.run()
@@ -2594,20 +2594,20 @@ def annotateLincRNA(infiles, outfile):
 
     statement = '''
     zcat %(linc_fasta)s
-    | python %(scriptsdir)s/gff2fasta.py 
-              --is-gtf 
-              --genome=%(genome_dir)s/%(genome)s 
+    | python %(scriptsdir)s/gff2fasta.py
+              --is-gtf
+              --genome=%(genome_dir)s/%(genome)s
               --log=%(outfile)s.log
     | %(cmd-farm)s --split-at-regex=\"^>(\S+)\" --chunk-size=400 --log=%(outfile)s.log
     "exonerate --target %%STDIN%%
               --query %(reference_fasta)s
               --model affine:local
               --score %(lincrna_min_exonerate_score)i
-              --showalignment no --showsugar no --showcigar no 
+              --showalignment no --showsugar no --showcigar no
               --showvulgar no
               --bestn 5
-              --ryo \\"%(format)s\\n\\" 
-    " 
+              --ryo \\"%(format)s\\n\\"
+    "
     | grep -v -e "exonerate" -e "Hostname"
     | gzip > %(outfile)s.links.gz
     '''
@@ -2652,7 +2652,7 @@ def classifyTranscripts(infiles, outfile):
     statement = '''
     zcat %(infile)s
     | python %(scriptsdir)s/gtf2table.py
-           --counter=%(classifier)s 
+           --counter=%(classifier)s
            --reporter=transcripts
            --gff-file=%(reference)s
            --log=%(outfile)s.log
@@ -2678,7 +2678,7 @@ def classifyTranscriptsCuffcompare(infiles, outfile):
     statement = '''
     zcat %(infile)s.combined.gtf.gz
     | python %(scriptsdir)s/gtf2table.py
-           --counter=%(classifier)s 
+           --counter=%(classifier)s
            --reporter=transcripts
            --gff-file=%(reference)s
            --log=%(outfile)s.log
@@ -2775,8 +2775,8 @@ def annotateTranscriptsMappability(infile, outfile):
         return
 
     statement = """
-    zcat < %(infile)s 
-    | %(cmd-farm)s --split-at-column=1 --output-header --log=%(outfile)s.log --max-files=60 
+    zcat < %(infile)s
+    | %(cmd-farm)s --split-at-column=1 --output-header --log=%(outfile)s.log --max-files=60
     "python %(scriptsdir)s/gtf2table.py
     --reporter=transcripts
     --counter=bigwig-counts
@@ -2912,7 +2912,7 @@ def buildReproducibility(infile, outfile):
                                                     str(result)))))
 
         for code in PARAMS["reproducibility_codes"]:
-            statement = '''SELECT CASE WHEN %(track1)s THEN %(track1)s ELSE 0 END, 
+            statement = '''SELECT CASE WHEN %(track1)s THEN %(track1)s ELSE 0 END,
                                   CASE WHEN %(track2)s THEN %(track2)s ELSE 0 END
                        FROM %(tablename)s AS a,
                             %(tablename2)s AS b
@@ -2922,7 +2922,7 @@ def buildReproducibility(infile, outfile):
 
             _write(statement % locals(), code)
 
-        statement = '''SELECT CASE WHEN %(track1)s THEN %(track1)s ELSE 0 END, 
+        statement = '''SELECT CASE WHEN %(track1)s THEN %(track1)s ELSE 0 END,
                                   CASE WHEN %(track2)s THEN %(track2)s ELSE 0 END
                        FROM %(tablename)s AS a
                     '''
@@ -3139,7 +3139,7 @@ def loadCuffdiff(infile, outfile):
 
     Note: converts from ln(fold change) to log2 fold change.
 
-    The cuffdiff output is parsed. 
+    The cuffdiff output is parsed.
 
     Pairwise comparisons in which one gene is not expressed (fpkm < fpkm_silent)
     are set to status 'NOCALL'. These transcripts might nevertheless be significant.
@@ -3191,20 +3191,20 @@ def buildExpressionStats(tables, method, outfile):
 
             tested = toDict(Database.executewait(
                 dbhandle,
-                """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename_diff)s 
+                """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename_diff)s
                 GROUP BY treatment_name,control_name""" % locals()).fetchall())
             status = toDict(Database.executewait(
                 dbhandle,
-                """SELECT treatment_name, control_name, status, COUNT(*) FROM %(tablename_diff)s 
+                """SELECT treatment_name, control_name, status, COUNT(*) FROM %(tablename_diff)s
                 GROUP BY treatment_name,control_name,status""" % locals()).fetchall(), 3)
             signif = toDict(Database.executewait(
                 dbhandle,
-                """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename_diff)s 
+                """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename_diff)s
                 WHERE significant
                 GROUP BY treatment_name,control_name""" % locals()).fetchall())
             fold2 = toDict(Database.executewait(
                 dbhandle,
-                """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename_diff)s 
+                """SELECT treatment_name, control_name, COUNT(*) FROM %(tablename_diff)s
                 WHERE (l2fold >= 1 or l2fold <= -1) AND significant
                 GROUP BY treatment_name,control_name,significant""" % locals()).fetchall())
 
@@ -3225,7 +3225,7 @@ def buildExpressionStats(tables, method, outfile):
             ###########################################
             # plot length versus P-Value
             data = Database.executewait(dbhandle,
-                                        '''SELECT i.sum, pvalue 
+                                        '''SELECT i.sum, pvalue
                                         FROM %(tablename_diff)s,
                                         %(geneset)s_geneinfo as i
                                         WHERE i.gene_id = test_id AND significant''' % locals()).fetchall()
@@ -3287,15 +3287,15 @@ def buildCuffdiffPlots(infile, outfile):
         # do not plot lfold values where the confidence bounds contain 0.
         for track1, track2 in itertools.combinations(EXPERIMENTS, 2):
             statement = """
-                        SELECT CASE WHEN d.treatment_mean < d.control_mean THEN d.treatment_mean 
-                                          ELSE d.control_mean END, 
+                        SELECT CASE WHEN d.treatment_mean < d.control_mean THEN d.treatment_mean
+                                          ELSE d.control_mean END,
                                d.l2fold, d.significant
                         FROM %(tablename_diff)s AS d
-                        WHERE treatment_name = '%(track1)s' AND 
-                              control_name = '%(track2)s' AND 
+                        WHERE treatment_name = '%(track1)s' AND
+                              control_name = '%(track2)s' AND
                               status = 'OK' AND
-                              treatment_mean > 0 AND 
-                              control_mean > 0 
+                              treatment_mean > 0 AND
+                              control_mean > 0
                         """ % locals()
 
             data = zip(*Database.executewait(dbhandle, statement))
@@ -3433,11 +3433,11 @@ def buildCodingExons(infile, outfile):
 
     to_cluster = True
     statement = '''
-    zcat %(infile)s 
+    zcat %(infile)s
     | awk '$2 == "protein_coding" && $3 == "CDS"'
-    | perl -p -e "s/CDS/exon/" 
-    | python %(scriptsdir)s/gtf2gtf.py --method=merge-exons --log=%(outfile)s.log 
-    | gzip 
+    | perl -p -e "s/CDS/exon/"
+    | python %(scriptsdir)s/gtf2gtf.py --method=merge-exons --log=%(outfile)s.log
+    | gzip
     > %(outfile)s
     '''
     P.run()
@@ -3509,7 +3509,7 @@ def buildUnionIntersectionExons(infile, outfile):
     | python %(scriptsdir)s/gff2gff.py --is-gtf --method=crop-unique  --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2bed.py --is-gtf --log=%(outfile)s.log
     | sort -k1,1 -k2,2n
-    | gzip 
+    | gzip
     > %(outfile)s
     '''
 
@@ -3534,7 +3534,7 @@ def buildUnionExons(infile, outfile):
     Exons across all transcripts of a gene are merged.
     They are then intersected between genes to remove any overlap.
 
-    Builds a single-segment bed file.    
+    Builds a single-segment bed file.
     '''
 
     to_cluster = USECLUSTER
@@ -3544,7 +3544,7 @@ def buildUnionExons(infile, outfile):
     | python %(scriptsdir)s/gff2gff.py --is-gtf --method=crop-unique  --log=%(outfile)s.log
     | python %(scriptsdir)s/gff2bed.py --is-gtf --log=%(outfile)s.log
     | sort -k1,1 -k2,2n
-    | gzip 
+    | gzip
     > %(outfile)s
     '''
 
@@ -3615,7 +3615,7 @@ def loadExonLevelReadCounts(infiles, outfile):
     tmpfile = P.getTempFilename(".")
     tmpfile2 = P.getTempFilename(".")
 
-    statement = '''paste %(src)s 
+    statement = '''paste %(src)s
                 > %(tmpfile)s'''
 
     P.run()
@@ -3677,13 +3677,13 @@ def buildGeneLevelReadCounts(infiles, outfile):
     to_cluster = USECLUSTER
 
     statement = '''
-    zcat %(exons)s 
-    | python %(scriptsdir)s/gtf2table.py 
+    zcat %(exons)s
+    | python %(scriptsdir)s/gtf2table.py
           --reporter=genes
-          --bam-file=%(infile)s 
+          --bam-file=%(infile)s
           --counter=length
           --column-prefix="exons_"
-          --counter=read-counts 
+          --counter=read-counts
           --column-prefix=""
           --counter=read-coverage
           --column-prefix=coverage_
@@ -3705,7 +3705,7 @@ def buildGeneLevelReadCounts(infiles, outfile):
        [((["%s.accepted.bam" % y.asFile() for y in TRACKS], buildCodingGeneSet),
          "gene_counts.dir/%s.gene_counts.tsv.gz" % ALL.asFile())])
 def buildAggregateGeneLevelReadCounts(infiles, outfile):
-    '''count reads falling into transcripts of protein coding 
+    '''count reads falling into transcripts of protein coding
     gene models.
 
     .. note::
@@ -3722,13 +3722,13 @@ def buildAggregateGeneLevelReadCounts(infiles, outfile):
     bamfiles = ",".join(bamfiles)
 
     statement = '''
-    zcat %(geneset)s 
-    | python %(scriptsdir)s/gtf2table.py 
+    zcat %(geneset)s
+    | python %(scriptsdir)s/gtf2table.py
           --reporter=genes
-          --bam-file=%(bamfiles)s 
+          --bam-file=%(bamfiles)s
           --counter=length
           --column-prefix="exons_"
-          --counter=read-counts 
+          --counter=read-counts
           --column-prefix=""
           --counter=read-coverage
           --column-prefix=coverage_
@@ -3769,13 +3769,13 @@ def buildIntronLevelReadCounts(infiles, outfile):
     to_cluster = USECLUSTER
 
     statement = '''
-    zcat %(exons)s 
-    | python %(scriptsdir)s/gtf2table.py 
+    zcat %(exons)s
+    | python %(scriptsdir)s/gtf2table.py
           --reporter=genes
-          --bam-file=%(infile)s 
+          --bam-file=%(infile)s
           --counter=length
           --column-prefix="introns_"
-          --counter=read-counts 
+          --counter=read-counts
           --column-prefix=""
           --counter=read-coverage
           --column-prefix=coverage_
@@ -3806,7 +3806,7 @@ def loadIntronLevelReadCounts(infile, outfile):
            regex(r"(\S+).accepted.bam"),
            r"extension_counts.dir/\1.extension_counts.tsv.gz")
 def buildGeneLevelReadExtension(infile, outfile):
-    '''compute extension of cds. 
+    '''compute extension of cds.
 
     Known UTRs are counted as well.
     '''
@@ -3829,11 +3829,11 @@ def buildGeneLevelReadExtension(infile, outfile):
         remove_contigs = ""
 
     statement = '''
-    zcat %(cds)s 
+    zcat %(cds)s
     %(remove_contigs)s
-    | python %(scriptsdir)s/gtf2table.py 
+    | python %(scriptsdir)s/gtf2table.py
           --reporter=genes
-          --bam-file=%(infile)s 
+          --bam-file=%(infile)s
           --counter=position
           --counter=read-extension
           --output-filename-pattern=%(outfile)s.%%s.tsv.gz
@@ -3898,20 +3898,20 @@ def buildUTRs(infiles, outfile):
     to_cluster = USECLUSTER
 
     statement = '''
-    zcat %(infiles)s 
-    | python %(scriptsdir)s/csv_cut.py contig max_5utr_start max_5utr_end gene_id max_5utr_length strand 
-    | awk -v FS='\\t' '$1 != "contig" && $2 != ""' 
-    | mergeBed -nms -s 
+    zcat %(infiles)s
+    | python %(scriptsdir)s/csv_cut.py contig max_5utr_start max_5utr_end gene_id max_5utr_length strand
+    | awk -v FS='\\t' '$1 != "contig" && $2 != ""'
+    | mergeBed -nms -s
     > %(outfile)s.5
     '''
 
     P.run()
 
     statement = '''
-    zcat %(infiles)s 
-    | python %(scriptsdir)s/csv_cut.py contig max_3utr_start max_3utr_end gene_id max_3utr_length strand 
-    | awk -v FS='\\t' '$1 != "contig" && $2 != ""' 
-    | mergeBed -nms -s 
+    zcat %(infiles)s
+    | python %(scriptsdir)s/csv_cut.py contig max_3utr_start max_3utr_end gene_id max_3utr_length strand
+    | awk -v FS='\\t' '$1 != "contig" && $2 != ""'
+    | mergeBed -nms -s
     > %(outfile)s.3
     '''
 
@@ -3919,8 +3919,8 @@ def buildUTRs(infiles, outfile):
 
     statement = '''
     cat %(outfile)s.5 %(outfile)s.3
-    | sort -k 1,1 -k2,2n 
-    | gzip 
+    | sort -k 1,1 -k2,2n
+    | gzip
     > %(outfile)s'''
 
     P.run()
@@ -3939,7 +3939,7 @@ def buildUTRs(infiles, outfile):
            add_inputs(buildCodingGeneSet),
            r"transcript_counts.dir/\1.transcript_counts.tsv.gz")
 def buildTranscriptLevelReadCounts(infiles, outfile):
-    '''count reads falling into transcripts of protein coding 
+    '''count reads falling into transcripts of protein coding
        gene models.
 
     .. note::
@@ -3953,13 +3953,13 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
     to_cluster = USECLUSTER
 
     statement = '''
-    zcat %(geneset)s 
-    | python %(scriptsdir)s/gtf2table.py 
+    zcat %(geneset)s
+    | python %(scriptsdir)s/gtf2table.py
           --reporter=transcripts
-          --bam-file=%(infile)s 
+          --bam-file=%(infile)s
           --counter=length
           --column-prefix="exons_"
-          --counter=read-counts 
+          --counter=read-counts
           --column-prefix=""
           --counter=read-coverage
           --column-prefix=coverage_
@@ -3979,7 +3979,7 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
          "transcript_counts.dir/%s.transcript_counts.tsv.gz" % x.asFile())
         for x in EXPERIMENTS])
 def buildAggregateTranscriptLevelReadCounts(infiles, outfile):
-    '''count reads falling into transcripts of protein coding 
+    '''count reads falling into transcripts of protein coding
        gene models.
 
     .. note::
@@ -3988,7 +3988,7 @@ def buildAggregateTranscriptLevelReadCounts(infiles, outfile):
        the actual read counts are approximately twice the fragment
        counts.
 
-    .. note:: 
+    .. note::
 
        This step takes very long if multiple bam-files are supplied.
        It has thus been taken out of the pipeline. The aggregate can be derived from summing
@@ -4002,13 +4002,13 @@ def buildAggregateTranscriptLevelReadCounts(infiles, outfile):
     bamfiles = ",".join(bamfiles)
 
     statement = '''
-    zcat %(geneset)s 
-    | python %(scriptsdir)s/gtf2table.py 
+    zcat %(geneset)s
+    | python %(scriptsdir)s/gtf2table.py
           --reporter=transcripts
-          --bam-file=%(bamfiles)s 
+          --bam-file=%(bamfiles)s
           --counter=length
           --column-prefix="exons_"
-          --counter=read-counts 
+          --counter=read-counts
           --column-prefix=""
           --counter=read-coverage
           --column-prefix=coverage_
@@ -4063,7 +4063,7 @@ def aggregateExonLevelReadCounts(infiles, outfile):
 
     tmpfile = P.getTempFilename(".")
 
-    statement = '''paste %(src)s 
+    statement = '''paste %(src)s
                 > %(tmpfile)s''' % locals()
 
     P.run()
@@ -4111,7 +4111,7 @@ def runDESeq(infile, outfile):
     '''estimate differential expression using DESeq.
 
     The final output is a table. It is slightly edited such that
-    it contains a similar output and similar fdr compared 
+    it contains a similar output and similar fdr compared
     cuffdiff.
 
     Plots are:
@@ -4184,7 +4184,7 @@ def runDESeq(infile, outfile):
     else:
         E.info("replicates - estimating variance from replicates")
         # old:R('''cds <- estimateVarianceFunctions( cds )''')
-        R('''cds <- estimateDispersions( cds, 
+        R('''cds <- estimateDispersions( cds,
                                          method='%(deseq_dispersion_method)s',
                                          fitType='%(deseq_fit_type)s' )''' % locals())
 
@@ -4243,7 +4243,7 @@ def loadDESeq(infile, outfile):
               --add-index=treatment_name
               --add-index=control_name
               --add-index=test_id
-              --table=%(tablename)s 
+              --table=%(tablename)s
             > %(outfile)s
     '''
     P.run()
@@ -4293,12 +4293,12 @@ def buildGeneSetsOfInterest(infile, outfile):
     table = P.toTable(infile) + "_gene_diff"
     track = table[:table.index('_')]
 
-    statement = '''SELECT test_id, treatment_name, control_name, 
-                          info.contig, info.start, info.end, info.strand, 
+    statement = '''SELECT test_id, treatment_name, control_name,
+                          info.contig, info.start, info.end, info.strand,
                           l2fold
-                          FROM %(table)s, 
+                          FROM %(table)s,
                                %(track)s_geneinfo AS info
-                          WHERE 
+                          WHERE
                                significant AND
                                info.gene_id = test_id
                  ''' % locals()
@@ -4425,10 +4425,10 @@ def createViewMapping(infile, outfile):
     SELECT SUBSTR( b.track, 1, LENGTH(b.track) - LENGTH( '.accepted')) AS track, *
     FROM bam_stats AS b,
           mapping_stats AS m,
-          context_stats AS c,          
+          context_stats AS c,
           picard_stats_alignment_summary_metrics AS a,
           tophat_stats AS t
-    WHERE b.track LIKE "%%.accepted" 
+    WHERE b.track LIKE "%%.accepted"
       AND b.track = m.track
       AND b.track = c.track
       AND b.track = a.track

@@ -1,13 +1,13 @@
-track	include	group	pair
-wt-N-1	1	wtN	1
-wt-N-2	1	wtN	1
-wt-N-3	1	wtN	1
-wt-P-1	1	wtP	1
-wt-P-2	1	wtP	1
-wt-P-3	1	wtP	1
-delta-N-1	1	deltaN	1
-delta-N-2	1	deltaN	1
-delta-N-3	1	deltaN	1
-delta-P-1	1	deltaP	1
-delta-P-2	1	deltaP	1
-delta-P-3	1	deltaP	1
+track	include	group	pair	treatment	genotype
+wt-N-1	1	wtN	1	N	wt
+wt-N-2	1	wtN	1	N	wt
+wt-N-3	1	wtN	1	N	wt
+wt-P-1	1	wtP	1	P	wt
+wt-P-2	1	wtP	1	P	wt
+wt-P-3	1	wtP	1	P	wt
+delta-N-1	1	deltaN	1	N	delta
+delta-N-2	1	deltaN	1	N	delta
+delta-N-3	1	deltaN	1	N	delta
+delta-P-1	1	deltaP	1	P	delta
+delta-P-2	1	deltaP	1	P	delta
+delta-P-3	1	deltaP	1	P	delta
