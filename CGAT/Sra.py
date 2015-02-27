@@ -43,7 +43,7 @@ import os
 import glob
 
 
-def sneak(sra, outdir):
+def peek(sra, outdir):
     ''' returns the full file names for all files which will be extracted'''
     # --split-files creates files called prefix_#.fastq.gz,
     # where # is the read number.
@@ -79,5 +79,8 @@ def sneak(sra, outdir):
 
 
 def extract(sra, outdir):
-    P.execute("""fastq-dump --split-files --gzip --outdir
-                 %(outdir)s %(sra)s""" % locals())
+
+    statement = """fastq-dump --split-files --gzip --outdir
+                 %(outdir)s %(sra)s""" % locals()
+
+    return statement
