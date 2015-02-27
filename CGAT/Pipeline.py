@@ -208,6 +208,7 @@ def getParameters(filenames=["pipeline.ini", ],
     file called :file:`.cgat` in the user`s home directory.
 
     The order of initialization is as follows:
+
     1. hard-coded defaults
     2. pipeline specific default file in the CGAT code installation
     3. :file:`.cgat` in the users home directory
@@ -223,6 +224,10 @@ def getParameters(filenames=["pipeline.ini", ],
     but not executed and there might not be appropriate .ini
     files available.
 
+    Path names are expanded to the absolute pathname to avoid
+    ambiguity with relative path names. Path names are updated
+    for parameters that end in the suffix "dir" and start with
+    a "." such as "." or "../data".
     '''
 
     global CONFIG
@@ -271,6 +276,13 @@ def getParameters(filenames=["pipeline.ini", ],
         except TypeError(msg):
             raise TypeError('could not interpolate %s: %s' %
                             (PARAMS[param], msg))
+
+    # expand pathnames
+    for param, value in PARAMS.items():
+        if param.endswith("dir"):
+            if value.startswith("."):
+                PARAMS[param] = os.path.abspath(value)
+
     return PARAMS
 
 

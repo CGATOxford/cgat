@@ -851,7 +851,7 @@ def buildGeneSet(infile, outfile):
         # in quotation marks to avoid confusion with shell special
         # characters such as ( and |
         statement.append(
-            ''' --remove-contigs="%(ensembl_remove_contigs)s" ''')
+            ''' --contig-pattern="%(ensembl_remove_contigs)s" ''')
 
     statement.append(''' | gzip > %(outfile)s ''')
 

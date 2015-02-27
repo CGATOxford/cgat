@@ -83,6 +83,7 @@ class Counts(object):
 
     def readCountsfile(self, counts_file):
         ''' read Counts file and store as pandas DataFrame '''
+        # TS: can this deal with .gz files? if not, ammend
         inf = IOTools.openFile(counts_file)
         self.table = pd.read_csv(
             inf, sep="\t", index_col=0, comment="#")

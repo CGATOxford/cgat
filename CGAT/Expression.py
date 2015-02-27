@@ -85,12 +85,10 @@ import numpy as np
 from scipy.stats import ttest_ind
 
 import matplotlib
-import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import pylab
 
 from rpy2.robjects import r as R
-from rpy2.robjects import numpy2ri as rpyn
 import rpy2.robjects as ro
 import rpy2.robjects.numpy2ri
 from rpy2.robjects.packages import importr
@@ -156,7 +154,9 @@ class ExpDesign(object):
         self.table = self.table[self.table["include"] != 0]
         self.conditions = self.table['group'].tolist()
         self.pairs = self.table['pair'].tolist()
-        self.groups = list(set(self.conditions))
+        # TS - use OrderedDict to retain order in unique
+        self.groups = (list(collections.OrderedDict.fromkeys(
+            self.conditions)))
         self.samples = self.table.index.tolist()
 
         # TS, adapted from JJ code for DESeq2 design tables:
@@ -195,15 +195,15 @@ class DEExperiment(object):
                  percentile_rowsums,
                  ref_group=None,
                  model=None,
-                 fdr=0.1):
+                 contrasts=None):
         self.min_counts_row = min_counts_row
         self.min_counts_sample = min_counts_sample
         self.percentile_rowsums = percentile_rowsums
         self.counts = None
         self.design = None
         self.model = model
-        self.fdr = fdr
         self.ref_group = ref_group
+        self.contrasts = contrasts
 
     def readDesignFile(self, dfile):
         ''' read in design file and identify attributes'''
@@ -281,6 +281,8 @@ class DECaller(object):
                  normalisation_method=None,
                  dispersion=None,
                  outfile_prefix=None,
+                 fdr=0.1,
+                 DEtype="GLM",
                  *args, **kwargs):
 
         self.DEExper = DEExperiment
@@ -289,6 +291,8 @@ class DECaller(object):
         self.outfile = outfile
         self.outfile_prefix = outfile_prefix
         self.dispersion = dispersion
+        self.fdr = fdr
+        self.DEtype = DEtype
 
         # call DE and generate an initial results table
         self.callDifferentialExpression()
@@ -296,7 +300,7 @@ class DECaller(object):
         # generate a final results table and write out
         self.postProcessDEResults()
 
-        # make diagnostics plot from intial results
+        # make diagnostics plot from initial results
         self.plotDiagnostics()
 
         # sumamrise results
@@ -326,6 +330,9 @@ class DECaller(object):
 
     def summariseDEResults(self):
         ''' summarise DE results. Counts instances of possible outcomes'''
+        # TS: this needs to split results by the comparison being made
+        # TS: currently, pairwise comparisons or contrasts are lumped together
+
         n_rows = self.results.shape[0]
 
         counts = E.Counter()
@@ -369,28 +376,24 @@ def pvaluesToSignficant(p_values, fdr):
 class DE_TTest(DECaller):
     '''DECaller object to run TTest on counts data'''
 
-    # to do: deal with genes/regions with zero counts
+    # TS: to do: deal with genes/regions with zero counts
 
     def callDifferentialExpression(self):
 
-        # normalisation performed here rather than earlier as method is
-        # dependent upon the test being performed
-        # save out size factors to a tsv?
+        # TS: normalisation performed here rather than earlier as
+        # TS: the method of normalisation is dependent upon the DE test
+        # TS: save out size factors to a tsv?
         if self.normalise is True:
             size_factors = self.DEExper.counts.normaliseCounts(
                 method=self.normalisation_method)
 
-        TTestResultColumns = [
-            "test_id", "treatment_name", "treatment_mean", "treatment_std",
-            "control_std", "control_name", "control_mean", "p_value", "status"]
-
-        df_dict = {key: [] for key in TTestResultColumns}
+        df_dict = collections.defaultdict(list)
 
         for combination in itertools.combinations(
                 self.DEExper.design.groups, 2):
-            # as each combination may have different numbers of
-            # samples in control and treatment, calculations have to
-            # be performed on a per combination basis
+            # TS: as each combination may have different numbers of
+            # TS: samples in control and treatment, calculations have to
+            # TS: be performed on a per combination basis
 
             control, treatment = combination
             n_rows = self.DEExper.counts.table.shape[0]
@@ -436,7 +439,7 @@ class DE_TTest(DECaller):
         self.results["p_value_adj"] = adjustPvalues(self.results["p_value"])
 
         self.results["significant"] = pvaluesToSignficant(
-            self.results["p_value_adj"], self.DEExper.fdr)
+            self.results["p_value_adj"], self.fdr)
 
         self.results["l2fold"] = list(numpy.log2(self.results["fold"]))
 
@@ -445,24 +448,24 @@ class DE_TTest(DECaller):
 
         self.results.to_csv(self.outfile, sep="\t", header=True, index=True)
 
-    def plotDiagnostics(self):
-        '''
-        Should TTest plot anything here? This is really for DE tool
-        specific plots
-        '''
-        for combination in itertools.combinations(
-                self.DEExper.design.groups, 2):
-            control, treatment = combination
-
-            temp_results_df = self.results[
-                (self.results['control_name'] == control) &
-                (self.results['treatment_name'] == treatment)]
-
-            title = "%(control)s_vs_%(treatment)s" % locals()
-            plotOutfile = (self.outfile + self.outfile_prefix +
-                           title + "_MAplot.png")
-
-            makeMAPlot(temp_results_df, title, plotOutfile)
+    # TS: TTest shouldn't really plot anything within the DECaller?
+    # This is really for DE tool specific plots
+    #
+    #    def plotDiagnostics(self):
+    #
+    #    for combination in itertools.combinations(
+    #            self.DEExper.design.groups, 2):
+    #        control, treatment = combination
+    #
+    #        temp_results_df = self.results[
+    #            (self.results['control_name'] == control) &
+    #            (self.results['treatment_name'] == treatment)]
+    #
+    #        title = "%(control)s_vs_%(treatment)s" % locals()
+    #        plotOutfile = (self.outfile + self.outfile_prefix +
+    #                       title + "_MAplot.png")
+    #
+    #        makeMAPlot(temp_results_df, title, plotOutfile)
 
 
 def makeMAPlot(resultsTable, title, outfile):
@@ -536,22 +539,47 @@ class DE_edgeR(DECaller):
             r_dispersion = ro.default_py2ri(False)
 
         if self.DEExper.model is not None:
-            r_model = ro.default_py2ri(self.DEExper.model)
+
+            model_levels = re.split("[\.:,~+\*]",
+                                    re.sub("~(0\+)?", "", self.DEExper.model))
+
+            factor_levels = self.DEExper.design.factors.columns.tolist()
+
+            for level in model_levels:
+                # TS: should this be tested at the initiation of the
+                # TS: design table object?
+                assert level in factor_levels, \
+                    ("specified model level '%s' not found in design table"
+                     "factors: %s") % (level, ", ".join(set(factor_levels)))
+
+            r_factors_df = com.convert_to_r_dataframe(
+                self.DEExper.design.factors)
         else:
-            r_model = ro.default_py2ri(False)
+            r_factors_df = ro.default_py2ri(False)
 
         if self.DEExper.ref_group is not None:
             r_ref_group = ro.default_py2ri(self.DEExper.ref_group)
         else:
             r_ref_group = ro.default_py2ri(self.DEExper.design.groups[0])
 
+        if self.DEExper.contrasts is not None:
+            # TS: cannot currently handle user defined contrasts
+            r_contrasts = ro.default_py2ri(self.DEExper.contrasts)
+        else:
+            r_contrasts = ro.default_py2ri(False)
+
         # build DGEList object
         buildDGEList = R('''
         suppressMessages(library('edgeR'))
 
-        function(counts, groups, ref_group){
+        function(counts, groups, ref_group, factors_df){
 
         countsTable = DGEList(counts, group=groups)
+
+        if (factors_df != FALSE){
+          for (level in colnames(factors_df)){
+            countsTable$samples[level] <- factors_df[level]
+        }}
 
         countsTable$samples$group <- relevel(countsTable$samples$group,
         ref = ref_group)
@@ -560,28 +588,35 @@ class DE_edgeR(DECaller):
 
         return(countsTable)}''')
 
-        r_countsTable = buildDGEList(r_counts, r_groups, r_ref_group)
-
-        print "model:", self.DEExper.model
-        if self.DEExper.model is not None:
-            pass
+        r_countsTable = buildDGEList(r_counts, r_groups,
+                                     r_ref_group, r_factors_df)
 
         # build design matrix
-        buildDesign = R('''
+        if self.DEExper.model is None:
+            buildDesign = R('''
 
-        function(countsTable, has_pairs, pairs, model){
+            function(countsTable, has_pairs, pairs){
 
-        if (model==FALSE){
+            if (has_pairs==TRUE) {
+              design <- model.matrix( ~pairs + countsTable$samples$group ) }
 
-          if (has_pairs==TRUE) {
-            design <- model.matrix( ~pairs + countsTable$samples$group ) }
-          else {
-            design <- model.matrix( ~countsTable$samples$group ) }
+            else {
+              design <- model.matrix( ~countsTable$samples$group ) }
 
-        return(design)}''')
+            return(design)
+            }''')
 
-        r_design = buildDesign(r_countsTable, r_has_pairs, r_pairs, r_model)
+        else:
+            buildDesign = R('''
+            function(countsTable, has_pairs, pairs){
+            design <- model.matrix(%s, data=countsTable$samples)
+            return(design)}''' % self.DEExper.model)
 
+        r_design = buildDesign(r_countsTable, r_has_pairs, r_pairs)
+
+        print r_design
+
+        # fit model
         fitModel = R('''
         function(countsTable, design, has_replicates, dispersion){
 
@@ -607,25 +642,29 @@ class DE_edgeR(DECaller):
 
         E.info("Generating output")
 
-        # perform LR test
+        # perform LR test on all possible contrasts
         lrtTest = R('''
-        function(fit, prefix){
+        function(fit, prefix, contrasts, countsTable, design){
+        suppressMessages(library(reshape2))
 
-        lrt = glmLRT(fit)
+        if (contrasts == FALSE){
 
-        # save image for access to the whole of the lrt object
-        save.image(paste0(prefix,"lrt.RData"))
+            lrt_table_list = NULL
 
-        return(lrt)}''')
+            for(coef in seq(2, length(colnames(design)))){
+              lrt_table_list[[coef]] = glmLRT(fit, coef = coef)$table
+              lrt_table_list[[coef]]['contrast'] = colnames(design)[coef]}
 
-        r_lrt = lrtTest(r_fit, self.outfile_prefix)
+            lrt_final = do.call(rbind, lrt_table_list)
+        }
 
-        # return statistics table - must be a better way to do this?
-        extractTable = R('''function(lrt){ return(lrt$table)}''')
-        r_lrt_table = extractTable(r_lrt)
+        return(lrt_final)}''')
+
+        r_lrt_table = lrtTest(r_fit, self.outfile_prefix, r_contrasts,
+                              r_countsTable, r_design)
 
         # output cpm table
-        outputCPMTable = R('''function(countsTable, outfile_prefix, lrt){
+        outputCPMTable = R('''function(countsTable, outfile_prefix){
         suppressMessages(library(reshape2))
         countsTable.cpm <- cpm(countsTable, normalized.lib.sizes=TRUE)
         melted <- melt(countsTable.cpm)
@@ -641,7 +680,7 @@ class DE_edgeR(DECaller):
         write.table(sorted, file=gz, sep = "\t", row.names=FALSE, quote=FALSE)
         close(gz)}''')
 
-        outputCPMTable(r_countsTable, self.outfile_prefix, r_lrt)
+        outputCPMTable(r_countsTable, self.outfile_prefix)
 
         lrt_table = com.convert_robj(r_lrt_table)
 
@@ -649,41 +688,40 @@ class DE_edgeR(DECaller):
 
     def postProcessDEResults(self):
 
-        FinalResultColumns = [
-            "test_id", "treatment_name", "treatment_mean",
-            "treatment_std", "control_name", "control_mean",
-            "control_std", "p_value", "p_value_adj", "l2fold", "fold",
-            "transformed_l2fold", "significant", "status"]
-
-        df_dict = {key: [] for key in FinalResultColumns}
+        df_dict = collections.defaultdict()
 
         n_rows = self.edgeRresults.shape[0]
 
-        df_dict["control_name"].extend((self.DEExper.design.groups[0],)*n_rows)
-        df_dict["treatment_name"].extend(
-            (self.DEExper.design.groups[1],)*n_rows)
-        df_dict["test_id"].extend(self.edgeRresults.index)
-        df_dict["control_mean"].extend(self.edgeRresults['logCPM'])
-        df_dict["treatment_mean"].extend(self.edgeRresults['logCPM'])
-        df_dict["control_std"].extend((0,)*n_rows)
-        df_dict["treatment_std"].extend((0,)*n_rows)
-        df_dict["p_value"].extend(self.edgeRresults['PValue'])
+        if self.DEtype == "GLM":
+            df_dict["treatment_name"] = self.edgeRresults['contrast']
+            df_dict["control_name"] = self.edgeRresults['contrast']
+
+        else:
+            # TS: edgeR is currently only set up to run GLM-based tests
+            pass
+
+        df_dict["test_id"] = self.edgeRresults.index
+        df_dict["control_mean"] = self.edgeRresults['logCPM']
+        df_dict["treatment_mean"] = self.edgeRresults['logCPM']
+        df_dict["control_std"] = (0,)*n_rows
+        df_dict["treatment_std"] = (0,)*n_rows
+        df_dict["p_value"] = self.edgeRresults['PValue']
         df_dict["p_value_adj"] = adjustPvalues(self.edgeRresults['PValue'])
         df_dict["significant"] = pvaluesToSignficant(
-            df_dict["p_value_adj"], self.DEExper.fdr)
-        df_dict["l2fold"].extend(list(numpy.log2(self.edgeRresults['logFC'])))
+            df_dict["p_value_adj"], self.fdr)
+        df_dict["l2fold"] = list(numpy.log2(self.edgeRresults['logFC']))
 
-        # TS -note: the transformed log2 fold change is not transformed!
+        # TS: the transformed log2 fold change is not transformed!
         df_dict["transformed_l2fold"] = df_dict["l2fold"]
 
-        # TS -note: check what happens when no fold change is available
-        # TS -may need an if/else in list comprehension. Raise E.warn too?
-        df_dict["fold"].extend([math.pow(2, float(x)) for
-                                x in self.edgeRresults['logFC']])
+        # TS: check what happens when no fold change is available
+        # TS: may need an if/else in list comprehension. Raise E.warn too?
+        df_dict["fold"] = [math.pow(2, float(x)) for
+                           x in self.edgeRresults['logFC']]
 
         # set all status values to "OK"
-        # TS - again, may need an if/else to check...
-        df_dict["status"].extend(("OK",)*n_rows)
+        # TS: again, may need an if/else to check...
+        df_dict["status"] = ("OK",)*n_rows
 
         self.results = pandas.DataFrame(df_dict)
         self.results.set_index("test_id", inplace=True)
@@ -1121,21 +1159,22 @@ def loadTagData(tags_filename, design_filename):
     # Load counts table
     E.info("loading tag data from %s" % tags_filename)
 
-    R('''counts_table = read.table( '%(tags_filename)s',
-    header = TRUE,
-    row.names = 1,
-    stringsAsFactors = TRUE,
-    comment.char = '#' )''' % locals())
+    R('''counts_table = read.table('%(tags_filename)s',
+    header=TRUE,
+    row.names=1,
+    stringsAsFactors=TRUE,
+    comment.char='#')''' % locals())
 
     E.info("read data: %i observations for %i samples" %
            tuple(R('''dim(counts_table)''')))
     E.debug("sample names: %s" % R('''colnames(counts_table)'''))
 
     # Load comparisons from file
-    R('''pheno = read.delim( '%(design_filename)s',
-                             header = TRUE,
-                             stringsAsFactors = TRUE,
-                             comment.char = '#')''' % locals())
+    R('''pheno = read.delim(
+    '%(design_filename)s',
+    header=TRUE,
+    stringsAsFactors=TRUE,
+    comment.char='#')''' % locals())
 
     # Make sample names R-like - substitute - for .
     R('''pheno[,1] = gsub('-', '.', pheno[,1]) ''')
@@ -1146,7 +1185,8 @@ def loadTagData(tags_filename, design_filename):
         '''pheno2 = pheno[match(colnames(counts_table),pheno[,1]),,drop=FALSE]''')
     missing = R('''colnames(counts_table)[is.na(pheno2)][1]''')
     if missing:
-        E.warn("missing samples from design file are ignored: %s" % missing)
+        E.warn("missing samples from design file are ignored: %s" %
+               missing)
 
     # Subset data & set conditions
     R('''includedSamples <- !(is.na(pheno2$include) | pheno2$include == '0') ''')
@@ -1301,11 +1341,14 @@ def plotPairs():
             text(x, y, txt, cex = cex);
             }
        ''')
-    R('''pairs(countsTable,
-               lower.panel = panel.pearson,
-               pch=".",
-               labels=colnames(countsTable),
-               log="xy")''')
+    try:
+        R('''pairs(countsTable,
+        lower.panel = panel.pearson,
+        pch=".",
+        labels=colnames(countsTable),
+        log="xy")''')
+    except rpy2.rinterface.RRuntimeError, msg:
+        E.warn("can not plot pairwise scatter plot: %s" % msg)
 
 
 def plotPCA(groups=True):
@@ -1693,7 +1736,7 @@ def deseqPlotGeneHeatmap(outfile,
     R['dev.off']()
 
 
-def deseqPlotPCA(outfile, vsd):
+def deseqPlotPCA(outfile, vsd, max_genes=500):
     '''plot a PCA
 
     Use variance stabilized data in object vsd.
@@ -1701,7 +1744,16 @@ def deseqPlotPCA(outfile, vsd):
     not informed by the experimental design.
     '''
     R.png(outfile)
-    R('''plotPCA(vsd)''')
+    #  if there are more than 500 genes (after filtering)
+    #  use the 500 most variable in the PCA
+    #  else use the number of genes
+    R('''ntop = ifelse(as.integer(dim(vsd))[1] >= %(max_genes)i,
+    %(max_genes)i,
+    as.integer(dim(vsd))[1])''' % locals())
+    try:
+        R('''plotPCA(vsd)''')
+    except rpy2.rinterface.RRuntimeError, msg:
+        E.warn("can not plot PCA: %s" % msg)
     R['dev.off']()
 
 
@@ -1950,14 +2002,13 @@ def runDESeq(outfile,
 
     # perform variance stabilization for log2 fold changes
     vsd = R('''vsd = varianceStabilizingTransformation(cds_blind)''')
-
     # output normalized counts (in order)
     # gzfile does not work with rpy 2.4.2 in python namespace
     # using R.gzfile, so do it in R-space
 
     R('''t = counts(cds, normalized=TRUE);
     write.table(t[order(rownames(t)),],
-    file=gzfile('%(outfile_prefix)scounts.tsv.gz', 'w'),
+    file=gzfile('%(outfile_prefix)scounts.tsv.gz'),
     row.names=TRUE,
     col.names=NA,
     quote=FALSE,
@@ -1966,7 +2017,7 @@ def runDESeq(outfile,
     # output variance stabilized counts (in order)
     R('''t = exprs(vsd);
     write.table(t[order(rownames(t)),],
-    file=gzfile('%(outfile_prefix)svsd.tsv.gz', 'w'),
+    file=gzfile('%(outfile_prefix)svsd.tsv.gz'),
     row.names=TRUE,
     col.names=NA,
     quote=FALSE,
@@ -2072,7 +2123,6 @@ def runDESeq(outfile,
 
         # Plot diagnostic plots for FDR
         if has_replicates:
-            R.png('''%(outfile_groups_prefix)sfdr.png''' % locals())
             R('''orderInPlot = order(pvalues)''')
             R('''showInPlot = (pvalues[orderInPlot] < 0.08)''')
             # Jethro - previously plotting x =
@@ -2082,18 +2132,21 @@ def runDESeq(outfile,
             # values
             R('''true.pvalues <- pvalues[orderInPlot][showInPlot]''')
             R('''true.pvalues <- true.pvalues[is.finite(true.pvalues)]''')
-
-            # failure when no replicates:
-            # rpy2.rinterface.RRuntimeError:
-            # Error in plot.window(...) : need finite 'xlim' values
-            R('''plot( seq( along=which(showInPlot)),
-                       true.pvalues,
-                       pch='.',
-                       xlab=expression(rank(p[i])),
-                       ylab=expression(p[i]))''')
-            R('''abline(a=0, b=%(fdr)f / length(pvalues), col="red")''' %
-              locals())
-            R['dev.off']()
+            if R('''sum(showInPlot)''')[0] > 0:
+                R.png('''%(outfile_groups_prefix)sfdr.png''' % locals())
+                # failure when no replicates:
+                # rpy2.rinterface.RRuntimeError:
+                # Error in plot.window(...) : need finite 'xlim' values
+                R('''plot( seq( along=which(showInPlot)),
+                           true.pvalues,
+                           pch='.',
+                           xlab=expression(rank(p[i])),
+                           ylab=expression(p[i]))''')
+                R('''abline(a = 0, b = %(fdr)f / length(pvalues), col = "red")
+                ''' % locals())
+                R['dev.off']()
+            else:
+                E.warn('no p-values < 0.08')
 
         # Add log2 fold with variance stabilized l2fold value
         R('''res$transformed_log2FoldChange = vsd_l2f''')
@@ -2129,7 +2182,7 @@ def runDESeq2(outfile,
     Does not make use of group tag data bc function doesn't accomodate
     multi-factor designs
 
-    To Do: Parse results into standard output format. 
+    To Do: Parse results into standard output format.
     Fix fact that plotMA is hardcoded.
     """
 
@@ -2356,8 +2409,8 @@ def plotDETagStats(infile, outfile_prefix,
 
         try:
             ggplot.ggsave(filename=outfile, plot=plot)
-        except ValueError, msg:
-            E.warn(msg)
+        except Exception, msg:
+            E.warn("no plot for %s: %s" % (column, msg))
 
     def _bplot(table, outfile, column):
 
@@ -3024,10 +3077,14 @@ def loadTagDataPandas(tags_filename, design_filename):
     E.info("loading tag data from %s" % tags_filename)
 
     inf = IOTools.openFile(tags_filename)
-    counts_table = pandas.read_csv(inf, sep="\t", index_col=0, comment="#")
+    counts_table = pandas.read_csv(inf,
+                                   sep="\t",
+                                   index_col=0,
+                                   comment="#")
     inf.close()
 
-    E.info("read data: %i observations for %i samples" % counts_table.shape)
+    E.info("read data: %i observations for %i samples" %
+           counts_table.shape)
 
     E.debug("sample names: %s" % list(counts_table.columns))
 
@@ -3136,7 +3193,7 @@ def checkTagGroupsPandas(design_table, ref_group=None):
 
     # Relevel the groups so that the reference comes first
     # how to do this in python?
-    #if ref_group is not None:
+    # if ref_group is not None:
     #    R('''groups <- relevel(groups, ref = "%s")''' % ref_group)
 
     # check this works, will need to make factors from normal df
@@ -3147,7 +3204,7 @@ def checkTagGroupsPandas(design_table, ref_group=None):
                " by groupTagData: ", factors)
     else:
         pass
-        
+
     # Test if replicates exist - at least one group must have multiple samples
     max_per_group = max([conds.count(x) for x in groups])
 
@@ -3487,7 +3544,7 @@ def runEdgeRPandas(counts,
     return(lrt)
     }''')
     r_lrt = lrtTest(r_fit, outfile_prefix)
-    
+
     # return statistics table - must be a better way to do this?
     extractTable = R('''function(lrt){ return(lrt$table)}''')
     r_lrt_table = extractTable(r_lrt)

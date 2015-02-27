@@ -41,7 +41,7 @@ PARAMS = {}
 def getGATKOptions():
     return "-l mem_free=1.4G -l picard=1"
 
-################################################################################
+##############################################################################
 
 
 def GATKReadGroups(infile, outfile, genome,
@@ -79,7 +79,7 @@ def GATKReadGroups(infile, outfile, genome,
 
     P.run()
 
-################################################################################
+##############################################################################
 
 
 def GATKIndelRealign(infile, outfile, genome, threads=4):
@@ -104,7 +104,7 @@ def GATKIndelRealign(infile, outfile, genome, threads=4):
                     -targetIntervals %(intervalfile)s;''' % locals()
     P.run()
 
-################################################################################
+##############################################################################
 
 
 def GATKBaseRecal(infile, outfile, genome, dbsnp, solid_options=""):
@@ -133,7 +133,7 @@ def GATKBaseRecal(infile, outfile, genome, dbsnp, solid_options=""):
     statement += '''rm -rf %(tmpdir_gatk)s ;''' % locals()
     P.run()
 
-################################################################################
+##############################################################################
 
 
 def haplotypeCaller(infile, outfile, genome,
@@ -154,7 +154,7 @@ def haplotypeCaller(infile, outfile, genome,
                     %(options)s''' % locals()
     P.run()
 
-################################################################################
+##############################################################################
 
 
 def mutectSNPCaller(infile, outfile, mutect_log, genome, cosmic,
@@ -196,7 +196,7 @@ def mutectSNPCaller(infile, outfile, mutect_log, genome, cosmic,
 
     P.run()
 
-################################################################################
+##############################################################################
 
 
 def strelkaINDELCaller(infile_control, infile_tumour, outfile, genome, config,
@@ -213,7 +213,7 @@ def strelkaINDELCaller(infile_control, infile_tumour, outfile, genome, config,
 
     P.run()
 
-################################################################################
+##############################################################################
 
 
 def variantAnnotator(vcffile, bamlist, outfile, genome,
@@ -236,7 +236,7 @@ def variantAnnotator(vcffile, bamlist, outfile, genome,
                     %(anno)s''' % locals()
     P.run()
 
-################################################################################
+##############################################################################
 
 
 def variantRecalibrator(infile, outfile, genome,
@@ -262,7 +262,7 @@ def variantRecalibrator(infile, outfile, genome,
     -rscriptFile %(track)s.plots.R ''' % locals()
     P.run()
 
-################################################################################
+##############################################################################
 
 
 def applyVariantRecalibration(vcf, recal, tranches, outfile, genome):
@@ -280,7 +280,7 @@ def applyVariantRecalibration(vcf, recal, tranches, outfile, genome):
     -o %(outfile)s ''' % locals()
     P.run()
 
-################################################################################
+##############################################################################
 
 
 def vcfToTable(infile, outfile, genome, columns):
@@ -297,7 +297,7 @@ def vcfToTable(infile, outfile, genome, columns):
                    -o %(outfile)s''' % locals()
     P.run()
 
-################################################################################
+##############################################################################
 
 
 def selectVariants(infile, outfile, genome, select):
@@ -310,7 +310,7 @@ def selectVariants(infile, outfile, genome, select):
                     -o %(outfile)s''' % locals()
     P.run()
 
-################################################################################
+##############################################################################
 
 
 def buildSelectStatementfromPed(filter_type, pedfile, template):
@@ -370,7 +370,7 @@ def buildSelectStatementfromPed(filter_type, pedfile, template):
 
     return select
 
-################################################################################
+##############################################################################
 
 
 def guessSex(infile, outfile):
@@ -385,7 +385,7 @@ def guessSex(infile, outfile):
                     > %(outfile)s'''
     P.run()
 
-################################################################################
+##############################################################################
 
 
 # the following two functions should be generalised
@@ -447,9 +447,9 @@ def compileMutationalSignature(infiles, outfiles, min_t_alt, min_n_depth,
                         if (t_alt > min_t_alt and n_depth >= min_n_depth and
                             np.divide(n_alt, n_depth) <= max_n_alt_freq and
                             (((np.divide(t_alt, t_depth) /
-                               np.divide(n_alt, n_depth)) >= min_t_alt_freq)
-                             or ((np.divide(t_alt, t_depth) /
-                                  np.divide(n_alt, n_depth)) == 0))):
+                               np.divide(n_alt, n_depth)) >= min_t_alt_freq) or
+                             ((np.divide(t_alt, t_depth) /
+                               np.divide(n_alt, n_depth)) == 0))):
                                 key = lookup(values[3], values[4])
                                 if key in mut_dict:
                                     mut_dict[key] += 1
@@ -480,7 +480,7 @@ def compileMutationalSignature(infiles, outfiles, min_t_alt, min_n_depth,
         outfile2.write("%s\t%s\n" % (patient_id, frequencies))
     outfile2.close()
 
-################################################################################
+##############################################################################
 
 
 @cluster_runnable
