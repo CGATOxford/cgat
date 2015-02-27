@@ -316,8 +316,7 @@ def buildReferenceGeneSet(infile, outfile):
     tmp_mergedfiltered = P.getTempFilename(".")
 
     if "geneset_remove_repetetive_rna" in PARAMS:
-        rna_file = os.path.join(PARAMS["annotations_dir"],
-                                PARAMS["annotations_interface_rna_gff"])
+        rna_file = PARAMS["annotations_interface_rna_gff"]
     else:
         rna_file = None
 
