@@ -470,13 +470,13 @@ class Mapper(object):
             elif infile.endswith(".sra"):
                 # sneak preview to determine if paired end or single end
                 outdir = P.getTempDir()
-                f = Sra.sneak(infile, outdir)
+                f = Sra.peek(infile, outdir)
                 E.info("sra file contains the following files: %s" % f)
                 shutil.rmtree(outdir)
                 fastqfiles.append(
                     ["%s/%s" % (tmpdir_fastq, os.path.basename(x))
                      for x in sorted(f)])
-                Sra.extract(infile, tmpdir_fastq)
+                statement.append(Sra.extract(infile, tmpdir_fastq))
 
             elif infile.endswith(".fastq.gz"):
                 format = Fastq.guessFormat(
