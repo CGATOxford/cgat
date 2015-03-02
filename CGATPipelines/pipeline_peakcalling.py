@@ -1284,8 +1284,8 @@ def buildBroadPeakGenomeWindows(infile, outfile):
            r"./broadpeak.dir/\2.bedgraph")
 def buildBroadPeakBedgraphFiles(infiles, outfile):
     logfile = outfile + ".log"
-    overlap = str(float(PARAMS["broadpeak_read_length"])
-                  / float(2 * PARAMS["broadpeak_genome_windows"]))
+    overlap = str(float(PARAMS["broadpeak_read_length"]) /
+                  float(2 * PARAMS["broadpeak_genome_windows"]))
     if PARAMS["broadpeak_remove_background"]:
         remove_background = "true"
         track = P.snip(infile, ".call.bam")

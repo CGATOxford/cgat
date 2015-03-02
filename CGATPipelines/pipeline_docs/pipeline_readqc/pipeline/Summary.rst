@@ -1,8 +1,9 @@
+
 ===============
 Summary of data
 ===============
 
-.. report:: Status.FastqcSummary
+.. report:: ReadqcReport.FastqcSummary
    :render: table
    :force:
 
