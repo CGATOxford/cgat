@@ -21,7 +21,7 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-SVGDuplicationsWheel.py - 
+SVGDuplicationsWheel.py -
 ======================================================
 
 :Author: Andreas Heger
@@ -393,7 +393,8 @@ class DuplicationPlot:
     def addSeparator(self):
         """add separator on circles."""
         if self.mRadius not in self.mSeparators:
-            e = SVGdraw.circle(self.mDataMiddleX, self.mDataMiddleY, self.mRadius, fill="none",
+            e = SVGdraw.circle(self.mDataMiddleX, self.mDataMiddleY,
+                               self.mRadius, fill="none",
                                stroke="rgb(%i,%i,%i)" % self.mGridColour,
                                stroke_width=self.mGridStrokeWidth)
             self.addWheelElement(e, self.mPlaneGrid)
@@ -561,7 +562,8 @@ class DuplicationPlot:
                                     stroke="black",
                                     stroke_width=self.mLinkStrokeWidthSymbol)
             elif symbol == "rect":
-                ee = SVGdraw.rect(x - self.mLinkSymbolSize / 2, y - self.mLinkSymbolSize / 2,
+                ee = SVGdraw.rect(x - self.mLinkSymbolSize / 2,
+                                  y - self.mLinkSymbolSize / 2,
                                   self.mLinkSymbolSize, self.mLinkSymbolSize,
                                   fill="rgb(%i,%i,%i)" % colour,
                                   stroke="black",
@@ -600,11 +602,13 @@ class DuplicationPlot:
 
                     if chr1 == chr2:
                         d.relellarc(
-                            self.mRadius, self.mRadius, 0, 0, 1, x2 - x1, y2 - y1)
+                            self.mRadius, self.mRadius, 0, 0, 1, x2 - x1,
+                            y2 - y1)
                         link_width = link_rad_width
                     else:
                         d.relellarc(
-                            self.mRadius * 2, self.mRadius * 2, 0, 0, 0, x2 - x1, y2 - y1)
+                            self.mRadius * 2, self.mRadius * 2, 0, 0, 0,
+                            x2 - x1, y2 - y1)
                         link_width = link_arc_width
 
                     e = SVGdraw.path(d,
@@ -635,11 +639,13 @@ class DuplicationPlot:
 
                     if chr1 == chr2:
                         d.relellarc(
-                            self.mRadius, self.mRadius, 0, 0, 1, x2 - x1, y2 - y1)
+                            self.mRadius, self.mRadius, 0, 0, 1,
+                            x2 - x1, y2 - y1)
                         link_width = link_rad_width
                     else:
                         d.relellarc(
-                            self.mRadius * 2, self.mRadius * 2, 0, 0, 0, x2 - x1, y2 - y1)
+                            self.mRadius * 2, self.mRadius * 2, 0, 0, 0,
+                            x2 - x1, y2 - y1)
                         link_width = link_arc_width
 
                     e = SVGdraw.path(d,
@@ -722,12 +728,15 @@ class DuplicationPlot:
         # subtract size of right-most axis label so that it takes the
         # same width as self.mDataWidth.
         box_size_x = math.ceil((self.mDataWidth -
-                                (self.mScaleFontSize * len(self.mFormatNumberLegend % self.mColourThresholds[-1])))
-                               / nboxes)
+                                (self.mScaleFontSize * len(
+                                    self.mFormatNumberLegend %
+                                    self.mColourThresholds[-1]))) / nboxes)
 
         # change font size such that it labels will fit between tick-marks
         self.mScaleFontSize = min(self.mScaleFontSize,
-                                  (box_size_x * self.mScaleNumTicks * 1.5) / len(self.mFormatNumberLegend % self.mColourThresholds[-1]))
+                                  (box_size_x * self.mScaleNumTicks * 1.5) /
+                                  len(self.mFormatNumberLegend %
+                                      self.mColourThresholds[-1]))
 
         for x in range(nboxes):
 

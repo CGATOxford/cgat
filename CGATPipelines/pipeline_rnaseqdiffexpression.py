@@ -1,4 +1,3 @@
-
 """========================================
 RNA-Seq Differential expression pipeline
 ========================================
@@ -382,8 +381,7 @@ def buildMaskGtf(infile, outfile):
                  entry.start, entry.end, ".", entry.strand,
                  ".", "transcript_id" + " " + '"' +
                  entry.transcript_id + '"' + ";" + " " +
-                 "gene_id" + " " + '"' + entry.gene_id + '"'])))
-                + "\n")
+                 "gene_id" + " " + '"' + entry.gene_id + '"']))) + "\n")
 
     outf.close()
 
