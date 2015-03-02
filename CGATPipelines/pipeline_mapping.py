@@ -1049,7 +1049,7 @@ def mapReadsWithStampy(infile, outfile):
            SEQUENCEFILES_REGEX,
            r"butter.dir/\1.butter.bam")
 def mapReadsWithButter(infile, outfile):
-    '''map reads with stampy'''
+    '''map reads with butter'''
     # easier to check whether infiles arepaired reads here
     if infile.endswith(".sra"):
         outdir = P.getTempDir()
