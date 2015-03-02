@@ -260,7 +260,7 @@ def main(argv=None):
                             " variable:control:treatment,..."))
 
     parser.set_defaults(
-        input_filename_tags="-",
+        input_filename_tags=None,
         input_filename_result=None,
         input_filename_design=None,
         output_filename=sys.stdout,

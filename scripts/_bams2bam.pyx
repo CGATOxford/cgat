@@ -104,7 +104,8 @@ def filter( Samfile genome_samfile,
         junctions_index = collections.defaultdict(_gen2)
         ret = 1
         while ret > 0:
-            ret = bam_read1(junctions_samfile.fp, b)
+            ret = bam_read1(hts_get_bgzfp(junctions_samfile.htsfile),
+                            b)
             if ret > 0:
                 # ignore unmapped reads
                 if b.core.flag & 4: continue
@@ -127,7 +128,8 @@ def filter( Samfile genome_samfile,
         transcriptome_index = collections.defaultdict(_gen)
         ret = 1
         while ret > 0:
-            ret = bam_read1(transcripts_samfile.fp, b)
+            ret = bam_read1(hts_get_bgzfp(transcripts_samfile.htsfile),
+                            b)
             if ret > 0:
                 # ignore unmapped reads
                 if b.core.flag & 4: continue

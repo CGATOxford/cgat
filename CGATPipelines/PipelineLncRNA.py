@@ -975,18 +975,18 @@ def write_to_temp(tempfile, interval_list, transcript, check_strand=True):
     if check_strand:
         for interval in interval_list:
             if interval[2][6] == transcript[0].strand:
-                tempfile.write(transcript[0].gene_id + "\t"
-                               + str(interval[0]) + "\t"
-                               + str(interval[1]) + "\t"
-                               + str(transcript[0]) + "\t"
-                               + "\t".join(interval[2]) + "\n")
+                tempfile.write(transcript[0].gene_id + "\t" +
+                               str(interval[0]) + "\t" +
+                               str(interval[1]) + "\t" +
+                               str(transcript[0]) + "\t" +
+                               "\t".join(interval[2]) + "\n")
     else:
         for interval in interval_list:
-            tempfile.write(transcript[0].gene_id + "\t"
-                           + str(interval[0]) + "\t"
-                           + str(interval[1]) + "\t"
-                           + str(transcript[0]) + "\t"
-                           + "\t".join(interval[2]) + "\n")
+            tempfile.write(transcript[0].gene_id + "\t" +
+                           str(interval[0]) + "\t" +
+                           str(interval[1]) + "\t" +
+                           str(transcript[0]) + "\t" +
+                           "\t".join(interval[2]) + "\n")
 
 
 def reClassifyLncRNAGenes(lncRNA_gtf,
@@ -2089,18 +2089,18 @@ def gtfToBed12(infile, outfile, model):
         blockSizes = ','.join(sizes)
         blockStarts = ','.join(starts)
 
-        outfile.write(chrom + "\t"
-                      + start + "\t"
-                      + end + "\t"
-                      + name + "\t"
-                      + score + "\t"
-                      + strand + "\t"
-                      + thickStart + "\t"
-                      + thickEnd + "\t"
-                      + colourRGB + "\t"
-                      + blockCount + "\t"
-                      + blockSizes + "\t"
-                      + blockStarts + "\n")
+        outfile.write(chrom + "\t" +
+                      start + "\t" +
+                      end + "\t" +
+                      name + "\t" +
+                      score + "\t" +
+                      strand + "\t" +
+                      thickStart + "\t" +
+                      thickEnd + "\t" +
+                      colourRGB + "\t" +
+                      blockCount + "\t" +
+                      blockSizes + "\t" +
+                      blockStarts + "\n")
 
     outfile.close()
 

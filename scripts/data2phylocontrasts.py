@@ -184,7 +184,7 @@ def main(argv=None):
 
                 options.stdout.write("header1\theader2\tr\tp\tcode\n")
 
-                n = len(result.mContrasts)
+                # n = len(result.mContrasts)
                 columns = []
                 for c in range(ncolumns):
                     columns.append(map(lambda x: x[c], result.mContrasts))
@@ -240,8 +240,8 @@ def main(argv=None):
                 options.stdout.write("\t".join(headers) + "\n")
                 for d in result.mContrasts:
                     options.stdout.write(
-                        "\t".join(map(lambda x: options.value_format % x, d))
-                        + "\n ")
+                        "\t".join(
+                         map(lambda x: options.value_format % x, d)) + "\n ")
 
             elif method == "compute":
 
