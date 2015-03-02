@@ -1,23 +1,14 @@
 import os
 import glob
-from CGATReport.Tracker import *
-from CGATReport.Utils import PARAMS as P
 from collections import OrderedDict as odict
+from CGATReport.Tracker import TrackerSQL, SingleTableTrackerRows
+from CGATReport.Utils import PARAMS as P
 import CGATPipelines.PipelineTracks as PipelineTracks
 
-###################################################################
-###################################################################
 # parameterization
-
 EXPORTDIR = P.get('readqc_exportdir', P.get('exportdir', 'export'))
 DATADIR = P.get('readqc_datadir', P.get('datadir', '.'))
 DATABASE = P.get('readqc_backend', P.get('sql_backend', 'sqlite:///./csvdb'))
-
-###################################################################
-# cf. pipeline_rnaseq.py
-# This should be automatically gleaned from pipeline_rnaseq.py
-###################################################################
-
 
 TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
     glob.glob("%s/*.sra" % DATADIR), "(\S+).sra") +\
@@ -28,8 +19,6 @@ TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
     PipelineTracks.Tracks(PipelineTracks.Sample).loadFromDirectory(
         glob.glob("*.csfasta.gz"), "(\S+).csfasta.gz")
 
-###########################################################################
-
 
 class ReadqcTracker(TrackerSQL):
 
@@ -37,10 +26,6 @@ class ReadqcTracker(TrackerSQL):
 
     def __init__(self, *args, **kwargs):
         TrackerSQL.__init__(self, *args, backend=DATABASE, **kwargs)
-
-##############################################################
-##############################################################
-##############################################################
 
 
 class TrackerFastQC(ReadqcTracker):
@@ -69,17 +54,9 @@ class TrackerFastQC(ReadqcTracker):
         rst_text = "\n%(toc_text)s\n\n%(link_text)s\n" % locals()
         return odict((("text", rst_text),))
 
-##########################################################
-##########################################################
-##########################################################
-
 
 class FilteringSummary(SingleTableTrackerRows):
     table = "filtering_summary"
-
-##############################################################
-##############################################################
-##############################################################
 
 
 class FastQCDetails(ReadqcTracker):
@@ -119,15 +96,8 @@ class FastQCDetails(ReadqcTracker):
 
         return result
 
-        # blocks.append(ResultBlock(text=block % locals(),
-        #                                  title=os.path.basename(fn)))
 
-        # return odict((("rst", "\n".join(Utils.layoutBlocks(
-        #     blocks,
-        #     layout="columns-2"))),))
-
-
-class FastqcSummary(ReadqcTracker):
+class FastqcSummaryFull(ReadqcTracker):
     pattern = "(.*)_Basic_Statistics"
     slices = ("File type", "Filename", "Encoding",
               "Total Sequences", "Sequence Length", "%GC")

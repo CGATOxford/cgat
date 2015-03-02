@@ -134,7 +134,8 @@ def filter_bam(Samfile input_samfile,
         index = collections.defaultdict(_gen)
 
         while ret > 0:
-            ret = bam_read1(reference_samfile.fp, b)
+            ret = bam_read1(hts_get_bgzfp(reference_samfile.htsfile),
+                            b)
             if ret > 0:
                 # ignore unmapped reads
                 if b.core.flag & 4:

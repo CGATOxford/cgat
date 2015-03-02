@@ -1691,10 +1691,10 @@ class SequencePairInfo:
         cp = self.mMapChar2Pos['C']
         gp = self.mMapChar2Pos['G']
         # two row and two columns, subtract to avoid double counting
-        gc = numpy.sum(self.mMatrix[0:4, cp]
-                       + self.mMatrix[0:4, gp]
-                       + self.mMatrix[cp, 0:4]
-                       + self.mMatrix[gp, 0:4]) \
+        gc = numpy.sum(self.mMatrix[0:4, cp] +
+                       self.mMatrix[0:4, gp] +
+                       self.mMatrix[cp, 0:4] +
+                       self.mMatrix[gp, 0:4]) \
             - self.mMatrix[cp, cp] \
             - self.mMatrix[gp, gp] \
             - self.mMatrix[cp, gp] \

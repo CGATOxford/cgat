@@ -168,7 +168,9 @@ class CounterOverlap(Counter):
         for track in self.tracks:
             try:
                 overlaps = [(x[0], x[1])
-                            for x in self.index[track][bed.contig].find(bed.start, bed.end)]
+                            for x in
+                            self.index[track][bed.contig]
+                            .find(bed.start, bed.end)]
             except KeyError:
                 overlaps = []
 
@@ -233,8 +235,9 @@ class CounterPeaks(Counter):
         try:
             counts = numpy.zeros(length)
         except ValueError, msg:
-            raise ValueError("Error negative length obtained: message=%s contig=%s, start=%s, end=%s" % (
-                msg, contig, start, end))
+            raise ValueError("Error negative length obtained: "
+                             " message=%s contig=%s, start=%s, end=%s" % (
+                              msg, contig, start, end))
         nreads = 0
 
         if offsets:
@@ -246,7 +249,8 @@ class CounterPeaks(Counter):
                 # see the function def __tags_call_peak in PeakDetect.py
                 # In words
                 # Only take the start of reads (taking into account the strand)
-                # add d/2=offset to each side of peak and start accumulate counts.
+                # add d/2=offset to each side of peak and start accumulate
+                # counts.
                 # for counting, extend reads by offset
                 # on + strand shift tags upstream
                 # i.e. look at the downstream window
@@ -434,19 +438,25 @@ class ClassifierChIPSeq(gtf2table.Classifier):
             self.mCounters[key].update(self.mGFFs)
 
         def s_min(*args):
-            return sum([abs(self.mCounters[x].mPOverlap1) for x in args]) >= self.mThresholdMinCoverage
+            return sum([abs(self.mCounters[x].mPOverlap1)
+                        for x in args]) >= self.mThresholdMinCoverage
 
         def s_excl(*args):
-            return sum([abs(self.mCounters[x].mPOverlap1) for x in args]) < (100 - self.mThresholdMinCoverage)
+            return sum([abs(self.mCounters[x].mPOverlap1)
+                        for x in args]) < (100 - self.mThresholdMinCoverage)
 
         def s_full(*args):
-            return sum([abs(self.mCounters[x].mPOverlap1) for x in args]) >= self.mThresholdFullCoverage
+            return sum([abs(self.mCounters[x].mPOverlap1)
+                        for x in args]) >= self.mThresholdFullCoverage
 
         def s_some(*args):
-            return sum([abs(self.mCounters[x].mPOverlap1) for x in args]) >= self.mThresholdSomeCoverage
+            return sum([abs(self.mCounters[x].mPOverlap1)
+                        for x in args]) >= self.mThresholdSomeCoverage
 
         self.mIsCDS, self.mIsUTR, self.mIsIntergenic = False, False, False
-        self.mIsUpStream, self.mIsDownStream, self.mIsIntronic = False, False, False
+        self.mIsUpStream = False
+        self.mIsDownStream = False
+        self.mIsIntronic = False
         self.mIsFlank, self.mIsAmbiguous = False, False
 
         self.mIsCDS = s_full(":CDS")
@@ -463,8 +473,12 @@ class ClassifierChIPSeq(gtf2table.Classifier):
                         self.mIsFlank = s_some(":flank")
 
         self.mIsAmbiguous = not(self.mIsUTR or
-                                self.mIsIntergenic or self.mIsIntronic or self.mIsCDS or
-                                self.mIsUpStream or self.mIsDownStream or self.mIsFlank)
+                                self.mIsIntergenic or
+                                self.mIsIntronic or
+                                self.mIsCDS or
+                                self.mIsUpStream or
+                                self.mIsDownStream or
+                                self.mIsFlank)
 
     def __str__(self):
 
@@ -678,8 +692,8 @@ def main(argv=None):
             options.stdout.write(
                 "\t".join([bed.contig,
                            str(bed.start),
-                           str(bed.end)]
-                          + [bed.fields[x] for x in extra_fields]))
+                           str(bed.end)] + [bed.fields[x]
+                                            for x in extra_fields]))
         for counter in counters:
             options.stdout.write("\t%s" % str(counter))
 
