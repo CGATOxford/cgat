@@ -261,6 +261,10 @@ class CounterReadCoverage(Counter):
 
             offset = start - l
             for samfile in self.mBamFiles:
+                # skip bamfiles where contig is not present
+                if samfile.gettid(contig) < 0:
+                    continue
+
                 for read in samfile.fetch( contig, start, end ):
                     # only count positions actually overlapping
                     positions = read.positions
@@ -382,12 +386,18 @@ class CounterReadOverlap(Counter):
 	 
         for start, end in segments:
             for samfile in self.mBamFiles:
+                # skip bamfiles where contig is not present
+                if samfile.gettid(contig) < 0:
+                    continue
+
                 last_any_pos = -1
                 last_sense_pos = -1
                 last_anti_pos = -1
-                for read in samfile.fetch( contig, start, end ):
-                    if not read.overlap( start, end ): continue
-                    if read.qname in counted: continue
+                for read in samfile.fetch(contig, start, end):
+                    if not read.overlap(start, end):
+                        continue
+                    if read.qname in counted:
+                        continue
                     counted.add(read.qname)
 
                     try:
@@ -446,12 +456,18 @@ class CounterReadOverlap(Counter):
 
         for start, end in segments:
             for samfile in self.mBamFiles:
+                # skip bamfiles where contig is not present
+                if samfile.gettid(contig) < 0:
+                    continue
+
                 last_any_pos = -1
                 last_sense_pos = -1
                 last_anti_pos = -1
-                for read in samfile.fetch( contig, start, end ):
-                    if not read.overlap( start, end ): continue
-                    if read.qname in counted: continue
+                for read in samfile.fetch(contig, start, end):
+                    if not read.overlap(start, end):
+                        continue
+                    if read.qname in counted:
+                        continue
                     counted.add(read.qname)
 
                     nanysense_all_counts += 1
@@ -765,6 +781,10 @@ class CounterReadCountsFull(CounterBAM):
             counters = get_counters()
 
         for samfile in self.mBamFiles:
+            # skip bamfiles where contig is not present
+            if samfile.gettid(contig) < 0:
+                continue
+
             for read in samfile.fetch(contig,
                                       exons_start,
                                       exons_end):
@@ -1248,6 +1268,10 @@ class CounterReadPairCountsFull(CounterBAM):
         reads = []
 
         for samfile in self.mBamFiles:
+            # skip bamfiles where contig is not present
+            if samfile.gettid(contig) < 0:
+                continue
+
             # make sure you get more than a proxy
             reads.extend(list(samfile.fetch(contig, 
                                             exons_start, 
