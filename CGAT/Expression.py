@@ -538,21 +538,22 @@ def loadTagData(tags_filename, design_filename):
     # Load counts table
     E.info("loading tag data from %s" % tags_filename)
 
-    R('''counts_table = read.table( '%(tags_filename)s',
-    header = TRUE,
-    row.names = 1,
-    stringsAsFactors = TRUE,
-    comment.char = '#' )''' % locals())
+    R('''counts_table = read.table('%(tags_filename)s',
+    header=TRUE,
+    row.names=1,
+    stringsAsFactors=TRUE,
+    comment.char='#')''' % locals())
 
     E.info("read data: %i observations for %i samples" %
            tuple(R('''dim(counts_table)''')))
     E.debug("sample names: %s" % R('''colnames(counts_table)'''))
 
     # Load comparisons from file
-    R('''pheno = read.delim( '%(design_filename)s',
-                             header = TRUE,
-                             stringsAsFactors = TRUE,
-                             comment.char = '#')''' % locals())
+    R('''pheno = read.delim(
+    '%(design_filename)s',
+    header=TRUE,
+    stringsAsFactors=TRUE,
+    comment.char='#')''' % locals())
 
     # Make sample names R-like - substitute - for .
     R('''pheno[,1] = gsub('-', '.', pheno[,1]) ''')
@@ -563,7 +564,8 @@ def loadTagData(tags_filename, design_filename):
         '''pheno2 = pheno[match(colnames(counts_table),pheno[,1]),,drop=FALSE]''')
     missing = R('''colnames(counts_table)[is.na(pheno2)][1]''')
     if missing:
-        E.warn("missing samples from design file are ignored: %s" % missing)
+        E.warn("missing samples from design file are ignored: %s" %
+               missing)
 
     # Subset data & set conditions
     R('''includedSamples <- !(is.na(pheno2$include) | pheno2$include == '0') ''')
@@ -718,11 +720,14 @@ def plotPairs():
             text(x, y, txt, cex = cex);
             }
        ''')
-    R('''pairs(countsTable,
-               lower.panel = panel.pearson,
-               pch=".",
-               labels=colnames(countsTable),
-               log="xy")''')
+    try:
+        R('''pairs(countsTable,
+        lower.panel = panel.pearson,
+        pch=".",
+        labels=colnames(countsTable),
+        log="xy")''')
+    except rpy2.rinterface.RRuntimeError, msg:
+        E.warn("can not plot pairwise scatter plot: %s" % msg)
 
 
 def plotPCA(groups=True):
@@ -1107,7 +1112,7 @@ def deseqPlotGeneHeatmap(outfile,
     R['dev.off']()
 
 
-def deseqPlotPCA(outfile, vsd):
+def deseqPlotPCA(outfile, vsd, max_genes=500):
     '''plot a PCA
 
     Use variance stabilized data in object vsd.
@@ -1118,10 +1123,13 @@ def deseqPlotPCA(outfile, vsd):
     #  if there are more than 500 genes (after filtering)
     #  use the 500 most variable in the PCA
     #  else use the number of genes
-    R('''ntop = ifelse(as.integer(dim(vsd))[1] >= 500,
-                       500,
-                       as.integer(dim(vsd))[1])''')
-    R('''plotPCA(vsd, ntop=ntop)''')
+    R('''ntop = ifelse(as.integer(dim(vsd))[1] >= %(max_genes)i,
+    %(max_genes)i,
+    as.integer(dim(vsd))[1])''' % locals())
+    try:
+        R('''plotPCA(vsd)''')
+    except rpy2.rinterface.RRuntimeError, msg:
+        E.warn("can not plot PCA: %s" % msg)
     R['dev.off']()
 
 
@@ -1769,8 +1777,8 @@ def plotDETagStats(infile, outfile_prefix,
 
         try:
             ggplot.ggsave(filename=outfile, plot=plot)
-        except ValueError, msg:
-            E.warn(msg)
+        except Exception, msg:
+            E.warn("no plot for %s: %s" % (column, msg))
 
     def _bplot(table, outfile, column):
 
@@ -2389,10 +2397,14 @@ def loadTagDataPandas(tags_filename, design_filename):
     E.info("loading tag data from %s" % tags_filename)
 
     inf = IOTools.openFile(tags_filename)
-    counts_table = pandas.read_csv(inf, sep="\t", index_col=0, comment="#")
+    counts_table = pandas.read_csv(inf,
+                                   sep="\t",
+                                   index_col=0,
+                                   comment="#")
     inf.close()
 
-    E.info("read data: %i observations for %i samples" % counts_table.shape)
+    E.info("read data: %i observations for %i samples" %
+           counts_table.shape)
 
     E.debug("sample names: %s" % list(counts_table.columns))
 
