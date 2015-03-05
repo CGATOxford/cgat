@@ -658,7 +658,8 @@ class FastQc(Mapper):
     def mapper(self, infiles, outfile):
         '''build mapping statement on infiles.
 
-        The output is created in outdir
+        The output is created in outdir. The output files
+        are extracted.
         '''
         outdir = self.outdir
         statement = []
@@ -667,10 +668,12 @@ class FastQc(Mapper):
                 track = os.path.basename(re.sub(".fastq.*", "", x))
                 if self.nogroup:
                     statement.append(
-                        '''fastqc --outdir=%(outdir)s --nogroup %(x)s >& %(outfile)s;''' % locals())
+                        '''fastqc --extract --outdir=%(outdir)s --nogroup %(x)s
+                        >& %(outfile)s;''' % locals())
                 else:
                     statement.append(
-                        '''fastqc --outdir=%(outdir)s %(x)s >& %(outfile)s;''' % locals())
+                        '''fastqc --extract --outdir=%(outdir)s %(x)s
+                        >& %(outfile)s;''' % locals())
         return " ".join(statement)
 
 
