@@ -125,9 +125,9 @@ HARDCODED_PARAMS = {
     # wrapper around non-CGAT scripts
     'cmd-run': """%(scriptsdir)s/run.py""",
     # directory used for temporary local files
-    'tmpdir': '/scratch',
+    'tmpdir': os.environ.get("TMPDIR", '/scratch'),
     # directory used for temporary files shared across machines
-    'shared_tmpdir': '/ifs/scratch',
+    'shared_tmpdir': os.environ.get("SHARED_TMPDIR", "/ifs/scratch"),
     # cluster options
     'cluster_queue': 'all.q',
     'cluster_priority': -10,
