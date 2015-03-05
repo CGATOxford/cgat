@@ -1606,7 +1606,7 @@ class STAR(Mapper):
     # newer versions of tophat can work of compressed files
     compress = True
 
-    executable = "star"
+    executable = "STAR"
 
     def __init__(self, *args, **kwargs):
         Mapper.__init__(self, *args, **kwargs)
