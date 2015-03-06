@@ -100,9 +100,16 @@ if not os.path.exists(SCRIPTS_DIR):
 
 # Global variable for configuration file data
 CONFIG = ConfigParser.ConfigParser()
+
 # Global variable for parameter interpolation in
 # commands
-PARAMS = {}
+# patch - if --help or -h in command line arguments,
+# use a default dict as PARAMS to avaid missing paramater
+# failures
+if "--help" in sys.argv or "-h" in sys.argv:
+    PARAMS = collections.defaultdict(str)
+else:
+    PARAMS = {}
 
 # A list of hard-coded parameters within the CGAT environment
 # These can be overwritten by command line options and
@@ -1668,6 +1675,10 @@ def peekParameters(workingdir,
     Returns a dictionary of configuration values.
 
     '''
+    # patch - if --help or -h in command line arguments,
+    # do not peek as there might be no config file.
+    if "--help" in sys.argv or "-h" in sys.argv:
+        return {}
 
     # Attempt to locate directory with pipeline source code. This is a
     # patch as pipelines might be called within the repository
