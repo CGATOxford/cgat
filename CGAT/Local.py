@@ -225,7 +225,7 @@ def getProjectId():
 
     web_dir should be link to the web directory in the project
     directory which then links to the web directory in the sftp
-    directory which then links to the obfuscated directory.
+    directory which then links to the obfuscated directory. 
 
     pipeline:web_dir
     -> /ifs/projects/.../web
@@ -233,15 +233,24 @@ def getProjectId():
     -> /ifs/sftp/.../aoeuCATAa (obfuscated directory)
 
     '''
+    # return an id that has been explicitely set
+    if "report_project_url" in PARAMS:
+        return PARAMS["report_project_url"]
+
     curdir = os.path.abspath(os.getcwd())
     if not curdir.startswith(PROJECT_ROOT):
         raise ValueError(
             "method getProjectId no called within %s" % PROJECT_ROOT)
 
     webdir = PARAMS['web_dir']
-    assert os.path.islink(webdir)
+    if not os.path.islink(webdir):
+        raise ValueError(
+            "unknown configuration: webdir '%s' is not a link" % webdir)
     target = os.readlink(webdir)
-    assert os.path.islink(target)
+    if not os.path.islink(target):
+        raise ValueError(
+            "unknown configuration: target '%s' is not a link" % target)
+
     return os.path.basename(os.readlink(target))
 
 
