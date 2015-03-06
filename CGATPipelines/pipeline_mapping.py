@@ -1335,10 +1335,6 @@ def buildContextStats(infiles, outfile):
 
     P.run()
 
-############################################################
-############################################################
-############################################################
-
 
 @jobs_limit(1, "db")
 @follows(loadBAMStats)
@@ -1800,7 +1796,6 @@ def update_report():
 
 @follows(mkdir("%s/bamfiles" % PARAMS["web_dir"]),
          mkdir("%s/bigwigfiles" % PARAMS["web_dir"]),
-         update_report,
          )
 def publish():
     '''publish files.'''
