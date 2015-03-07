@@ -37,10 +37,34 @@ Contents:
    .. toctree::
       pipeline/RNASeq.rst
  
+===================
+Errors and Warnings
+===================
+
 .. errorlist::
 
 .. warninglist::
+
+===================
+Pipeline Status
+===================
+
+.. report:: Tracker.TrackerImages
+   :render: gallery-plot
+   :glob: export/pipeline.svg
+
+   Pipeline status
+
+======================
+Pipeline Documentation
+======================
+
+.. automodule:: pipeline_mapping
+   :members:
+   :inherited-members:
+   :show-inheritance:
   
+==================
 Indices and tables
 ==================
 

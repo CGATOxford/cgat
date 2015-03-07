@@ -1778,7 +1778,7 @@ def map():
     pass
 
 
-@follows(mkdir("report"))
+@follows(mkdir("report"), mkdir(PARAMS.get("exportdir"), "export"))
 def build_report():
     '''build report from scratch.'''
 

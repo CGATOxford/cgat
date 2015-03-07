@@ -50,18 +50,28 @@ PARAMS = None
 CONFIG = None
 
 
-def getProjectDirectories():
-    '''return a dict directories relevant to this project.'''
+def getProjectDirectories(sections=None):
+    '''return a dict with directories relevant to this project.
+
+    Directories must exist, otherwise a ValueError is raised.
+
+    If *sections* are given, only these are returned.
+    '''
 
     project_name = getProjectName()
 
     result = {
-        'webdir': os.path.join(PROJECT_ROOT,
-                               PARAMS["web_dir"]),
-        'exportdir': os.path.join(PARAMS["exportdir"]),
-        'notebookdir': os.path.join(PROJECT_ROOT,
-                                    project_name, "notebooks")
+        'webdir': os.path.join(
+            PROJECT_ROOT, PARAMS["web_dir"]),
+        'exportdir': os.path.join(
+            PARAMS["exportdir"]),
+        'notebookdir': os.path.join(
+            PROJECT_ROOT, project_name, "notebooks")
     }
+
+    if sections:
+        result = dict([(x, y) for x, y in result.items()
+                       if x in sections])
 
     for x, y in result.items():
         if not os.path.exists(y):
