@@ -1556,7 +1556,8 @@ def clonePipeline(srcdir):
 
     copy_files = ("conf.py", "pipeline.ini", "csvdb")
     ignore_prefix = (
-        "report", "_cache", "export", "tmp", "ctmp", "_static", "_templates")
+        "report", "_cache", "export", "tmp", "ctmp",
+        "_static", "_templates")
 
     def _ignore(p):
         for x in ignore_prefix:
@@ -1834,8 +1835,33 @@ def run_pickled(params):
     os.unlink(args_file)
 
 
-def run_report(clean=True):
-    '''run CGATreport.'''
+def run_report(clean=True,
+               with_pipeline_status=True,
+               pipeline_status_format="svg"):
+    '''run CGATreport.
+
+    This will also run ruffus to create an svg image
+    of the pipeline status unless *with_pipeline_status* is
+    set to False. The image will be saved into the export 
+    directory.
+    '''
+
+    if with_pipeline_status:
+        targetdir = PARAMS["exportdir"]
+        if not os.path.exists(targetdir):
+            os.mkdir(targetdir)
+
+        # get checksum level from command line options
+        checksum_level = GLOBAL_OPTIONS.checksums
+
+        pipeline_printout_graph(
+            os.path.join(
+                targetdir,
+                "pipeline.%s" % pipeline_status_format),
+            pipeline_status_format,
+            ["full"],
+            checksum_level=checksum_level
+        )
 
     dirname, basename = os.path.split(getCaller().__file__)
 

@@ -24,11 +24,6 @@ for the ReadQC Pipeline is below:
    pipeline/SequenceLength.rst
    python/Trackers.rst
 
-.. automodule:: pipeline_readqc
-   :members:
-   :inherited-members:
-   :show-inheritance:
-
 ===================
 Errors and Warnings
 ===================
@@ -36,6 +31,25 @@ Errors and Warnings
 .. errorlist::
 
 .. warninglist::
+
+===================
+Pipeline Status
+===================
+
+.. report:: Tracker.TrackerImages
+   :render: gallery-plot
+   :glob: export/pipeline.svg
+
+   Pipeline status
+
+======================
+Pipeline Documentation
+======================
+
+.. automodule:: pipeline_readqc
+   :members:
+   :inherited-members:
+   :show-inheritance:
 
 ====================
  Indices and tables
