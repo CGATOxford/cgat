@@ -126,7 +126,7 @@ To do:
 
 import sys
 import os
-
+import pandas as pd
 from rpy2.robjects import r as R
 
 try:
@@ -303,19 +303,18 @@ def main(argv=None):
     assert options.input_filename_design and os.path.exists(
         options.input_filename_design)
 
-    counts_file = IOTools.openFile(options.input_filename_tags, "r")
-    design_file = IOTools.openFile(options.input_filename_design, "r")
-
     # create Counts object
-    counts = Counts.Counts()
-    counts.readCountsFile(counts_file)
+    counts = Counts.Counts(
+        pd.read_csv(IOTools.openFile(options.input_filename_tags, "r"),
+                    sep="\t", index_col=0, comment="#"))
 
     # create Design object
-    design = Expression.ExpDesign()
-    design.readDesignFile(design_file)
-    design.getAttributes()
+    design = Expression.ExpDesign(
+        pd.read_csv(IOTools.openFile(options.input_filename_design, "r"),
+                    sep="\t", index_col=0, comment="#"))
 
     # validate design against counts and model
+    design.getAttributes()
     design.validate(counts, options.model)
 
     # restrict counts to samples in design table
@@ -328,12 +327,12 @@ def main(argv=None):
 
     # remove observations with low counts
     if options.filter_min_counts_per_row:
-        counts.removeObservationsFrequency(
+        counts.removeObservationsFreq(
             min_counts_per_row=options.filter_min_counts_per_row)
 
     # remove bottom percentile of observations
     if options.filter_percentile_rowsums:
-        counts.removeObservationsPercentile(
+        counts.removeObservationsPerc(
                     percentile_rowsums=options.filter_percentile_rowsums)
 
     # check samples are the same in counts and design following counts
