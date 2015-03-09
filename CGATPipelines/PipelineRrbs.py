@@ -1440,11 +1440,12 @@ def spikeInClustersPlotM3D(infile, outfile, groups):
 
 
 @cluster_runnable
-def runBiSeq(infiles, outfile):
+def runBiSeq(infiles, outfile, sample_id):
     # use this when following callMethylationStatus(i.e full run)
-    # cov_infiles = filter(lambda x: 'Liver' in x, infiles)
+    # cov_infiles = infiles
+
+    cov_infiles = filter(lambda x: sample_id in x, infiles)
     out = open(outfile, "w")
-    cov_infiles = infiles
     base = P.snip(os.path.abspath(outfile), ".tsv")
     basenames = [os.path.basename(x) for x in cov_infiles]
     samples = [re.sub(r".fastq\S+", "", x) for x in basenames]
@@ -1498,17 +1499,32 @@ def runBiSeq(infiles, outfile):
 
     vario.aux <- makeVariogram(betaResults, make.variogram=FALSE)
     vario.sm$pValsList <- vario.aux$pValsList
-    print(head(vario.sm$pValsList[[1]]))
+
     locCor <- estLocCor(vario.sm)
-    clusters.rej <- testClusters(locCor,FDR.cluster = 0.5)
-    print(clusters.rej$clusters.reject)
-    clusters.trimmed <- trimClusters(clusters.rej,FDR.loc = 0.5)
-    print(clusters.trimmed)
-    DMRs <- findDMRs(clusters.trimmed,max.dist = 100,diff.dir = TRUE)
+
+    # testClusters throws an error if no clusters found so need to catch error
+    clusters.rej <- try(testClusters(locCor, FDR.cluster = 0.1), silent=TRUE)
+
+    if (class(clusters.rej) == "try-error")
+      {
+      clusters.trimmed = data.frame(chr=NA, pos=NA, p.val=NA, meth.group1=NA,
+                                    meth.group2=NA, meth.diff=NA, estimate=NA,
+                                    std.error=NA, pseudo.R.sqrt=NA,
+                                    cluster.id=NA, z.score=NA, pos.new=NA,
+                                    p.li=NA)
+      }
+
+    else
+      {
+      clusters.trimmed <- trimClusters(clusters.rej,FDR.loc = 0.1)
+      DMRs <- findDMRs(clusters.trimmed,max.dist = 100,diff.dir = TRUE)
+      }
+
     # just in case we want to do something else with the results
-    #save.image()
-    write.table(DMRs, paste0("%(base)s", "_trimmed_clusters.tsv"), sep="\t",
-    quote=F, row.names=F)
+    save.image()
+
+    write.table(clusters.trimmed, paste0("%(base)s", "_trimmed_clusters.tsv"),
+    sep="\t", quote=F, row.names=F)
 
     concat_vario = do.call(rbind, vario.sm$pValsList)
     write.table(concat_vario, paste0("%(base)s", "_vario_table_test.tsv"),
@@ -1519,7 +1535,7 @@ def runBiSeq(infiles, outfile):
     ends=end(row_p))
     ranges_pred_meth_df=cbind(df_ranges,methLevel(predictedMeth))
 
-    write.table(ranges_pred_meth_df, paste0("%(base)s", "_predicted_meth.tsv"),
+    write.table(ranges_pred_meth_df, paste0("%(base)s","_predicted_meth.tsv"),
     sep="\t", quote = F,row.names = F)}''' % locals())
 
     rcode()
