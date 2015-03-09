@@ -68,6 +68,9 @@ Requirements:
 Code
 ----
 
+To do:
+--check contrasts against design model
+
 '''
 
 import math
@@ -80,7 +83,7 @@ import re
 import pandas
 import pandas.rpy.common as com
 import ggplot
-
+import copy
 import numpy as np
 from scipy.stats import ttest_ind
 
@@ -123,12 +126,62 @@ def runDETest(raw_DataFrame,
               outfile,
               de_caller,
               **kwargs):
+    ''' provide higher level API to run tools with default setting '''
     if de_caller.lower() == "deseq":
-        caller = DECaller()
+        pass
     else:
         raise ValueError("Unknown caller")
 
-    caller.run(raw_DataFrame, design_file, outfile)
+
+def splitModel(model):
+    '''returns the terms in the model'''
+    return [x for x in
+            re.split("[\.:,~+\\s*]", re.sub("~(\s*0\s*)?", "", model)) if
+            len(x) > 0]
+
+
+def adjustPvalues(p_values):
+    '''return a list of BH adjusted pvalues'''
+    # import r stats module to adjust pvalues
+    stats = importr('stats')
+    adj_pvalues = list(stats.p_adjust(FloatVector(p_values), method='BH'))
+    return adj_pvalues
+
+
+def pvaluesToSignficant(p_values, fdr):
+    '''return a list of bools for significance'''
+    return [int(x < fdr) for x in p_values]
+
+
+def makeMAPlot(resultsTable, title, outfile):
+    '''make an MA plot from a DE results table'''
+
+    plotter = R('''
+    function(results, title, outfile){
+    library(ggplot2)
+
+    m_text = element_text(size = 15)
+
+    results=results[order(results$significant),]
+    results$significant = factor(results$significant, levels=c(0,1))
+
+    p = ggplot(results[!is.na(results$p_value),],
+        aes(x=log(((control_mean + treatment_mean)/2), 10),
+            y = log(fold,2), col = significant))
+    p = p + geom_point(aes(size=significant))
+    p = p + scale_colour_manual(values=c("black", "red"),name="p-adjust < fdr")
+    p = p + scale_size_manual(values=c(1,2), name="p-adjust < fdr")
+    p = p + xlab("Normalised counts (log10)") + ylab("Fold change (log2)")
+    p = p + ggtitle(title)
+    p = p + theme(axis.title.x = m_text, axis.title.y = m_text,
+                  axis.text.x = m_text, axis.text.y = m_text,
+                  legend.title = m_text, legend.text = m_text)
+
+    ggsave(plot = p, file = outfile, width=7, height=7)}''')
+
+    r_resultsTable = com.convert_to_r_dataframe(resultsTable)
+
+    plotter(r_resultsTable, title, outfile)
 
 
 class ExpDesign(object):
@@ -137,14 +190,14 @@ class ExpDesign(object):
     def __init__(self):
         self.table = None
 
-    def readDesignFile(self, dfile):
+    def readDesignFile(self, inf):
         ''' read design file and store as pandas DataFrame '''
-        inf = IOTools.openFile(dfile)
+
         self.table = pandas.read_csv(
             inf, sep="\t", index_col=0, comment="#")
         inf.close()
 
-    def getDesignAttributes(self):
+    def getAttributes(self):
         ''' parse design file and identify design attributes '''
 
         self.table = self.table[self.table["include"] != 0]
@@ -163,6 +216,8 @@ class ExpDesign(object):
             self.factors = None
 
         # Test if replicates exist, i.e at least one group has multiple samples
+        # TS - does this need to be extended to check whether replicates exist
+        # for each group?
         max_per_group = max([self.conditions.count(x) for x in self.groups])
         self.has_replicates = max_per_group >= 2
 
@@ -177,234 +232,158 @@ class ExpDesign(object):
         else:
             self.has_pairs = False
 
+    def validate(self, counts, model=None):
+
+        missing = set(counts.table.columns).difference(self.samples)
+        if len(missing) > 0:
+            raise ValueError("following samples in design table are missing"
+                             " from counts table: %s" % ", ".join(missing))
+
+        if model is not None:
+
+            model_terms = splitModel(model)
+
+            # check all model terms exist
+            missing = set(model_terms).difference(
+                set(self.factors.columns.tolist()))
+
+            if len(missing) > 0:
+                raise ValueError("following terms in the model are missing"
+                                 " from the design table: %s" %
+                                 ", ".join(missing))
+
+            # check there are at least two values for each level
+            for term in model_terms:
+                levels = set(self.factors.ix[:, term])
+                if len(levels) < 2:
+                    raise ValueError("term '%s' in the model has less "
+                                     "than two levels (%s) in the "
+                                     " design table" %
+                                     (term, ", ".join(levels)))
+
+    def restrict(self, counts):
+        ''' return design with samples not in counts table removed '''
+
+        self.table = self.table.ix[counts.table.columns, :]
+
+    def revalidate(self, counts, model=None):
+        ''' re-validate, i.e post filtering of counts table '''
+
+        if len(set(self.samples).symmetric_difference(
+                set(counts.table.columns))) > 0:
+            self.restrict(counts)
+            self.getAttributes()
+            self.validate(counts, model)
+
+        else:
+            pass
+
 
 class DEExperiment(object):
-    ''' base class to store data for a DE experiment
-    contains a counts table and a design table'''
-
-    def __init__(self,
-                 min_counts_row,
-                 min_counts_sample,
-                 percentile_rowsums,
-                 ref_group=None,
-                 model=None,
-                 contrasts=None):
-        self.min_counts_row = min_counts_row
-        self.min_counts_sample = min_counts_sample
-        self.percentile_rowsums = percentile_rowsums
-        self.counts = None
-        self.design = None
-        self.model = model
-        self.ref_group = ref_group
-        self.contrasts = contrasts
-
-    def readDesignFile(self, dfile):
-        ''' read in design file and identify attributes'''
-
-        self.design = ExpDesign()
-        self.design.readDesignFile(dfile)
-        self.design.getDesignAttributes()
-
-    def readCountsFile(self, cfile):
-        ''' read in counts file '''
-
-        self.counts = Counts.Counts()
-        self.counts.readCountsfile(cfile)
-
-    def checkForMissingSamples(self):
-        '''identify missing samples in counts table using index of
-        design table'''
-
-        self.missing = set(self.counts.table.columns).difference(
-            self.design.samples)
-
-    def removeUnnecessarySamples(self):
-        '''remove samples from counts table if they don't exist in the
-        design sample'''
-
-        self.counts.table = self.counts.table[self.design.samples]
-
-    def filterCounts(self, min_counts_row, min_counts_sample, percentile):
-        ''' call Counts.filterCounts method'''
-
-        self.counts.filterCounts(min_counts_row, min_counts_sample, percentile)
-
-    def updateDesign(self):
-        ''' cross-check and update counts and design tables'''
-        # after filtering counts table, the design table may need
-        # updating if samples have been removed!
-
-        self.design.table = self.design.table.ix[self.counts.table.columns]
-        self.design.getDesignAttributes()
-
-    def build(self, counts_file, design_file):
-
-        self.readDesignFile(design_file)
-
-        self.readCountsFile(counts_file)
-
-        self.removeUnnecessarySamples()
-
-        self.filterCounts(self.min_counts_row,
-                          self.min_counts_sample,
-                          self.percentile_rowsums)
-
-        self.updateDesign()
-
-        # check filtering has left some samples and observations remaining...
-        nobservations, nsamples = self.counts.table.shape
-
-        if nobservations == 0:
-            E.warn("no observations - no output")
-            return
-        if nsamples == 0:
-            E.warn("no samples remain after filtering - no output")
-            return
-
-
-class DECaller(object):
-    """
-    Base
-    """
-
-    def __call__(self,
-                 DEExperiment,
-                 outfile=None,
-                 normalise=False,
-                 normalisation_method=None,
-                 dispersion=None,
-                 outfile_prefix=None,
-                 fdr=0.1,
-                 DEtype="GLM",
-                 *args, **kwargs):
-
-        self.DEExper = DEExperiment
-        self.normalise = normalise
-        self.normalisation_method = normalisation_method
-        self.outfile = outfile
-        self.outfile_prefix = outfile_prefix
-        self.dispersion = dispersion
-        self.fdr = fdr
-        self.DEtype = DEtype
-
-        # call DE and generate an initial results table
-        self.callDifferentialExpression()
-
-        # generate a final results table and write out
-        self.postProcessDEResults()
-
-        # make diagnostics plot from initial results
-        self.plotDiagnostics()
-
-        # sumamrise results
-        self.summariseDEResults()
+    ''' base clase for DE experiments '''
 
     def __init__(self):
         pass
 
-    def callDifferentialExpression(self):
-        """
-        Custom DE functions
-        """
-        pass
+    def __call__(self):
+        ''' call DE and generate an initial results table '''
+        self.callDifferentialExpression()
 
-    def plotDiagnostics(self):
-        """
-        All plotting that should be as faithful to published protocol as
-        possible. Gallery plot stuff!
-        """
-        pass
+    def run(self):
+        ''' Custom DE functions '''
 
-    def postProcessDEResults(self):
-        """
-        post-process results into generic output
-        """
+
+class DEResult(object):
+    ''' base class for DE result '''
+
+    def __init__(self, testTable=None):
+        self.table = testTable
+
+    def getResults(self):
+        ''' post-process results into generic output '''
         pass
 
     def summariseDEResults(self):
         ''' summarise DE results. Counts instances of possible outcomes'''
-        # TS: this needs to split results by the comparison being made
-        # TS: currently, pairwise comparisons or contrasts are lumped together
 
-        n_rows = self.results.shape[0]
+        # TS: the summarising is now split by the comparison being made and a
+        # dict returned with keys=comparisons, value=E.Counter per comparison
 
-        counts = E.Counter()
+        self.Summary = {}
 
-        counts.signficant = sum(self.results['significant'])
-        counts.insignficant = (len(self.results['significant']) -
-                               counts.signficant)
-        counts.all_over = sum([x > 0 for x in self.results['l2fold']])
-        counts.all_under = sum([x < 0 for x in self.results['l2fold']])
-        counts.signficant_over = sum([self.results['significant'][x] == 1 and
-                                     self.results['l2fold'][x] > 1 for
-                                     x in range(0, n_rows)])
-        counts.signficant_under = sum([self.results['significant'][x] == 1 and
-                                       self.results['l2fold'][x] < 1 for
-                                       x in range(0, n_rows)])
+        control_names = set(self.table['control_name'])
+        treatment_names = set(self.table['treatment_name'])
 
-        outf = IOTools.openFile("%ssummary.tsv" % self.outfile_prefix, "w")
-        outf.write("category\tcounts\n%s\n" % counts.asTable())
-        outf.close()
+        for control, treatment in itertools.product(control_names,
+                                                    treatment_names):
 
-    def run(self):
+            tmp_table = self.table[self.table['control_name'] == control]
+            tmp_table = tmp_table[tmp_table['treatment_name'] == treatment]
+
+            # check control, treatment combination exists
+            n_rows = tmp_table.shape[0]
+            if n_rows > 0:
+
+                if control != treatment:
+                    label = control + "-" + treatment
+                else:
+                    label = control
+                label = re.sub(":", "_int_", label)
+
+                counts = E.Counter()
+
+                counts.signficant = sum(tmp_table['significant'])
+                counts.insignficant = (len(tmp_table['significant']) -
+                                       counts.signficant)
+                counts.all_over = sum([x > 0 for x in tmp_table['l2fold']])
+                counts.all_under = sum([x < 0 for x in tmp_table['l2fold']])
+                counts.signficant_over = sum(
+                    [tmp_table['significant'][x] == 1 and
+                     tmp_table['l2fold'][x] > 1 for x in range(0, n_rows)])
+                counts.signficant_under = sum(
+                    [tmp_table['significant'][x] == 1 and
+                     tmp_table['l2fold'][x] < 1 for x in range(0, n_rows)])
+
+                self.Summary[label] = counts
+
+    def plotMAplot(self, design, outfile_prefix):
+        ''' base '''
         pass
 
 
-def adjustPvalues(p_values):
-    '''return a list of BH adjusted pvalues'''
-
-    # import r stats module to adjust pvalues
-    stats = importr('stats')
-
-    adj_pvalues = list(stats.p_adjust(FloatVector(p_values), method='BH'))
-    return adj_pvalues
-
-
-def pvaluesToSignficant(p_values, fdr):
-    '''return a list of bools for significance'''
-
-    return [int(x < fdr) for x in p_values]
-
-
-class DE_TTest(DECaller):
+class DEExperiment_TTest(DEExperiment):
     '''DECaller object to run TTest on counts data'''
 
     # TS: to do: deal with genes/regions with zero counts
 
-    def callDifferentialExpression(self):
+    def run(self, counts, design, normalise=True,
+            normalise_method="deseq-size-factors"):
 
         # TS: normalisation performed here rather than earlier as
-        # TS: the method of normalisation is dependent upon the DE test
-        # TS: save out size factors to a tsv?
-        if self.normalise is True:
-            size_factors = self.DEExper.counts.normaliseCounts(
-                method=self.normalisation_method)
+        # the method of normalisation is dependent upon the DE test
+        if normalise is True:
+            counts.normaliseCounts(method=normalise_method)
 
         df_dict = collections.defaultdict(list)
 
-        for combination in itertools.combinations(
-                self.DEExper.design.groups, 2):
-            # TS: as each combination may have different numbers of
-            # TS: samples in control and treatment, calculations have to
-            # TS: be performed on a per combination basis
+        for combination in itertools.combinations(design.groups, 2):
 
             control, treatment = combination
-            n_rows = self.DEExper.counts.table.shape[0]
+            n_rows = counts.table.shape[0]
             df_dict["control_name"].extend((control,)*n_rows)
             df_dict["treatment_name"].extend((treatment,)*n_rows)
-            df_dict["test_id"].extend(
-                self.DEExper.counts.table.index.tolist())
+            df_dict["test_id"].extend(counts.table.index.tolist())
 
             # set all status values to "OK"
             df_dict["status"].extend(("OK",)*n_rows)
 
             # subset counts table for each combination
             c_keep = [x == control for
-                      x in self.DEExper.design.conditions]
-            control_counts = self.DEExper.counts.table.iloc[:, c_keep]
+                      x in design.conditions]
+            control_counts = counts.table.iloc[:, c_keep]
             t_keep = [x == treatment for
-                      x in self.DEExper.design.conditions]
-            treatment_counts = self.DEExper.counts.table.iloc[:, t_keep]
+                      x in design.conditions]
+            treatment_counts = counts.table.iloc[:, t_keep]
 
             c_mean = control_counts.mean(axis=1)
             df_dict["control_mean"].extend(c_mean)
@@ -417,83 +396,48 @@ class DE_TTest(DECaller):
             t, prob = ttest_ind(control_counts, treatment_counts, axis=1)
             df_dict["p_value"].extend(prob)
 
-        self.results = pandas.DataFrame(df_dict)
-        self.results.set_index("test_id", inplace=True)
+        result = DEResult_TTest(testTable=pandas.DataFrame(df_dict))
+        result.table.set_index("test_id", inplace=True)
 
-    def postProcessDEResults(self):
-        """
-        post-process results into generic output
-        """
+        return result
+
+
+class DEResult_TTest(DEResult):
+
+    def getResults(self, fdr):
+        ''' post-process test results table into generic results output '''
 
         # TS - what about zero values?!
-        self.results["fold"] = (
-            self.results["treatment_mean"] / self.results["control_mean"])
+        self.table["fold"] = (
+            self.table["treatment_mean"] / self.table["control_mean"])
 
-        self.results["p_value_adj"] = adjustPvalues(self.results["p_value"])
+        self.table["p_value_adj"] = adjustPvalues(self.table["p_value"])
 
-        self.results["significant"] = pvaluesToSignficant(
-            self.results["p_value_adj"], self.fdr)
+        self.table["significant"] = pvaluesToSignficant(
+            self.table["p_value_adj"], fdr)
 
-        self.results["l2fold"] = list(numpy.log2(self.results["fold"]))
+        self.table["l2fold"] = list(numpy.log2(self.table["fold"]))
 
         # note: the transformed log2 fold change is not transformed for TTest
-        self.results["transformed_l2fold"] = self.results["l2fold"]
+        self.table["transformed_l2fold"] = self.table["l2fold"]
 
-        self.results.to_csv(self.outfile, sep="\t", header=True, index=True)
+    def plotMAplot(self, design, outfile_prefix):
 
-    # TS: TTest shouldn't really plot anything within the DECaller?
-    # This is really for DE tool specific plots
-    #
-    #    def plotDiagnostics(self):
-    #
-    #    for combination in itertools.combinations(
-    #            self.DEExper.design.groups, 2):
-    #        control, treatment = combination
-    #
-    #        temp_results_df = self.results[
-    #            (self.results['control_name'] == control) &
-    #            (self.results['treatment_name'] == treatment)]
-    #
-    #        title = "%(control)s_vs_%(treatment)s" % locals()
-    #        plotOutfile = (self.outfile + self.outfile_prefix +
-    #                       title + "_MAplot.png")
-    #
-    #        makeMAPlot(temp_results_df, title, plotOutfile)
+        for combination in itertools.combinations(design.groups, 2):
+            control, treatment = combination
+
+            temp_results_df = self.table[
+                (self.table['control_name'] == control) &
+                (self.table['treatment_name'] == treatment)]
+
+            title = "%(control)s_vs_%(treatment)s" % locals()
+            plotOutfile = (outfile_prefix + title + "_MAplot.png")
+
+            makeMAPlot(temp_results_df, title, plotOutfile)
 
 
-def makeMAPlot(resultsTable, title, outfile):
-    '''make an MA plot from a DE results table'''
-
-    plotter = R('''
-    function(results, title, outfile){
-    library(ggplot2)
-
-    m_text = element_text(size = 15)
-
-    results=results[order(results$significant),]
-    results$significant = factor(results$significant, levels=c(0,1))
-
-    p = ggplot(results[!is.na(results$p_value),],
-        aes(x=log(((control_mean + treatment_mean)/2), 10),
-            y = l2fold, col = significant))
-    p = p + geom_point(aes(size=significant))
-    p = p + scale_colour_manual(values=c("black", "red"),name="p-adjust < fdr")
-    p = p + scale_size_manual(values=c(1,2), name="p-adjust < fdr")
-    p = p + xlab("Normalised counts (log10)") + ylab("Fold change (log2)")
-    p = p + ggtitle(title)
-    p = p + theme(axis.title.x = m_text, axis.title.y = m_text,
-                  axis.text.x = m_text, axis.text.y = m_text,
-                  legend.title = m_text, legend.text = m_text)
-
-    ggsave(plot = p, file = outfile)}''')
-
-    r_resultsTable = com.convert_to_r_dataframe(resultsTable)
-
-    plotter(r_resultsTable, title, outfile)
-
-
-class DE_edgeR(DECaller):
-    '''DECaller object to run edgeR on counts data
+class DEExperiment_edgeR(DEExperiment):
+    '''DEExperiment object to run edgeR on counts data
 
     See page 13 of the EdgeR user guide::
 
@@ -505,61 +449,47 @@ class DE_edgeR(DECaller):
        organisms or dispersion=0.01 for technical replicates.
     '''
 
-    def callDifferentialExpression(self):
+    def run(self,
+            counts,
+            design,
+            model=None,
+            dispersion=None,
+            ref_group=None,
+            contrasts=None,
+            outfile_prefix=None):
 
-        # load library
-        R('''suppressMessages(library('edgeR'))''')
-
-        if not self.DEExper.design.has_replicates and self.dispersion is None:
+        if not design.has_replicates and dispersion is None:
             raise ValueError("no replicates and no dispersion")
 
-        E.info('running EdgeR: groups=%s, pairs=%s, replicates=%s, pairs=%s' %
-               (self.DEExper.design.groups,
-                self.DEExper.design.pairs,
-                self.DEExper.design.has_replicates,
-                self.DEExper.design.has_pairs))
-
         # create r objects
-        r_counts = com.convert_to_r_dataframe(self.DEExper.counts.table)
-        r_groups = ro.StrVector(self.DEExper.design.conditions)
-        r_pairs = ro.StrVector(self.DEExper.design.pairs)
-        r_has_pairs = ro.default_py2ri(self.DEExper.design.has_pairs)
-        r_has_replicates = ro.default_py2ri(self.DEExper.design.has_replicates)
+        r_counts = com.convert_to_r_dataframe(counts.table)
+        r_groups = ro.StrVector(design.conditions)
+        r_pairs = ro.StrVector(design.pairs)
+        r_has_pairs = ro.default_py2ri(design.has_pairs)
+        r_has_replicates = ro.default_py2ri(design.has_replicates)
 
-        if self.dispersion is not None:
-            r_dispersion = ro.default_py2ri(self.dispersion)
+        if dispersion is not None:
+            r_dispersion = ro.default_py2ri(dispersion)
         else:
             r_dispersion = ro.default_py2ri(False)
 
-        if self.DEExper.model is not None:
-
-            model_levels = re.split("[\.:,~+\*]",
-                                    re.sub("~(0\+)?", "", self.DEExper.model))
-
-            factor_levels = self.DEExper.design.factors.columns.tolist()
-
-            for level in model_levels:
-                # TS: should this be tested at the initiation of the
-                # TS: design table object?
-                assert level in factor_levels, \
-                    ("specified model level '%s' not found in design table"
-                     "factors: %s") % (level, ", ".join(set(factor_levels)))
-
-            r_factors_df = com.convert_to_r_dataframe(
-                self.DEExper.design.factors)
+        if model is not None:
+            r_factors_df = com.convert_to_r_dataframe(design.factors)
         else:
             r_factors_df = ro.default_py2ri(False)
 
-        if self.DEExper.ref_group is not None:
-            r_ref_group = ro.default_py2ri(self.DEExper.ref_group)
+        if ref_group is not None:
+            r_ref_group = ro.default_py2ri(ref_group)
         else:
-            r_ref_group = ro.default_py2ri(self.DEExper.design.groups[0])
+            r_ref_group = ro.default_py2ri(design.groups[0])
 
-        if self.DEExper.contrasts is not None:
-            # TS: cannot currently handle user defined contrasts
-            r_contrasts = ro.default_py2ri(self.DEExper.contrasts)
-        else:
-            r_contrasts = ro.default_py2ri(False)
+        if contrasts is not None:
+            raise ValueError("cannot currently handle user defined contrasts")
+            r_contrasts = ro.default_py2ri(contrasts)
+
+        E.info('running EdgeR: groups=%s, pairs=%s, replicates=%s, pairs=%s' %
+               (design.groups, design.pairs, design.has_replicates,
+                design.has_pairs))
 
         # build DGEList object
         buildDGEList = R('''
@@ -585,10 +515,10 @@ class DE_edgeR(DECaller):
                                      r_ref_group, r_factors_df)
 
         # build design matrix
-        if self.DEExper.model is None:
+        if model is None:
             buildDesign = R('''
 
-            function(countsTable, has_pairs, pairs){
+            function(countsTable, has_pairs, pairs, factors_df){
 
             if (has_pairs==TRUE) {
               design <- model.matrix( ~pairs + countsTable$samples$group ) }
@@ -601,13 +531,17 @@ class DE_edgeR(DECaller):
 
         else:
             buildDesign = R('''
-            function(countsTable, has_pairs, pairs){
-            design <- model.matrix(%s, data=countsTable$samples)
-            return(design)}''' % self.DEExper.model)
+            function(countsTable, has_pairs, pairs, factors_df){
+            print(factors_df)
+            design <- model.matrix(%s, data=factors_df)
+            return(design)}''' % model)
 
-        r_design = buildDesign(r_countsTable, r_has_pairs, r_pairs)
+        r_design = buildDesign(r_countsTable, r_has_pairs, r_pairs,
+                               r_factors_df)
 
-        print r_design
+        # TS - for debugging, remove from final version
+        E.info("design_table:")
+        E.info(r_design)
 
         # fit model
         fitModel = R('''
@@ -617,6 +551,9 @@ class DE_edgeR(DECaller):
 
             # estimate common dispersion
             countsTable = estimateGLMCommonDisp( countsTable, design )
+
+            # estimate trended dispersion
+            countsTable <- estimateGLMTrendedDisp( countsTable, design)
 
             # estimate tagwise dispersion
             countsTable = estimateGLMTagwiseDisp( countsTable, design )
@@ -633,28 +570,57 @@ class DE_edgeR(DECaller):
         r_fit = fitModel(r_countsTable, r_design,
                          r_has_replicates, r_dispersion)
 
-        E.info("Generating output")
+        E.info("Conducting liklihood ratio tests")
 
-        # perform LR test on all possible contrasts
-        lrtTest = R('''
-        function(fit, prefix, contrasts, countsTable, design){
+        # TS - if no contrasts are specified, perform LR test on all possible
+        # contrasts, otherwise, only perform the contrasts specified
+        # TS - Function definition should depend on whether contrasts
+        # are specified (keep the decision tree in python)
+        # TS - To do: add lrtTest definition for user-supplied contrasts
+
+        if contrasts is None:
+            lrtTest = R('''
+        function(fit, prefix, countsTable, design){
         suppressMessages(library(reshape2))
 
-        if (contrasts == FALSE){
+        lrt_table_list = NULL
 
-            lrt_table_list = NULL
+        for(coef in seq(2, length(colnames(design)))){
+          lrt = glmLRT(fit, coef = coef)
 
-            for(coef in seq(2, length(colnames(design)))){
-              lrt_table_list[[coef]] = glmLRT(fit, coef = coef)$table
-              lrt_table_list[[coef]]['contrast'] = colnames(design)[coef]}
+
+          lrt_table = lrt$table
+          # need to include observations as a seperate column as there will
+          # be non-unique
+          lrt_table$observation = rownames(lrt_table)
+          rownames(lrt_table) <- NULL
+
+          lrt_table_list[[coef]] = lrt_table
+          lrt_table_list[[coef]]['contrast'] = colnames(design)[coef]
+
+          dt <- decideTestsDGE(lrt)
+          isDE <- as.logical(dt)
+          DEnames <- rownames(fit)[isDE]
+
+          contrast = gsub(":", "_interaction_", colnames(design)[coef])
+          png(paste0(contrast, "MAplot.png"))
+          plotSmear(lrt, de.tags=DEnames, cex=0.35, main=contrast)
+          abline(h=c(-1,1), col="blue")
+          dev.off()
+        }
 
             lrt_final = do.call(rbind, lrt_table_list)
-        }
 
         return(lrt_final)}''')
 
-        r_lrt_table = lrtTest(r_fit, self.outfile_prefix, r_contrasts,
-                              r_countsTable, r_design)
+            r_lrt_table = lrtTest(r_fit, outfile_prefix,
+                                  r_countsTable, r_design)
+        else:
+            # TS - shouldn't get to here as error thrown earlier if
+            # contrasts is not None
+            pass
+
+        E.info("Generating output - cpm table")
 
         # output cpm table
         outputCPMTable = R('''function(countsTable, outfile_prefix){
@@ -673,36 +639,42 @@ class DE_edgeR(DECaller):
         write.table(sorted, file=gz, sep = "\t", row.names=FALSE, quote=FALSE)
         close(gz)}''')
 
-        outputCPMTable(r_countsTable, self.outfile_prefix)
+        outputCPMTable(r_countsTable, outfile_prefix)
 
-        lrt_table = com.convert_robj(r_lrt_table)
+        result = DEResult_edgeR(testTable=com.convert_robj(r_lrt_table))
 
-        self.edgeRresults = lrt_table
+        return result
 
-    def postProcessDEResults(self):
+
+class DEResult_edgeR(DEResult):
+
+    def getResults(self, fdr, DEtype="GLM"):
+        ''' post-process test results table into generic results output '''
+
+        E.info("Generating output - results table")
 
         df_dict = collections.defaultdict()
 
-        n_rows = self.edgeRresults.shape[0]
+        n_rows = self.table.shape[0]
 
-        if self.DEtype == "GLM":
-            df_dict["treatment_name"] = self.edgeRresults['contrast']
-            df_dict["control_name"] = self.edgeRresults['contrast']
+        if DEtype == "GLM":
+            df_dict["treatment_name"] = self.table['contrast']
+            df_dict["control_name"] = self.table['contrast']
 
         else:
             # TS: edgeR is currently only set up to run GLM-based tests
             pass
 
-        df_dict["test_id"] = self.edgeRresults.index
-        df_dict["control_mean"] = self.edgeRresults['logCPM']
-        df_dict["treatment_mean"] = self.edgeRresults['logCPM']
+        df_dict["test_id"] = self.table['observation']
+        df_dict["control_mean"] = self.table['logCPM']
+        df_dict["treatment_mean"] = self.table['logCPM']
         df_dict["control_std"] = (0,)*n_rows
         df_dict["treatment_std"] = (0,)*n_rows
-        df_dict["p_value"] = self.edgeRresults['PValue']
-        df_dict["p_value_adj"] = adjustPvalues(self.edgeRresults['PValue'])
+        df_dict["p_value"] = self.table['PValue']
+        df_dict["p_value_adj"] = adjustPvalues(self.table['PValue'])
         df_dict["significant"] = pvaluesToSignficant(
-            df_dict["p_value_adj"], self.fdr)
-        df_dict["l2fold"] = list(numpy.log2(self.edgeRresults['logFC']))
+            df_dict["p_value_adj"], fdr)
+        df_dict["l2fold"] = list(numpy.log2(self.table['logFC']))
 
         # TS: the transformed log2 fold change is not transformed!
         df_dict["transformed_l2fold"] = df_dict["l2fold"]
@@ -710,15 +682,20 @@ class DE_edgeR(DECaller):
         # TS: check what happens when no fold change is available
         # TS: may need an if/else in list comprehension. Raise E.warn too?
         df_dict["fold"] = [math.pow(2, float(x)) for
-                           x in self.edgeRresults['logFC']]
+                           x in self.table['logFC']]
 
         # set all status values to "OK"
         # TS: again, may need an if/else to check...
         df_dict["status"] = ("OK",)*n_rows
 
-        self.results = pandas.DataFrame(df_dict)
-        self.results.set_index("test_id", inplace=True)
-        self.results.to_csv(self.outfile, sep="\t", header=True, index=True)
+        self.table = pandas.DataFrame(df_dict)
+        self.table.set_index("test_id", inplace=True)
+
+    def plotMAplot(self, design, outfile_prefix):
+        # need to implement edgeR specific MA plot
+        raise ValueError("MA plotting is not yet implemented for edgeR")
+
+###############################################################################
 
 
 def buildProbeset2Gene(infile,

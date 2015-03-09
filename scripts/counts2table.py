@@ -119,6 +119,9 @@ Additional plots and tables are generated and method specific.
 Command line options
 --------------------
 
+To do:
+ -- add some E.infos
+
 '''
 
 import sys
@@ -130,10 +133,14 @@ try:
     import CGAT.Experiment as E
     import CGAT.Pipeline as P
     import CGAT.Expression as Expression
+    import CGAT.IOTools as IOTools
+    import CGAT.Counts as Counts
 except ImportError:
     import Experiment as E
     import Pipeline as P
     import Expression
+    import IOTools
+    import Counts
 
 
 def main(argv=None):
@@ -241,11 +248,17 @@ def main(argv=None):
                       type="string",
                       help=("contrasts for post-hoc testing writen"
                             " variable:control:treatment,..."))
+
     parser.add_option("--model",
                       dest="model",
                       type="string",
                       help=("model for GLM"))
 
+    parser.add_option("--contrasts",
+                      dest="contrasts",
+                      action="append",
+                      help=("contrasts for post-hoc testing writen"
+                            "-11000, 0-1100, ..."))
     parser.set_defaults(
         input_filename_tags="-",
         input_filename_result=None,
@@ -260,9 +273,9 @@ def main(argv=None):
         ref_group=None,
         save_r_environment=None,
         pseudo_counts=0,
-        filter_min_counts_per_row=1,
-        filter_min_counts_per_sample=10,
-        filter_percentile_rowsums=0,
+        filter_min_counts_per_row=None,
+        filter_min_counts_per_sample=None,
+        filter_percentile_rowsums=None,
         spike_foldchange_max=4.0,
         spike_expression_max=5.0,
         spike_expression_bin_width=0.5,
@@ -275,7 +288,8 @@ def main(argv=None):
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
-    # TS: if no input filename and nothing on stdin...need to throw error?
+    # TS: if no input filename and nothing on stdin, this hangs...
+    # how to throw error?
     if options.input_filename_tags == "-":
         fh = P.getTempFile()
         fh.write("".join([x for x in options.stdin]))
@@ -289,35 +303,76 @@ def main(argv=None):
     assert options.input_filename_design and os.path.exists(
         options.input_filename_design)
 
-    DEEx = Expression.DEExperiment(
-        min_counts_row=options.filter_min_counts_per_row,
-        min_counts_sample=options.filter_min_counts_per_sample,
-        percentile_rowsums=options.filter_percentile_rowsums,
-        ref_group=options.ref_group,
-        model=options.model,
-        contrasts=options.contrasts)
+    counts_file = IOTools.openFile(options.input_filename_tags, "r")
+    design_file = IOTools.openFile(options.input_filename_design, "r")
 
-    DEEx.build(
-        counts_file=options.input_filename_tags,
-        design_file=options.input_filename_design)
+    # create Counts object
+    counts = Counts.Counts()
+    counts.readCountsFile(counts_file)
 
-    if options.method == "TTest":
-        DEProcessor = Expression.DE_TTest()
-        DEProcessor(DEEx,
-                    outfile=options.output_filename,
-                    outfile_prefix="ttest.",
-                    fdr=options.fdr,
-                    normalise=True,
-                    normalise_method="million-counts")
+    # create Design object
+    design = Expression.ExpDesign()
+    design.readDesignFile(design_file)
+    design.getAttributes()
+
+    # validate design against counts and model
+    design.validate(counts, options.model)
+
+    # restrict counts to samples in design table
+    counts.restrict(design)
+
+    # remove sample with low counts
+    if options.filter_min_counts_per_sample:
+        counts.removeSamples(
+            min_counts_per_sample=options.filter_min_counts_per_sample)
+
+    # remove observations with low counts
+    if options.filter_min_counts_per_row:
+        counts.removeObservationsFrequency(
+            min_counts_per_row=options.filter_min_counts_per_row)
+
+    # remove bottom percentile of observations
+    if options.filter_percentile_rowsums:
+        counts.removeObservationsPercentile(
+                    percentile_rowsums=options.filter_percentile_rowsums)
+
+    # check samples are the same in counts and design following counts
+    # filtering and, if not, restrict design table and re-validate
+    design.revalidate(counts, options.model)
+
+    # set up experiment and run tests
+    if options.method == "ttest":
+        outfile_prefix = "ttest_"
+
+        experiment = Expression.DEExperiment_TTest()
+        results = experiment.run(counts, design)
 
     elif options.method == "edger":
-        DEProcessor = Expression.DE_edgeR()
-        DEProcessor(DEEx,
-                    outfile=options.output_filename,
-                    outfile_prefix="edgeR.",
-                    dispersion=options.edger_dispersion,
-                    fdr=options.fdr,
-                    model=options.model)
+        outfile_prefix = "edger_"
+        experiment = Expression.DEExperiment_edgeR()
+        results = experiment.run(counts, design,
+                                 model=options.model,
+                                 outfile_prefix=outfile_prefix,
+                                 contrasts=options.contrasts)
+
+    results.getResults(fdr=0.01)
+
+    results.summariseDEResults()
+
+    # MAplot function currently only available for ttest results object
+    if options.method == "ttest":
+        results.plotMAplot(design, outfile_prefix=outfile_prefix)
+
+    results.table.to_csv(outfile_prefix + "results.tsv", sep="\t", na_rep="NA")
+
+    # write out summary tables for each comparison/contrast
+    E.info(results.Summary)
+    for test_group in results.Summary.keys():
+        outf = IOTools.openFile(outfile_prefix + test_group +
+                                "_summary.tsv", "w")
+        outf.write("category\tcounts\n%s\n"
+                   % results.Summary[test_group].asTable())
+        outf.close()
 
     '''try:
         if options.method == "deseq2":
@@ -371,14 +426,14 @@ def main(argv=None):
         if options.save_r_environment:
             E.info("saving R image to %s" % options.save_r_environment)
             R['save.image'](options.save_r_environment)
-        raise
-
-    if fh and os.path.exists(fh.name):
-        os.unlink(fh.name)
 
     if options.save_r_environment:
         R['save.image'](options.save_r_environment)
     '''
+
+    if fh and os.path.exists(fh.name):
+        os.unlink(fh.name)
+
     E.Stop()
 
 if __name__ == "__main__":
