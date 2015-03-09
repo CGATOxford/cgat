@@ -288,25 +288,32 @@ def main(argv=None):
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
-    # TS: if no input filename and nothing on stdin, this hangs...
-    # how to throw error?
-    if options.input_filename_tags == "-":
-        fh = P.getTempFile()
-        fh.write("".join([x for x in options.stdin]))
-        fh.close()
-        options.input_filename_tags = fh.name
-    else:
-        fh = None
+    # TS: these lines were copied over from runExpression.py
+    # they throw an error in Travis as P.getTempfile() doesn't work on Travis
+    # lines replace by if/else below to parse from stdin or flat file
+    #
+    # if options.input_filename_tags == "-":
+    #     fh = P.getTempFile()
+    #     fh.write("".join([x for x in options.stdin]))
+    #     fh.close()
+    #     options.input_filename_tags = fh.name
+    # else:
+    #     fh = None
+    #
+    # assert options.input_filename_tags and os.path.exists(
+    #     options.input_filename_tags)
 
-    assert options.input_filename_tags and os.path.exists(
-        options.input_filename_tags)
     assert options.input_filename_design and os.path.exists(
         options.input_filename_design)
 
     # create Counts object
-    counts = Counts.Counts(
-        pd.read_csv(IOTools.openFile(options.input_filename_tags, "r"),
-                    sep="\t", index_col=0, comment="#"))
+    if options.input_filename_tags == "-":
+        counts = Counts.Counts(pd.io.parsers.read_csv(
+            sys.stdin, sep="\t", index_col=0, comment="#"))
+    else:
+        counts = Counts.Counts(
+            IOTools.openFile(options.input_filename_tags, "r"),
+            sep="\t", index_col=0, comment="#")
 
     # create Design object
     design = Expression.ExpDesign(
@@ -431,8 +438,8 @@ def main(argv=None):
         R['save.image'](options.save_r_environment)
     '''
 
-    if fh and os.path.exists(fh.name):
-        os.unlink(fh.name)
+    #if fh and os.path.exists(fh.name):
+    #    os.unlink(fh.name)
 
     E.Stop()
 
