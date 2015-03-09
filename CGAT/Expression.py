@@ -187,15 +187,11 @@ def makeMAPlot(resultsTable, title, outfile):
 class ExpDesign(object):
     '''base class for design objects'''
 
-    def __init__(self):
-        self.table = None
-
-    def readDesignFile(self, inf):
-        ''' read design file and store as pandas DataFrame '''
-
-        self.table = pandas.read_csv(
-            inf, sep="\t", index_col=0, comment="#")
-        inf.close()
+    def __init__(self, table):
+        # read in table in the constructor for ExpDesign
+        # e.g design = ExpDesign(pd.read_csv(...))
+        self.table = table
+        assert self.table.shape, "design table is empty"
 
     def getAttributes(self):
         ''' parse design file and identify design attributes '''
@@ -362,7 +358,7 @@ class DEExperiment_TTest(DEExperiment):
         # TS: normalisation performed here rather than earlier as
         # the method of normalisation is dependent upon the DE test
         if normalise is True:
-            counts.normaliseCounts(method=normalise_method)
+            counts.normalise(method=normalise_method)
 
         df_dict = collections.defaultdict(list)
 
