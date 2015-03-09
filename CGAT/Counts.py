@@ -63,40 +63,24 @@ class Counts(object):
     def __init__(self):
         self.table = None
 
-    def readCountsfile(self, counts_file):
+    def readCountsFile(self, inf):
         ''' read Counts file and store as pandas DataFrame '''
-        # TS: can this deal with .gz files? if not, ammend
-        inf = IOTools.openFile(counts_file)
+
         self.table = pd.read_csv(
             inf, sep="\t", index_col=0, comment="#")
         inf.close()
 
-    def filterCounts(self,
-                     filter_min_counts_per_row=1,
-                     filter_min_counts_per_sample=10,
-                     filter_percentile_rowsums=0):
-        '''filter tag data.
+    def restrict(self, design):
+        ''' remove samples not in design '''
 
-        * remove rows with at least x number of counts
+        self.table = self.table.ix[:, design.samples]
 
-        * remove samples with a maximum of *min_sample_counts*
+    def removeSamples(self, min_counts_per_sample=10):
+        ''' remove samples without low counts '''
 
-        * remove the lowest percentile of rows in the table, sorted
-           by total tags per row
-        '''
-
-        # Remove rows with low counts
-        max_counts_per_row = self.table.max(1)
-        self.table = self.table[
-            max_counts_per_row >= filter_min_counts_per_row]
-        observations, samples = self.table.shape
-        E.info("trimmed data: %i observations for %i samples" %
-               (observations, samples))
-
-        # remove samples without low counts
         max_counts_per_sample = self.table.max()
 
-        low_samples = max_counts_per_sample < filter_min_counts_per_sample
+        low_samples = max_counts_per_sample < min_counts_per_sample
         high_samples = [not x for x in low_samples.tolist()]
         sample_names = self.table.columns
         nlow_samples = sum(low_samples)
@@ -109,16 +93,36 @@ class Counts(object):
                               enumerate(low_samples) if y])))
             self.table = self.table.iloc[:, high_samples]
 
+    def removeObservationsFrequency(self, min_counts_per_row=1):
+        '''remove Observations (e.g genes)
+
+        * remove rows with less than x number of counts
+        '''
+
+        # Remove rows with low counts
+        max_counts_per_row = self.table.max(1)
+        self.table = self.table[
+            max_counts_per_row >= min_counts_per_row]
+        observations, samples = self.table.shape
+        E.info("trimmed data: %i observations for %i samples" %
+               (observations, samples))
+
+    def removeObservationsPercentile(self, percentile_rowsums=10):
+        '''remove Observations (e.g genes)
+
+        * remove the lowest percentile of rows in the table, sorted
+           by total tags per row
+        '''
+
         # percentile filtering
-        if filter_percentile_rowsums > 0:
-            percentile = float(filter_percentile_rowsums) / 100.0
-            sum_counts = self.table.sum(1)
-            take = sum_counts > sum_counts.quantile(percentile)
-            E.info("percentile filtering at level %f: keep=%i, discard=%i" %
-                   (filter_percentile_rowsums,
-                    sum(take),
-                    len(take) - sum(take)))
-            self.table = self.table[take]
+        percentile = float(percentile_rowsums) / 100.0
+        sum_counts = self.table.sum(1)
+        take = sum_counts > sum_counts.quantile(percentile)
+        E.info("percentile filtering at level %f: keep=%i, discard=%i" %
+               (percentile_rowsums,
+                sum(take),
+                len(take) - sum(take)))
+        self.table = self.table[take]
 
     def normaliseCounts(self, method="deseq-size-factors"):
 
@@ -163,13 +167,13 @@ class Counts(object):
 
             normed = (self.table.T / geometric_means).T
 
-            size_factors = normed.median(axis=0)
+            self.size_factors = normed.median(axis=0)
 
-            normed = self.table / size_factors
+            normed = self.table / self.size_factors
 
         elif method == "million-counts":
-            size_factors = self.table.sum(axis=0)
-            normed = self.table * 1000000.0 / size_factors
+            self.size_factors = self.table.sum(axis=0)
+            normed = self.table * 1000000.0 / self.size_factors
         else:
             raise NotImplementedError(
                 "normalization method '%s' not implemented" % method)
@@ -177,9 +181,6 @@ class Counts(object):
         self.table = normed
         # make sure we did not lose any rows or columns
         assert normed.shape == self.table.shape
-
-        # should this be returned or made into an attribute?
-        # return size_factors
 
 
 ########################################################################
@@ -502,7 +503,8 @@ def outputSpikes(df, id_column, indices, tracks_map, groups,
 ##########################################################################
 
 ##########################################################################
-# remove the functions below (now methods for class Counts)            ###
+# remove the functions below (now methods for class Counts or          ###
+# class ExpDesign (expression.py)                                      ###
 ##########################################################################
 
 
