@@ -158,7 +158,7 @@ def makeMAPlot(resultsTable, title, outfile):
 
     plotter = R('''
     function(results, title, outfile){
-    library(ggplot2)
+    suppressMessages(library(ggplot2))
 
     m_text = element_text(size = 15)
 
