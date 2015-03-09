@@ -1,4 +1,3 @@
-
 version:
     stdin: null
     outputs: [stdout]

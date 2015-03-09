@@ -363,7 +363,8 @@ def main(argv=None):
     if options.method == "ttest":
         results.plotMAplot(design, outfile_prefix=outfile_prefix)
 
-    results.table.to_csv(outfile_prefix + "results.tsv", sep="\t", na_rep="NA")
+    results.table.to_csv(sys.stdout, sep="\t", na_rep="NA")
+    # results.table.to_csv(outfile_prefix + "results.tsv", sep="\t", na_rep="NA")
 
     # write out summary tables for each comparison/contrast
     E.info(results.Summary)
