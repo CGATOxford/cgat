@@ -41,6 +41,8 @@ Code
 import CGAT.Pipeline as P
 import os
 import glob
+import CGAT.Fastq as Fastq
+import CGAT.IOTools as IOTools
 
 
 def peek(sra, outdir):
@@ -63,19 +65,24 @@ def peek(sra, outdir):
 
     if len(f) == 1:
         # sra file contains one read: output = prefix.fastq.gz
-        return f
+        pass
+
     elif len(f) == 2:
         # sra file contains read pairs:
         # output = prefix_1.fastq.gz, prefix_2.fastq.gz
         assert ff[0].endswith(
             "_1.fastq.gz") and ff[1].endswith("_2.fastq.gz")
+
     elif len(f) == 3:
         if ff[2].endswith("_3.fastq.gz"):
             f = glob.glob(os.path.join(outdir, "*_[13].fastq.gz"))
         else:
             f = glob.glob(os.path.join(outdir, "*_[13].fastq.gz"))
 
-    return f
+    # check format of fastqs in .sra
+    fastq_format = Fastq.guessFormat(IOTools.openFile(f[0], "r"), raises=False)
+
+    return f, fastq_format
 
 
 def extract(sra, outdir):
