@@ -470,13 +470,65 @@ class Mapper(object):
             elif infile.endswith(".sra"):
                 # sneak preview to determine if paired end or single end
                 outdir = P.getTempDir()
-                f = Sra.peek(infile, outdir)
+                f, format = Sra.peek(infile, outdir)
                 E.info("sra file contains the following files: %s" % f)
                 shutil.rmtree(outdir)
-                fastqfiles.append(
-                    ["%s/%s" % (tmpdir_fastq, os.path.basename(x))
-                     for x in sorted(f)])
+
+                # add extraction command to statement
                 statement.append(Sra.extract(infile, tmpdir_fastq))
+
+                sra_extraction_files = ["%s/%s" % (
+                    tmpdir_fastq, os.path.basename(x)) for x in sorted(f)]
+
+                # if format is not sanger, add convert command to statement
+                if 'sanger' in format and self.convert:
+
+                    # single end fastq
+                    if len(sra_extraction_files) == 1:
+
+                        infile = sra_extraction_files[0]
+                        track = os.path.splitext(os.path.basename(infile))[0]
+
+                        statement.append("""gunzip < %(infile)s
+                        | python %%(scriptsdir)s/fastq2fastq.py
+                        --method=change-format --target-format=sanger
+                        --guess-format=phred64
+                        --log=%(outfile)s.log
+                        %(compress_cmd)s
+                        > %(tmpdir_fastq)s/%(track)s_converted.fastq%(extension)s
+                        """ % locals())
+
+                        fastqfiles.append(
+                            ("%(tmpdir_fastq)s/%(track)s.fastq%(extension)s"
+                             % locals(),))
+
+                    # paired end fastqs
+                    elif len(sra_extraction_files) == 2:
+
+                        infile, infile2 = sra_extraction_files
+                        track = os.path.splitext(os.path.basename(infile))[0]
+
+                        statement.append("""gunzip < %(infile)s
+                        | python %%(scriptsdir)s/fastq2fastq.py
+                        --method=change-format --target-format=sanger
+                        --guess-format=phred64
+                        --log=%(outfile)s.log %(compress_cmd)s
+                        > %(tmpdir_fastq)s/%(track)s_converted.1.fastq%(extension)s;
+                        gunzip < %(infile2)s
+                        | python %%(scriptsdir)s/fastq2fastq.py
+                        --method=change-format --target-format=sanger
+                        --guess-format=phred64
+                        --log=%(outfile)s.log %(compress_cmd)s
+                        > %(tmpdir_fastq)s/%(track)s_converted.2.fastq%(extension)s
+                        """ % locals())
+
+                        fastqfiles.append(
+                            ("%s/%s.1.fastq%s" %
+                             (tmpdir_fastq, track, extension),
+                             "%s/%s.2.fastq%s" %
+                             (tmpdir_fastq, track, extension)))
+                else:
+                    fastqfiles.append(sra_extraction_files)
 
             elif infile.endswith(".fastq.gz"):
                 format = Fastq.guessFormat(
