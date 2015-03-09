@@ -499,7 +499,7 @@ class Mapper(object):
                         """ % locals())
 
                         fastqfiles.append(
-                            ("%(tmpdir_fastq)s/%(track)s.fastq%(extension)s"
+                            ("%(tmpdir_fastq)s/%(track)s_converted.fastq%(extension)s"
                              % locals(),))
 
                     # paired end fastqs
@@ -523,9 +523,9 @@ class Mapper(object):
                         """ % locals())
 
                         fastqfiles.append(
-                            ("%s/%s.1.fastq%s" %
+                            ("%s/%s_converted.1.fastq%s" %
                              (tmpdir_fastq, track, extension),
-                             "%s/%s.2.fastq%s" %
+                             "%s/%s_converted.2.fastq%s" %
                              (tmpdir_fastq, track, extension)))
                 else:
                     fastqfiles.append(sra_extraction_files)
