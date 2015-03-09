@@ -532,7 +532,6 @@ class DEExperiment_edgeR(DEExperiment):
         else:
             buildDesign = R('''
             function(countsTable, has_pairs, pairs, factors_df){
-            print(factors_df)
             design <- model.matrix(%s, data=factors_df)
             return(design)}''' % model)
 
