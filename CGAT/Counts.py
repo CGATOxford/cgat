@@ -60,15 +60,11 @@ def geometric_mean(array, axis=0):
 class Counts(object):
     '''base class to store counts object'''
 
-    def __init__(self):
-        self.table = None
-
-    def readCountsFile(self, inf):
-        ''' read Counts file and store as pandas DataFrame '''
-
-        self.table = pd.read_csv(
-            inf, sep="\t", index_col=0, comment="#")
-        inf.close()
+    def __init__(self, table):
+        # read in table in the constructor for Counts
+        # e.g counts = Counts(pd.read_csv(...))
+        self.table = table
+        assert self.table.shape, "Counts table is empty"
 
     def restrict(self, design):
         ''' remove samples not in design '''
@@ -93,7 +89,7 @@ class Counts(object):
                               enumerate(low_samples) if y])))
             self.table = self.table.iloc[:, high_samples]
 
-    def removeObservationsFrequency(self, min_counts_per_row=1):
+    def removeObservationsFreq(self, min_counts_per_row=1):
         '''remove Observations (e.g genes)
 
         * remove rows with less than x number of counts
@@ -107,7 +103,7 @@ class Counts(object):
         E.info("trimmed data: %i observations for %i samples" %
                (observations, samples))
 
-    def removeObservationsPercentile(self, percentile_rowsums=10):
+    def removeObservationsPerc(self, percentile_rowsums=10):
         '''remove Observations (e.g genes)
 
         * remove the lowest percentile of rows in the table, sorted
@@ -124,7 +120,7 @@ class Counts(object):
                 len(take) - sum(take)))
         self.table = self.table[take]
 
-    def normaliseCounts(self, method="deseq-size-factors"):
+    def normalise(self, method="deseq-size-factors"):
 
         '''return a table with normalized count data.
 
