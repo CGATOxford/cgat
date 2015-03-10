@@ -162,11 +162,6 @@ The generation of spike-ins is extensively parameterised:
     containing the percentage methylation (0-100) and retain additional
     columns containing the counts of methylated/unmethylated
 
---seed=[int]
-
-    Sets seed for maintaining consistent random shuffling. Note, this is
-    currently implemented for row-based shuffling only
-
 '''
 
 import sys
@@ -323,10 +318,6 @@ def main(argv=None):
                       help="a list of suffixes for the columns which are to be\
                       keep along with the shuffled columns[default=%default].")
 
-    parser.add_option("--seed",
-                      dest="seed", type="int",
-                      help="seed for random shuffling [default=%default].")
-
     parser.add_option(
         "--normalization-method",
         dest="normalization_method", type="choice",
@@ -359,12 +350,27 @@ def main(argv=None):
         id_column=None,
         shuffle_suffix=None,
         keep_suffix=None,
-        seed=None,
         normalization_method="deseq-size-factors",
     )
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
+
+    assert options.input_filename_design and os.path.exists(
+        options.input_filename_design)
+
+    # load
+    if options.keep_suffix:
+        # if using suffix, loadTagDataPandas will throw an error as it
+        # looks for column names which exactly match the design
+        # "tracks" need to write function in Counts.py to handle
+        # counts table and design table + suffix
+        counts = pd.read_csv(sys.stdin, sep="\t",  comment="#")
+        inf = IOTools.openFile(options.input_filename_design)
+        design = pd.read_csv(inf, sep="\t", index_col=0)
+        inf.close()
+        design = design[design["include"] != 0]
+        print design
 
     if options.method in ("filter", "spike"):
         if options.input_filename_design is None:
@@ -395,14 +401,23 @@ def main(argv=None):
 
     if options.method == "filter":
         # filter
-        counts = Counts.filterTagDataPandas(
+        nobservations, nsamples, counts, design = Counts.filterTagDataPandas(
             counts, design,
             options.filter_min_counts_per_row,
             options.filter_min_counts_per_sample,
             options.filter_percentile_rowsums)
+
+        if nobservations == 0:
+            E.warn("no observations - no output")
+            return
+
+        if nsamples == 0:
+            E.warn("no samples remain after filtering - no output")
+            return
+
         # write out
         counts.to_csv(options.stdout, sep="\t", header=True)
-        
+
     elif options.method == "normalize":
         normed, factors = Counts.normalizeTagData(
             counts,
@@ -486,7 +501,7 @@ def main(argv=None):
             output_indices, counts = Counts.shuffleRows(
                 counts_sort, initial_bins, change_bins,
                 g_to_spike_tracks, groups, options.difference,
-                options.max_spike, options.iterations, options.seed)
+                options.max_spike, options.iterations)
 
         filled_bins = Counts.thresholdBins(output_indices, counts,
                                            options.min_spike)
