@@ -872,8 +872,7 @@ def correlateDistanceMetric(data, rows, columns, method, lag=0):
     # create blank (all 0's) dataframe to fill with correlation values
 
     df_ = pd.DataFrame(index=rows,
-                       columns=columns,
-                       dtype=np.float64)
+                       columns=columns)
     df_ = df_.fillna(0.0)
 
     if method == "cross-correlate":
