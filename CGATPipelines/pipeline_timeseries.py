@@ -834,6 +834,7 @@ if ANALYSIS == 'replicates':
             '''
 
             infiles = ",".join(infiles)
+            job_options = "-l mem_free=2G"
 
             statement = '''
             python /ifs/devel/projects/proj036/pipeline_timeseries/src/scripts/distance2merge.py
@@ -902,7 +903,7 @@ if ANALYSIS == 'replicates':
         wgcna_out = "clustering.dir/WGCNA.out"
         cluster_file = "%s-clusterlabels.tsv" % (resample_prefix)
 
-        job_options = "-l mem_free=6G"
+        job_options = "-l mem_free=4G"
 
         if PARAMS['clustering_deepsplit']:
             options = " --split-clusters "
@@ -1134,7 +1135,7 @@ elif PARAMS["resampling_analysis_type"] == 'resample':
             wgcna_out = "clustering.dir/WGCNA.out"
             cluster_file = "%s-clusterlabels.tsv" % (resample_prefix)
 
-            job_options = "-l mem_free=6G"
+            job_options = "-l mem_free=4G"
             statement = '''
             python %(scriptsdir)s/distance2clusters.py
             --log=%(outfile)s.log
@@ -1169,6 +1170,8 @@ elif PARAMS["resampling_analysis_type"] == 'resample':
             else:
                 clustering_options = " "
 
+            job_options = "-l mem_free=4G"
+
             statement = '''
             python %(scriptsdir)s/expression2distance.py
             --distance-metric=%(clustering_metric)s
@@ -1201,7 +1204,7 @@ elif PARAMS["resampling_analysis_type"] == 'resample':
             wgcna_out = "clustering.dir/WGCNA.out"
             cluster_file = "%s-clusterlabels.tsv" % (resample_prefix)
 
-            job_options = "-l mem_free=6G"
+            job_options = "-l mem_free=4G"
 
             if PARAMS['clustering_deepsplit']:
                 options = " --split-clusters "
@@ -1435,7 +1438,7 @@ def loadConsensusClustering(infile, outfile):
 @follows(loadConsensusClustering)
 @transform("clustering.dir/*-match_cluster.tsv",
            regex("clustering.dir/(.+)-(.+)-match_cluster.tsv"),
-           r"consensus_clustering.dir/\1-\2-consensus.metrics.tsv")
+           r"consensus_cluster.dir/\1-\2-consensus.metrics.tsv")
 def consensusMetrics(infile, outfile):
     '''
     Calculate clustering consensus metrics
@@ -1446,11 +1449,34 @@ def consensusMetrics(infile, outfile):
 
     statement = '''
     python %(scriptsdir)s/clusters2metrics.py
+    --method=metrics
     --log=%(outfile)s.log
     %(infile)s
     > %(outfile)s'''
 
     P.run()
+
+
+@follows(loadConsensusClustering)
+@collate("consensus_cluster.dir/*-consensus.tsv",
+         regex("consensus_cluster.dir/(.+)-(.+)-consensus.tsv"),
+         r"consensus_cluster.dir/cluster_summary.tsv")
+def clusterSummary(infiles, outfile):
+    '''
+    summarise clustering across all conditions and references
+    '''
+
+    infile_list = ",".join(infiles)
+
+    statement = '''
+    python %(scriptsdir)s/clusters2metrics.py
+    --method=summary
+    --log=%(outfile)s.log
+    %(infile_list)s
+    > %(outfile)s'''
+
+    P.run()
+
 ###################################################################
 ###################################################################
 ###################################################################
@@ -1462,6 +1488,15 @@ def consensusMetrics(infile, outfile):
            ".load")
 def loadConsensusMetrics(infile, outfile):
     P.load(infile, outfile)
+
+
+@follows(clusterSummary)
+@transform(clusterSummary,
+           suffix(".tsv"),
+           ".load")
+def loadClusterSummary(infile, outfile):
+    P.load(infile, outfile)
+
 ###################################################################
 ###################################################################
 ###################################################################
@@ -1473,7 +1508,8 @@ def loadConsensusMetrics(infile, outfile):
 @follows(clusterAgree,
          loadClusterEigengenes,
          loadConsensusClustering,
-         loadConsensusMetrics)
+         loadConsensusMetrics,
+         loadClusterSummary)
 def clustering():
     pass
 
