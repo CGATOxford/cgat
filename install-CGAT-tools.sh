@@ -293,6 +293,12 @@ if [ "$OS" == "travis" ] ; then
    # prepare R installation scrip from source
    echo "#!/usr/bin/env R"
    echo "#!/usr/bin/env R" > install.R
+   echo "Sys.setenv(CFLAGS = \"-I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu\")"
+   echo "Sys.setenv(CFLAGS = \"-I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu\")" >> install.R
+   echo "Sys.setenv(C_INCLUDE_PATH = \"/usr/lib/x86_64-linux-gnu\")"
+   echo "Sys.setenv(C_INCLUDE_PATH= = \"/usr/lib/x86_64-linux-gnu\")" >> install.R
+   echo "Sys.setenv(LIBRARY_PATH = \"/usr/lib/x86_64-linux-gnu\")"
+   echo "Sys.setenv(LIBRARY_PATH = \"/usr/lib/x86_64-linux-gnu\")" >> install.R
    echo "source(\"http://bioconductor.org/biocLite.R\")"
    echo "source(\"http://bioconductor.org/biocLite.R\")" >> install.R
    echo "biocLite(c(\"impute\", \"preprocessCore\",\"GO.db\",\"AnnotationDbi\", \"DESeq\", \"DESeq2\", \"maSigPro\", \"timecourse\"))"
