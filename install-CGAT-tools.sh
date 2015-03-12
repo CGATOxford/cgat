@@ -284,7 +284,9 @@ if [ "$OS" == "travis" ] ; then
 
    # configure environment
    export CFLAGS=$CFLAGS" -I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu"
+   export CPATH=$CPATH" -I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu"
    export C_INCLUDE_PATH=$C_INCLUDE_PATH:"/usr/include/x86_64-linux-gnu"
+   export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:"/usr/include/x86_64-linux-gnu"
    export LIBRARY_PATH=$LIBRARY_PATH:"/usr/lib/x86_64-linux-gnu"
 
    # try installing R dependencies to fix errors on Travis
@@ -293,10 +295,14 @@ if [ "$OS" == "travis" ] ; then
    # prepare R installation scrip from source
    echo "#!/usr/bin/env R"
    echo "#!/usr/bin/env R" > install.R
-   echo "Sys.setenv(CFLAGS = \"-I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu\")"
-   echo "Sys.setenv(CFLAGS = \"-I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu\")" >> install.R
-   echo "Sys.setenv(C_INCLUDE_PATH = \"/usr/lib/x86_64-linux-gnu\")"
-   echo "Sys.setenv(C_INCLUDE_PATH = \"/usr/lib/x86_64-linux-gnu\")" >> install.R
+   echo "Sys.setenv(CFLAGS = \" -I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu\")"
+   echo "Sys.setenv(CFLAGS = \" -I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu\")" >> install.R
+   echo "Sys.setenv(CPATH = \" -I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu\")"
+   echo "Sys.setenv(CPATH = \" -I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu\")" >> install.R
+   echo "Sys.setenv(C_INCLUDE_PATH = \"/usr/include/x86_64-linux-gnu\")"
+   echo "Sys.setenv(C_INCLUDE_PATH = \"/usr/include/x86_64-linux-gnu\")" >> install.R
+   echo "Sys.setenv(CPLUS_INCLUDE_PATH = \"/usr/include/x86_64-linux-gnu\")"
+   echo "Sys.setenv(CPLUS_INCLUDE_PATH = \"/usr/include/x86_64-linux-gnu\")" >> install.R
    echo "Sys.setenv(LIBRARY_PATH = \"/usr/lib/x86_64-linux-gnu\")"
    echo "Sys.setenv(LIBRARY_PATH = \"/usr/lib/x86_64-linux-gnu\")" >> install.R
    echo "source(\"http://bioconductor.org/biocLite.R\")"
