@@ -205,7 +205,8 @@ export PATH="$CONDA_INSTALL_DIR/bin:$PATH"
 hash -r
 
 # add cgat channel
-conda config --add channels cgat
+conda config --add channels https://conda.binstar.org/cgat
+conda config --add channels https://conda.binstar.org/asmeurer
 
 # install cgat environment
 conda update -q conda --yes
@@ -285,6 +286,18 @@ if [ "$OS" == "travis" ] ; then
    export CFLAGS=$CFLAGS" -I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu"
    export C_INCLUDE_PATH=$C_INCLUDE_PATH:"/usr/include/x86_64-linux-gnu"
    export LIBRARY_PATH=$LIBRARY_PATH:"/usr/lib/x86_64-linux-gnu"
+
+   # try installing R dependencies to fix errors on Travis
+   conda install r-recommended
+   
+   # prepare R installation scrip from source
+   echo "#!/usr/bin/env R" > install.R
+   echo "source(\"http://bioconductor.org/biocLite.R\")" >> install.R
+   echo "biocLite(c(\"impute\", \"preprocessCore\",\"GO.db\",\"AnnotationDbi\", \"DESeq\", \"DESeq2\", \"maSigPro\", \"timecourse\"))" >> install.R
+   echo "install.packages(c(\"WGCNA\",\"flashClust\", \"dtw\"), repos=\"http://mirrors.ebi.ac.uk/CRAN/\")" >> install.R
+
+   # and actually install the dependencies
+   R CMD BATCH install.R
 
    cd $TRAVIS_BUILD_DIR
    python setup.py develop
