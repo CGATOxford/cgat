@@ -296,7 +296,7 @@ if [ "$OS" == "travis" ] ; then
    echo "Sys.setenv(CFLAGS = \"-I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu\")"
    echo "Sys.setenv(CFLAGS = \"-I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu\")" >> install.R
    echo "Sys.setenv(C_INCLUDE_PATH = \"/usr/lib/x86_64-linux-gnu\")"
-   echo "Sys.setenv(C_INCLUDE_PATH= = \"/usr/lib/x86_64-linux-gnu\")" >> install.R
+   echo "Sys.setenv(C_INCLUDE_PATH = \"/usr/lib/x86_64-linux-gnu\")" >> install.R
    echo "Sys.setenv(LIBRARY_PATH = \"/usr/lib/x86_64-linux-gnu\")"
    echo "Sys.setenv(LIBRARY_PATH = \"/usr/lib/x86_64-linux-gnu\")" >> install.R
    echo "source(\"http://bioconductor.org/biocLite.R\")"
