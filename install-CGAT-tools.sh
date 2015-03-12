@@ -205,8 +205,8 @@ export PATH="$CONDA_INSTALL_DIR/bin:$PATH"
 hash -r
 
 # add cgat channel
-conda config --add channels https://conda.binstar.org/cgat
 conda config --add channels https://conda.binstar.org/asmeurer
+conda config --add channels https://conda.binstar.org/cgat
 
 # install cgat environment
 conda update -q conda --yes
@@ -288,7 +288,7 @@ if [ "$OS" == "travis" ] ; then
    export LIBRARY_PATH=$LIBRARY_PATH:"/usr/lib/x86_64-linux-gnu"
 
    # try installing R dependencies to fix errors on Travis
-   # conda install r-recommended --yes
+   conda install r-recommended --yes
    
    # prepare R installation scrip from source
    echo "#!/usr/bin/env R"
