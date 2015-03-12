@@ -288,7 +288,7 @@ if [ "$OS" == "travis" ] ; then
    export LIBRARY_PATH=$LIBRARY_PATH:"/usr/lib/x86_64-linux-gnu"
 
    # try installing R dependencies to fix errors on Travis
-   conda install r-recommended
+   conda install r-recommended --yes
    
    # prepare R installation scrip from source
    echo "#!/usr/bin/env R" > install.R
