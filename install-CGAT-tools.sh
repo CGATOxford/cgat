@@ -229,7 +229,7 @@ if [ "$OS" != "travis" ] ; then
       export CFLAGS=$CFLAGS" -I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu"
       export C_INCLUDE_PATH=$C_INCLUDE_PATH:"/usr/include/x86_64-linux-gnu"
       export LIBRARY_PATH=$LIBRARY_PATH:"/usr/lib/x86_64-linux-gnu"
-      export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/lib64/R/lib
+      export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/lib/R/lib
 
       # Python preparation
       python setup.py develop
@@ -273,13 +273,13 @@ if [ "$OS" == "travis" ] ; then
    # activate cgat environment
    if [ "$INSTALL_LITE" == "1" ] ; then
       source $CONDA_INSTALL_DIR/bin/activate cgat-devel-lite
-      export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_INSTALL_DIR/envs/cgat-devel-lite/lib64/R/lib
+      export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_INSTALL_DIR/envs/cgat-devel-lite/lib/R/lib
    elif [ "$INSTALL_FULL" == "1" ] ; then
       source $CONDA_INSTALL_DIR/bin/activate cgat-devel
-      export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_INSTALL_DIR/envs/cgat-devel/lib64/R/lib
+      export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_INSTALL_DIR/envs/cgat-devel/lib/R/lib
    else
       source $CONDA_INSTALL_DIR/bin/activate cgat-devel
-      export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_INSTALL_DIR/envs/cgat-devel/lib64/R/lib
+      export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_INSTALL_DIR/envs/cgat-devel/lib/R/lib
    fi
 
    # configure environment
@@ -367,7 +367,7 @@ else
    export CFLAGS=$CFLAGS" -I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu"
    export C_INCLUDE_PATH=$C_INCLUDE_PATH:"/usr/include/x86_64-linux-gnu"
    export LIBRARY_PATH=$LIBRARY_PATH:"/usr/lib/x86_64-linux-gnu"
-   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/lib64/R/lib
+   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/lib/R/lib
 
    # Python preparation
    python setup.py develop
