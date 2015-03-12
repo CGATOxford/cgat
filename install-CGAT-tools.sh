@@ -288,16 +288,22 @@ if [ "$OS" == "travis" ] ; then
    export LIBRARY_PATH=$LIBRARY_PATH:"/usr/lib/x86_64-linux-gnu"
 
    # try installing R dependencies to fix errors on Travis
-   conda install r-recommended --yes
+   # conda install r-recommended --yes
    
    # prepare R installation scrip from source
+   echo "#!/usr/bin/env R"
    echo "#!/usr/bin/env R" > install.R
+   echo "source(\"http://bioconductor.org/biocLite.R\")"
    echo "source(\"http://bioconductor.org/biocLite.R\")" >> install.R
+   echo "biocLite(c(\"impute\", \"preprocessCore\",\"GO.db\",\"AnnotationDbi\", \"DESeq\", \"DESeq2\", \"maSigPro\", \"timecourse\"))"
    echo "biocLite(c(\"impute\", \"preprocessCore\",\"GO.db\",\"AnnotationDbi\", \"DESeq\", \"DESeq2\", \"maSigPro\", \"timecourse\"))" >> install.R
+   echo "install.packages(c(\"WGCNA\",\"flashClust\", \"dtw\"), repos=\"http://mirrors.ebi.ac.uk/CRAN/\")"
    echo "install.packages(c(\"WGCNA\",\"flashClust\", \"dtw\"), repos=\"http://mirrors.ebi.ac.uk/CRAN/\")" >> install.R
 
    # and actually install the dependencies
-   R CMD BATCH install.R
+   /usr/bin/time -o install.R.time -v R CMD BATCH install.R
+   cat install.R.time
+   cat install.Rout
 
    cd $TRAVIS_BUILD_DIR
    python setup.py develop
