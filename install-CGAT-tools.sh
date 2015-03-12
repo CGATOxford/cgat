@@ -211,7 +211,7 @@ conda config --add channels https://conda.binstar.org/cgat
 # install cgat environment
 conda update -q conda --yes
 conda info -a
-conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE --yes
+conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE bioconductor-deseq bioconductor-deseq2 r-wgcna r r-dtw r-rcolorbrewer r-flashclust bioconductor-masigpro bioconductor-timecourse --yes
 
 # if installation is 'devel' (outside of travis), checkout latest version from github
 if [ "$OS" != "travis" ] ; then
@@ -290,31 +290,6 @@ if [ "$OS" == "travis" ] ; then
    export LIBRARY_PATH=$LIBRARY_PATH:"/usr/lib/x86_64-linux-gnu"
 
    # try installing R dependencies to fix errors on Travis
-   #conda install r-recommended --yes
-   
-   # prepare R installation scrip from source
-   echo "#!/usr/bin/env R"
-   echo "#!/usr/bin/env R" > install.R
-   echo "Sys.setenv(CFLAGS = \" -I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu\")"
-   echo "Sys.setenv(CFLAGS = \" -I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu\")" >> install.R
-   echo "Sys.setenv(CPATH = \" -I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu\")"
-   echo "Sys.setenv(CPATH = \" -I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu\")" >> install.R
-   echo "Sys.setenv(C_INCLUDE_PATH = \"/usr/include/x86_64-linux-gnu\")"
-   echo "Sys.setenv(C_INCLUDE_PATH = \"/usr/include/x86_64-linux-gnu\")" >> install.R
-   echo "Sys.setenv(CPLUS_INCLUDE_PATH = \"/usr/include/x86_64-linux-gnu\")"
-   echo "Sys.setenv(CPLUS_INCLUDE_PATH = \"/usr/include/x86_64-linux-gnu\")" >> install.R
-   echo "Sys.setenv(LIBRARY_PATH = \"/usr/lib/x86_64-linux-gnu\")"
-   echo "Sys.setenv(LIBRARY_PATH = \"/usr/lib/x86_64-linux-gnu\")" >> install.R
-   echo "source(\"http://bioconductor.org/biocLite.R\")"
-   echo "source(\"http://bioconductor.org/biocLite.R\")" >> install.R
-   echo "biocLite(c(\"impute\", \"preprocessCore\",\"GO.db\",\"AnnotationDbi\", \"DESeq\", \"DESeq2\", \"maSigPro\", \"timecourse\"))"
-   echo "biocLite(c(\"impute\", \"preprocessCore\",\"GO.db\",\"AnnotationDbi\", \"DESeq\", \"DESeq2\", \"maSigPro\", \"timecourse\"))" >> install.R
-   echo "install.packages(c(\"WGCNA\",\"flashClust\", \"dtw\"), repos=\"http://mirrors.ebi.ac.uk/CRAN/\")"
-   echo "install.packages(c(\"WGCNA\",\"flashClust\", \"dtw\"), repos=\"http://mirrors.ebi.ac.uk/CRAN/\")" >> install.R
-
-   # and actually install the dependencies
-   time R CMD BATCH install.R
-   cat install.Rout
 
    cd $TRAVIS_BUILD_DIR
    python setup.py develop
