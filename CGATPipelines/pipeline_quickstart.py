@@ -3,7 +3,7 @@
 pipeline_quickstart.py - setup a new pipeline
 =============================================
 
-:Author: 
+:Author: Andreas Heger
 :Release: $Id$
 :Date: |today|
 :Tags: Python
@@ -34,9 +34,9 @@ Code
 import sys
 import re
 import os
-import optparse
 import shutil
 import CGAT.Experiment as E
+
 
 def main(argv=sys.argv):
 
