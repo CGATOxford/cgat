@@ -211,7 +211,8 @@ conda config --add channels https://conda.binstar.org/cgat
 # install cgat environment
 conda update -q conda --yes
 conda info -a
-conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE bioconductor-deseq bioconductor-deseq2 r-wgcna r r-dtw r-rcolorbrewer r-flashclust bioconductor-masigpro bioconductor-timecourse --yes
+#conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE bioconductor-deseq bioconductor-deseq2 r-wgcna r r-dtw r-rcolorbrewer r-flashclust bioconductor-masigpro bioconductor-timecourse --yes
+conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE --yes
 
 # if installation is 'devel' (outside of travis), checkout latest version from github
 if [ "$OS" != "travis" ] ; then
@@ -288,9 +289,6 @@ if [ "$OS" == "travis" ] ; then
    export C_INCLUDE_PATH=$C_INCLUDE_PATH:"/usr/include/x86_64-linux-gnu"
    export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:"/usr/include/x86_64-linux-gnu"
    export LIBRARY_PATH=$LIBRARY_PATH:"/usr/lib/x86_64-linux-gnu"
-
-   # try cleaning up 
-   sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches"
 
    cd $TRAVIS_BUILD_DIR
    python setup.py develop
