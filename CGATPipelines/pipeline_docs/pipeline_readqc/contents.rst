@@ -1,28 +1,26 @@
-.. Test documentation master file, created by
-   sphinx-quickstart on Mon Mar 23 15:27:57 2009.
-
 .. _readqcpipeline:
+
+================
+Read QC Pipeline
+================
+
+Welcome to the CGAT_ pipeline for read quality control and processing.
+
+The table of contents below points towards the pipeline results. This
+is followed by an overview erros and warnings in the report and the
+pipeline status. The documentation for the pipeline is at the bottom
+of this page.
+
+See `CGAT Pipelines`_ for more information on CGAT pipelines.
 
 ========
 Contents
 ========
 
-The table of contents below lists the pipeline results.  See `CGAT
-Pipelines`_ for an overview of using CGAT pipelines. The documentation
-for the ReadQC Pipeline is below:
-
 .. toctree::
    :maxdepth: 2
-
-   pipeline/Summary.rst
-   pipeline/FastQC.rst
-   pipeline/BaseQuality.rst
-   pipeline/ExperimentQuality.rst
-   pipeline/PerBaseNContent.rst
-   pipeline/SequenceDuplicationLevels.rst
-   pipeline/Filtering.rst
-   pipeline/SequenceLength.rst
-   python/Trackers.rst
+	      
+   pipeline.rst
 
 ===================
 Errors and Warnings
