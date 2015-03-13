@@ -10,7 +10,7 @@ Overview
 .. report:: Status.FastqcStatus
    :render: status
 
-   add caption here
+   FastQC status overview
 
 Links to detailed results
 =========================

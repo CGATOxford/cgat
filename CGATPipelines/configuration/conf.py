@@ -122,6 +122,7 @@ if P.CONFIG.has_section('intersphinx'):
 
 # Included at the end of each rst file
 rst_epilog = '''
+.. _CGAT: http://www.cgat.org
 .. _CGAT Training Programme: http://www.cgat.org
 .. _CGAT Pipelines: https://www.cgat.org/downloads/public/cgat/documentation/Pipelines.html#pipelines
 .. _CGAT Scripts: https://www.cgat.org/downloads/public/cgat/documentation/cgat.html#cgat
