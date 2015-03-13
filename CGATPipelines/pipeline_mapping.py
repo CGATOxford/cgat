@@ -1017,7 +1017,7 @@ def mapReadsWithStampy(infile, outfile):
            SEQUENCEFILES_REGEX,
            r"butter.dir/\1.butter.bam")
 def mapReadsWithButter(infile, outfile):
-    '''map reads with stampy'''
+    '''map reads with butter'''
     # easier to check whether infiles arepaired reads here
     if infile.endswith(".sra"):
         outdir = P.getTempDir()
@@ -1025,6 +1025,7 @@ def mapReadsWithButter(infile, outfile):
         shutil.rmtree(outdir)
         assert len(f) == 1, NotImplementedError('''The sra archive contains
         paired end data,Butter does not support paired end reads''')
+
     elif infile.endswith(".csfasta.F3.gz") or infile.endswith(".fastq.1.gz"):
         raise NotImplementedError('''infiles are paired end: %(infile)s,
         Butter does not support paired end reads''' % locals())
