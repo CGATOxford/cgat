@@ -903,7 +903,7 @@ if ANALYSIS == 'replicates':
         wgcna_out = "clustering.dir/WGCNA.out"
         cluster_file = "%s-clusterlabels.tsv" % (resample_prefix)
 
-        job_options = "-l mem_free=4G"
+        job_options = "-l mem_free=7.5G"
 
         if PARAMS['clustering_deepsplit']:
             options = " --split-clusters "
@@ -928,10 +928,10 @@ if ANALYSIS == 'replicates':
     ##################################################################
 
     @follows(clusterCut,
-             mkdir("consensus_clustering.dir"))
+             mkdir("consensus_cluster.dir"))
     @collate(distanceCalculation,
              regex("clustering.dir/(.+)-(.+)-(.+)-distance.tsv"),
-             r"consensus_clustering.dir/\1-\2-cocluster.tsv")
+             r"consensus_cluster.dir/\1-\2-cocluster.tsv")
     def clusterAgree(infiles, outfile):
         '''
         Calculate average distance matrix over replicates
@@ -1135,7 +1135,7 @@ elif PARAMS["resampling_analysis_type"] == 'resample':
             wgcna_out = "clustering.dir/WGCNA.out"
             cluster_file = "%s-clusterlabels.tsv" % (resample_prefix)
 
-            job_options = "-l mem_free=4G"
+            job_options = "-l mem_free=7.5G"
             statement = '''
             python %(scriptsdir)s/distance2clusters.py
             --log=%(outfile)s.log
@@ -1204,7 +1204,7 @@ elif PARAMS["resampling_analysis_type"] == 'resample':
             wgcna_out = "clustering.dir/WGCNA.out"
             cluster_file = "%s-clusterlabels.tsv" % (resample_prefix)
 
-            job_options = "-l mem_free=4G"
+            job_options = "-l mem_free=7.5G"
 
             if PARAMS['clustering_deepsplit']:
                 options = " --split-clusters "
@@ -1379,7 +1379,7 @@ elif PARAMS["resampling_analysis_type"] == 'resample':
          mkdir("images.dir"),
          mkdir("eigengenes.dir"))
 @transform(consensusClustering,
-           regex("consensus_clustering.dir/(.+)-(.+)-consensus.tsv"),
+           regex("consensus_cluster.dir/(.+)-(.+)-consensus.tsv"),
            add_inputs(r"deseq.dir/\1-\2-filtered-vst.tsv"),
            r"eigengenes.dir/\1-PCA-\2-cluster_eigengenes.tsv")
 def clusterEigengenePCA(infile, outfile):
