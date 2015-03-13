@@ -208,11 +208,19 @@ hash -r
 conda config --add channels https://conda.binstar.org/asmeurer
 conda config --add channels https://conda.binstar.org/cgat
 
+# troubleshooting memory
+echo " free before conda installation"
+free
+
 # install cgat environment
 conda update -q conda --yes
 conda info -a
-#conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE bioconductor-deseq bioconductor-deseq2 r-wgcna r r-dtw r-rcolorbrewer r-flashclust bioconductor-masigpro bioconductor-timecourse --yes
-conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE --yes
+conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE bioconductor-deseq bioconductor-deseq2 r-wgcna r r-dtw r-rcolorbrewer r-flashclust bioconductor-masigpro bioconductor-timecourse --yes
+#conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE --yes
+
+# troubleshooting memory
+echo " free after conda installation"
+free
 
 # if installation is 'devel' (outside of travis), checkout latest version from github
 if [ "$OS" != "travis" ] ; then
@@ -290,8 +298,16 @@ if [ "$OS" == "travis" ] ; then
    export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:"/usr/include/x86_64-linux-gnu"
    export LIBRARY_PATH=$LIBRARY_PATH:"/usr/lib/x86_64-linux-gnu"
 
+   # troubleshooting memory
+   echo " free before python setup.py develop"
+   free
+
    cd $TRAVIS_BUILD_DIR
    python setup.py develop
+
+   # troubleshooting memory
+   echo " free after python setup.py develop"
+   free
 
    # run nosetests
    if [ "$TEST_IMPORT" == "1" ] ; then
