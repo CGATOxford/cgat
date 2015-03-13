@@ -1234,7 +1234,8 @@ class Stampy(BWA):
 
 class Butter(BWA):
 
-    '''map reads against genome using Butter.
+    '''
+    map reads against genome using Butter.
     '''
 
     def mapper(self, infiles, outfile):
@@ -1262,16 +1263,27 @@ class Butter(BWA):
             infiles = infiles[0][0]
             track_infile = ".".join(infiles.split(".")[:-1])
 
+            # butter cannot handle compressed fastqs
+            # recognises file types by suffix
+            track_fastq = track + ".fastq"
+
+            if infiles.endswith(".gz"):
+                statement.append('''
+                zcat %(infiles)s > %(track_fastq)s; ''' % locals())
+            else:
+                statement.append('''
+                cat %(infiles)s > %(track_fastq)s; ''' % locals())
+
             statement.append('''
             butter %%(butter_options)s
-            %(infiles)s
+            %(track_fastq)s
             %%(butter_index_dir)s/%%(genome)s.fa
             --aln_cores=%%(job_threads)s
             --bam2wig=none
             >%(outfile)s.log;
-            samtools view -h %(track_infile)s.bam >
+            samtools view -h %(track)s.bam >
             %(tmpdir)s/%(track)s.sam;
-            rm -rf ./%(track)s.bam ./%(track)s.bam.bai;
+            rm -rf ./%(track)s.bam ./%(track)s.bam.bai ./%(track_fastq)s;
             ''' % locals())
 
         elif nfiles == 2:
