@@ -950,7 +950,6 @@ def mergeFiles(file_list, outfile):
     '''
 
     # sort list by starting index of file
-    print file_list
     res_list = sorted(file_list,
                       key=lambda x: int(x.split("-")[3].split("_")[0]))
 
@@ -1092,7 +1091,6 @@ def clusterAgreement(infile):
             cluster_dict[col] = []
         for gene in genes:
             k_gene = df[i][gene]
-            print k_gene
             cluster_dict[k_gene].append(gene)
         rep_list = []
 

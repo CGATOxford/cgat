@@ -187,6 +187,7 @@ def loadFastqc(infile, outfile):
     track = P.snip(infile, ".fastqc")
     filename = os.path.join(
         PARAMS["exportdir"], "fastqc", track + "*_fastqc", "fastqc_data.txt")
+    print filename
     PipelineReadqc.loadFastqc(filename)
     P.touch(outfile)
 
