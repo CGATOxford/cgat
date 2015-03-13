@@ -283,7 +283,7 @@ if [ "$OS" == "travis" ] ; then
    fi
 
    # configure environment
-   export CFLAGS=$CFLAGS" -I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu"
+   export CFLAGS="-O0"
    export CPATH=$CPATH" -I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu"
    export C_INCLUDE_PATH=$C_INCLUDE_PATH:"/usr/include/x86_64-linux-gnu"
    export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:"/usr/include/x86_64-linux-gnu"
