@@ -289,7 +289,8 @@ if [ "$OS" == "travis" ] ; then
    export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:"/usr/include/x86_64-linux-gnu"
    export LIBRARY_PATH=$LIBRARY_PATH:"/usr/lib/x86_64-linux-gnu"
 
-   # try installing R dependencies to fix errors on Travis
+   # try cleaning up 
+   sudo sh -c "sync; echo 3 > /proc/sys/vm/drop_caches"
 
    cd $TRAVIS_BUILD_DIR
    python setup.py develop
