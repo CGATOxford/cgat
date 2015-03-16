@@ -1,3 +1,6 @@
+Error in unloadNamespace(package) : 
+  namespace 'S4Vectors' is imported by 'IRanges', 'GenomeInfoDb', 'AnnotationDbi' so cannot be unloaded
+Failed with error:  '"S4Vectors" version 0.4.0 cannot be unloaded.'
 gene_id	cluster
 ENSMUSG00000001138	grey
 ENSMUSG00000001305	grey
