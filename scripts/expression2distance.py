@@ -233,8 +233,8 @@ def main(argv=None):
             pass
 
         if options.parallel:
-            start_idx = int(infile.split("-")[3].split("_")[0])
-            end_idx = int(infile.split("-")[3].split("_")[1])
+            start_idx = int(infile.split("/")[-1].split("-")[3].split("_")[0])
+            end_idx = int(infile.split("/")[-1].split("-")[3].split("_")[1])
             slice_idx = genes[start_idx:end_idx]
 
             df_ = TS.correlateDistanceMetric(data=data,
@@ -251,8 +251,8 @@ def main(argv=None):
 
     elif options.dist_metric == "temporal-correlate":
         if options.parallel:
-            start_idx = int(infile.split("-")[3].split("_")[0])
-            end_idx = int(infile.split("-")[3].split("_")[1])
+            start_idx = int(infile.split("/")[-1].split("-")[3].split("_")[0])
+            end_idx = int(infile.split("/")[-1].split("-")[3].split("_")[1])
             slice_idx = genes[start_idx:end_idx]
 
             df_ = TS.correlateDistanceMetric(data=data,

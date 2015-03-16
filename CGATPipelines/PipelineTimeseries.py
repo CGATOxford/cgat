@@ -951,7 +951,7 @@ def mergeFiles(file_list, outfile):
 
     # sort list by starting index of file
     res_list = sorted(file_list,
-                      key=lambda x: int(x.split("-")[3].split("_")[0]))
+                      key=lambda x: int(x.split("/")[-1].split("-")[3].split("_")[0]))
 
     # merge files using pandas data frame merge method
     full_frame = pd.read_table(res_list[0], sep="\t", index_col=0, header=0)
@@ -1154,8 +1154,8 @@ def consensusClustering(infile,
     R.assign("labels", labels_r)
 
     # large matricies/distance objects may need more
-    # memory - allocate 500MB
-    R('''memory.limit(6000)''')
+    # memory - allocate 1GB
+    R('''memory.limit(10000)''')
     R('''rownames(distance.frame) <- labels''')
     R('''distance_data <- data.matrix(distance.frame)''')
 
