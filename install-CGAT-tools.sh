@@ -218,6 +218,9 @@ conda info -a
 conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE bioconductor-deseq bioconductor-deseq2 r-wgcna r r-dtw r-rcolorbrewer r-flashclust bioconductor-masigpro bioconductor-timecourse --yes
 #conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE --yes
 conda clean --index-cache
+conda clean --lock
+conda clean --tarballs -y
+conda clean --packages -y
 
 # troubleshooting memory
 echo " free after conda installation"
