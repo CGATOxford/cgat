@@ -90,7 +90,7 @@ def main(argv=None):
                       help="supply help")
 
     parser.add_option("--method", dest="method", type="choice",
-                      choices=("metrics", "summary"),
+                      choices=("metrics", "summary", "module_summary"),
                       help="method to summarise clustering")
 
     # add common options (-h/--help, ...) and parse command line
@@ -184,6 +184,9 @@ def main(argv=None):
         outframe.to_csv(options.stdout,
                         sep="\t",
                         index_label='idx')
+
+    elif options.method == "module_summary":
+        pass
 
     # write footer and output benchmark information.
     E.Stop()
