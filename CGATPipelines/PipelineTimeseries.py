@@ -1149,10 +1149,13 @@ def consensusClustering(infile,
     df = pd.read_table(infile, sep="\t", header=0, index_col=0)
     labels = df.index.tolist()
     labels_r = ro.StrVector([l for l in labels])
-    df_r = pandas2ri.convert_to_r_dataframe(df)
+    df_r = com.convert_to_r_dataframe(df)
     R.assign("distance.frame", df_r)
     R.assign("labels", labels_r)
 
+    # large matricies/distance objects may need more
+    # memory - allocate 500MB
+    R('''memory.limit(6000)''')
     R('''rownames(distance.frame) <- labels''')
     R('''distance_data <- data.matrix(distance.frame)''')
 
