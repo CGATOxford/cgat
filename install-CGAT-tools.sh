@@ -313,6 +313,10 @@ if [ "$OS" == "travis" ] ; then
    echo " free after python setup.py develop"
    free
 
+   # troubleshooting rpy2 version
+   echo " version of rpy2 "
+   python -c "import rpy2; print rpy2.__version__"
+
    # run nosetests
    if [ "$TEST_IMPORT" == "1" ] ; then
       nosetests -v tests/test_import.py ;
