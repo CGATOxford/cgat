@@ -1329,6 +1329,8 @@ elif PARAMS["resampling_analysis_type"] == 'resample':
         Generate consensus clustering across all resampled data sets
         '''
 
+        job_options = "-l mem_free=6G"
+
         statement = '''
         python %(scriptsdir)s/distance2clusters.py
         --log=%(outfile)s.log
@@ -1477,6 +1479,26 @@ def clusterSummary(infiles, outfile):
 
     P.run()
 
+
+@follows(loadConsensusClustering)
+@collate("consensus_cluster.dir/*-consensus.tsv",
+         regex("consensus_cluster.dir/(.+)-(.+)-consensus.tsv"),
+         r"consensus_cluster.dir/modules_summary.tsv")
+def moduleSummary(infiles, outfile):
+    '''
+    summarise over each module/cluster across all conditions and references
+    '''
+
+    infile_list = ",".join(infiles)
+
+    statement = '''
+    python %(scriptsdir)s/clusters2metrics.py
+    --method=module_summary
+    --log=%(outfile)s.log
+    %(infile_list)s
+    > %(outfile)s.log'''
+
+    P.run()
 ###################################################################
 ###################################################################
 ###################################################################
