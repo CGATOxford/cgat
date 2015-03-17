@@ -283,7 +283,7 @@ def main(argv=None):
         trim5 = options.nbases
         for record in Fastq.iterate(options.stdin):
             c.input += 1
-            record.trim(0, trim5)
+            record.trim5(trim5)
             options.stdout.write("%s\n" % record)
             c.output += 1
 
