@@ -21,12 +21,16 @@ Provide clustering quality metrics.  Clustering metrics are:
 
 All metrics are calculated on a table of multiple clusterings (n > 1).
 
-Secondary function is to summarise a clustering and tabulate over several clusterings.
+Secondary functions are to summarise a clustering and tabulate over
+several clusterings.  Summary is either by cluster or by file.
 Input is a comma separated list of file paths:
 * List of input file names
 * Condition
 * Reference file (gtf/gff)
 * Median cluster size
+
+Input filenames are expected to adhere to a structure:
+  ``condition``-``reference``-``other``.suffix
 
 Options
 -------
@@ -67,6 +71,8 @@ Command line options
 
 import sys
 import CGAT.Experiment as E
+import CGAT.GTF as GTF
+import CGAT.IOTools as IOTools
 import pandas as pd
 import numpy as np
 import itertools
@@ -92,6 +98,9 @@ def main(argv=None):
     parser.add_option("--method", dest="method", type="choice",
                       choices=("metrics", "summary", "module_summary"),
                       help="method to summarise clustering")
+
+    parser.add_option("--ref-gtf-files", dest="ref_gtf", type="string",
+                      help="comma separated list of reference gtf files")
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
@@ -186,7 +195,58 @@ def main(argv=None):
                         index_label='idx')
 
     elif options.method == "module_summary":
-        pass
+        # get lncRNA/gene lengths from reference gtfs
+        ref_gtfs = options.ref_gtf.split(",")
+        length_dict = {}
+        for ref in ref_gtfs:
+            oref = IOTools.openFile(ref, "rb")
+            git = GTF.transcript_iterator(GTF.iterator(oref))
+            for gene in git:
+                for trans in gene:
+                    length = trans.end - trans.start
+                    try:
+                        length_dict[trans.gene_id] += length
+                    except KeyError:
+                        length_dict[trans.gene_id] = length
+            oref.close()
+
+        infiles = argv[-1]
+        list_of_files = infiles.split(",")
+
+        fdfs = []
+        for fle in list_of_files:
+            cond = fle.split("/")[-1].split("-")[0]
+            refer = fle.split("/")[-1].split("-")[1]
+            _df = pd.read_table(fle, sep="\t",
+                                header=0, index_col=0)
+            _df.columns = ['gene_id', 'cluster']
+            clusters = set(_df['cluster'])
+            c_dict = {}
+            # summarize over each cluster
+            for clust in clusters:
+                lengths = []
+                c_df = _df[_df['cluster'] == clust]
+                for lid in c_df['gene_id']:
+                    lengths.append(length_dict[lid])
+                    c_dict[clust] = {'cluster_size': len(c_df['gene_id']),
+                                     'mean_length': np.mean(lengths),
+                                     'index': (cond, refer)}
+            cdf = pd.DataFrame(c_dict).T
+            # use a multindex for hierarchical indexing
+            midx = pd.MultiIndex.from_tuples(cdf['index'])
+            cdf.index = midx
+            cdf.drop(['index'], inplace=True, axis=1)
+            fdfs.append(cdf)
+
+        # generate a single output df
+        s_df = fdfs[0]
+        fdfs.pop(0)
+        for df in fdfs:
+            s_df = s_df.append(df)
+
+        s_df.to_csv(options.stdout,
+                    index_label=("condition", "reference"),
+                    sep="\t")
 
     # write footer and output benchmark information.
     E.Stop()

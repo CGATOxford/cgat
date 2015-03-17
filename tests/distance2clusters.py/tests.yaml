@@ -10,14 +10,14 @@ cluster:
  references: [test-clusters.tsv, test-clusterlabels.tsv]
  options: --task=cluster --cluster-algorithm=average --cluster-file=test-clusterlabels.tsv  --expression-file=test-filtered.tsv --log=test-clusters.log %DIR%/test-distance.tsv
 
-clust_average:
- stdin: null
- outputs: [stdout]
- references: [test-average-cluster.tsv]
- options: --task=clustagree --method=replicate --log=test-average-cluster.log %DIR%/test-average-R1.tsv,%DIR%/test-average-R2.tsv,%DIR%/test-average-R3.tsv
+# clust_average:
+#  stdin: null
+#  outputs: [stdout]
+#  references: [test-average-cluster.tsv]
+#  options: --task=clustagree --method=replicate --log=test-average-cluster.log %DIR%/test-average-R1.tsv,%DIR%/test-average-R2.tsv,%DIR%/test-average-R3.tsv
 
-clust_consensus:
- stdin: null 
- outputs: [stdout]
- references: [test-consensus.tsv]
- options: --task=clustagree --method=resample --log=test-consensus.log %DIR%/test-all-clusters.tsv
+# clust_consensus:
+#  stdin: null 
+#  outputs: [stdout]
+#  references: [test-consensus.tsv]
+#  options: --task=clustagree --method=resample --log=test-consensus.log %DIR%/test-all-clusters.tsv
