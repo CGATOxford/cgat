@@ -16,8 +16,8 @@ or sample a subset of reads.
 
 The script predominantly is used for manipulation of single fastq
 files. However, for some of its functionality it will take paired data
-using the ``--pair-fastq-file`` and ``--output-filename-pattern`` options. This applies to the
-``sample`` and ``sort`` methods.
+using the ``--pair-fastq-file`` and ``--output-filename-pattern`` options.
+This applies to the ``sample`` and ``sort`` methods.
 
 Usage
 -----
@@ -27,7 +27,7 @@ Example::
   two :term:`fastq` files.
 
    head in.fastq.1
-   
+
    @SRR111956.1 HWUSI-EAS618:7:1:27:1582 length=36
    CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC
    +SRR111956.1 HWUSI-EAS618:7:1:27:1582 length=36
@@ -155,7 +155,8 @@ def main(argv=None):
                           "sample",
                           "sort",
                           "trim3",
-                          "unique"),
+                          "unique",
+                          "grep"),
                       help="method to apply [%default]")
 
     parser.add_option(
@@ -197,6 +198,10 @@ def main(argv=None):
         "--pattern-identifier", dest="renumber_pattern", type="string",
         help="rename reads in file by pattern [default=%default]")
 
+    parser.add_option(
+        "--grep-pattern", dest="grep_pattern", type="string",
+        help="subset to reads matching pattern [default=%default]")
+
     parser.set_defaults(
         method=None,
         change_format=None,
@@ -206,7 +211,8 @@ def main(argv=None):
         pair=None,
         apply=None,
         seed=None,
-        renumber_pattern="read_%010i")
+        renumber_pattern="read_%010i",
+        grep_pattern=".*")
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
@@ -220,6 +226,11 @@ def main(argv=None):
             c.input += 1
             options.stdout.write("%s\n" % record)
             c.output += 1
+
+    elif options.method == "grep":
+        for record in Fastq.iterate(options.stdin):
+            if re.match(options.grep_pattern, record.seq):
+                options.stdout.write("%s\n" % record)
 
     elif options.method == "sample":
         sample_threshold = min(1.0, options.sample_size)

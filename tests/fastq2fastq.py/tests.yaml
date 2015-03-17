@@ -26,6 +26,13 @@ single_trim_test:
     options: --method=trim3 --num-bases 6
     description: trim 6 bases from 3 prime end of each read, single end files only
 
+single_grep_test:
+    stdin: THP1-stimulated-R1.short.fastq.gz
+    outputs: [stdout]
+    references: [test_out_single_end.grep.tsv.gz]
+    options: --method=grep --grep-pattern=CCCC.*
+    description: grep for reads starting with pattern
+
 single_uniq_test:
     stdin: THP1-stimulated-R1.short.fastq.gz
     outputs: [stdout]
