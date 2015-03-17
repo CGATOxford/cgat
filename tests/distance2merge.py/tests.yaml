@@ -4,8 +4,8 @@ version:
  references: []
  options: --version
 
-merge:
- stdin: null
- outputs: [stdout]
- references: [test-merged-distance.tsv]
- options: --log=merged.log %DIR%/test-cond-rep-1_50-distance.tsv,%DIR%/test-cond-rep-51_100-distance.tsv,%DIR%/test-cond-rep-101_150-distance.tsv
+# merge:
+#  stdin: null
+#  outputs: [stdout]
+#  references: [test-merged-distance.tsv]
+#  options: --log=merged.log %DIR%/test-cond-rep-1_50-distance.tsv,%DIR%/test-cond-rep-51_100-distance.tsv,%DIR%/test-cond-rep-101_150-distance.tsv

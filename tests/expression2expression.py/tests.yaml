@@ -4,20 +4,20 @@ version:
  references: []
  options: --version
 
-deseq:
- stdin: null
- outputs: [stdout]
- references: [test-vst.tsv]
- options: --task=deseq --replicates=R1,R2,R3 --time=0,1,3,6,12,24,48,72,96,120 --log=test-vst.log %DIR%/test-feature_counts.tsv
+#deseq:
+# stdin: null
+# outputs: [stdout]
+# references: [test-vst.tsv]
+# options: --task=deseq --replicates=R1,R2,R3 --time=0,1,3,6,12,24,48,72,96,120 --log=test-vst.log %DIR%/test-feature_counts#.tsv
 
-sumcovar:
- stdin: null
- outputs: [stdout]
- references: [test-filtered.tsv]
- options: --task=sumcovar --replicates=R1,R2,R3 --time=0,1,3,6,12,24,48,72,96,120 --log=test-filtered.log --quantile=2 %DIR%/test-vst.tsv
+#sumcovar:
+# stdin: null
+# outputs: [stdout]
+# references: [test-filtered.tsv]
+# options: --task=sumcovar --replicates=R1,R2,R3 --time=0,1,3,6,12,24,48,72,96,120 --log=test-filtered.log --quantile=2 %DIR#%/test-vst.tsv
 
-av_expression:
- stdin: null
- outputs: [stdout]
- references: [test-average_expression.tsv]
- options: --task=average_expression --log=av_expression.log %DIR%/test-merge-expression.tsv
+#av_expression:
+# stdin: null
+# outputs: [stdout]
+# references: [test-average_expression.tsv]
+# options: --task=average_expression --log=av_expression.log %DIR%/test-merge-expression.tsv

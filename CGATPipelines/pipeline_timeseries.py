@@ -22,7 +22,7 @@
 ###############################################################################
 """
 ==============================
-Pipeline timeseries_clusters2metrics.py
+pipeline_timeseries.py
 ================================
 
 :Author: Mike Morgan
@@ -1495,8 +1495,9 @@ def moduleSummary(infiles, outfile):
     python %(scriptsdir)s/clusters2metrics.py
     --method=module_summary
     --log=%(outfile)s.log
+    --ref-gtf-files=%(refs)s
     %(infile_list)s
-    > %(outfile)s.log'''
+    > %(outfile)s'''
 
     P.run()
 ###################################################################
@@ -1517,6 +1518,14 @@ def loadConsensusMetrics(infile, outfile):
            suffix(".tsv"),
            ".load")
 def loadClusterSummary(infile, outfile):
+    P.load(infile, outfile)
+
+
+@follows(moduleSummary)
+@transform(moduleSummary,
+           suffix(".tsv"),
+           ".load")
+def loadModuleSummary(infile, outfile):
     P.load(infile, outfile)
 
 ###################################################################
@@ -1543,6 +1552,7 @@ def clustering():
          drawConditionVennDiagram)
 def diff_expression():
     pass
+
 
 
 @follows(clustering,
