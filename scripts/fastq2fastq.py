@@ -155,6 +155,7 @@ def main(argv=None):
                           "sample",
                           "sort",
                           "trim3",
+                          "trim5",
                           "unique",
                           "grep"),
                       help="method to apply [%default]")
@@ -275,6 +276,14 @@ def main(argv=None):
         for record in Fastq.iterate(options.stdin):
             c.input += 1
             record.trim(trim3)
+            options.stdout.write("%s\n" % record)
+            c.output += 1
+
+    elif options.method == "trim5":
+        trim5 = options.nbases
+        for record in Fastq.iterate(options.stdin):
+            c.input += 1
+            record.trim(0, trim5)
             options.stdout.write("%s\n" % record)
             c.output += 1
 
