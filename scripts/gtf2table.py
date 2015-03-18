@@ -113,7 +113,7 @@ composition-na
    output nucleotide composition of transcript/gene
 
 composition-cgp
-   output CpG count, CpG density and CpG observed / expected for 
+   output CpG count, CpG density and CpG observed / expected for
    each transcript/gene.
 
 splice
@@ -3983,6 +3983,13 @@ def main(argv=None):
                       "When true, unique counts are returned. "
                       "Currently only compatible with count-reads")
 
+    parser.add_option("--sample-probability",
+                      dest="sample_probability",
+                      type="float",
+                      help="Specify the probability of whether any"
+                      "given read or read pair in a file bam is counted"
+                      "Currently only compatible with count-reads")
+
     parser.add_option("--column-prefix", dest="prefixes",
                       type="string",
                       action="append",
@@ -4026,7 +4033,8 @@ def main(argv=None):
         library_type='fr-unstranded',
         prefixes=[],
         minimum_mapping_quality=0,
-        use_barcodes=False
+        use_barcodes=False,
+        sample_probability=1.0
     )
 
     if not argv:
@@ -4133,6 +4141,7 @@ def main(argv=None):
                 bam_files,
                 multi_mapping=options.multi_mapping,
                 use_barcodes=options.use_barcodes,
+                sample_probability=options.sample_probability,
                 minimum_mapping_quality=options.minimum_mapping_quality,
                 options=options,
                 prefix=prefix))
@@ -4140,6 +4149,7 @@ def main(argv=None):
             counters.append(_gtf2table.CounterReadCountsFull(
                 bam_files,
                 multi_mapping=options.multi_mapping,
+                sample_probability=options.sample_probability,
                 minimum_mapping_quality=options.minimum_mapping_quality,
                 options=options,
                 prefix=prefix))
@@ -4147,6 +4157,7 @@ def main(argv=None):
             counters.append(_gtf2table.CounterReadPairCounts(
                 bam_files,
                 multi_mapping=options.multi_mapping,
+                sample_probability=options.sample_probability,
                 library_type=options.library_type,
                 minimum_mapping_quality=options.minimum_mapping_quality,
                 options=options,
@@ -4155,6 +4166,7 @@ def main(argv=None):
             counters.append(_gtf2table.CounterReadPairCountsFull(
                 bam_files,
                 multi_mapping=options.multi_mapping,
+                sample_probability=options.sample_probability,
                 minimum_mapping_quality=options.minimum_mapping_quality,
                 options=options,
                 prefix=prefix))
