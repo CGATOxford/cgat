@@ -119,6 +119,7 @@ def main(argv=None):
         genes = df.index
         results_dict = {}
         all_clusts = {}
+        E.info("setting up cluster containers")
         for i in df.columns:
             clusters = set(df[i].values.tolist())
             cluster_dict = {}
@@ -142,13 +143,18 @@ def main(argv=None):
         complete_pairs = int((gene_factorial/factorial(2))/denom)
 
         E.info("generating all pair-wise cluster comparisons")
+        count = 0
         for k in cluster_combs:
-            E.info("calculating metrics for %s and %s" % (k[0],
-                                                          k[1]))
-            concord = TS.clusterConcordia(all_clusts[k[0]],
-                                          all_clusts[k[1]],
+            count += 1
+            E.info("round %i" % count)
+            clusters1 = all_clusts[k[0]]
+            clusters2 = all_clusts[k[1]]
+            concord = TS.clusterConcordia(clusters1,
+                                          clusters2,
                                           complete_pairs)
+            E.info("calculating metrics")
             metric_dict = TS.concordanceMetric(concord)
+            E.info("calculating AMI")
             metric_dict['AMI'] = TS.adjustedMutualInformation(all_clusts[k[0]],
                                                               all_clusts[k[1]])
             results_dict[k] = metric_dict
@@ -230,7 +236,8 @@ def main(argv=None):
                     lengths.append(length_dict[lid])
                     c_dict[clust] = {'cluster_size': len(c_df['gene_id']),
                                      'mean_length': np.mean(lengths),
-                                     'index': (cond, refer)}
+                                     'index': (cond, refer),
+                                     'module': clust}
             cdf = pd.DataFrame(c_dict).T
             # use a multindex for hierarchical indexing
             midx = pd.MultiIndex.from_tuples(cdf['index'])

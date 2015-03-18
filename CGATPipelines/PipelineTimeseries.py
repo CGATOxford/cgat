@@ -1215,27 +1215,27 @@ def clusterConcordia(data1, data2, complete_pairs):
     '''
 
     # set up all possible gene-pairs and set containers
-    a = set()
-    c = set()
-    d = set()
-    total = set()
-
+    sa = set()
+    sc = set()
+    sd = set()
+    stotal = set()
+    
     # iterate over each pair-wise combination of cluster assignments
     for key in itertools.product(data1.keys(),
                                  data2.keys()):
-        set1 = set(data1[key[0]])
-        set2 = set(data2[key[1]])
-        a.update(set2.intersection(set1))
-        c.update(set1.difference(set2))
-        d.update(set2.difference(set1))
-        total.update(set1.union(set2))
-    b = complete_pairs - len(total)
+        set1 = data1[key[0]]
+        set2 = data2[key[1]]
+        sa.update(set2.intersection(set1))
+        sc.update(set1.difference(set2))
+        sd.update(set2.difference(set1))
+        stotal.update(set1.union(set2))
+    sb = complete_pairs - len(stotal)
 
     concordance = {}
-    concordance['a'] = len(a)
-    concordance['b'] = b
-    concordance['c'] = len(c)
-    concordance['d'] = len(d)
+    concordance['a'] = len(sa)
+    concordance['b'] = sb
+    concordance['c'] = len(sc)
+    concordance['d'] = len(sd)
 
     return concordance
 
