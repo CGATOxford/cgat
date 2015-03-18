@@ -104,6 +104,9 @@ def makeAdaptorFasta(infile, dbh, contaminants_file, outfile):
     # replace '-'  and '.' with '_'
     sample = sample.replace("-", "_")
     sample = sample.replace(".", "_")
+    sample = sample.split("_")
+    sample.remove("fastq")
+    sample = "_".join(sample)
     query = "SELECT * FROM %s_fastqc_Overrepresented_sequences;" % sample
 
     df = pdsql.read_sql(query, dbh, index_col=None)
