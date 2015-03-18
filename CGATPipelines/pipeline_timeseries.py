@@ -1555,7 +1555,6 @@ def diff_expression():
     pass
 
 
-
 @follows(clustering,
          diff_expression)
 def full():

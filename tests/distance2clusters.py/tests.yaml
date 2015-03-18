@@ -4,11 +4,11 @@ version:
  references: []
  options: --version
 
-cluster:
- stdin: null
- outputs: [stdout]
- references: [test-clusters.tsv, test-clusterlabels.tsv]
- options: --task=cluster --cluster-algorithm=average --cluster-file=test-clusterlabels.tsv  --expression-file=test-filtered.tsv --log=test-clusters.log %DIR%/test-distance.tsv
+# cluster:
+#  stdin: null
+#  outputs: [stdout]
+#  references: [test-clusters.tsv, test-clusterlabels.tsv]
+#  options: --task=cluster --cluster-algorithm=average --cluster-file=test-clusterlabels.tsv  --expression-file=test-filtered.tsv --log=test-clusters.log %DIR%/test-distance.tsv
 
 # clust_average:
 #  stdin: null
