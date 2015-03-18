@@ -1540,7 +1540,8 @@ def loadModuleSummary(infile, outfile):
          loadClusterEigengenes,
          loadConsensusClustering,
          loadConsensusMetrics,
-         loadClusterSummary)
+         loadClusterSummary,
+         loadModuleSummary)
 def clustering():
     pass
 
