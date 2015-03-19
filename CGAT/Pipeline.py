@@ -1289,7 +1289,7 @@ def run(**kwargs):
         if 'job_memory' in options:
             spec.append("-l %s=%s" %
                         (PARAMS.get("cluster_memory_resource", "mem_free"),
-                        options["job_memory"]))
+                         options["job_memory"]))
 
         elif "mem_free" in options["cluster_options"] and \
              PARAMS.get("cluster_memory_resource", False):
