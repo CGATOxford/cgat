@@ -83,27 +83,33 @@ def main(argv=None):
     parser.add_option("--sum-cog", dest="sum_cog", action="store_true",
                       help="sum counts over functions (COGs) in --cog-map")
 
-    parser.add_option("--evaluate-cog", dest="evaluate_cog", action="store_true",
-                      help="output the percent of alignments for each read that are the best alignment")
+    parser.add_option("--evaluate-cog",
+                      dest="evaluate_cog",
+                      action="store_true",
+                      help="""output the percent of
+                              alignments for each read = best hit""")
 
     parser.add_option("--cog-map", dest="cog_map", type="string",
                       help="file with gene to cog map")
 
     parser.add_option("-n", "--nsamples", dest="nsamples", type="int",
-                      help="number of queries to evaluate - will take the first n in the file")
+                      help="""number of queries to evaluate-
+                              will take the first n in the file""")
 
-    parser.set_defaults(method = None,
-                        sum_cog = False,
-                        evaluate_cog = False,
-                        cog_map = None,
-                        nsamples = 10000)
+    parser.set_defaults(method=None,
+                        sum_cog=False,
+                        evaluate_cog=False,
+                        cog_map=None,
+                        nsamples=10000)
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
 
     if options.evaluate_cog:
-        assert options.cog_map, "must specify an annotation mapping gene to function (COG)"
-        assert not options.method, "evaluation performed in the absence of counting"
+        assert options.cog_map, """must specify an annotation
+                                   mapping gene to function (COG)"""
+        assert not options.method, """evaluation performed
+                                      in the absence of counting"""
 
         E.info("reading gene to function (COG) map %s" % options.cog_map)
         gene2cog = readCogMap(options.cog_map)
@@ -120,14 +126,24 @@ def main(argv=None):
                 for alignment in alignments:
                     scores.append(alignment.score)
                     best = max(scores)
-                    best_alignments = [x for x in alignments if x.score == best]
+                    best_alignments = [
+                        x for x in alignments if x.score == best]
                     if len(best_alignments) > 1:
                         best_alignments = random.sample(best_alignments, 1)
                     best_alignment = best_alignments[0]
                     best_cog = gene2cog[best_alignment.ref]
-                pbest = float(len([gene2cog[x.ref] for x in alignments if gene2cog[x.ref] == best_cog])) / len(alignments)*100
+                pbest = float(len(
+                        [gene2cog[x.ref]
+                         for x in alignments
+                         if gene2cog[x.ref] == best_cog
+                         ])) / len(alignments)*100
                 nalignments = len(alignments)
-                options.stdout.write("\t".join(map(str, [alignments[0].qid, pbest, nalignments])) + "\n")
+                options.stdout.write(
+                    "\t".join(map(
+                            str, [alignments[0].qid,
+                                  pbest,
+                                  nalignments])) + "\n"
+                    )
             else:
                 break
         return
@@ -138,22 +154,28 @@ def main(argv=None):
     assert options.method, "required option --method"
     if options.method == "best":
         if options.sum_cog:
-            E.warn("summing over functions (COGS) - this will remove genes with no annotations and those with multiple COG assignments")
+            E.warn("""summing over functions (COGS)
+                      will remove genes with no annotations
+                      and those with multiple COG assignments""")
             assert options.cog_map, "a mapping between gene and function (COG) is required"
 
-            E.info("reading gene to function (COG) mapping from %s" % options.cog_map)
+            E.info("""reading gene to function (COG) mapping from %s"""
+                   % options.cog_map)
             gene2cog = readCogMap(options.cog_map)
             E.info("loaded gene to function (COG) mapping")
 
             E.info("summing functional assignments")
-            for best in best_alignment_iterator(query_iterator(alignment_iterator(options.stdin))):
+            query_it = query_iterator(alignment_iterator(options.stdin))
+            for best in best_alignment_iterator(query_it):
                 cog = gene2cog[best.ref]
                 # removing uassigned or multiple assignments
-                if cog == "unknown" or cog.find(";") != -1: continue
+                if cog == "unknown" or cog.find(";") != -1:
+                    continue
                 counts[cog] += 1
         else:
             E.info("counting best alignments")
-            for best in best_alignment_iterator(query_iterator(alignment_iterator(options.stdin))):
+            query_it = query_iterator(alignment_iterator(options.stdin))
+            for best in best_alignment_iterator(query_it):
                 counts[best.ref] += 1
         E.info("finished counting")
 
