@@ -5,11 +5,12 @@
 ########################################
 ########################################
 
+
 class LCA(object):
     '''
     lca class describing the taxa associateed with a sequence
     '''
-    
+
     def __init__(self):
 
         self.identifier = None
@@ -39,8 +40,10 @@ class LCA(object):
         for taxa in data[2:]:
             taxa = taxa.strip()
             # ignore root
-            if "root" in taxa: continue
-            if "[" not in taxa: continue
+            if "root" in taxa:
+                continue
+            if "[" not in taxa:
+                continue
             taxa = taxa.split(" ")
             level, tax = taxa[0], taxa[1:]
             if len(tax) > 1:
@@ -115,9 +118,12 @@ class LCA(object):
 
         return self
 
+
 ###############################
 ###############################
 ###############################
+
+
 def iterate(infile):
     '''
     LCA results iterator
@@ -126,9 +132,3 @@ def iterate(infile):
         lca = LCA()
         lca = lca.parse(line)
         yield lca
-
-
-
-
-
-
