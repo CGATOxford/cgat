@@ -1,15 +1,19 @@
 
-import sys, re, os
+import sys
+import re
+import os
 import collections
 import CGAT.Experiment as E
 import random
 
+
 #######################################################
 #######################################################
 #######################################################
 
+
 class Diamond(object):
-    
+
     def __init__(self):
         self.qid = None
         self.gi = None
@@ -21,25 +25,43 @@ class Diamond(object):
         self.identity = 0
         self.score = 0
 
-    def read(self, qid, gi, ref, ngaps, length, evalue, nmismatches, identity, score):
+    def read(self,
+             qid,
+             gi,
+             ref,
+             ngaps,
+             length,
+             evalue,
+             nmismatches,
+             identity,
+             score):
         '''
         read input
         '''
-        self.qid, \
-        self.gi, \
-        self.ref, \
-        self.ngaps, \
-        self.length, \
-        self.evalue, \
-        self.nmismatches, \
-        self.identity, \
-        self.score = qid, gi, ref, ngaps, length, evalue, nmismatches, identity, score
+        self.qid,
+        self.gi,
+        self.ref,
+        self.ngaps,
+        self.length,
+        self.evalue,
+        self.nmismatches,
+        self.identity,
+        self.score = qid,
+        gi,
+        ref,
+        ngaps,
+        length,
+        evalue,
+        nmismatches,
+        identity,
+        score
 
         return self
 
 #######################################################
 #######################################################
 #######################################################
+
 
 def alignment_iterator(alignment_file):
     '''
@@ -54,17 +76,27 @@ def alignment_iterator(alignment_file):
             gi, ref = None, ref[0]
         else:
             gi, ref = ref[1], ref[3]
-        read, ngaps, length, evalue, nmismatches, identity, score = data[0], data[5], data[3], data[10], data[4], data[2], data[11]
-        yield Diamond().read(read, gi, ref, ngaps, length, evalue, nmismatches, identity, score)
+        read, ngaps, length, evalue, nmismatches, identity, score = \
+            data[0], data[5], data[3], data[10], data[4], data[2], data[11]
+        yield Diamond().read(read,
+                             gi,
+                             ref,
+                             ngaps,
+                             length,
+                             evalue,
+                             nmismatches,
+                             identity,
+                             score)
 
 #######################################################
 #######################################################
 #######################################################
+
 
 def query_iterator(alignment_iterator):
     '''
     iterate over alignments by query
-    return a list of alignments 
+    return a list of alignments
     '''
     reads_found = set()
     last = None
@@ -84,6 +116,7 @@ def query_iterator(alignment_iterator):
 #######################################################
 #######################################################
 #######################################################
+
 
 def best_alignment_iterator(query_iterator):
     '''
