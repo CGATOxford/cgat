@@ -1,0 +1,12 @@
+
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+taxa_counts:
+    stdin: stool-WT-R1.diamond.lca.small.gz
+    outputs: [stdout]
+    references: [taxa_counts.tsv]
+    options: --summarise=taxa-counts --log=<DIR>/taxa_counts.log
