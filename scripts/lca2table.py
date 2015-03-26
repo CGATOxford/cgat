@@ -17,7 +17,7 @@ Usage
 
 Example::
 
-   python lca2table.py < infile > outfile 
+   python lca2table.py < infile > outfile
 
 Type::
 
@@ -39,24 +39,26 @@ import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import collections
 
-def main( argv = None ):
+
+def main(argv=None):
     """script main.
 
     parses command line options in sys.argv, unless *argv* is given.
     """
 
-    if argv == None: argv = sys.argv
+    if argv is None:
+        argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser( version = "%prog version: $Id$", 
-                             usage = globals()["__doc__"] )
+    parser = E.OptionParser(version="%prog version: $Id$",
+                            usage=globals()["__doc__"])
 
-    parser.add_option("-s", "--summarise", dest="summarise", type="choice"
-                      , choices=("level-counts", "taxa-counts", "individual")
-                      , help="summarise the taxa counts i.e. no. phyla, classes etc" )
+    parser.add_option("-s", "--summarise", dest="summarise", type="choice",
+                      choices=("level-counts", "taxa-counts", "individual"),
+                      help="summarise the taxa counts - no. phyla etc")
 
-    ## add common options (-h/--help, ...) and parse command line 
-    (options, args) = E.Start( parser, argv = argv )
+    # add common options (-h/--help, ...) and parse command line
+    (options, args) = E.Start(parser, argv=argv)
 
     if options.summarise == "level-counts":
         level_counts = collections.defaultdict(set)
@@ -98,7 +100,7 @@ def main( argv = None ):
                 level_counts["phylum"].add(lca.phylum)
             else:
                 c.phylum_unmapped += 1
-                
+
             if lca.phylum_plus != "NA":
                 nreads_phylum_plus += 1
                 level_counts["phylum+"].add(lca.phylum_plus)
@@ -116,7 +118,7 @@ def main( argv = None ):
                 level_counts["class+"].add(lca._class_plus)
             else:
                 c.class_plus_unmapped += 1
-                
+
             if lca.order != "NA":
                 nreads_order += 1
                 level_counts["order"].add(lca.order)
@@ -164,7 +166,7 @@ def main( argv = None ):
                 level_counts["species+"].add(lca.species_plus)
             else:
                 c.species_plus_unmapped += 1
-                
+
             if lca.subspecies != "NA":
                 nreads_subspecies += 1
                 level_counts["subspecies"].add(lca.subspecies)
@@ -177,89 +179,90 @@ def main( argv = None ):
             else:
                 c.subspecies_plus_unmapped += 1
 
-        options.stdout.write("\t".join(["nkingdom"
-                                        , "nkingdom+"
-                                        , "nphylum"
-                                        , "nphylum+"
-                                        , "nclass"
-                                        , "nclass+"
-                                        , "norder"
-                                        , "norder+"
-                                        , "nfamily"
-                                        , "nfamily+"
-                                        , "ngenus"
-                                        , "ngenus+"
-                                        , "nspecies"
-                                        , "nspecies+"
-                                        , "nsubspecies"
-                                        , "nsubspecies+"
-                                        , "nseqkingdom"
-                                        , "nseqkingdom+"
-                                        , "nseqphylum"
-                                        , "nseqphylum+"
-                                        , "nseqclass"
-                                        , "nseqclass+"
-                                        , "nseqorder"
-                                        , "nseqorder+"
-                                        , "nseqfamily"
-                                        , "nseqfamily+"
-                                        , "nseqgenus"
-                                        , "nseqgenus+"
-                                        , "nseqspecies"
-                                        , "nseqspecies+"
-                                        , "nseqsubspecies"
-                                        , "nseqsubspecies+"]) + "\n")
-    
-        options.stdout.write( "\t".join(map(str, [len(level_counts["kingdom"])
-                                                  , len(level_counts["kingdom+"])
-                                                  , len(level_counts["phylum"])
-                                                  , len(level_counts["phylum+"])
-                                                  , len(level_counts["class"])
-                                                  , len(level_counts["class+"])
-                                                  , len(level_counts["order"])
-                                                  , len(level_counts["order+"])
-                                                  , len(level_counts["family"])
-                                                  , len(level_counts["family+"])
-                                                  , len(level_counts["genus"])
-                                                  , len(level_counts["genus+"])
-                                                  , len(level_counts["species"])
-                                                  , len(level_counts["species+"])
-                                                  , len(level_counts["subspecies"])
-                                                  , len(level_counts["subspecies+"])
-                                                  , nreads_kingdom
-                                                  , nreads_phylum
-                                                  , nreads_phylum_plus
-                                                  , nreads_class
-                                                  , nreads_class_plus
-                                                  , nreads_order
-                                                  , nreads_order_plus
-                                                  , nreads_family
-                                                  , nreads_family_plus
-                                                  , nreads_genus
-                                                  , nreads_genus_plus
-                                                  , nreads_species
-                                                  , nreads_species_plus
-                                                  , nreads_subspecies
-                                                  , nreads_subspecies_plus])) + "\n")
+        options.stdout.write("\t".join(["nkingdom",
+                                        "nkingdom+",
+                                        "nphylum",
+                                        "nphylum+",
+                                        "nclass",
+                                        "nclass+",
+                                        "norder",
+                                        "norder+",
+                                        "nfamily",
+                                        "nfamily+",
+                                        "ngenus",
+                                        "ngenus+",
+                                        "nspecies",
+                                        "nspecies+",
+                                        "nsubspecies",
+                                        "nsubspecies+",
+                                        "nseqkingdom",
+                                        "nseqkingdom+",
+                                        "nseqphylum",
+                                        "nseqphylum+",
+                                        "nseqclass",
+                                        "nseqclass+",
+                                        "nseqorder",
+                                        "nseqorder+",
+                                        "nseqfamily",
+                                        "nseqfamily+",
+                                        "nseqgenus",
+                                        "nseqgenus+",
+                                        "nseqspecies",
+                                        "nseqspecies+",
+                                        "nseqsubspecies",
+                                        "nseqsubspecies+"]) + "\n")
+
+        options.stdout.write("\t".join(map(
+                    str, [len(level_counts["kingdom"]),
+                          len(level_counts["kingdom+"]),
+                          len(level_counts["phylum"]),
+                          len(level_counts["phylum+"]),
+                          len(level_counts["class"]),
+                          len(level_counts["class+"]),
+                          len(level_counts["order"]),
+                          len(level_counts["order+"]),
+                          len(level_counts["family"]),
+                          len(level_counts["family+"]),
+                          len(level_counts["genus"]),
+                          len(level_counts["genus+"]),
+                          len(level_counts["species"]),
+                          len(level_counts["species+"]),
+                          len(level_counts["subspecies"]),
+                          len(level_counts["subspecies+"]),
+                          nreads_kingdom,
+                          nreads_phylum,
+                          nreads_phylum_plus,
+                          nreads_class,
+                          nreads_class_plus,
+                          nreads_order,
+                          nreads_order_plus,
+                          nreads_family,
+                          nreads_family_plus,
+                          nreads_genus,
+                          nreads_genus_plus,
+                          nreads_species,
+                          nreads_species_plus,
+                          nreads_subspecies,
+                          nreads_subspecies_plus])) + "\n")
     elif options.summarise == "taxa-counts":
         unmapped = collections.defaultdict(int)
         total = 0
-        taxa_counts = {"kingdom": collections.defaultdict(int)
-                       ,"kingdom+": collections.defaultdict(int)
-                       , "phylum": collections.defaultdict(int)
-                       , "phylum+": collections.defaultdict(int)
-                       , "class": collections.defaultdict(int)
-                       , "class+": collections.defaultdict(int)
-                       , "order": collections.defaultdict(int)
-                       , "order+": collections.defaultdict(int)
-                       , "family": collections.defaultdict(int)
-                       , "family+": collections.defaultdict(int)
-                       , "genus": collections.defaultdict(int)
-                       , "genus+": collections.defaultdict(int)
-                       , "species": collections.defaultdict(int)
-                       , "species+": collections.defaultdict(int)
-                       , "subspecies": collections.defaultdict(int)
-                       , "subspecies+": collections.defaultdict(int)}
+        taxa_counts = {"kingdom": collections.defaultdict(int),
+                       "kingdom+": collections.defaultdict(int),
+                       "phylum": collections.defaultdict(int),
+                       "phylum+": collections.defaultdict(int),
+                       "class": collections.defaultdict(int),
+                       "class+": collections.defaultdict(int),
+                       "order": collections.defaultdict(int),
+                       "order+": collections.defaultdict(int),
+                       "family": collections.defaultdict(int),
+                       "family+": collections.defaultdict(int),
+                       "genus": collections.defaultdict(int),
+                       "genus+": collections.defaultdict(int),
+                       "species": collections.defaultdict(int),
+                       "species+": collections.defaultdict(int),
+                       "subspecies": collections.defaultdict(int),
+                       "subspecies+": collections.defaultdict(int)}
 
         c = E.Counter()
         for lca in LCA.iterate(options.stdin):
@@ -307,7 +310,7 @@ def main( argv = None ):
             if lca.family != "NA":
                 taxa_counts["family"][lca.family] += 1
             else:
-                c.family_unmapped += 1 
+                c.family_unmapped += 1
                 unmapped["family"] += 1
             if lca.family_plus != "NA":
                 taxa_counts["family+"][lca.family_plus] += 1
@@ -345,62 +348,61 @@ def main( argv = None ):
                 c.subspecies_plus_unmapped += 1
                 unmapped["subspecies+"] += 1
 
-        options.stdout.write("level\ttaxa\tcount\tproportion\trpm\n")        
+        options.stdout.write("level\ttaxa\tcount\tproportion\trpm\n")
         for level, taxa_count in taxa_counts.iteritems():
             total_level = total - unmapped[level]
             for taxa, count in taxa_count.iteritems():
-                options.stdout.write("\t".join([level, taxa, str(count), str(float(count)/total_level), str(float(count)/(float(total_level)/1000000))]) + "\n")
+                options.stdout.write("\t".join(
+                        [level,
+                         taxa,
+                         str(count),
+                         str(float(count)/total_level),
+                         str(float(count)/(float(total_level)/1000000))
+                         ]) + "\n")
 
         E.info(c)
 
     elif options.summarise == "individual":
-        # each read is output with its respective 
+        # each read is output with its respective
         # taxon assignments
-        options.stdout.write("\t".join(["id"
-                                        , "kingdom"
-                                        , "kingdom+"
-                                        , "phylum"
-                                        , "phylum+"
-                                        , "class"
-                                        , "class+"
-                                        , "order"
-                                        , "order+"
-                                        , "family"
-                                        , "family+"
-                                        , "genus"
-                                        , "genus+"
-                                        , "species"
-                                        , "species+"
-                                        , "subspecies"
-                                        , "subspecies+"]) + "\n")
+        options.stdout.write("\t".join(["id",
+                                        "kingdom",
+                                        "kingdom+",
+                                        "phylum",
+                                        "phylum+",
+                                        "class",
+                                        "class+",
+                                        "order",
+                                        "order+",
+                                        "family",
+                                        "family+",
+                                        "genus",
+                                        "genus+",
+                                        "species",
+                                        "species+",
+                                        "subspecies",
+                                        "subspecies+"]) + "\n")
         for lca in LCA.iterate(options.stdin):
-            options.stdout.write("\t".join([lca.identifier
-                                            , lca.kingdom
-                                            , lca.kingdom_plus
-                                            , lca.phylum
-                                            , lca.phylum_plus
-                                            , lca._class
-                                            , lca._class_plus
-                                            , lca.order
-                                            , lca.order_plus
-                                            , lca.family
-                                            , lca.family_plus
-                                            , lca.genus
-                                            , lca.genus_plus
-                                            , lca.species
-                                            , lca.species_plus
-                                            , lca.subspecies
-                                            , lca.subspecies_plus]) + "\n")
-            
-            
-    ## write footer and output benchmark information.
+            options.stdout.write("\t".join([lca.identifier,
+                                            lca.kingdom,
+                                            lca.kingdom_plus,
+                                            lca.phylum,
+                                            lca.phylum_plus,
+                                            lca._class,
+                                            lca._class_plus,
+                                            lca.order,
+                                            lca.order_plus,
+                                            lca.family,
+                                            lca.family_plus,
+                                            lca.genus,
+                                            lca.genus_plus,
+                                            lca.species,
+                                            lca.species_plus,
+                                            lca.subspecies,
+                                            lca.subspecies_plus]) + "\n")
+
+    # write footer and output benchmark information.
     E.Stop()
 
-
-
 if __name__ == "__main__":
-    sys.exit( main( sys.argv) )
-
-
-
-
+    sys.exit(main(sys.argv))
