@@ -201,7 +201,7 @@ import rpy2.robjects as ro
 import rpy2.robjects.vectors as rovectors
 from rpy2.rinterface import RRuntimeError
 import CGATPipelines.PipelineMapping as PipelineMapping
-import CGATPipelines.PipelineMetagenomeAssembly as PipelineMetagenomeAssembly
+#import CGATPipelines.PipelineMetagenomeAssembly as PipelineMetagenomeAssembly
 import CGATPipelines.PipelineMetagenomeCommunities \
     as PipelineMetagenomeCommunities
 import CGAT.FastaIterator as FastaIterator
@@ -211,7 +211,7 @@ import CGATPipelines.PipelineMappingQC as PipelineMappingQC
 import pysam
 import CGAT.Fastq as Fastq
 import pandas
-import CGAT.PipelineTracks
+#import CGATPipelines.PipelineTracks as PipelineTracks
 
 ###################################################
 ###################################################
@@ -221,8 +221,8 @@ import CGAT.PipelineTracks
 
 # load options from the config file
 import CGAT.Pipeline as P
-P.getParameters(
-    ["pipeline.ini"])
+P.getParameters(["%s/pipeline.ini" % os.path.splitext(__file__)[0],
+                 "pipeline.ini"])
 
 
 PARAMS = P.PARAMS
@@ -234,15 +234,15 @@ PARAMS = P.PARAMS
 
 
 # collect fastq.gz tracks
-TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample3).loadFromDirectory(
-    glob.glob("*.fastq.gz"), "(\S+).fastq.gz") +\
-    PipelineTracks.Tracks(PipelineTracks.Sample3).loadFromDirectory(
-        glob.glob("*.fastq.1.gz"), "(\S+).fastq.1.gz")
+# TRACKS = PipelineTracks.Tracks(PipelineTracks.Sample3).loadFromDirectory(
+#     glob.glob("*.fastq.gz"), "(\S+).fastq.gz") +\
+#     PipelineTracks.Tracks(PipelineTracks.Sample3).loadFromDirectory(
+#         glob.glob("*.fastq.1.gz"), "(\S+).fastq.1.gz")
 
-ALL = PipelineTracks.Sample3()
-EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("condition", "tissue"))
-CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("condition", ))
-TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("tissue", ))
+# ALL = PipelineTracks.Sample3()
+# EXPERIMENTS = PipelineTracks.Aggregate(TRACKS, labels=("condition", "tissue"))
+# CONDITIONS = PipelineTracks.Aggregate(TRACKS, labels=("condition", ))
+# TISSUES = PipelineTracks.Aggregate(TRACKS, labels=("tissue", ))
 
 ###################################################################
 # sequence files as input
@@ -353,7 +353,6 @@ def preprocessReads(infile, outfile):
 ###################################################################
 ###################################################################
 ###################################################################
-
 
 @active_if("metaphlan" in PARAMS.get("classifiers"))
 @follows(mkdir("metaphlan.dir"))
