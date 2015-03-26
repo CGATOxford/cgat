@@ -78,14 +78,13 @@ def main(argv=None):
 
     parser.add_option("-m", "--method", dest="method", type="choice",
                       choices=("best", None),
-                      help="supply help")
+                      help="method for determing what to count")
 
     parser.add_option("--sum-cog", dest="sum_cog", action="store_true",
                       help="sum counts over functions (COGs) in --cog-map")
 
     parser.add_option("--evaluate-cog", dest="evaluate_cog", action="store_true",
-                      help="output the percent of alignments for each read that \ 
-                            are the best alignment")
+                      help="output the percent of alignments for each read that are the best alignment")
 
     parser.add_option("--cog-map", dest="cog_map", type="string",
                       help="file with gene to cog map")
