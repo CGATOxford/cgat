@@ -1453,7 +1453,6 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
     statements = []
     job_options = "-l mem_free=4G"
     for geneset in genesets:
-
         chrom = re.match(
             "geneset.dir/refcoding\.(.+)\.gtf.gz", geneset).groups()[0]
         bam = P.snip(infile, ".bam")
@@ -1472,8 +1471,8 @@ def buildTranscriptLevelReadCounts(infiles, outfile):
                --column-prefix=coverage_
                -v 0
             | gzip
-          > %(outfile)s
-         ''' % locals()
+        > %(outfile)s
+        ''' % locals()
         statements.append(statement)
 
     P.run()

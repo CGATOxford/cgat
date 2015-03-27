@@ -1254,8 +1254,15 @@ def concordanceMetric(concord_dict):
 
     Rand = (a + b) / float(a + b + c + d)
     AdjRand = 2 * ((a*b) - (c+d)) / float(((a+d)*(d+b)) + ((a+c)*(c+b)))
-    pos = a/float(a+c)
-    recall = a/float(a+d)
+    try:
+        pos = a/float(a+c)
+    except ZeroDivisionError:
+        pos = 0
+
+    try:
+        recall = a/float(a+d)
+    except ZeroDivisionError:
+        recall = 0
     beta = 1
     try:
         Fstat = ((beta**2 + 1)*(pos*recall)) / float(((beta**2)*pos) + recall)
@@ -1322,7 +1329,6 @@ def contingency(cluster1, cluster2):
         cont[x[0]][x[1]] = intersect
 
     cont = cont.as_matrix()
-
     return cont
 
 

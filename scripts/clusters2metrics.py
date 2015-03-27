@@ -114,11 +114,14 @@ def main(argv=None):
                            sep="\t",
                            header=None,
                            index_col=0)
+
+        df = df.ix[:500, :5]
         cluster_combs = (x for x in itertools.combinations(df.columns,
                                                            2))
         genes = df.index
         results_dict = {}
         all_clusts = {}
+        # limit to 3 clusterings and 5 genes
         E.info("setting up cluster containers")
         for i in df.columns:
             clusters = set(df[i].values.tolist())
@@ -143,10 +146,7 @@ def main(argv=None):
         complete_pairs = int((gene_factorial/factorial(2))/denom)
 
         E.info("generating all pair-wise cluster comparisons")
-        count = 0
         for k in cluster_combs:
-            count += 1
-            E.info("round %i" % count)
             clusters1 = all_clusts[k[0]]
             clusters2 = all_clusts[k[1]]
             concord = TS.clusterConcordia(clusters1,
@@ -154,7 +154,7 @@ def main(argv=None):
                                           complete_pairs)
             E.info("calculating metrics")
             metric_dict = TS.concordanceMetric(concord)
-            E.info("calculating AMI")
+            # E.info("calculating AMI")
             metric_dict['AMI'] = TS.adjustedMutualInformation(all_clusts[k[0]],
                                                               all_clusts[k[1]])
             results_dict[k] = metric_dict
