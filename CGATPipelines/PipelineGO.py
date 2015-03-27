@@ -244,28 +244,30 @@ def createGOSlimFromENSEMBL(infile, outfile):
 
     dirname = os.path.dirname(outfile)
 
+    goslim_fn = os.path.join(dirname, "goslim.obo")
     statement = '''wget %(go_url_goslim)s
-    --output-document=%(dirname)s/goslim.obo'''
+    --output-document=%(goslim_fn)s'''
     P.run()
 
+    ontology_fn = os.path.join(dirname, "go_onotology.obo")
     statement = '''wget %(go_url_ontology)s
-    --output-document=%(dirname)s/go_ontology.obo'''
+    --output-document=%(ontology_fn)s'''
     P.run()
 
-    job_options = "-l mem_free=5G"
+    job_memory = "5G"
     statement = '''
     map2slim -outmap %(outfile)s.map
-    %(dirname)s/goslim.obo
-    %(dirname)s/go_ontology.obo
+    %(goslim_fn)s
+    %(ontology_fn)s
     '''
     P.run()
 
-    job_options = "-l mem_free=5G"
+    job_memory = "5G"
     statement = '''
     zcat < %(infile)s
     | python %(scriptsdir)s/runGO.py
     --go2goslim
-    --filename-ontology=%(dirname)s/go_ontology.obo
+    --filename-ontology=%(ontology_fn)s
     --slims=%(outfile)s.map
     --log=%(outfile)s.log
     | gzip

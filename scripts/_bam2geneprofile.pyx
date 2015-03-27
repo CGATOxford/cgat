@@ -131,8 +131,12 @@ class RangeCounterBAM(RangeCounter):
             for start, end in ranges:
                 length = end - start
 
-                for read in samfile.fetch( contig, start, end ):
-                    rstart = max( start, read.pos ) - start + current_offset
+                # skip bamfiles where contig is not present
+                if samfile.gettid(contig) < 0:
+                    continue
+
+                for read in samfile.fetch(contig, start, end):
+                    rstart = max(start, read.pos) - start + current_offset
                     # skip unmapped reads that are assigend a position.
                     if read.aend is None:
                         continue
@@ -212,7 +216,7 @@ class RangeCounterBAMShift(RangeCounterBAM):
         cdef int shift
         cdef Samfile samfile
 
-        for samfile, shift, extend in zip( files, self.shifts, self.extends):
+        for samfile, shift, extend in zip(files, self.shifts, self.extends):
 
             current_offset = 0
             shift_extend = shift + extend
@@ -222,7 +226,11 @@ class RangeCounterBAMShift(RangeCounterBAM):
                 # collect reads including the regions left/right of interval
                 xstart, xend = max(0, start - shift_extend), max(0, end + shift_extend)
 
-                for read in samfile.fetch( contig, xstart, xend ):
+                # skip bamfiles where contig is not present
+                if samfile.gettid(contig) < 0:
+                    continue
+
+                for read in samfile.fetch(contig, xstart, xend):
                     if read.is_reverse: 
                         rstart = read.aend - start - shift_extend
                     else:
@@ -262,7 +270,8 @@ class RangeCounterBAMMerge(RangeCounterBAM):
 
     def count(self, counts, files, contig, ranges ):
 
-        if len(ranges) == 0: return
+        if len(ranges) == 0:
+            return
 
         # collect pileup profile in region bounded by start and end.
         cdef int i
@@ -287,7 +296,11 @@ class RangeCounterBAMMerge(RangeCounterBAM):
                 
                 xstart, xend = start, end
 
-                for read in samfile.fetch( contig, xstart, xend ):
+                # skip bamfiles where contig is not present
+                if samfile.gettid(contig) < 0:
+                    continue
+
+                for read in samfile.fetch(contig, xstart, xend):
                     flag = read._delegate.core.flag 
                     # remove unmapped reads
                     if flag & 4:
@@ -311,27 +324,28 @@ class RangeCounterBAMMerge(RangeCounterBAM):
                     else:
                         rstart = max(start, read.mpos)
                         rend = min(end, read.pos + read.rlen)
-                        
+
                     rstart += -start + current_offset
                     rend += -start + current_offset
                     for i from rstart <= i < rend:
                         counts[i] += 1
-  
+
                 current_offset += length
 
 class RangeCounterBAMBaseAccuracy(RangeCounterBAM):
     '''count densities using bam files with base accuracy.
     '''
     def __init__(self, 
-                 *args, **kwargs ):
+                 *args, **kwargs):
         '''
         '''
 
         RangeCounterBAM.__init__(self, *args, **kwargs )
 
-    def count(self, counts, files, contig, ranges ):
+    def count(self, counts, files, contig, ranges):
 
-        if len(ranges) == 0: return
+        if len(ranges) == 0:
+            return
 
         # collect pileup profile in region bounded by start and end.
         cdef int i
@@ -351,7 +365,11 @@ class RangeCounterBAMBaseAccuracy(RangeCounterBAM):
 
             for start, end in ranges:
                 length = end - start
-                for read in samfile.fetch( contig, start, end ):
+                # skip bamfiles where contig is not present
+                if samfile.gettid(contig) < 0:
+                    continue
+
+                for read in samfile.fetch(contig, start, end):
                     # note: not optimized for speed yet - uses a python list
                     positions = read.positions
                     for i in positions:
@@ -369,17 +387,17 @@ class RangeCounterBAMBaseAccuracy(RangeCounterBAM):
 
 class RangeCounterBed(RangeCounter):
 
-    def __init__(self, *args, **kwargs ):
-        RangeCounter.__init__(self, *args, **kwargs )
+    def __init__(self, *args, **kwargs):
+        RangeCounter.__init__(self, *args, **kwargs)
                 
-    def getTotal( self, bedfile ):
+    def getTotal(self, bedfile):
         '''return total number of tags in bedfile.'''
         cdef int total = 0
         for x in bedfile.fetch():
             total += 1
         return total
 
-    def count(self, counts, files, contig, ranges ):
+    def count(self, counts, files, contig, ranges):
         
         # collect pileup profile in region bounded by start and end.
         cdef int i
@@ -397,7 +415,8 @@ class RangeCounterBed(RangeCounter):
             for start, end in ranges:
                 length = end - start
                 try:
-                    for bed in bedfile.fetch( contig, max(0, start), end, parser = pysam.asBed() ):
+                    for bed in bedfile.fetch(contig, max(0, start), end,
+                                             parser = pysam.asBed()):
                         # truncate to range of interest
                         rstart = max(0, bed.start - start) + current_offset
                         rend = min( length, bed.end - start) + current_offset
@@ -432,8 +451,9 @@ class RangeCounterBigWig(RangeCounter):
             for start, end in ranges:
                 length = end - start
 
-                values = wigfile.get( contig, start, end )
-                if values == None: continue
+                values = wigfile.get(contig, start, end)
+                if values == None:
+                    continue
 
                 for tstart, tend, value in values:
                     rstart = tstart - start + current_offset

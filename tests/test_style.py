@@ -45,6 +45,7 @@ IGNORE = set(('E101',  # indentation contains mixed spaces and tabs
               'W291',
               'W293',
               'W391',
+              'W503',  # line break before binary operator
               'W601',
               'W602',
               'files',

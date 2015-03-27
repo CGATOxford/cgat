@@ -367,7 +367,6 @@ class MasterProcessor():
 
     def build(self, infile, outfile, processer_list):
         '''run mapper.'''
-
         f_format = Fastq.guessFormat(
             IOTools.openFile(infile, "r"), raises=False)
 

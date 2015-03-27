@@ -18,17 +18,38 @@ Table of Contents
    pipeline/TagCounting.rst
    pipeline/DifferentialGeneExpression.rst
    pipeline/Genelists.rst
- 
+
+===================
+Errors and Warnings
+===================
+
 .. errorlist::
 
 .. warninglist::
 
+===================
+Pipeline Status
+===================
 
+.. report:: Tracker.TrackerImages
+   :render: gallery-plot
+   :glob: export/pipeline.svg
 
-  
-Indices and tables
-==================
+   Pipeline status
 
+======================
+Pipeline Documentation
+======================
+
+.. automodule:: pipeline_rnaseqdiffexpression
+   :members:
+   :inherited-members:
+   :show-inheritance:
+
+====================
+ Indices and tables
+====================
+ 
 * :ref:`genindex`
 * :ref:`modindex`
 * :ref:`search`

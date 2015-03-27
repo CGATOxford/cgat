@@ -316,8 +316,7 @@ def buildReferenceGeneSet(infile, outfile):
     tmp_mergedfiltered = P.getTempFilename(".")
 
     if "geneset_remove_repetetive_rna" in PARAMS:
-        rna_file = os.path.join(PARAMS["annotations_dir"],
-                                PARAMS["annotations_interface_rna_gff"])
+        rna_file = PARAMS["annotations_interface_rna_gff"]
     else:
         rna_file = None
 
@@ -1026,6 +1025,7 @@ def mapReadsWithButter(infile, outfile):
         shutil.rmtree(outdir)
         assert len(f) == 1, NotImplementedError('''The sra archive contains
         paired end data,Butter does not support paired end reads''')
+
     elif infile.endswith(".csfasta.F3.gz") or infile.endswith(".fastq.1.gz"):
         raise NotImplementedError('''infiles are paired end: %(infile)s,
         Butter does not support paired end reads''' % locals())
@@ -1335,10 +1335,6 @@ def buildContextStats(infiles, outfile):
        '''
 
     P.run()
-
-############################################################
-############################################################
-############################################################
 
 
 @jobs_limit(1, "db")
@@ -1782,7 +1778,7 @@ def map():
     pass
 
 
-@follows(mkdir("report"))
+@follows(mkdir("report"), mkdir(PARAMS.get("exportdir"), "export"))
 def build_report():
     '''build report from scratch.'''
 
@@ -1800,7 +1796,6 @@ def update_report():
 
 @follows(mkdir("%s/bamfiles" % PARAMS["web_dir"]),
          mkdir("%s/bigwigfiles" % PARAMS["web_dir"]),
-         update_report,
          )
 def publish():
     '''publish files.'''
