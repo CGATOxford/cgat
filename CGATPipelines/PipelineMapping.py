@@ -470,13 +470,65 @@ class Mapper(object):
             elif infile.endswith(".sra"):
                 # sneak preview to determine if paired end or single end
                 outdir = P.getTempDir()
-                f = Sra.sneak(infile, outdir)
+                f, format = Sra.peek(infile, outdir)
                 E.info("sra file contains the following files: %s" % f)
                 shutil.rmtree(outdir)
-                fastqfiles.append(
-                    ["%s/%s" % (tmpdir_fastq, os.path.basename(x))
-                     for x in sorted(f)])
-                Sra.exract(infile, tmpdir_fastq)
+
+                # add extraction command to statement
+                statement.append(Sra.extract(infile, tmpdir_fastq))
+
+                sra_extraction_files = ["%s/%s" % (
+                    tmpdir_fastq, os.path.basename(x)) for x in sorted(f)]
+
+                # if format is not sanger, add convert command to statement
+                if 'sanger' in format and self.convert:
+
+                    # single end fastq
+                    if len(sra_extraction_files) == 1:
+
+                        infile = sra_extraction_files[0]
+                        track = os.path.splitext(os.path.basename(infile))[0]
+
+                        statement.append("""gunzip < %(infile)s
+                        | python %%(scriptsdir)s/fastq2fastq.py
+                        --method=change-format --target-format=sanger
+                        --guess-format=phred64
+                        --log=%(outfile)s.log
+                        %(compress_cmd)s
+                        > %(tmpdir_fastq)s/%(track)s_converted.fastq%(extension)s
+                        """ % locals())
+
+                        fastqfiles.append(
+                            ("%(tmpdir_fastq)s/%(track)s_converted.fastq%(extension)s"
+                             % locals(),))
+
+                    # paired end fastqs
+                    elif len(sra_extraction_files) == 2:
+
+                        infile, infile2 = sra_extraction_files
+                        track = os.path.splitext(os.path.basename(infile))[0]
+
+                        statement.append("""gunzip < %(infile)s
+                        | python %%(scriptsdir)s/fastq2fastq.py
+                        --method=change-format --target-format=sanger
+                        --guess-format=phred64
+                        --log=%(outfile)s.log %(compress_cmd)s
+                        > %(tmpdir_fastq)s/%(track)s_converted.1.fastq%(extension)s;
+                        gunzip < %(infile2)s
+                        | python %%(scriptsdir)s/fastq2fastq.py
+                        --method=change-format --target-format=sanger
+                        --guess-format=phred64
+                        --log=%(outfile)s.log %(compress_cmd)s
+                        > %(tmpdir_fastq)s/%(track)s_converted.2.fastq%(extension)s
+                        """ % locals())
+
+                        fastqfiles.append(
+                            ("%s/%s_converted.1.fastq%s" %
+                             (tmpdir_fastq, track, extension),
+                             "%s/%s_converted.2.fastq%s" %
+                             (tmpdir_fastq, track, extension)))
+                else:
+                    fastqfiles.append(sra_extraction_files)
 
             elif infile.endswith(".fastq.gz"):
                 format = Fastq.guessFormat(
@@ -658,7 +710,8 @@ class FastQc(Mapper):
     def mapper(self, infiles, outfile):
         '''build mapping statement on infiles.
 
-        The output is created in outdir
+        The output is created in outdir. The output files
+        are extracted.
         '''
         outdir = self.outdir
         statement = []
@@ -667,10 +720,12 @@ class FastQc(Mapper):
                 track = os.path.basename(re.sub(".fastq.*", "", x))
                 if self.nogroup:
                     statement.append(
-                        '''fastqc --outdir=%(outdir)s --nogroup %(x)s >& %(outfile)s;''' % locals())
+                        '''fastqc --extract --outdir=%(outdir)s --nogroup %(x)s
+                        >& %(outfile)s;''' % locals())
                 else:
                     statement.append(
-                        '''fastqc --outdir=%(outdir)s %(x)s >& %(outfile)s;''' % locals())
+                        '''fastqc --extract --outdir=%(outdir)s %(x)s
+                        >& %(outfile)s;''' % locals())
         return " ".join(statement)
 
 
@@ -1179,7 +1234,8 @@ class Stampy(BWA):
 
 class Butter(BWA):
 
-    '''map reads against genome using Butter.
+    '''
+    map reads against genome using Butter.
     '''
 
     def mapper(self, infiles, outfile):
@@ -1207,16 +1263,27 @@ class Butter(BWA):
             infiles = infiles[0][0]
             track_infile = ".".join(infiles.split(".")[:-1])
 
+            # butter cannot handle compressed fastqs
+            # recognises file types by suffix
+            track_fastq = track + ".fastq"
+
+            if infiles.endswith(".gz"):
+                statement.append('''
+                zcat %(infiles)s > %(track_fastq)s; ''' % locals())
+            else:
+                statement.append('''
+                cat %(infiles)s > %(track_fastq)s; ''' % locals())
+
             statement.append('''
             butter %%(butter_options)s
-            %(infiles)s
+            %(track_fastq)s
             %%(butter_index_dir)s/%%(genome)s.fa
             --aln_cores=%%(job_threads)s
             --bam2wig=none
             >%(outfile)s.log;
-            samtools view -h %(track_infile)s.bam >
+            samtools view -h %(track)s.bam >
             %(tmpdir)s/%(track)s.sam;
-            rm -rf ./%(track)s.bam ./%(track)s.bam.bai;
+            rm -rf ./%(track)s.bam ./%(track)s.bam.bai ./%(track_fastq)s;
             ''' % locals())
 
         elif nfiles == 2:
@@ -1603,7 +1670,7 @@ class STAR(Mapper):
     # newer versions of tophat can work of compressed files
     compress = True
 
-    executable = "star"
+    executable = "STAR"
 
     def __init__(self, *args, **kwargs):
         Mapper.__init__(self, *args, **kwargs)

@@ -9,14 +9,12 @@
 Purpose
 -------
 
-This script takes a :term:`bam` formatted file and converts it to two
-:term:`fastq` formatted files, one containing the first read of a read
-pair and one containing the second read of read pair.
+This script takes a :term:`bam` formatted file and converts to it to
+one or two :term:`fastq` formatted files for single-end or paired-end
+data, respectively.
 
-Options
--------
-
-This script has no options beyond the standard.
+For paired-end data, the first fastq file contains the first read of a
+read pair and the other contains the second read of read pair.
 
 Example
 -------
@@ -47,6 +45,7 @@ Command line options
 import os
 import sys
 import tempfile
+import shutil
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
@@ -73,7 +72,10 @@ def main(argv=None):
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
     # do sth
-    if len(args) == 2:
+    if len(args) == 1:
+        fastqfile1 = args[0]
+        fastqfile2 = options.output_filename_pattern % "2"
+    elif len(args) == 2:
         fastqfile1, fastqfile2 = args
     else:
         fastqfile1 = options.output_filename_pattern % "1"
@@ -103,14 +105,20 @@ def main(argv=None):
     c = E.Counter()
     for read in samfile.fetch(until_eof=True):
         c.input += 1
-        if read.is_read1:
-            if read.qname not in found1:
-                outstream1.write(
-                    "\t".join((read.qname, read.seq, read.qual)) + "\n")
-                found1.add(read.qname)
-                if not read1_qlen:
-                    read1_qlen = read.qlen
-                c.output1 += 1
+        if not read.is_paired:
+            outstream1.write(
+                "\t".join((read.qname, read.seq, read.qual)) + "\n")
+            found1.add(read.qname)
+            if not read1_qlen:
+                read1_qlen = read.qlen
+            c.unpaired += 1
+        elif read.is_read1:
+            outstream1.write(
+                "\t".join((read.qname, read.seq, read.qual)) + "\n")
+            found1.add(read.qname)
+            if not read1_qlen:
+                read1_qlen = read.qlen
+            c.output1 += 1
         elif read.is_read2:
             if read.qname not in found2:
                 outstream2.write(
@@ -120,29 +128,44 @@ def main(argv=None):
                     read2_qlen = read.qlen
                 c.output2 += 1
 
-    for qname in found2.difference(found1):
-        outstream1.write(
-            "\t".join((qname, "N" * read1_qlen, "B" * read1_qlen)) + "\n")
-        c.extra1 += 1
+    if c.unpaired == 0 and c.output1 == 0 and c.output2 == 0:
+        E.warn("no reads were found")
+        return
 
-    for qname in found1.difference(found2):
-        outstream2.write(
-            "\t".join((qname, "N" * read2_qlen, "B" * read2_qlen)) + "\n")
-        c.extra2 += 1
+    sort_statement = '''zcat %s
+    | sort -k1,1
+    | awk '{printf("@%%s\\n%%s\\n+\\n%%s\\n", $1,$2,$3)}'
+    | gzip > %s'''
 
-    E.info("%s" % str(c))
+    if c.output1 == 0 and c.output2 == 0:
+        # single end data:
+        outstream1.close()
+        outstream2.close()
+        E.info("sorting fastq files")
+        E.run(sort_statement % (outtemp1, fastqfile1))
 
-    outstream1.close()
-    outstream2.close()
+    else:
+        # paired end data
+        for qname in found2.difference(found1):
+            outstream1.write(
+                "\t".join((qname, "N" * read1_qlen, "B" * read1_qlen)) + "\n")
+            c.extra1 += 1
 
-    E.info("sorting fastq files")
-    statement = '''zcat %s
-                   | sort -k1,1
-                   | awk '{printf("@%%s\\n%%s\\n+\\n%%s\\n", $1,$2,$3)}'
-                   | gzip > %s'''
+        for qname in found1.difference(found2):
+            outstream2.write(
+                "\t".join((qname, "N" * read2_qlen, "B" * read2_qlen)) + "\n")
+            c.extra2 += 1
 
-    E.run(statement % (outtemp1, fastqfile1))
-    E.run(statement % (outtemp2, fastqfile2))
+        E.info("%s" % str(c))
+
+        outstream1.close()
+        outstream2.close()
+
+        E.info("sorting fastq files")
+        E.run(sort_statement % (outtemp1, fastqfile1))
+        E.run(sort_statement % (outtemp2, fastqfile2))
+
+    shutil.rmtree(tmpdir)
 
     # write footer and output benchmark information.
     E.Stop()

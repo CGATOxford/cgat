@@ -782,10 +782,20 @@ def makeSummaryPlots(infile, outfile):
 
 @follows(mkdir("biseq.dir"))
 @merge(subsetCoverage,
-       "biseq.dir/clusters.tsv")
-def runBiSeq(infiles, outfile):
+       "biseq.dir/liver_clusters.tsv")
+def runBiSeq_liver(infiles, outfile):
     job_options = "-l mem_free=10G -pe dedicated 10"
-    RRBS.runBiSeq(infiles, outfile, submit=True, job_options=job_options)
+    RRBS.runBiSeq(infiles, outfile, "Liver",
+                  submit=True, job_options=job_options)
+
+
+@follows(mkdir("biseq.dir"))
+@merge(subsetCoverage,
+       "biseq.dir/germline_clusters.tsv")
+def runBiSeq_germline(infiles, outfile):
+    job_options = "-l mem_free=10G -pe dedicated 10"
+    RRBS.runBiSeq(infiles, outfile, "Germline",
+                  submit=True, job_options=job_options)
 
 ########################################################################
 #########################################################################
@@ -1075,7 +1085,8 @@ def test():
     pass
 
 
-@follows(runBiSeq)
+@follows(runBiSeq_germline,
+         runBiSeq_liver)
 def biseq():
     pass
 

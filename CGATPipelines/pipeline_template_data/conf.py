@@ -24,9 +24,10 @@ import CGATPipelines
 # path were documentation source resides.
 # Use environment variable SPHINX_DOCSDIR.
 # If unset, take the location of CGATPipelines
-docsdir = os.environ.get("SPHINX_DOCSDIR",
-                         os.path.join(os.path.dirname(CGATPipelines.__file__),
-                                      'pipeline_docs'))
+docsdir = os.environ.get(
+    "SPHINX_DOCSDIR",
+    os.path.join(os.path.dirname(CGATPipelines.__file__),
+                 'pipeline_docs'))
 
 if not os.path.exists(docsdir):
     raise ValueError("documentation directory '%s' not found" % docsdir)
@@ -122,6 +123,7 @@ if P.CONFIG.has_section('intersphinx'):
 
 # Included at the end of each rst file
 rst_epilog = '''
+.. _CGAT: http://www.cgat.org
 .. _CGAT Training Programme: http://www.cgat.org
 .. _CGAT Pipelines: https://www.cgat.org/downloads/public/cgat/documentation/Pipelines.html#pipelines
 .. _CGAT Scripts: https://www.cgat.org/downloads/public/cgat/documentation/cgat.html#cgat

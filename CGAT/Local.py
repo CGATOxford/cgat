@@ -50,18 +50,28 @@ PARAMS = None
 CONFIG = None
 
 
-def getProjectDirectories():
-    '''return a dict directories relevant to this project.'''
+def getProjectDirectories(sections=None):
+    '''return a dict with directories relevant to this project.
+
+    Directories must exist, otherwise a ValueError is raised.
+
+    If *sections* are given, only these are returned.
+    '''
 
     project_name = getProjectName()
 
     result = {
-        'webdir': os.path.join(PROJECT_ROOT,
-                               PARAMS["web_dir"]),
-        'exportdir': os.path.join(PARAMS["exportdir"]),
-        'notebookdir': os.path.join(PROJECT_ROOT,
-                                    project_name, "notebooks")
+        'webdir': os.path.join(
+            PROJECT_ROOT, PARAMS["web_dir"]),
+        'exportdir': os.path.join(
+            PARAMS["exportdir"]),
+        'notebookdir': os.path.join(
+            PROJECT_ROOT, project_name, "notebooks")
     }
+
+    if sections:
+        result = dict([(x, y) for x, y in result.items()
+                       if x in sections])
 
     for x, y in result.items():
         if not os.path.exists(y):
@@ -225,7 +235,7 @@ def getProjectId():
 
     web_dir should be link to the web directory in the project
     directory which then links to the web directory in the sftp
-    directory which then links to the obfuscated directory.
+    directory which then links to the obfuscated directory. 
 
     pipeline:web_dir
     -> /ifs/projects/.../web
@@ -233,15 +243,24 @@ def getProjectId():
     -> /ifs/sftp/.../aoeuCATAa (obfuscated directory)
 
     '''
+    # return an id that has been explicitely set
+    if "report_project_url" in PARAMS:
+        return PARAMS["report_project_url"]
+
     curdir = os.path.abspath(os.getcwd())
     if not curdir.startswith(PROJECT_ROOT):
         raise ValueError(
             "method getProjectId no called within %s" % PROJECT_ROOT)
 
     webdir = PARAMS['web_dir']
-    assert os.path.islink(webdir)
+    if not os.path.islink(webdir):
+        raise ValueError(
+            "unknown configuration: webdir '%s' is not a link" % webdir)
     target = os.readlink(webdir)
-    assert os.path.islink(target)
+    if not os.path.islink(target):
+        raise ValueError(
+            "unknown configuration: target '%s' is not a link" % target)
+
     return os.path.basename(os.readlink(target))
 
 

@@ -100,9 +100,16 @@ if not os.path.exists(SCRIPTS_DIR):
 
 # Global variable for configuration file data
 CONFIG = ConfigParser.ConfigParser()
+
 # Global variable for parameter interpolation in
 # commands
-PARAMS = {}
+# patch - if --help or -h in command line arguments,
+# use a default dict as PARAMS to avaid missing paramater
+# failures
+if "--help" in sys.argv or "-h" in sys.argv:
+    PARAMS = collections.defaultdict(str)
+else:
+    PARAMS = {}
 
 # A list of hard-coded parameters within the CGAT environment
 # These can be overwritten by command line options and
@@ -125,9 +132,9 @@ HARDCODED_PARAMS = {
     # wrapper around non-CGAT scripts
     'cmd-run': """%(scriptsdir)s/run.py""",
     # directory used for temporary local files
-    'tmpdir': '/scratch',
+    'tmpdir': os.environ.get("TMPDIR", '/scratch'),
     # directory used for temporary files shared across machines
-    'shared_tmpdir': '/ifs/scratch',
+    'shared_tmpdir': os.environ.get("SHARED_TMPDIR", "/ifs/scratch"),
     # cluster options
     'cluster_queue': 'all.q',
     'cluster_priority': -10,
@@ -1278,6 +1285,21 @@ def run(**kwargs):
                                   options.get("outfile", "ruffus")))),
             "%(cluster_options)s"]
 
+        # get memory usage
+        if 'job_memory' in options:
+            spec.append("-l %s=%s" %
+                        (PARAMS.get("cluster_memory_resource", "mem_free"),
+                         options["job_memory"]))
+
+        elif "mem_free" in options["cluster_options"] and \
+             PARAMS.get("cluster_memory_resource", False):
+
+            options["cluster_options"] = re.sub(
+                "mem_free", PARAMS.get("cluster_memory_resource"),
+                options["cluster_options"])
+            E.warn("use of mem_free in job options is deprecated, please"
+                   "set job_memory local var instead")
+                                                
         # if process has multiple threads, use a parallel environment
         if 'job_threads' in options:
             spec.append(
@@ -1549,7 +1571,8 @@ def clonePipeline(srcdir):
 
     copy_files = ("conf.py", "pipeline.ini", "csvdb")
     ignore_prefix = (
-        "report", "_cache", "export", "tmp", "ctmp", "_static", "_templates")
+        "report", "_cache", "export", "tmp", "ctmp",
+        "_static", "_templates")
 
     def _ignore(p):
         for x in ignore_prefix:
@@ -1668,6 +1691,10 @@ def peekParameters(workingdir,
     Returns a dictionary of configuration values.
 
     '''
+    # patch - if --help or -h in command line arguments,
+    # do not peek as there might be no config file.
+    if "--help" in sys.argv or "-h" in sys.argv:
+        return {}
 
     # Attempt to locate directory with pipeline source code. This is a
     # patch as pipelines might be called within the repository
@@ -1823,8 +1850,33 @@ def run_pickled(params):
     os.unlink(args_file)
 
 
-def run_report(clean=True):
-    '''run CGATreport.'''
+def run_report(clean=True,
+               with_pipeline_status=True,
+               pipeline_status_format="svg"):
+    '''run CGATreport.
+
+    This will also run ruffus to create an svg image
+    of the pipeline status unless *with_pipeline_status* is
+    set to False. The image will be saved into the export 
+    directory.
+    '''
+
+    if with_pipeline_status:
+        targetdir = PARAMS["exportdir"]
+        if not os.path.exists(targetdir):
+            os.mkdir(targetdir)
+
+        # get checksum level from command line options
+        checksum_level = GLOBAL_OPTIONS.checksums
+
+        pipeline_printout_graph(
+            os.path.join(
+                targetdir,
+                "pipeline.%s" % pipeline_status_format),
+            pipeline_status_format,
+            ["full"],
+            checksum_level=checksum_level
+        )
 
     dirname, basename = os.path.split(getCaller().__file__)
 

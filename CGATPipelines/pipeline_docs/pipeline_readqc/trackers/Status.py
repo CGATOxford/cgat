@@ -26,54 +26,83 @@ class FastqcStatus(Status):
     def testBasicStatistics(self, track):
         '''basic statistics.
         '''
-        return self.data[track]['basic_statistics'], 0
+        return self.data[track].get(
+            'basic_statistics', "NA"), 0
+
+    def testPerTileSequenceQuality(self, track):
+        '''per tile sequence quality.
+        
+        requires fastqc >= 0.11
+        '''
+        return self.data[track].get(
+            'per_base_sequence_quality', "NA"), 0
 
     def testPerBaseSequenceQuality(self, track):
         '''per base sequence quality
         '''
-        return self.data[track]['per_base_sequence_quality'], 0
+        return self.data[track].get(
+            'per_base_sequence_quality', "NA"), 0
 
     def testPerSequenceQualityScores(self, track):
         '''per base sequence quality
         '''
-        return self.data[track]['per_sequence_quality_scores'], 0
+        return self.data[track].get(
+            'per_sequence_quality_scores', "NA"), 0
 
     def testPerBaseSequenceContent(self, track):
         '''per base sequence quality
         '''
-        return self.data[track]['per_base_sequence_content'], 0
+        return self.data[track].get(
+            'per_base_sequence_content', "NA"), 0
 
     def testPerBaseGCContent(self, track):
         '''per base sequence quality
+
+        not available in fastqc >= 0.11
         '''
-        return self.data[track]['per_base_gc_content'], 0
+        return self.data[track].get(
+            'per_base_gc_content', "NA"), 0
 
     def testPerSequenceGCContent(self, track):
         '''per base sequence quality
         '''
-        return self.data[track]['per_sequence_gc_content'], 0
+        return self.data[track].get(
+            'per_sequence_gc_content', "NA"), 0
 
     def testPerBaseNContent(self, track):
         '''per base sequence quality
         '''
-        return self.data[track]['per_base_n_content'], 0
+        return self.data[track].get(
+            'per_base_n_content', "NA"), 0
 
     def testSequenceLengthDistribution(self, track):
         '''Sequence length distribution
         '''
-        return self.data[track]['sequence_length_distribution'], 0
+        return self.data[track].get(
+            'sequence_length_distribution', "NA"), 0
 
     def testSequenceDuplicationLevels(self, track):
         '''Sequence duplication levels
         '''
-        return self.data[track]['sequence_duplication_levels'], 0
+        return self.data[track].get(
+            'sequence_duplication_levels', "NA"), 0
 
     def testOverrepresentedSequences(self, track):
         '''Overrepresented sequences
         '''
-        return self.data[track]['overrepresented_sequences'], 0
+        return self.data[track].get(
+            'overrepresented_sequences', "NA"), 0
+
+    def testAdapterContent(self, track):
+        '''Adapter content
+
+        requires fastqc >= 0.11
+        '''
+        return self.data[track].get(
+            'adapter_content', "NA"), 0
 
     def testKmerContent(self, track):
         '''Kmer content
         '''
-        return self.data[track]['kmer_content'], 0
+        return self.data[track].get(
+            'kmer_content', "NA"), 0
