@@ -157,7 +157,8 @@ def main(argv=None):
             E.warn("""summing over functions (COGS)
                       will remove genes with no annotations
                       and those with multiple COG assignments""")
-            assert options.cog_map, "a mapping between gene and function (COG) is required"
+            assert options.cog_map, """a mapping between gene and
+                                       function (COG) is required"""
 
             E.info("""reading gene to function (COG) mapping from %s"""
                    % options.cog_map)
