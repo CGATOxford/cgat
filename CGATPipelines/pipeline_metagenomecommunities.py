@@ -1299,25 +1299,46 @@ def runMetagenomeSeq(infile, outfile):
     if infile.find("gene") != -1:
         k = PARAMS.get("metagenomeseq_genes_k")
         a = PARAMS.get("metagenomeseq_genes_a")
-        if PARAMS.get("metagenomeseq_restrict"):
-            restrict_file = PARAMS.get("metagenomeseq_restrict_file")
-            greps = []
-            for line in open(restrict_file):
-                greps.append(line[:-1])
-            greps = "grep %s | ".join(greps)
-            print greps
 
-    # else:
-    #     k = PARAMS.get("metagenomeseq_taxa_k")
-    #     a = PARAMS.get("metagenomeseq_taxa_a")
+        if PARAMS.get("metagenomeseq_genes_restrict"):
+            restrict_file = PARAMS.get("metagenomeseq_genes_restrict_file")
+            temp = P.getTempFile(".")
+            genes = set([x[:-1] for x in open(restrict_file).readlines()])
+            inf = IOTools.openFile(infile)
+            header = inf.readline()
+            temp.write(header)
+            for line in IOTools.openFile(infile).readlines():
+                data = line[:-1].split("\t")
+                if data[0] in genes:
+                    temp.write(line)
+            temp.close()
+            infile = temp.name
+    else:
+        k = PARAMS.get("metagenomeseq_taxa_k")
+        a = PARAMS.get("metagenomeseq_taxa_a")
 
-    # statement = '''%(rscript)s %(rscriptsdir)s/run_metagenomeseq.R
-    #                -c %(infile)s
-    #                -p %(prefix)s
-    #                --k %(k)i
-    #                --a %(a)i > %(outfile)s.log'''
+        # hack just to look at genus
+        if PARAMS.get("metagenomeseq_taxa_restrict") and "genus" in infile:
+            restrict_file = PARAMS.get("metagenomeseq_taxa_restrict_file")
+            temp = P.getTempFile(".")
+            taxa = set([x[:-1] for x in open(restrict_file).readlines()])
+            inf = IOTools.openFile(infile)
+            header = inf.readline()
+            temp.write(header)
+            for line in IOTools.openFile(infile).readlines():
+                data = line[:-1].split("\t")
+                if data[0] in taxa:
+                    temp.write(line)
+            temp.close()
+            infile = temp.name
 
-    # P.run()
+    statement = '''%(rscript)s %(rscriptsdir)s/run_metagenomeseq.R
+                   -c %(infile)s 
+                   -p %(prefix)s
+                   --k %(k)i 
+                   --a %(a)f > %(outfile)s.log'''
+
+    P.run()
 
 ###################################################################
 ###################################################################
