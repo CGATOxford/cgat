@@ -140,7 +140,6 @@ def buildExperimentReadQuality(infiles, outfile, datadir):
             df_out = pd.DataFrame(rows)
             df_out.columns = header
             df_out.rename(columns={"Count": track}, inplace=True)
-
         else:
             df = pd.DataFrame(rows)
             df.columns = header
