@@ -101,15 +101,18 @@ def makeAdaptorFasta(infile, dbh, contaminants_file, outfile):
     '''
 
     sample = infile.split("/")[-1].rstrip(".gz")
-    sample = sample.replace(".fastq", "")
     # replace '-'  and '.' with '_'
     sample = sample.replace("-", "_")
     sample = sample.replace(".", "_")
+    sample = sample.split("_")
+    sample.remove("fastq")
+    sample = "_".join(sample)
     query = "SELECT * FROM %s_fastqc_Overrepresented_sequences;" % sample
 
     df = pdsql.read_sql(query, dbh, index_col=None)
     # if there are no over represented sequences break here
     if not len(df):
+        P.touch(outfile)
         return None
 
     overreps = set(df['Possible_Source'])
@@ -128,7 +131,7 @@ def makeAdaptorFasta(infile, dbh, contaminants_file, outfile):
     adapt_dict = {}
 
     for each in adapt_list:
-        # source of bugs - 'each' contains whitespace
+        # source of bugs - row names contains whitespace
         # that may interfere with down stream processing of fasta file
         # remove extraneous ','
         each = each.split("\t")
@@ -166,6 +169,13 @@ def mergeAdaptorFasta(infiles, outfile):
                     fasta_dict[adapt].add(seq)
                     fasta_dict[adapt + "_R"].add(rev_seq)
 
+    # if there are no adapters to remove break the pipeline here
+    if not len(fasta_dict):
+        raise AttributeError("There are no overrepresented sequences in "
+                             "these fastq files.  Please turn off this "
+                             "feature and re-run the pipeline")
+    else:
+        pass
     with IOTools.openFile(outfile, "w") as outfle:
         for key, value in fasta_dict.items():
             outfle.write(">%s\n%s\n" % (key, list(value)[0]))

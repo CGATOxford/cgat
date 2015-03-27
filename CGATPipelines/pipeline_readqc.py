@@ -135,7 +135,10 @@ import CGATPipelines.PipelineMapping as PipelineMapping
 import CGAT.Pipeline as P
 import CGATPipelines.PipelineReadqc as PipelineReadqc
 import CGATPipelines.PipelinePreprocess as PipelinePreprocess
-
+import CGAT.IOTools as IOTools
+#########################################################################
+#########################################################################
+#########################################################################
 # load options from the config file
 P.getParameters(
     ["%s/pipeline.ini" % os.path.splitext(__file__)[0],
@@ -184,6 +187,7 @@ def loadFastqc(infile, outfile):
     track = P.snip(infile, ".fastqc")
     filename = os.path.join(
         PARAMS["exportdir"], "fastqc", track + "*_fastqc", "fastqc_data.txt")
+    print filename
     PipelineReadqc.loadFastqc(filename)
     P.touch(outfile)
 
@@ -255,8 +259,6 @@ if PARAMS["preprocessors"]:
             pass
 
         trimmomatic_options = PARAMS["trimmomatic_options"]
-        # NB: adapter_file overrides trimmomatic_adapter
-
         if PARAMS["adapter_file"] or PARAMS["trimmomatic_adapter"]:
             if PARAMS["adapter_file"]:
                 adapter_file = PARAMS["adapter_file"]
