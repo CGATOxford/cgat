@@ -1350,7 +1350,7 @@ def loadDifferentialAbundance(infile, outfile):
     '''
     load differentially abundant features
     '''
-    P.load(infile, outfile, "--index=taxa")
+    P.load(infile, outfile)
 
 ###################################################################
 ###################################################################
