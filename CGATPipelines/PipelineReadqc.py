@@ -88,9 +88,6 @@ def buildFastQCSummaryStatus(infiles, outfile, datadir):
         
         # there can be missing sections
         for fn in glob.glob(filename):
-            prefix = os.path.basename(os.path.dirname(fn))
-
-            
             stats = collections.defaultdict(str)
             for name, status, header, data in FastqcSectionIterator(
                     IOTools.openFile(fn)):

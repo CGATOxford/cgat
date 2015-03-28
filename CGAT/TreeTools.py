@@ -30,6 +30,7 @@ from types import *
 from CGAT import Intervalls as Intervalls
 from CGAT import Tree as Tree
 
+
 def SetChildren(tree):
     """sets children correctly."""
 
@@ -1373,14 +1374,14 @@ def ReconciliateByRio(gene_tree, species_tree,
                         genes1 = set(
                             zip(map(extract_species, taxa1), map(extract_gene, taxa1)))
                     except AttributeError:
-                        raise AttributeError, "could not parse %s" % (
-                            ",".join(taxa1))
+                        raise AttributeError(
+                            "could not parse %s" % (",".join(taxa1)))
                     try:
                         genes2 = set(
                             zip(map(extract_species, taxa2), map(extract_gene, taxa2)))
                     except AttributeError:
-                        raise AttributeError, "could not parse %s" % (
-                            ",".join(taxa2))
+                        raise AttributeError(
+                            "could not parse %s" % (",".join(taxa2)))
 
                     if genes1.intersection(genes2):
                         if len(genes1) == len(genes2) and len(genes1) == 1:
