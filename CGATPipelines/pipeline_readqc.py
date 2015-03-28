@@ -323,10 +323,6 @@ else:
         pass
 
 
-#########################################################################
-
-@follows(loadFastqcFinal, loadFastqc)
-# @merge(runFastqc, "status_summary.tsv.gz")
 @merge((runFastqcFinal, runFastqc), "status_summary.tsv.gz")
 def buildFastQCSummaryStatus(infiles, outfile):
     '''load fastqc status summaries into a single table.'''

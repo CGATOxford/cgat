@@ -266,7 +266,7 @@ def runPreparationTests(infile, outfile):
     runTest(infile, outfile)
 
 
-@follows(runPreparationTests)
+@follows(setupTests, runPreparationTests)
 @files([("%s.tgz" % x, "%s.log" % x)
         for x in P.CONFIG.sections()
         if x.startswith("test") and

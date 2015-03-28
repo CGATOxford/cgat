@@ -21,13 +21,14 @@ oriented, but I thought that might be overkill.
 """
 
 import Bio
-from Bio.Nexus.Nexus import Nexus
-from Bio.Nexus.Trees import Tree
+import Bio.Nexus.Nexus
+import Bio.Nexus.Trees
 import string
 import re
 import StringIO
 from types import *
 from CGAT import Intervalls as Intervalls
+from CGAT import Tree as Tree
 
 
 def SetChildren(tree):
@@ -282,7 +283,7 @@ def Newick2Nexus(infile):
 
     # previoulsy, a string was ok, now a string
     # is interpreted as a filename.
-    nexus = Nexus(StringIO.StringIO("".join(lines)))
+    nexus = Bio.Nexus.Nexus.Nexus(StringIO.StringIO("".join(lines)))
 
     if len(nexus.trees) == 0:
         raise ValueError("no tree found in file %s" % str(infile))
@@ -294,10 +295,6 @@ def Newick2Nexus(infile):
     Tree.updateNexus(nexus)
 
     return nexus
-
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
 
 
 def Nexus2Newick(nexus, with_branchlengths=True, with_names=False,
@@ -1377,14 +1374,14 @@ def ReconciliateByRio(gene_tree, species_tree,
                         genes1 = set(
                             zip(map(extract_species, taxa1), map(extract_gene, taxa1)))
                     except AttributeError:
-                        raise AttributeError, "could not parse %s" % (
-                            ",".join(taxa1))
+                        raise AttributeError(
+                            "could not parse %s" % (",".join(taxa1)))
                     try:
                         genes2 = set(
                             zip(map(extract_species, taxa2), map(extract_gene, taxa2)))
                     except AttributeError:
-                        raise AttributeError, "could not parse %s" % (
-                            ",".join(taxa2))
+                        raise AttributeError(
+                            "could not parse %s" % (",".join(taxa2)))
 
                     if genes1.intersection(genes2):
                         if len(genes1) == len(genes2) and len(genes1) == 1:
