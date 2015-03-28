@@ -53,6 +53,13 @@ import pipes
 import ConfigParser
 import pickle
 import importlib
+from cStringIO import StringIO
+import json
+try:
+    import pika
+    HAS_PIKA = True
+except ImportError:
+    HAS_PIKA = False
 
 from CGAT import Database as Database
 
@@ -1950,6 +1957,177 @@ def publish_notebooks():
     E.run(statement)
 
 
+class RuffusLoggingFilter(logging.Filter):
+    """
+    This is a filter which detects messages from ruffus and
+    sends them to the rabbitMQ message queue.
+
+    Valid task/job status:
+
+    update
+       task/job needs updating
+    completed
+       task/job completed successfully
+    failed
+       task/job failed
+    running
+       task/job is running
+    ignore
+       ignore task/job (is up-to-date)
+
+    """
+    exchange = "ruffus_pipelines"
+
+    def __init__(self, ruffus_text, project_name, pipeline_name):
+
+        self.project_name = project_name
+        self.pipeline_name = pipeline_name
+
+        # dictionary of jobs to run
+        self.jobs = {}
+        self.tasks = {}
+
+        if not HAS_PIKA:
+            self.connected = False
+            return
+    
+        def split_by_job(text):
+            text = "".join(text)
+            job_message = ""
+            # ignore first entry which is the docstring
+            for line in text.split(" Job  = ")[1:]:
+                try:
+                    job_name = re.match(
+                        "\[.*-> ([^\]]+)\]", line).groups()
+                except AttributeError:
+                    raise AttributeError("could not parse '%s'" % line)
+                job_status = "ignore"
+                if "Job needs update" in line:
+                    job_status = "update"
+
+                yield job_name, job_status, job_message
+
+        def split_by_task(text):
+            block, task_name = [], None
+            task_status = None
+            for line in text.split("\n"):
+                if line.startswith("Tasks which will be run"):
+                    task_status = "update"
+                elif line.startswith("Tasks which are up-to-date"):
+                    task_status = "ignore"
+                
+                if line.startswith("Task = "):
+                    if task_name:
+                        yield task_name, task_status, list(split_by_job(block))
+                    block = []
+                    task_name = re.match("Task = (.*)", line).groups()[0]
+                    continue
+                if line:
+                    block.append(line)
+            if task_name:
+                yield task_name, task_status, list(split_by_job(block))
+
+        # create connection
+        try:
+            connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+            self.connected = True
+        except pika.exceptions.AMQPConnectionError:
+            self.connected = False
+            return
+
+        self.channel = connection.channel()
+        self.channel.exchange_declare(
+            exchange=self.exchange,
+            type='topic')
+
+        # populate with initial messages
+        for task_name, task_status, jobs in split_by_task(ruffus_text):
+            if task_name.startswith("(mkdir"):
+                continue
+            
+            to_run = 0
+            for job_name, job_status, job_message in jobs:
+                self.jobs[job_name] = (task_name, job_name)
+                if job_status == "update":
+                    to_run += 1
+
+            self.tasks[task_name] = [task_status, len(jobs), len(jobs) - to_run]
+            self.send_task(task_name)
+
+    def send_task(self, task_name):
+        '''send task status.'''
+
+        if not self.connected:
+            return
+
+        task_status, task_total, task_completed = self.tasks[task_name]
+
+        data = {}
+        data['created_at'] = time.time()
+        data['pipeline'] = self.pipeline_name
+        data['task_name'] = task_name
+        data['task_status'] = task_status
+        data['task_total'] = task_total
+        data['task_completed'] = task_completed
+            
+        key = "%s.%s.%s" % (self.project_name, self.pipeline_name, task_name)
+
+        self.channel.basic_publish(exchange=self.exchange,
+                                   routing_key=key,
+                                   body=json.dumps(data))
+
+    def send_error(self, task_name, job, error=None, msg=None):
+
+        if not self.connected:
+            return
+
+        task_status, task_total, task_completed = self.tasks[task_name]
+
+        data = {}
+        data['created_at'] = time.time()
+        data['pipeline'] = self.pipeline_name
+        data['task_name'] = task_name
+        data['task_status'] = 'failed'
+        data['task_total'] = task_total
+        data['task_completed'] = task_completed
+            
+        key = "%s.%s.%s" % (self.project_name, self.pipeline_name, task_name)
+        
+        self.channel.basic_publish(exchange=self.exchange,
+                                   routing_key=key,
+                                   body=json.dumps(data))
+
+    def filter(self, record):
+
+        if not self.connected:
+            return True
+        
+        # filter ruffus logging messages
+        if record.filename.endswith("task.py"):
+            try:
+                before, task_name = record.msg.split(" = ")
+            except ValueError:
+                return True
+
+            # ignore the mkdir, etc tasks
+            if task_name not in self.tasks:
+                return True
+
+            if before == "Task enters queue":
+                self.tasks[task_name][0] = "running"
+            elif before == "Completed Task":
+                self.tasks[task_name][0] = "completed"
+            elif before == "Uptodate Task":
+                self.tasks[task_name][0] = "uptodate"
+            else:
+                return True
+                
+            # send new task status out
+            self.send_task(task_name)
+            
+        return True
+
+
 USAGE = '''
 usage: %prog [OPTIONS] [CMD] [target]
 
@@ -2166,6 +2344,22 @@ def main(args=sys.argv):
 
         try:
             if options.pipeline_action == "make":
+                
+                # get tasks to be done. This essentially replicates
+                # the state information within ruffus.
+                stream = StringIO()
+                pipeline_printout(
+                    stream,
+                    options.pipeline_targets,
+                    verbose=5,
+                    checksum_level=options.checksums)
+                
+                messenger = RuffusLoggingFilter(
+                    stream.getvalue(),
+                    project_name = getProjectName(),
+                    pipeline_name = getPipelineName())
+
+                logger.addFilter(messenger)
 
                 if not options.without_cluster:
                     global task
@@ -2241,12 +2435,13 @@ def main(args=sys.argv):
                 os.unlink(filename)
 
         except ruffus_exceptions.RethrownJobError, value:
-
+            
             if not options.debug:
                 E.error("%i tasks with errors, please see summary below:" %
                         len(value.args))
                 for idx, e in enumerate(value.args):
                     task, job, error, msg, traceback = e
+
                     if task is None:
                         # this seems to be errors originating within ruffus
                         # such as a missing dependency
@@ -2256,6 +2451,8 @@ def main(args=sys.argv):
                     else:
                         task = re.sub("__main__.", "", task)
                         job = re.sub("\s", "", job)
+
+                    messenger.send_error(task, job, error, msg)
 
                     # display only single line messages
                     if len([x for x in msg.split("\n") if x != ""]) > 1:
