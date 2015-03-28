@@ -2371,8 +2371,8 @@ def main(args=sys.argv):
                 
                 messenger = RuffusLoggingFilter(
                     stream.getvalue(),
-                    project_name = getProjectName(),
-                    pipeline_name = getPipelineName())
+                    project_name=getProjectName(),
+                    pipeline_name=getPipelineName())
 
                 logger.addFilter(messenger)
 
@@ -2450,7 +2450,7 @@ def main(args=sys.argv):
                 os.unlink(filename)
 
         except ruffus_exceptions.RethrownJobError, value:
-            
+
             if not options.debug:
                 E.error("%i tasks with errors, please see summary below:" %
                         len(value.args))
