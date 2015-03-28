@@ -1565,7 +1565,7 @@ if PARAMS["genome"].startswith("hg"):
         '''download GWAS catalog.'''
 
         if os.path.exists(outfile):
-            os.path.remove(outfile)
+            os.remove(outfile)
         statement = '''wget http://www.genome.gov/admin/gwascatalog.txt
         -O %(outfile)s'''
         P.run()
@@ -1647,7 +1647,7 @@ if PARAMS["genome"].startswith("hg"):
         track = P.snip(outfile, ".log")
         of = track + "_snps.tsv.gz"
         if os.path.exists(of):
-            os.path.remove(of)
+            os.remove(of)
         statement = \
             '''wget http://distild.jensenlab.org/snps.tsv.gz
             -O %(of)s'''
@@ -1655,7 +1655,7 @@ if PARAMS["genome"].startswith("hg"):
 
         of = track + "_lds.tsv.gz"
         if os.path.exists(of):
-            os.path.remove(of)
+            os.remove(of)
         statement = \
             '''wget http://distild.jensenlab.org/lds.tsv.gz
             -O %(of)s'''

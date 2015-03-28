@@ -1,0 +1,29 @@
+version:
+ stdin: null
+ outputs: [stdout]
+ references: []
+ options: --version
+
+#dtw:
+# stdin: null
+# outputs: [stdout]
+# references: [test-dtw-distance.tsv]
+# options: --distance-metric=dtw --log=test-dtw-distance.log --k=2 %DIR%/test-expression.tsv
+
+#cross_corr:
+# stdin: null
+# outputs: [stdout]
+# references: [test-xcorr-distance.tsv]
+# options: --distance-metric=cross-correlate --lag=0 --log=test-xcorr-distance.log %DIR%/test-expression.tsv
+
+#temp_corr:
+# stdin: null
+# outputs: [stdout]
+# references: [test-tempcorr-distance.tsv]
+# options: --distance-metric=temporal-correlate --log=test-tempcorr-distance.log %DIR%/test-expression.tsv
+
+#parallel:
+# stdin: null
+# outputs: [stdout]
+# references: [test-cond-rep-1_50-distance.tsv]
+# options: --distance=cross-correlate --parallel --log=parallel.log --lag=0 --expression-file=%DIR%/test-cond-large-expressi#on.tsv %DIR%/test-cond-rep-1_50-expression.tsv

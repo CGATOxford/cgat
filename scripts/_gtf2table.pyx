@@ -2,6 +2,7 @@
 #cimport csamtools
 from pysam.chtslib cimport *
 from pysam.csamfile cimport *
+from posix.stdlib cimport drand48
 
 import collections, array, struct
 import CGAT.Experiment as E
@@ -557,12 +558,18 @@ cdef inline computeOverlapWithExons(long * block_starts,
     result_bases_outside[0] = nbases_outside
     result_bases_exons[0] = nbases_exons
 
-##-----------------------------------------------------------------------------------
+
 class CounterBAM(Counter):
     '''base class for counters counting reads overlapping
     exons from BAM files.
 
-    ``multi_mapping`` determines how multi-mapping reads are treated.
+    If *sample_probabilty* is not Null, reads will be included
+    based on a sampling step.
+
+    *multi_mapping* determines how multi-mapping reads are treated.
+    See implementation notes in derived classes how this is
+    implemented.
+
     '''
 
     # minimum intron size - splicing only checked if gap within
@@ -575,25 +582,25 @@ class CounterBAM(Counter):
 
     def __init__(self, bamfiles, 
                  *args,
-                 multi_mapping = 'all',
-                 use_barcodes = False,
-                 minimum_mapping_quality = 0,
+                 multi_mapping='all',
+                 sample_probability=None,
+                 minimum_mapping_quality=0,
                  **kwargs ):
         Counter.__init__(self, *args, **kwargs )
         if not bamfiles: 
             raise ValueError("supply --bam-file options for readcoverage")
         self.mBamFiles = bamfiles
         self.multi_mapping = multi_mapping
-        self.use_barcodes = use_barcodes
+        self.sample_probability = sample_probability
         self.minimum_mapping_quality = minimum_mapping_quality
-        self.header = [ '_'.join(x) 
-                        for x in itertools.product( 
-                                self.headers_direction,
-                                self.headers_exons,
-                                self.headers_splicing)] +\
+        self.header = ['_'.join(x) 
+                       for x in itertools.product( 
+                               self.headers_direction,
+                               self.headers_exons,
+                               self.headers_splicing)] +\
             ['quality_pairs', 'quality_reads']
 
-##----------------------------------------------------------------
+
 class CounterReadCountsFull(CounterBAM):
     '''compute number of reads overlapping with exoIsoform
 
@@ -650,14 +657,19 @@ class CounterReadCountsFull(CounterBAM):
         The pair/read contains splice junctions, but at least one
         splice junction not part of the transcript model.
 
+    These three attributes are combined into counters for each combination
+    of attribute.
 
-    These three attributes are combined into counters.
+    If *multi_mapping* is set to ``ignore``, reads mapping to multiple positions
+    will be ignored. If it is set to ``weight`` counts are weighted by the NH
+    flag. Multi-mapping analysis requires the NH flag to be set. Otherwise a
+    ValueError will be raised.
 
-    Both unique and non-unique counts are collected. Uniqueness
-    is simply checked through alignment start position.
-
-    If ``multi_mapping`` is set, counts are weigthed by the NH
-    flag.
+    This counter can take into account barcodes if *use_barcodes* is
+    ``True``. The barcode of a read is given as a suffix of the read
+    name starting with an underscore. For example, for read
+    ``illq_1231_XYZ`` the barcode will be XYZ. When barcodes are enabled,
+    counts will be computed per barcode.
     '''
     
     headers_direction = ('sense', 'antisense')
@@ -666,8 +678,11 @@ class CounterReadCountsFull(CounterBAM):
 
     def __init__(self, 
                  *args,
+                 use_barcodes=False,
                  **kwargs ):
-        CounterBAM.__init__(self, *args, **kwargs )
+        CounterBAM.__init__(self, *args, **kwargs)
+        self.use_barcodes = use_barcodes
+
         self.header = [ '_'.join(x) 
                         for x in itertools.product( 
                                 self.headers_direction,
@@ -693,6 +708,11 @@ class CounterReadCountsFull(CounterBAM):
         cdef bint ignore_multi_mapping = self.multi_mapping == "ignore"
         cdef bint use_barcodes = self.use_barcodes
         cdef int max_bases_outside_exons = self.max_bases_outside_exons
+
+        cdef bint do_sample = self.sample_probability is not None
+        cdef float sample_probability = 1.0
+        if do_sample:
+            sample_probability = self.sample_probability
 
         # status variables
         cdef int ndirection_status = len(self.headers_direction)
@@ -754,7 +774,6 @@ class CounterReadCountsFull(CounterBAM):
         cdef AlignedSegment read
 
         # define counters, add 1 for quality filtered reads
-
         def get_counters(n=ncounters,
                          x=ndirection_status, 
                          y=nexons_status,
@@ -763,20 +782,16 @@ class CounterReadCountsFull(CounterBAM):
             counters.shape = (x,y,z)
             return counters
             
-
         # counters = numpy.zeros(ncounters, dtype=numpy.float)
         # counters.shape = (ndirection_status,
         #                   nexons_status,
         #                   nspliced_status)
 
-
-
         # retrieve all reads
         reads = []
 
-        if use_barcodes == True:
+        if use_barcodes:
             barcode_counters = {}
-
         else:
             counters = get_counters()
 
@@ -788,11 +803,15 @@ class CounterReadCountsFull(CounterBAM):
             for read in samfile.fetch(contig,
                                       exons_start,
                                       exons_end):
+
+                if do_sample and drand48() > sample_probability:
+                        continue
+
                 if minimum_mapping_quality > 0 and read.mapq <= minimum_mapping_quality:
                     quality_read_status += 1
                     continue                   
 
-                if use_barcodes == True:
+                if use_barcodes:
                     barcode = read.qname.split("_")[-1]
                     barcode_counters[barcode] = get_counters()
 
@@ -901,20 +920,23 @@ class CounterReadCountsFull(CounterBAM):
                     try:
                         nh = read.opt('NH')
                     except KeyError:
-                        nh = 1
+                        raise ValueError("cannot determine multimapping status, "
+                                         "NH Flag absent")
+
                     weight = 1.0 / nh
                 elif ignore_multi_mapping:
                     try:
                         nh = read.opt('NH')
                     except KeyError:
-                        nh = 1
+                        raise ValueError("cannot determine multimapping status, "
+                                         "NH Flag absent")
                     if nh > 1:
                         weight = 0
 
                     
                 counters_index = (direction_status, exons_status, spliced_status)
 
-                if use_barcodes == True:
+                if use_barcodes:
                     '''only the first read is counted'''
                     if barcode_counters[barcode][counters_index] == 0:
                         barcode_counters[barcode][counters_index] += weight
@@ -928,7 +950,7 @@ class CounterReadCountsFull(CounterBAM):
         free(exon_starts)
         free(exon_ends)
 
-        if use_barcodes == True:
+        if use_barcodes:
             counters = get_counters()
             for key, value in barcode_counters.iteritems():
                 counters += value
@@ -946,7 +968,6 @@ class CounterReadCountsFull(CounterBAM):
             "\t".join(map(str, (self.reads_below_quality,)))
                                 
 
-##-------------------------------------------------------------
 class CounterReadCounts(CounterReadCountsFull):
     '''compute number of reads overlapping with exons.
 
@@ -1140,14 +1161,22 @@ class CounterReadPairCountsFull(CounterBAM):
         splice junction not part of the transcript model.
 
 
-    These three attributes are combined into counters.
+    These four attributes are combined into counters for each combination
+    of attribute.
 
-    Both unique and non-unique counts are collected. Uniqueness
-    is simply checked through alignment start position.
+    If *multi_mapping* is set to ``ignore``, read pairs mapping to multiple
+    positions will be ignored. If it is set to ``weight`` counts are
+    weighted by the NH flag. Multi-mapping analysis requires the NH
+    flag to be set. Otherwise a ValueError will be raised.
 
-    If ``multi_mapping`` is set, counts are weigthed by the NH
-    flag.
-
+    Handling of multi-mapping reads for read pairs is more complex
+    than for single reads. This method eschews a full analysis of read
+    mapping combinations and instead employs a heuristic.
+    
+    If both reads of a pair map uniquely, the pair is said to be
+    "uniquely mapping", otherwise it will be called multi-mapping. The
+    weight of a multi-mapping read is given by the total number of hits
+    for the first and the second read in a pair divided by two.
     '''
     
     headers_status = ('proper', 'unmapped', 'outer', 'other')
@@ -1180,16 +1209,27 @@ class CounterReadPairCountsFull(CounterBAM):
         introns = self.getIntrons()
         contig = self.getContig()
         junctions = self.getJunctions()
+        
         cdef bint is_reverse = False
         if self.getStrand() == "-":
             is_reverse = True
 
+        # various thresholds
         cdef int min_intron_size = self.min_intron_size
         cdef float minimum_mapping_quality = self.minimum_mapping_quality
         cdef int max_bases_outside_exons = self.max_bases_outside_exons
-        cdef bint weight_multi_mapping = self.multi_mapping == "weight"
-        cdef bint ignore_multi_mapping = self.multi_mapping == "ignore"
 
+        # flag to indicate if multi-mapping reads should be weighted
+        cdef bint weight_multi_mapping = self.multi_mapping == "weight"
+        # flag to indicate if multi-mapping reads should be ignored
+        cdef bint ignore_multi_mapping = self.multi_mapping == "ignore"
+        # flag to test whether multimapping needs to be checked
+        cdef bint check_multi_mapping = weight_multi_mapping or ignore_multi_mapping
+        # flag to indicate whether sampling should be performed
+        cdef bint do_sample = self.sample_probability is not None
+        cdef float sample_probability = 1.0
+        if do_sample:
+            sample_probability = self.sample_probability
 
         # status variables
         cdef int npair_status = len(self.headers_status)
@@ -1222,6 +1262,8 @@ class CounterReadPairCountsFull(CounterBAM):
         cdef int nreads_in_pair = 0
         cdef int nexons = len(exons)
         cdef int nh = 0
+        cdef int nh_read1 = 0
+        cdef int nh_read2 = 0
         cdef float weight = 1.0
         cdef int ix
         cdef long exons_start = exons[0][0]
@@ -1283,6 +1325,9 @@ class CounterReadPairCountsFull(CounterBAM):
             for key, reads_in_pair in itertools.groupby(
                     reads,
                     key=lambda x: x.qname):
+                
+                if do_sample and drand48() > sample_probability:
+                    continue
                 
                 reads_in_pair = list(reads_in_pair)
                 pair_status = 0
@@ -1362,7 +1407,8 @@ class CounterReadPairCountsFull(CounterBAM):
                 nblocks = 0
                 block_last_end = -1
                 block_first_start = -1
-                
+                nuniquely_mapping = 0
+
                 for read in reads_in_pair:
                     # end coordinate in genomic coordinates
                     blocks = read.blocks
@@ -1466,21 +1512,37 @@ class CounterReadPairCountsFull(CounterBAM):
                     # other
                     exons_status = 3
 
+                # processing of multi-mapping read pairs
                 weight = 1.0
-                if weight_multi_mapping:
-                    try:
-                        nh = read.opt('NH')
-                    except KeyError:
-                        nh = 1
-                    weight = 1.0 / nh
-                elif ignore_multi_mapping:
-                    try:
-                        nh = read.opt('NH')
-                    except KeyError:
-                        nh = 1
-                    if nh > 1:
-                        weight = 0
-                
+                if check_multi_mapping:
+                    nh_read1 = 0
+                    nh_read2 = 0
+                    for read in reads_in_pair:
+                        try:
+                            nh = read.opt('NH')
+                        except KeyError:
+                            raise ValueError("cannot determine multimapping status, "
+                                             "NH Flag absent")
+                        if read.is_read1:
+                            nh_read1 = nh
+                        else:
+                            nh_read2 = nh
+                            
+                    # if only one read of a pair is part of the region of interest,
+                    # the multimapping state of the missing read is unknown. Thus either
+                    # normalize by 2 or 1.
+                    #
+                    # 1.0 / (nh / 2) = 2.0 / nh
+                    if weight_multi_mapping:
+                        # both reads have been counted
+                        if nh_read1 and nh_read2:
+                            weight = 2.0
+                        weight /= (nh_read1 + nh_read2)
+                    elif ignore_multi_mapping:
+                        if nh_read1 > 1 or nh_read2 > 1:
+                            weight = 0.0
+
+                # save weighted count for pair properties
                 counters[pair_status][direction_status][exons_status][spliced_status] += weight
 
         free(block_starts)
