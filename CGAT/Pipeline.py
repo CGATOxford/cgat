@@ -1292,6 +1292,21 @@ def run(**kwargs):
                                   options.get("outfile", "ruffus")))),
             "%(cluster_options)s"]
 
+        # get memory usage
+        if 'job_memory' in options:
+            spec.append("-l %s=%s" %
+                        (PARAMS.get("cluster_memory_resource", "mem_free"),
+                         options["job_memory"]))
+
+        elif "mem_free" in options["cluster_options"] and \
+             PARAMS.get("cluster_memory_resource", False):
+
+            options["cluster_options"] = re.sub(
+                "mem_free", PARAMS.get("cluster_memory_resource"),
+                options["cluster_options"])
+            E.warn("use of mem_free in job options is deprecated, please"
+                   "set job_memory local var instead")
+                                                
         # if process has multiple threads, use a parallel environment
         if 'job_threads' in options:
             spec.append(

@@ -1,0 +1,11 @@
+version:
+ stdin: null
+ outputs: [stdout]
+ references: []
+ options: --version
+
+metrics:
+ stdin: null
+ outputs: [stdout]
+ references: [metrics.tsv]
+ options: --log=metrics.log %DIR%/test-agg-clusters.tsv
