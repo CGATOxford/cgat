@@ -1,20 +1,17 @@
 import os
 import re
 import glob
+import collections
 import cStringIO
 import pandas as pd
 import CGAT.Pipeline as P
 import CGAT.IOTools as IOTools
 import CGAT.CSV2DB as CSV2DB
 
-###############################################################################
-###############################################################################
-###############################################################################
-# Generate summaries from FastQC runs
-###############################################################################
-
 
 def FastqcSectionIterator(infile):
+    """iterate over FASTQC output file and yield each section.
+    """
     data = []
     for line in infile:
         if line.startswith(">>END_MODULE"):
@@ -81,29 +78,33 @@ def buildFastQCSummaryStatus(infiles, outfile, datadir):
     '''load fastqc status summaries into a single table.'''
 
     outf = IOTools.openFile(outfile, "w")
-    first = True
+    names = set()
+    results = []
     for infile in infiles:
         track = P.snip(os.path.basename(infile), ".fastqc")
         filename = os.path.join(datadir,
                                 track + "*_fastqc",
                                 "fastqc_data.txt")
-
+        
+        # there can be missing sections
         for fn in glob.glob(filename):
             prefix = os.path.basename(os.path.dirname(fn))
-            results = []
 
-            names, stats = [], []
+            
+            stats = collections.defaultdict(str)
             for name, status, header, data in FastqcSectionIterator(
                     IOTools.openFile(fn)):
-                stats.append(status)
-                names.append(name)
+                stats[name] = status
 
-            if first:
-                outf.write("track\tfilename\t%s\n" % "\t".join(names))
-                first = False
-
-            outf.write("%s\t%s\t%s\n" %
-                       (track, os.path.dirname(fn), "\t".join(stats)))
+            results.append((track, fn, stats))
+            names.update(stats.keys())
+            
+    names = list(names)
+    outf.write("track\tfilename\t%s\n" % "\t".join(names))
+    for track, fn, stats in results:
+        outf.write("%s\t%s\t%s\n" %
+                   (track, os.path.dirname(fn),
+                    "\t".join(stats[x] for x in names)))
     outf.close()
 
 
