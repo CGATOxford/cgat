@@ -21,14 +21,14 @@ oriented, but I thought that might be overkill.
 """
 
 import Bio
-from Bio.Nexus.Nexus import Nexus
-from Bio.Nexus.Trees import Tree
+import Bio.Nexus.Nexus
+import Bio.Nexus.Trees
 import string
 import re
 import StringIO
 from types import *
 from CGAT import Intervalls as Intervalls
-
+from CGAT import Tree as Tree
 
 def SetChildren(tree):
     """sets children correctly."""
@@ -282,7 +282,7 @@ def Newick2Nexus(infile):
 
     # previoulsy, a string was ok, now a string
     # is interpreted as a filename.
-    nexus = Nexus(StringIO.StringIO("".join(lines)))
+    nexus = Bio.Nexus.Nexus.Nexus(StringIO.StringIO("".join(lines)))
 
     if len(nexus.trees) == 0:
         raise ValueError("no tree found in file %s" % str(infile))
@@ -294,10 +294,6 @@ def Newick2Nexus(infile):
     Tree.updateNexus(nexus)
 
     return nexus
-
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
 
 
 def Nexus2Newick(nexus, with_branchlengths=True, with_names=False,
