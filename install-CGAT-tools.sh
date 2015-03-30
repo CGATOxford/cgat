@@ -224,7 +224,9 @@ conda config --add channels https://conda.binstar.org/cgat
 conda update -q conda --yes
 conda_cleanup
 conda info -a
-conda create -q -n $CONDA_INSTALL_TYPE cgat-bioconductor-deps --yes
+conda create -q -n $CONDA_INSTALL_TYPE cgat-r-deps --yes
+conda_cleanup
+conda install -q -n $CONDA_INSTALL_TYPE cgat-bioconductor-deps --yes
 conda_cleanup
 conda install -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE --yes
 conda_cleanup
