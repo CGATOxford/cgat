@@ -16,9 +16,9 @@ import CGAT.Experiment as E
 import sklearn.metrics.cluster.supervised as supervised
 from math import log
 import random
+import pyximport
+pyximport.install(build_in_temp=False)
 try:
-    import pyximport
-    pyximport.install(build_in_temp=False)
     import _clusters2metrics as c2m
 except ImportError:
     import CGAT._clusters2metrics as c2m
