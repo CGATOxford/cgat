@@ -38,7 +38,6 @@ import re
 import optparse
 import itertools
 import random
-import CGAT.Pipeline as P
 import CGAT.Experiment as E
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
@@ -79,19 +78,19 @@ def main(argv=None):
     E.info("merging gtf files")
     for gtf in gtf_files:
         if gtf.endswith(".gtf.gz"):
-            outfile = P.snip(gtf, ".gtf.gz") + ".merged.gtf.gz"
-            prefices.append(P.snip(gtf, ".gtf.gz"))
+            outfile = IOTools.snip(gtf, ".gtf.gz") + ".merged.gtf.gz"
+            prefices.append(IOTools.snip(gtf, ".gtf.gz"))
             merged_files.append(outfile)
             statement = '''zcat %s | python %s/gtf2gtf.py --method=merge-transcripts --log=%s.log | gzip > %s''' % (
                 gtf, options.scripts_dir, outfile, outfile)
-            P.run()
+            P.execute(statement)
         elif gtf.endswith(".gtf"):
-            outfile = P.snip(gtf, ".gtf") + ".merged.gtf.gz"
-            prefices.append(P.snip(gtf, ".gtf"))
+            outfile = IOTools.snip(gtf, ".gtf") + ".merged.gtf.gz"
+            prefices.append(IOTools.snip(gtf, ".gtf"))
             merged_files.append(outfile)
             statement = '''cat %s | python %s/gtf2gtf.py --method=merge-transcripts --log=%s.log | gzip  > %s''' % (
                 gtf, options.scripts_dir, outfile, outfile)
-            P.run()
+            E.execute(statement)
         else:
             raise ValueError(
                 "cannot perform merge on %s: is not a gtf file" % gtf)

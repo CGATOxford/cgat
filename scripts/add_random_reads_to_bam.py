@@ -31,7 +31,6 @@ Code
 
 # load modules
 import CGAT.Experiment as E
-import CGAT.Pipeline as P
 import sys
 import os
 
@@ -86,7 +85,7 @@ def main(argv=None):
     (options, args) = E.Start(parser, argv=argv)
 
     # Generate random reads and add to bam
-    track = P.snip(os.path.basename(options.bam_file), ".bam")
+    track = os.path.basename(options.bam_file)[:-len(".bam")]
     readlen = options.readlength
     isize = options.isize
     isd = options.isd
@@ -106,14 +105,14 @@ def main(argv=None):
     --reference %(genome)s \
     --duplicate_probability 0.0 \
     --out simseq.sam > simseq.log; ''' % locals()
-    P.run()
+    E.execute(statement % locals())
 
     statement = '''samtools view -bS -t %(genome)s.fai -o simseq.bam simseq.sam; 
                    samtools sort simseq.bam simseq.srt;
                    samtools sort %(bam)s %(track)s.srt;
                    samtools merge %(out)s %(track)s.srt.bam simseq.srt.bam;
                    samtools index %(out)s;'''
-    P.run()
+    E.execute(statement % locals())
 
     # write footer and output benchmark information.
     E.Stop()
