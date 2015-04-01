@@ -286,7 +286,7 @@ def main(argv=None):
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
     if options.input_filename_tags == "-":
-        fh = tmpfile.mkstmp(delete=False)
+        fh = tmpfile.NamedTemporaryFile(delete=False)
         fh.write("".join([x for x in options.stdin]))
         fh.close()
         options.input_filename_tags = fh.name
