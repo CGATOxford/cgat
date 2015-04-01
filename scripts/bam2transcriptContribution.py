@@ -41,8 +41,7 @@ except ImportError:
 
 import pysam
 import CGAT.Experiment as E
-import CGAT.Pipeline as P
-
+import CGAT.IOTools as IOTools
 import pyximport
 pyximport.install(build_in_temp=False)
 
@@ -135,7 +134,7 @@ def main(argv=None):
 
     # uses pysam to write out a bam file of the spliced reads only
     allreads = pysam.Samfile(options.bam_file)
-    spliced_bamname = P.snip(options.bam_file, ".bam") + "_spliced_reads.bam"
+    spliced_bamname = IOTools.snip(options.bam_file, ".bam") + "_spliced_reads.bam"
 
     # open file for outputting spliced alignments
     splicedreads = pysam.Samfile(spliced_bamname, "wb", template=allreads)
@@ -209,12 +208,12 @@ def main(argv=None):
 
     if options.reference_gtf:
         context_summary = open(
-            P.snip(options.bam_file, ".bam") + ".excluded.context", "w")
+            IOTools.snip(options.bam_file, ".bam") + ".excluded.context", "w")
         context_summary.write("\t".join(["Feature", "number"]) + "\n")
 
         # write out the read info as well
         context_file = open(
-            P.snip(options.bam_file, ".bam") + ".excluded", "w")
+            IOTools.snip(options.bam_file, ".bam") + ".excluded", "w")
 
         context_dict = collections.defaultdict(int)
         # intersect bam - write non-overlapping with transcripts - intersect

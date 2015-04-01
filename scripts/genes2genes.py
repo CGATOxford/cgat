@@ -40,7 +40,7 @@ import collections
 import pickle
 
 import CGAT.Experiment as E
-import CGATPipelines.PipelineBiomart as PipelineBiomart
+import CGAT.Biomart as Biomart
 
 
 def buildIdentifierMap(query_species):
@@ -49,7 +49,7 @@ def buildIdentifierMap(query_species):
                'hgnc_id',
                'hgnc_symbol')
 
-    data = PipelineBiomart.biomart_iterator(
+    data = Biomart.biomart_iterator(
         columns,
         dataset="%s_gene_ensembl" % query_species)
 
@@ -83,7 +83,7 @@ def buildOrthologyMap(query_species,
                '%s_homolog_orthology_type' % target_species,
                '%s_homolog_orthology_confidence' % target_species)
 
-    data = PipelineBiomart.biomart_iterator(
+    data = Biomart.biomart_iterator(
         columns,
         dataset="%s_gene_ensembl" % query_species)
 
