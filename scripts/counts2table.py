@@ -131,13 +131,11 @@ from rpy2.robjects import r as R
 
 try:
     import CGAT.Experiment as E
-    import CGAT.Pipeline as P
     import CGAT.Expression as Expression
     import CGAT.IOTools as IOTools
     import CGAT.Counts as Counts
 except ImportError:
     import Experiment as E
-    import Pipeline as P
     import Expression
     import IOTools
     import Counts
