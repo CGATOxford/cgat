@@ -285,7 +285,6 @@ class MasterProcessor():
             infiles = (infile,)
 
         num_files = len(infiles,)
-        
         for idx, tool in enumerate(list_of_preprocessers):
             if idx == len(list_of_preprocessers)-1:
                 end = True
@@ -368,10 +367,10 @@ class MasterProcessor():
     def build(self, infile, outfile, processer_list):
         '''run mapper.'''
         f_format = Fastq.guessFormat(
-            IOTools.openFile(infile, "r"), raises=False)
+            IOTools.openFile(infile[0], "r"), raises=False)
 
         cmd_process, cmd_post, processed_files = self.process(
-            infile, processer_list, outfile, f_format, save=self.save)
+            infile[0], processer_list, outfile, f_format, save=self.save)
         cmd_clean = self.cleanup(outfile)
 
         assert cmd_process.strip().endswith(";")
@@ -509,7 +508,7 @@ class sickle(process_tool):
         processing_options = self.processing_options
         rRANGES = {33: 'sanger', 64: 'illumina', 59: 'solexa'}
         quality = rRANGES[offset]
-        
+
         if self.num_files == 1:
             infile = infiles[0]
             track = os.path.basename(infile)
