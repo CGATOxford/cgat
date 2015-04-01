@@ -137,6 +137,7 @@ Command line options
 
 import sys
 import os
+import tempfile
 
 from rpy2.robjects import r as R
 import rpy2.robjects.numpy2ri
@@ -286,7 +287,7 @@ def main(argv=None):
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
     if options.input_filename_tags == "-":
-        fh = tmpfile.NamedTemporaryFile(delete=False)
+        fh = tempfile.NamedTemporaryFile(delete=False)
         fh.write("".join([x for x in options.stdin]))
         fh.close()
         options.input_filename_tags = fh.name
