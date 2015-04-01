@@ -131,6 +131,17 @@ return $RESULT
 
 }
 
+# Travis installations are running out of RAM
+# with large conda installations. Issue has been submitted here:
+# https://github.com/conda/conda/issues/1197
+# While we wait for a response, we'll try to clean up the conda
+# installation folder as much as possible
+conda_cleanup() {
+conda clean --index-cache
+conda clean --lock
+conda clean --tarballs -y
+conda clean --packages -y
+}
 
 # proceed with conda installation
 conda_install() {
@@ -211,12 +222,14 @@ conda config --add channels https://conda.binstar.org/cgat
 
 # install cgat environment
 conda update -q conda --yes
+conda_cleanup
 conda info -a
-conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE --yes
-conda clean --index-cache
-conda clean --lock
-conda clean --tarballs -y
-conda clean --packages -y
+conda create -q -n $CONDA_INSTALL_TYPE cgat-r-deps --yes
+conda_cleanup
+conda install -q -n $CONDA_INSTALL_TYPE cgat-bioconductor-deps --yes
+conda_cleanup
+conda install -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE --yes
+conda_cleanup
 
 # if installation is 'devel' (outside of travis), checkout latest version from github
 if [ "$OS" != "travis" ] ; then

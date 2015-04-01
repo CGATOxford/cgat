@@ -38,22 +38,23 @@ class Diamond(object):
         '''
         read input
         '''
-        self.qid,
-        self.gi,
-        self.ref,
-        self.ngaps,
-        self.length,
-        self.evalue,
-        self.nmismatches,
-        self.identity,
-        self.score = qid,
-        gi,
-        ref,
-        ngaps,
-        length,
-        evalue,
-        nmismatches,
-        identity,
+        self.qid, \
+        self.gi, \
+        self.ref, \
+        self.ngaps, \
+        self.length, \
+        self.evalue, \
+        self.nmismatches, \
+        self.identity, \
+        self.score = \
+        qid, \
+        gi, \
+        ref, \
+        ngaps, \
+        length, \
+        evalue, \
+        nmismatches, \
+        identity, \
         score
 
         return self
@@ -76,8 +77,7 @@ def alignment_iterator(alignment_file):
             gi, ref = None, ref[0]
         else:
             gi, ref = ref[1], ref[3]
-        read, ngaps, length, evalue, nmismatches, identity, score = \
-            data[0], data[5], data[3], data[10], data[4], data[2], data[11]
+        read, ngaps, length, evalue, nmismatches, identity, score = data[0], data[5], data[3], data[10], data[4], data[2], data[11]
         yield Diamond().read(read,
                              gi,
                              ref,
