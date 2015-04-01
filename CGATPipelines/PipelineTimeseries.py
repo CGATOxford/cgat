@@ -16,6 +16,12 @@ import CGAT.Experiment as E
 import sklearn.metrics.cluster.supervised as supervised
 from math import log
 import random
+try:
+    import pyximport
+    pyximport.install(build_in_temp=False)
+    import _clusters2metrics as c2m
+except ImportError:
+    import CGAT._clusters2metrics as c2m
 
 ###########
 # Functions
@@ -109,16 +115,14 @@ def deseqNormalize(infile,
     # only select genes with an average of ten reads mapping
 
     E.info("calculating size factors and dispersion")
-
-    R('''cds <- newCountDataSet(countsTable, design)''')
+    R('''notZero <- (rowMeans(countsTable) > 1)''')
+    R('''cds <- newCountDataSet(countsTable[notZero, ], design)''')
     R('''cds_size <- estimateSizeFactors(cds)''')
     R('''cds_disp <- estimateDispersions(cds_size, method="blind")''')
-    R('''notZero <- (rowMeans(counts(cds))>10)''')
 
     E.info("applying variance stabilizing transformation")
 
     R('''vst <- varianceStabilizingTransformation(cds_disp)''')
-    R('''vst <- vst[notZero, ]''')
 
     # format data set to long format with condition and replicate labels
     # convert to a numpy array
@@ -171,7 +175,7 @@ def avTimeExpression(infile):
                         axis=0)
     except KeyError:
         pass
-    
+
     return data_frame
 
 
@@ -1202,8 +1206,89 @@ def consensusClustering(infile,
 #################################
 
 
+def get_label_map(labels):
+    '''
+    return a dictionary with integer:string mapping
+    '''
+    label_set = set()
+    map_dict = {}
+    for val in labels:
+        label_set.update(val)
+    for lab, integer in enumerate(label_set):
+        map_dict[integer] = lab
+
+    return map_dict
+
+
+def make_mapped_matrix(map_dict, input_frame):
+    '''
+    return a matrix with integer labels from mapping
+    '''
+
+    frame_index = input_frame.index.tolist()
+    nindex = len(frame_index)
+    ncols = len(input_frame.columns)
+    integer_matrix = np.ndarray((nindex, ncols),
+                                dtype=np.int32)
+
+    E.info("mapping cluster labels")
+    matrix_idx = [h for h, g in enumerate(frame_index)]
+    for idx in matrix_idx:
+        for col in range(ncols):
+            mod = input_frame.iloc[idx][col+1]
+            integer_matrix[idx][col] = map_dict[mod]
+
+    return integer_matrix
+
+
+def randIndexes(clustering_results):
+    '''
+    Calculate Rand index and adjusted Rand index over pairwise
+    clustering comparisons.
+    Use cythonised function to calculate indices
+    '''
+
+    # reassign module and gene labels with integer ids, integer comparison is
+    # much faster than string comparison
+    cluster_labels = clustering_results.values
+    map_dict = get_label_map(cluster_labels)
+
+    gene_map = {}
+    for r, gene in enumerate(clustering_results.index):
+        gene_map[gene] = r
+    E.info("mapping gene ids")
+
+    integer_matrix = make_mapped_matrix(map_dict, clustering_results)
+    # take a small slice of the matrix for testing 5 genes, 3 clusterings
+
+    E.info("counting clustering consensus")
+    # use cythonized function to return rand index matrix
+    cy_rand = c2m.consensus_metrics(integer_matrix)
+    E.info("Rand Index calculated for all clusterings")
+
+    return cy_rand
+
+
+def unravel_arrays(metric_array):
+    '''
+    Unravel a numpy array such that only one half of the symmetrical
+    matrix is output.  Do not output diagonal values.
+    '''
+
+    dim = metric_array.shape[0]
+    flat_array = []
+
+    for indx in itertools.combinations(range(0, dim), r=2):
+        if indx[0] != indx[1]:
+            flat_array.append(metric_array[indx[1], indx[0]])
+        else:
+            pass
+    return flat_array
+
+
 def clusterConcordia(data1, data2, complete_pairs):
     '''
+    DEFUNCT
     Calculate clustering agreement counts:
     a = number of pairs in the same cluster in clustering 1 and clustering 2
     b = number of pairs in different clusters in clustering 1 and clustering 2
@@ -1219,7 +1304,7 @@ def clusterConcordia(data1, data2, complete_pairs):
     sc = set()
     sd = set()
     stotal = set()
-    
+
     # iterate over each pair-wise combination of cluster assignments
     for key in itertools.product(data1.keys(),
                                  data2.keys()):

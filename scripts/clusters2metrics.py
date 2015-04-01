@@ -76,7 +76,6 @@ import CGAT.IOTools as IOTools
 import pandas as pd
 import numpy as np
 import itertools
-from math import factorial
 import CGATPipelines.PipelineTimeseries as TS
 
 
@@ -115,13 +114,13 @@ def main(argv=None):
                            header=None,
                            index_col=0)
 
-        df = df.ix[:500, :5]
+        df = df.ix[:, :50]
         cluster_combs = (x for x in itertools.combinations(df.columns,
                                                            2))
         genes = df.index
         results_dict = {}
         all_clusts = {}
-        # limit to 3 clusterings and 5 genes
+
         E.info("setting up cluster containers")
         for i in df.columns:
             clusters = set(df[i].values.tolist())
@@ -139,31 +138,29 @@ def main(argv=None):
                 col_set.update(gene_members)
                 cluster_dict[col] = col_set
                 all_clusts[i] = cluster_dict
-
-        gene_len = len(genes)
-        gene_factorial = factorial(gene_len)
-        denom = factorial(gene_len - 2)
-        complete_pairs = int((gene_factorial/factorial(2))/denom)
-
         E.info("generating all pair-wise cluster comparisons")
+        E.info("calculating adjusted mutual information")
         for k in cluster_combs:
             clusters1 = all_clusts[k[0]]
             clusters2 = all_clusts[k[1]]
-            concord = TS.clusterConcordia(clusters1,
-                                          clusters2,
-                                          complete_pairs)
-            E.info("calculating metrics")
-            metric_dict = TS.concordanceMetric(concord)
-            # E.info("calculating AMI")
-            metric_dict['AMI'] = TS.adjustedMutualInformation(all_clusts[k[0]],
-                                                              all_clusts[k[1]])
+            metric_dict = {}
+            metric_dict['AMI'] = TS.adjustedMutualInformation(clusters1,
+                                                              clusters2)
             results_dict[k] = metric_dict
 
-        E.info("aggregating results")
         res_frame = pd.DataFrame(results_dict).T
         res_frame = res_frame.reset_index()
         res_frame.drop(['level_0'], inplace=True, axis=1)
         res_frame.drop(['level_1'], inplace=True, axis=1)
+
+        # flatten rand indices and add to output dataframe
+        rand_arrays = TS.randIndexes(df)
+        flat_adj_rand = TS.unravel_arrays(rand_arrays[0])
+        flat_rand = TS.unravel_arrays(rand_arrays[1])
+        res_frame['Rand_Index'] = flat_rand
+        res_frame['Adjusted_Rand_Index'] = flat_adj_rand
+        E.info("aggregating results")
+
         res_frame.to_csv(options.stdout,
                          sep="\t",
                          index_label='idx')
