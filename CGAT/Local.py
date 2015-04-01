@@ -81,10 +81,6 @@ def getProjectDirectories(sections=None):
     return result
 
 
-#######################################################
-# Duplicated functions from Pipeline.py - refactor
-# once Local.py is fully parameterized
-#######################################################
 def getPipelineName():
     '''return the name of the pipeline.
 

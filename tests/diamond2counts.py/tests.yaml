@@ -9,4 +9,4 @@ best:
     stdin: stool-WT-R1.diamond.small.tsv.gz
     outputs: [stdout]
     references: [best.tsv]
-    options: --method=best --sum-cog --cog-map=<DIR>/gene2cog.tsv.gz --log=<DIR>/best.log
+    options: --method=best --sum-cog --cog-map=<DIR>/gene2cog2.tsv.gz --log=<DIR>/best.log
