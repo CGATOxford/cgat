@@ -338,7 +338,7 @@ def main(argv=None):
     # remove bottom percentile of observations
     if options.filter_percentile_rowsums:
         counts.removeObservationsPerc(
-                    percentile_rowsums=options.filter_percentile_rowsums)
+            percentile_rowsums=options.filter_percentile_rowsums)
 
     # check samples are the same in counts and design following counts
     # filtering and, if not, restrict design table and re-validate
@@ -368,7 +368,8 @@ def main(argv=None):
         results.plotMAplot(design, outfile_prefix=outfile_prefix)
 
     results.table.to_csv(sys.stdout, sep="\t", na_rep="NA")
-    # results.table.to_csv(outfile_prefix + "results.tsv", sep="\t", na_rep="NA")
+    # results.table.to_csv(outfile_prefix + "results.tsv",
+    # sep="\t", na_rep="NA")
 
     # write out summary tables for each comparison/contrast
     E.info(results.Summary)
@@ -436,7 +437,7 @@ def main(argv=None):
         R['save.image'](options.save_r_environment)
     '''
 
-    #if fh and os.path.exists(fh.name):
+    # if fh and os.path.exists(fh.name):
     #    os.unlink(fh.name)
 
     E.Stop()

@@ -124,36 +124,6 @@ Toolboxes for generic problems.
    modules/ExternalList.rst
    modules/ProgressBar.rst
 
-Pipelines
----------
-
-.. toctree::
-   :maxdepth: 1
-
-   modules/Pipeline.rst
-   pipelinemodules/PipelineTracks.rst
-   pipelinemodules/PipelineMapping.rst
-   pipelinemodules/PipelineAnnotator.rst
-   pipelinemodules/PipelineBiomart.rst
-   pipelinemodules/PipelineChipseq.rst
-   pipelinemodules/PipelineDatabase.rst
-   pipelinemodules/PipelineEnrichment.rst
-   pipelinemodules/PipelineGO.rst
-   pipelinemodules/PipelineGeneset.rst
-   pipelinemodules/PipelineIntervalAnnotation.rst
-   pipelinemodules/PipelineKEGG.rst
-   pipelinemodules/PipelineLncRNA.rst
-   pipelinemodules/PipelineMapping.rst
-   pipelinemodules/PipelineMappingQC.rst
-   pipelinemodules/PipelineMedip.rst
-   pipelinemodules/PipelineMotifs.rst
-   pipelinemodules/PipelinePeakcalling.rst
-   pipelinemodules/PipelineRnaseq.rst
-   pipelinemodules/PipelineTracks.rst
-   pipelinemodules/PipelineTransfacMatch.rst
-   pipelinemodules/PipelineUCSC.rst
-   pipelinemodules/PipelineUtilities.rst
-
 Plotting
 --------
 
@@ -197,7 +167,6 @@ Modules not sorted into categories.
    modules/Bioprospector.rst
    modules/BlatTest.rst 
    modules/CBioPortal.rst 
-   modules/Local.rst
    modules/CSV2DB.rst 
    modules/Expression.rst 
    modules/Fastq.rst 

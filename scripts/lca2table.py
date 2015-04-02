@@ -213,37 +213,37 @@ def main(argv=None):
                                         "nseqsubspecies+"]) + "\n")
 
         options.stdout.write("\t".join(map(
-                    str, [len(level_counts["kingdom"]),
-                          len(level_counts["kingdom+"]),
-                          len(level_counts["phylum"]),
-                          len(level_counts["phylum+"]),
-                          len(level_counts["class"]),
-                          len(level_counts["class+"]),
-                          len(level_counts["order"]),
-                          len(level_counts["order+"]),
-                          len(level_counts["family"]),
-                          len(level_counts["family+"]),
-                          len(level_counts["genus"]),
-                          len(level_counts["genus+"]),
-                          len(level_counts["species"]),
-                          len(level_counts["species+"]),
-                          len(level_counts["subspecies"]),
-                          len(level_counts["subspecies+"]),
-                          nreads_kingdom,
-                          nreads_phylum,
-                          nreads_phylum_plus,
-                          nreads_class,
-                          nreads_class_plus,
-                          nreads_order,
-                          nreads_order_plus,
-                          nreads_family,
-                          nreads_family_plus,
-                          nreads_genus,
-                          nreads_genus_plus,
-                          nreads_species,
-                          nreads_species_plus,
-                          nreads_subspecies,
-                          nreads_subspecies_plus])) + "\n")
+            str, [len(level_counts["kingdom"]),
+                  len(level_counts["kingdom+"]),
+                  len(level_counts["phylum"]),
+                  len(level_counts["phylum+"]),
+                  len(level_counts["class"]),
+                  len(level_counts["class+"]),
+                  len(level_counts["order"]),
+                  len(level_counts["order+"]),
+                  len(level_counts["family"]),
+                  len(level_counts["family+"]),
+                  len(level_counts["genus"]),
+                  len(level_counts["genus+"]),
+                  len(level_counts["species"]),
+                  len(level_counts["species+"]),
+                  len(level_counts["subspecies"]),
+                  len(level_counts["subspecies+"]),
+                  nreads_kingdom,
+                  nreads_phylum,
+                  nreads_phylum_plus,
+                  nreads_class,
+                  nreads_class_plus,
+                  nreads_order,
+                  nreads_order_plus,
+                  nreads_family,
+                  nreads_family_plus,
+                  nreads_genus,
+                  nreads_genus_plus,
+                  nreads_species,
+                  nreads_species_plus,
+                  nreads_subspecies,
+                  nreads_subspecies_plus])) + "\n")
     elif options.summarise == "taxa-counts":
         unmapped = collections.defaultdict(int)
         total = 0
@@ -353,12 +353,11 @@ def main(argv=None):
             total_level = total - unmapped[level]
             for taxa, count in taxa_count.iteritems():
                 options.stdout.write("\t".join(
-                        [level,
-                         taxa,
-                         str(count),
-                         str(float(count)/total_level),
-                         str(float(count)/(float(total_level)/1000000))
-                         ]) + "\n")
+                    [level,
+                     taxa,
+                     str(count),
+                     str(float(count)/total_level),
+                     str(float(count)/(float(total_level)/1000000))]) + "\n")
 
         E.info(c)
 

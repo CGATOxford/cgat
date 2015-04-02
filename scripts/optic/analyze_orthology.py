@@ -113,20 +113,19 @@ def AnalyseOrphans(orphans, outfile,
 
     f = 0
     for g, t in orphans.items():
-
         CountOrphans(
-           outfile, g, t,
-           sums,
-           writer,
-           all_genes_this,
-           aligned_genes_this,
-           assigned_genes_this,
-           aligned_genes_other,
-           assigned_genes_other,
-           map_query2best=map_query2best,
-           map_transcript2location_other=map_transcript2location_other,
-           map_transcript2gene_other=map_transcript2gene_other,
-           options=options)
+            outfile, g, t,
+            sums,
+            writer,
+            all_genes_this,
+            aligned_genes_this,
+            assigned_genes_this,
+            aligned_genes_other,
+            assigned_genes_other,
+            map_query2best=map_query2best,
+            map_transcript2location_other=map_transcript2location_other,
+            map_transcript2gene_other=map_transcript2gene_other,
+            options=options)
 
         f += 1
         if f > 40:
@@ -239,13 +238,12 @@ def CountOrphans(outfile,
                     # other genes
                     overlaps = []
 
-                    for transcript, location in \
-                            map_transcript2location.items():
+                    for transcript, location in map_transcript2location.items():
                         if location[0] == sbjct_token and \
-                             location[1] == sbjct_strand and \
-                             min(location[3],
-                                 sbjct_genome_to) - max(location[2],
-                                                        sbjct_genome_from) > 0:
+                           location[1] == sbjct_strand and \
+                           min(location[3],
+                               sbjct_genome_to) - max(location[2],
+                                                      sbjct_genome_from) > 0:
                             overlaps.append(transcript)
 
                     is_replaced = False
@@ -629,8 +627,8 @@ def CountScores(outfile, t1, t2,
                         within_scores.append(score)
                         if options.loglevel >= 3:
                             outfile.write(
-                             "# %s\t%s\t%6.4f\tsame sequence\n" %
-                             (tt1, tt2, score))
+                                "# %s\t%s\t%6.4f\tsame sequence\n" %
+                                (tt1, tt2, score))
                     else:
                         # check if same gene
                         xs, xt, xg, xq = tt1.split(separator)
@@ -638,14 +636,14 @@ def CountScores(outfile, t1, t2,
                         if xg != yg:
                             if options.loglevel >= 3:
                                 outfile.write(
-                                 "# %s\t%s\t%6.4f\tlink not found\n" %
-                                 (tt1, tt2, score))
-                            nmissed_links_within += 1
+                                    "# %s\t%s\t%6.4f\tlink not found\n" %
+                                    (tt1, tt2, score))
+                                nmissed_links_within += 1
                         else:
                             if options.loglevel >= 3:
                                 outfile.write(
-                                 "# %s\t%s\t%6.4f\tsame gene\n" %
-                                 (tt1, tt2, score))
+                                    "# %s\t%s\t%6.4f\tsame gene\n" %
+                                    (tt1, tt2, score))
             # between links
             for tt2 in t2:
                 for tt3, score in graph[tt1]:
@@ -665,13 +663,13 @@ def CountScores(outfile, t1, t2,
                         between_scores.append(score)
                         if options.loglevel >= 3:
                             outfile.write(
-                             "# %s\t%s\t%6.4f\tsame sequence\n" %
-                             (tt1, tt2, score))
+                                "# %s\t%s\t%6.4f\tsame sequence\n" %
+                                (tt1, tt2, score))
                     else:
                         if options.loglevel >= 3:
                             outfile.write(
-                             "# %s\t%s\t%6.4f\tlink not found\n" %
-                             (tt1, tt2, score))
+                                "# %s\t%s\t%6.4f\tlink not found\n" %
+                                (tt1, tt2, score))
                         nmissed_links_between += 1
         else:
             if len(t1) != 1:
@@ -680,8 +678,6 @@ def CountScores(outfile, t1, t2,
     return \
         between_scores, within_scores, nmissed_vertices, \
         nmissed_links_within, nmissed_links_between
-
-# -----------------------------------------------------------------------------
 
 
 def IsLineageSpecificDuplication(outfile, t1, t2, graph, separator="|",
@@ -1065,13 +1061,13 @@ def UpdateCountsForCluster(outfile,
                         this_locations, \
                         this_gene2location = \
                         CheckLocations(
-                         this_genes,
-                         map_transcript2location,
-                         do_strict=True,
-                         map_contig2junk=options.map_contig2junk,
-                         map_contig2chromosome=options.map_contig2chromosome,
-                         max_local_duplication=options.max_local_duplication,
-                         separator=options.separator)
+                            this_genes,
+                            map_transcript2location,
+                            do_strict=True,
+                            map_contig2junk=options.map_contig2junk,
+                            map_contig2chromosome=options.map_contig2chromosome,
+                            max_local_duplication=options.max_local_duplication,
+                            separator=options.separator)
 
                     temp_tree = copy.deepcopy(tree)
                     TreeTools.PruneTree(temp_tree, str_children)
@@ -1092,8 +1088,8 @@ def UpdateCountsForCluster(outfile,
                     for child in children:
                         if child.mGene in this_gene2location:
                             locs.append(
-                             "%s:%s:%s:%i:%i" %
-                             ((child.mGene,) +
+                                "%s:%s:%s:%i:%i" %
+                                ((child.mGene,) +
                                  this_gene2location[child.mGene]))
 
                     outfile.write("branchpoint\t%i"
@@ -2104,17 +2100,17 @@ def main(argv=None):
 
         if options.loglevel >= 1:
             print "# orthologs: read %i pairs from %s" % (
-                   len(orthologs), options.filename_interpretation)
+                len(orthologs), options.filename_interpretation)
 
         orthologs = Orthologs.ClusterOrthologsByGenes(orthologs)
 
         if options.loglevel >= 1:
             print "# orthologs: clustered by genes gives %i pairs" % (
-                   len(orthologs))
+                len(orthologs))
 
         if options.loglevel >= 1:
             print "# orthologs: after filtering %i pairs" % (
-                   len(orthologs))
+                len(orthologs))
 
         cluster_id = 0
         for t1, t2, g1, g2, w in orthologs:
@@ -2150,9 +2146,9 @@ def main(argv=None):
 
         if options.loglevel >= 1:
             print "# orthologs: obtained %i/%i vertices from %s" % (
-                   len(assigned_genes_schema1),
-                   len(assigned_genes_schema2),
-                   options.filename_interpretation)
+                len(assigned_genes_schema1),
+                len(assigned_genes_schema2),
+                options.filename_interpretation)
 
     ##########################################################################
     # read orphans (do not take ids that are not in the filtered input set)
@@ -2338,7 +2334,7 @@ def main(argv=None):
                   "read %i trees, " \
                   "nunassigned=%i, " \
                   "nmissed=%i, nduplicates=%i." % (
-                   len(trees), nunassigned, nmissed, nduplicates)
+                      len(trees), nunassigned, nmissed, nduplicates)
             sys.stdout.flush()
 
     if options.loglevel >= 1:
@@ -2385,16 +2381,16 @@ def main(argv=None):
                 options=options)
 
             AnalyseOrphans(
-               orphans2, outfile,
-               all_genes_schema2,
-               aligned_genes_schema2,
-               assigned_genes_schema2,
-               aligned_genes_schema1,
-               assigned_genes_schema1,
-               map_query2best=map_query2best,
-               map_transcript2location_other=map_transcript2location1,
-               map_transcript2gene_other=map_transcript2gene_schema1,
-               options=options)
+                orphans2, outfile,
+                all_genes_schema2,
+                aligned_genes_schema2,
+                assigned_genes_schema2,
+                aligned_genes_schema1,
+                assigned_genes_schema1,
+                map_query2best=map_query2best,
+                map_transcript2location_other=map_transcript2location1,
+                map_transcript2gene_other=map_transcript2gene_schema1,
+                options=options)
 
         #######################################################################
         elif method == "crossassignments":
