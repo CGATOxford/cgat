@@ -37,6 +37,11 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.pngmath', 
               'sphinx.ext.ifconfig',
 	      'sphinx.ext.inheritance_diagram',
+              'CGATReport.only_directives',
+              'CGATReport.report_directive',
+              'CGATReport.errors_directive',
+              'CGATReport.warnings_directive',
+              'CGATReport.roles',
 	      'sphinxcontrib.programoutput',
 	      'sphinx.ext.intersphinx' ]
 
@@ -162,7 +167,7 @@ html_theme = 'cgat'
 # html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path=["../CGATPipelines/pipeline_docs/themes"]
+html_theme_path=["./themes"]
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".

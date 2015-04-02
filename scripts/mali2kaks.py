@@ -193,7 +193,7 @@ def runCodeML(mali, tree, has_non_overlaps, pairs, map_new2old, options):
         if options.loglevel >= 1:
             options.stdlog.write("# pairwise computation:"
                                  " ninput=%i, noutput=%i, nskipped=%i\n" % (
-                                   ninput, noutput, nskipped))
+                                     ninput, noutput, nskipped))
             options.stdlog.flush()
 
     else:
@@ -215,9 +215,6 @@ def runCodeML(mali, tree, has_non_overlaps, pairs, map_new2old, options):
                 l, l * (l - 1) / 2, len(result_pairs.mPairs)))
 
 
-# ------------------------------------------------------------------------
-# ------------------------------------------------------------------------
-# ------------------------------------------------------------------------
 def checkMatrix(pi, matrix):
     """check if matrix does fulfill the requirements:
     diagonal sums to -1

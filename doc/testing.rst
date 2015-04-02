@@ -10,7 +10,6 @@ code collection. The CGAT testing includes
 * Regression testing of CGAT scripts
 * Testing CGAT code for style conformance to pep8
 * Testing CGAT code to be importable
-* Testing of CGAT pipelines
 * Unit testing of CGAT modules
 
 Regression testing of scripts
@@ -163,7 +162,6 @@ update option list, type::
 
    python scripts/cgat_get_option_list.py --in-place --options-tsv-file=tests/option_list.tsv 
 
-
 Testing for import
 ==================
 
@@ -179,19 +177,6 @@ In order to run the tests, type::
 
    nosetests tests/test_import.py
 
-
-Testing pipelines
-=================
-
-Testing of pipelines is described in the documentation of
-:doc:`pipelines/pipeline_testing`.
-
-In order to tests pipelines, enter an empty directory and
-configure the tests in a :file:`pipeline.ini` file and then
-run::
-
-   python <SRC>/CGATPipelines/pipeline_testing.py make full
-   
 Testing modules
 ===============
 
