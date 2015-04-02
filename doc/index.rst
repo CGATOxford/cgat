@@ -14,8 +14,6 @@ installed within frameworks such as `Galaxy`_.
 
 The documentation below covers the script published in
 `Bioinformatics <http://www.ncbi.nlm.nih.gov/pubmed/24395753>`_.
-For the complete documentation that also includes the NGS pipelines
-please go to :ref:`contents`.
 
 Detailed instructions on installation, on usage and a tool reference
 are below, followed by a :ref:`quickstart` guide.
@@ -124,7 +122,7 @@ Developer's guide
    testing.rst
    styleguide.rst
    documenting.rst
-   pipelines.rst
+   Reference.rst
    galaxy.rst
 
 Glossary
