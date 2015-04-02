@@ -137,17 +137,16 @@ Command line options
 
 import sys
 import os
+import tempfile
 
 from rpy2.robjects import r as R
 import rpy2.robjects.numpy2ri
 
 try:
     import CGAT.Experiment as E
-    import CGAT.Pipeline as P
     import CGAT.Expression as Expression
 except ImportError:
     import Experiment as E
-    import Pipeline as P
     import Expression
 
 
@@ -288,7 +287,7 @@ def main(argv=None):
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
     if options.input_filename_tags == "-":
-        fh = P.getTempFile()
+        fh = tempfile.NamedTemporaryFile(delete=False)
         fh.write("".join([x for x in options.stdin]))
         fh.close()
         options.input_filename_tags = fh.name

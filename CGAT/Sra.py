@@ -38,9 +38,9 @@ Code
 ----
 
 '''
-import CGAT.Pipeline as P
 import os
 import glob
+import CGAT.Experiment as E
 import CGAT.Fastq as Fastq
 import CGAT.IOTools as IOTools
 
@@ -58,7 +58,7 @@ def peek(sra, outdir):
     #                   prefix_1.fastq.gz, prefix_2.fastq.gz, prefix_3.fastq.gz
     #                   You want files 1 and 3.
 
-    P.execute("""fastq-dump --split-files --gzip -X 1000
+    E.run("""fastq-dump --split-files --gzip -X 1000
                  --outdir %(outdir)s %(sra)s""" % locals())
     f = sorted(glob.glob(os.path.join(outdir, "*.fastq.gz")))
     ff = [os.path.basename(x) for x in f]
