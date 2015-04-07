@@ -313,7 +313,7 @@ def GATKReadGroups(infile, outfile):
 
     '''
 
-    track = re.sub(r'-\w+-.\.bam', '', os.path.basename(infile))
+    track = re.sub(r'-\w+-\w+\.bam', '', os.path.basename(infile))
     tmpdir_gatk = P.getTempDir('.')
     job_options = getGATKOptions()
     job_threads = 3
@@ -1358,8 +1358,7 @@ def compoundHet():
 @follows(denovo,
          denovo2,
          dominant,
-         recessive,
-         compoundHet)
+         recessive)
 def filtering():
     pass
 

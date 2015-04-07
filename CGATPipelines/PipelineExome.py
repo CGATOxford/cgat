@@ -274,6 +274,7 @@ def variantRecalibrator(infile, outfile, genome, mode, dbsnp=None,
         -an QD -an MQRankSum
         -an ReadPosRankSum -an FS -an MQ
         --maxGaussians 4
+        --minNumBadVariants 5000
         -mode %(mode)s
         -recalFile %(outfile)s
         -tranchesFile %(track)s.tranches
