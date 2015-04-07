@@ -1,31 +1,237 @@
 #############################################################
-# Classes and functions for pipeline_timeseries_clustering.py
+# Classes and functions for pipeline_timeseries.py
 #############################################################
 
-import sys
-import itertools
-import math
+
+import sklearn.metrics.cluster.supervised as supervised
+from math import log
+import CGAT.Experiment as E
 import numpy as np
 import pandas as pd
+try:
+    import pyximport
+    pyximport.install(build_in_temp=False)
+    import _clusters2metrics as c2m
+except ImportError:
+    import CGAT._clusters2metrics as c2m
+import itertools
+import sys
+import math
 import pandas.rpy.common as com
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.packages import importr
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
-import CGAT.Experiment as E
-import sklearn.metrics.cluster.supervised as supervised
-from math import log
 import random
-import pyximport
-pyximport.install(build_in_temp=False)
-try:
-    import _clusters2metrics as c2m
-except ImportError:
-    import CGAT._clusters2metrics as c2m
+
 
 ###########
 # Functions
 ###########
+#################################
+# Clustering assessment functions
+#################################
+
+
+def get_label_map(labels):
+    '''
+    return a dictionary with integer:string mapping
+    '''
+    label_set = set()
+    map_dict = {}
+    for val in labels:
+        label_set.update(val)
+    for lab, integer in enumerate(label_set):
+        map_dict[integer] = lab
+
+    return map_dict
+
+
+def make_mapped_matrix(map_dict, input_frame):
+    '''
+    return a matrix with integer labels from mapping
+    '''
+
+    frame_index = input_frame.index.tolist()
+    nindex = len(frame_index)
+    ncols = len(input_frame.columns)
+    integer_matrix = np.ndarray((nindex, ncols),
+                                dtype=np.int32)
+
+    E.info("mapping cluster labels")
+    matrix_idx = [h for h, g in enumerate(frame_index)]
+    for idx in matrix_idx:
+        for col in range(ncols):
+            mod = input_frame.iloc[idx][col+1]
+            integer_matrix[idx][col] = map_dict[mod]
+
+    return integer_matrix
+
+
+def randIndexes(clustering_results):
+    '''
+    Calculate Rand index and adjusted Rand index over pairwise
+    clustering comparisons.
+    Use cythonised function to calculate indices
+    '''
+
+    # reassign module and gene labels with integer ids, integer comparison is
+    # much faster than string comparison
+    cluster_labels = clustering_results.values
+    map_dict = get_label_map(cluster_labels)
+
+    gene_map = {}
+    for r, gene in enumerate(clustering_results.index):
+        gene_map[gene] = r
+    E.info("mapping gene ids")
+
+    integer_matrix = make_mapped_matrix(map_dict, clustering_results)
+    # take a small slice of the matrix for testing 5 genes, 3 clusterings
+
+    E.info("counting clustering consensus")
+    # use cythonized function to return rand index matrix
+    cy_rand = c2m.consensus_metrics(integer_matrix)
+    E.info("Rand Index calculated for all clusterings")
+
+    return cy_rand
+
+
+def unravel_arrays(metric_array):
+    '''
+    Unravel a numpy array such that only one half of the symmetrical
+    matrix is output.  Do not output diagonal values.
+    '''
+
+    dim = metric_array.shape[0]
+    flat_array = []
+
+    for indx in itertools.combinations(range(0, dim), r=2):
+        if indx[0] != indx[1]:
+            flat_array.append(metric_array[indx[1], indx[0]])
+        else:
+            pass
+    return flat_array
+
+
+def mutualInformation(cluster1, cluster2):
+    '''
+    Calculate the mutual information for a given pair of clusterings.
+    Assume clustering1 represents the reference ground truth.
+    Code from scikit-learn.
+
+    The mutual information of two clusterings, U and V is given by:
+
+    MI(U, V) = sum(R)sum(C)P(i, j) [log(P(i, j)/(p(i)p'(j)))]
+
+    This is the similarity of two clustering labels, where P(i) is
+    the probability of a random sample in clustering Ui, and P'(j)
+    the probability of a random sample in clustering Vj.
+    '''
+
+    cont = contingency(cluster1, cluster2)
+    cont_sum = np.sum(cont)
+    pi = np.sum(cont, axis=1)
+    pj = np.sum(cont, axis=0)
+    outer = np.outer(pi, pj)
+    nnz = cont != 0
+
+    cont_nm = cont[nnz]
+    log_cont_nm = np.log(cont_nm)
+    cont_nm /= cont_sum
+    log_outer = -np.log(outer[nnz]) + log(pi.sum()) + log(pj.sum())
+    mi = (cont_nm * (log_cont_nm - log(cont_sum)) + (cont_nm * log_outer))
+
+    return mi.sum()
+
+
+def contingency(cluster1, cluster2):
+    '''
+    Return a n x m matrix of clustering overlaps, where n
+    is the number of clusters in clustering1 and m is the
+    number of clusters in clustering2.  Return an np array.
+    '''
+    cont = pd.DataFrame(columns=cluster1.keys(), index=cluster2.keys())
+    cont = cont.fillna(0.0)
+
+    for x in itertools.product(cluster1.keys(), cluster2.keys()):
+        set1 = cluster1[x[0]]
+        set2 = cluster2[x[1]]
+        intersect = len(set1.intersection(set2))
+        cont[x[0]][x[1]] = intersect
+
+    cont = cont.as_matrix()
+    return cont
+
+
+def entropy(cluster_labels):
+    '''
+    Calculate the entropy of a clustering.
+    Entropy(X):
+    H(X) = sum(p(i)log(1/(pi)))
+    '''
+
+    if len(cluster_labels) == 0:
+        return 1.0
+    else:
+        pass
+
+    cluster_prob = [len(cluster_labels[x]) for x in cluster_labels.keys()]
+    pi = np.array(cluster_prob).astype(np.float)
+    pi = pi[pi > 0]
+    pi_sum = np.sum(pi)
+
+    entropy = -np.sum((pi / pi_sum) * (np.log(pi) - log(pi_sum)))
+
+    return entropy
+
+
+def adjustedMutualInformation(cluster1, cluster2):
+    '''
+    Using the scikit-learn algorithms, calculate the adjusted mutual
+    information for two clusterings.  Assume cluster1 is the
+    reference/ground truth clustering.
+    The adjusted MI accounts for higher scores by chance, particularly
+    in the case where a larger number of clusters leads to a higher MI.
+
+    AMI(U, V) = [MI(U, V) - E(MI(U, V))] / [max(H(U), H(V)) - E(MI(U, V))]
+    where E(MI(U, V)) is the expected mutual information given the
+    number of clusters and H(U), H(V) are the entropies of clusterings
+    U and V.
+    '''
+
+    cont = contingency(cluster1, cluster2)
+    mi = mutualInformation(cluster1, cluster2)
+    sample_size = float(sum([len(cluster1[x]) for x in cluster1.keys()]))
+
+    # Given the number of samples, what is the expected number
+    # of overlaps that would occur by chance?
+    emi = supervised.expected_mutual_information(cont, sample_size)
+
+    # calculate the entropy for each clustering
+    h_clust1, h_clust2 = entropy(cluster1), entropy(cluster2)
+
+    if abs(h_clust1) == 0.0:
+        h_clust1 = 0.0
+    else:
+        pass
+    if abs(h_clust2) == 0.0:
+        h_clust2 = 0.0
+    else:
+        pass
+
+    ami = (mi - emi) / (max(h_clust1, h_clust2) - emi)
+
+    # bug: entropy will return -0 in some instances
+    # make sure this is actually 0 else ami will return None
+    # instead of 0.0
+
+    if np.isnan(ami):
+        ami = np.nan_to_num(ami)
+    else:
+        pass
+
+    return ami
+
 
 #################################################
 # Data transformation and normalisation functions
@@ -467,7 +673,10 @@ def drawVennDiagram(deg_dict, header, out_dir):
     '''
 
     keys = deg_dict.keys()
-    keys = sorted(keys, key=lambda x: int(x.split("_")[1].rstrip("-time")))
+    try:
+        keys = sorted(keys, key=lambda x: int(x.split("_")[1].rstrip("-time")))
+    except IndexError:
+        pass
 
     venn_size = len(keys)
     R('''suppressPackageStartupMessages(library("VennDiagram"))''')
@@ -486,7 +695,8 @@ def drawVennDiagram(deg_dict, header, out_dir):
         n123 = len((n1.intersection(n2)).intersection(n3))
         cat1, cat2, cat3 = keys
 
-        R('''png("%(out_dir)s/%(header)s-venn.png")''' % locals())
+        R('''png("%(out_dir)s/%(header)s-venn.png", '''
+          '''width=3.3, height=3.3, res=150, units="in")''' % locals())
         R('''draw.triple.venn(%(area1)d, %(area2)d, %(area3)d, '''
           '''%(n12)d, %(n23)d, %(n13)d, %(n123)d, '''
           '''c('%(cat1)s', '%(cat2)s', '%(cat3)s'), '''
@@ -513,7 +723,8 @@ def drawVennDiagram(deg_dict, header, out_dir):
         n1234 = len(((n1.intersection(n2)).intersection(n3)).intersection(n4))
         cat1, cat2, cat3, cat4 = keys
 
-        R('''png("%(out_dir)s/%(header)s-venn.png")''' % locals())
+        R('''png("%(out_dir)s/%(header)s-venn.png",'''
+          '''width=3.3, height=3.3, res=150, units="in")''' % locals())
         R('''draw.quad.venn(%(area1)d, %(area2)d, %(area3)d, %(area4)d,'''
           '''%(n12)d, %(n13)d, %(n14)d, %(n23)d, %(n24)d, %(n34)d,'''
           '''%(n123)d, %(n124)d, %(n134)d, %(n234)d, %(n1234)d,'''
@@ -560,7 +771,8 @@ def drawVennDiagram(deg_dict, header, out_dir):
         n12345 = len((nstep.intersection(n4)).intersection(n5))
         cat1, cat2, cat3, cat4, cat5 = keys
 
-        R('''png("%(out_dir)s/%(header)s-venn.png")''' % locals())
+        R('''png("%(out_dir)s/%(header)s-venn.png", '''
+          '''height=3.3, width=3.3, res=150, units="in")''' % locals())
         R('''draw.quintuple.venn(%(area1)d, %(area2)d, %(area3)d, '''
           '''%(area4)d, %(area5)d, %(n12)d, %(n13)d, %(n14)d,'''
           '''%(n15)d, %(n23)d, %(n24)d, %(n25)d, %(n34)d, %(n35)d,'''
@@ -1199,289 +1411,3 @@ def consensusClustering(infile,
     cluster_frame = com.load_data('cluster_matched')
 
     return cluster_frame
-
-
-#################################
-# Clustering assessment functions
-#################################
-
-
-def get_label_map(labels):
-    '''
-    return a dictionary with integer:string mapping
-    '''
-    label_set = set()
-    map_dict = {}
-    for val in labels:
-        label_set.update(val)
-    for lab, integer in enumerate(label_set):
-        map_dict[integer] = lab
-
-    return map_dict
-
-
-def make_mapped_matrix(map_dict, input_frame):
-    '''
-    return a matrix with integer labels from mapping
-    '''
-
-    frame_index = input_frame.index.tolist()
-    nindex = len(frame_index)
-    ncols = len(input_frame.columns)
-    integer_matrix = np.ndarray((nindex, ncols),
-                                dtype=np.int32)
-
-    E.info("mapping cluster labels")
-    matrix_idx = [h for h, g in enumerate(frame_index)]
-    for idx in matrix_idx:
-        for col in range(ncols):
-            mod = input_frame.iloc[idx][col+1]
-            integer_matrix[idx][col] = map_dict[mod]
-
-    return integer_matrix
-
-
-def randIndexes(clustering_results):
-    '''
-    Calculate Rand index and adjusted Rand index over pairwise
-    clustering comparisons.
-    Use cythonised function to calculate indices
-    '''
-
-    # reassign module and gene labels with integer ids, integer comparison is
-    # much faster than string comparison
-    cluster_labels = clustering_results.values
-    map_dict = get_label_map(cluster_labels)
-
-    gene_map = {}
-    for r, gene in enumerate(clustering_results.index):
-        gene_map[gene] = r
-    E.info("mapping gene ids")
-
-    integer_matrix = make_mapped_matrix(map_dict, clustering_results)
-    # take a small slice of the matrix for testing 5 genes, 3 clusterings
-
-    E.info("counting clustering consensus")
-    # use cythonized function to return rand index matrix
-    cy_rand = c2m.consensus_metrics(integer_matrix)
-    E.info("Rand Index calculated for all clusterings")
-
-    return cy_rand
-
-
-def unravel_arrays(metric_array):
-    '''
-    Unravel a numpy array such that only one half of the symmetrical
-    matrix is output.  Do not output diagonal values.
-    '''
-
-    dim = metric_array.shape[0]
-    flat_array = []
-
-    for indx in itertools.combinations(range(0, dim), r=2):
-        if indx[0] != indx[1]:
-            flat_array.append(metric_array[indx[1], indx[0]])
-        else:
-            pass
-    return flat_array
-
-
-def clusterConcordia(data1, data2, complete_pairs):
-    '''
-    DEFUNCT
-    Calculate clustering agreement counts:
-    a = number of pairs in the same cluster in clustering 1 and clustering 2
-    b = number of pairs in different clusters in clustering 1 and clustering 2
-    c = number of pairs of clusters the same in clustering 1 and
-    differenent in clustering 2
-    d = number of pairs of clusters different in clustering 1 and the same
-    in clustering 2
-    Uses sets as these are much faster and more efficient than lists
-    '''
-
-    # set up all possible gene-pairs and set containers
-    sa = set()
-    sc = set()
-    sd = set()
-    stotal = set()
-
-    # iterate over each pair-wise combination of cluster assignments
-    for key in itertools.product(data1.keys(),
-                                 data2.keys()):
-        set1 = data1[key[0]]
-        set2 = data2[key[1]]
-        sa.update(set2.intersection(set1))
-        sc.update(set1.difference(set2))
-        sd.update(set2.difference(set1))
-        stotal.update(set1.union(set2))
-    sb = complete_pairs - len(stotal)
-
-    concordance = {}
-    concordance['a'] = len(sa)
-    concordance['b'] = sb
-    concordance['c'] = len(sc)
-    concordance['d'] = len(sd)
-
-    return concordance
-
-
-def concordanceMetric(concord_dict):
-    '''
-    Calculate cluster quality and concordance metrics:
-    Rand Index, Adjusted Rand Inded, F-measure, Jaccard Index
-    '''
-
-    metric_dict = {}
-    a = concord_dict['a']
-    b = concord_dict['b']
-    c = concord_dict['c']
-    d = concord_dict['d']
-
-    Rand = (a + b) / float(a + b + c + d)
-    AdjRand = 2 * ((a*b) - (c+d)) / float(((a+d)*(d+b)) + ((a+c)*(c+b)))
-    try:
-        pos = a/float(a+c)
-    except ZeroDivisionError:
-        pos = 0
-
-    try:
-        recall = a/float(a+d)
-    except ZeroDivisionError:
-        recall = 0
-    beta = 1
-    try:
-        Fstat = ((beta**2 + 1)*(pos*recall)) / float(((beta**2)*pos) + recall)
-    except ZeroDivisionError:
-        Fstat = 0.0
-    Jaccard = a / float(a + c + d)
-    Total = sum([a, b, c, d])
-
-    metric_dict['Rand'] = Rand
-    metric_dict['AdjRand'] = AdjRand
-    metric_dict['Positive'] = pos
-    metric_dict['Recall'] = recall
-    metric_dict['F_measure'] = Fstat
-    metric_dict['Jaccard'] = Jaccard
-    metric_dict['Total'] = Total
-
-    return metric_dict
-
-
-def mutualInformation(cluster1, cluster2):
-    '''
-    Calculate the mutual information for a given pair of clusterings.
-    Assume clustering1 represents the reference ground truth.
-    Code from scikit-learn.
-
-    The mutual information of two clusterings, U and V is given by:
-
-    MI(U, V) = sum(R)sum(C)P(i, j) [log(P(i, j)/(p(i)p'(j)))]
-
-    This is the similarity of two clustering labels, where P(i) is
-    the probability of a random sample in clustering Ui, and P'(j)
-    the probability of a random sample in clustering Vj.
-    '''
-
-    cont = contingency(cluster1, cluster2)
-    cont_sum = np.sum(cont)
-    pi = np.sum(cont, axis=1)
-    pj = np.sum(cont, axis=0)
-    outer = np.outer(pi, pj)
-    nnz = cont != 0
-
-    cont_nm = cont[nnz]
-    log_cont_nm = np.log(cont_nm)
-    cont_nm /= cont_sum
-    log_outer = -np.log(outer[nnz]) + log(pi.sum()) + log(pj.sum())
-    mi = (cont_nm * (log_cont_nm - log(cont_sum)) + (cont_nm * log_outer))
-
-    return mi.sum()
-
-
-def contingency(cluster1, cluster2):
-    '''
-    Return a n x m matrix of clustering overlaps, where n
-    is the number of clusters in clustering1 and m is the
-    number of clusters in clustering2.  Return an np array.
-    '''
-    cont = pd.DataFrame(columns=cluster1.keys(), index=cluster2.keys())
-    cont = cont.fillna(0.0)
-
-    for x in itertools.product(cluster1.keys(), cluster2.keys()):
-        set1 = cluster1[x[0]]
-        set2 = cluster2[x[1]]
-        intersect = len(set1.intersection(set2))
-        cont[x[0]][x[1]] = intersect
-
-    cont = cont.as_matrix()
-    return cont
-
-
-def entropy(cluster_labels):
-    '''
-    Calculate the entropy of a clustering.
-    Entropy(X):
-    H(X) = sum(p(i)log(1/(pi)))
-    '''
-
-    if len(cluster_labels) == 0:
-        return 1.0
-    else:
-        pass
-
-    cluster_prob = [len(cluster_labels[x]) for x in cluster_labels.keys()]
-    pi = np.array(cluster_prob).astype(np.float)
-    pi = pi[pi > 0]
-    pi_sum = np.sum(pi)
-
-    entropy = -np.sum((pi / pi_sum) * (np.log(pi) - log(pi_sum)))
-
-    return entropy
-
-
-def adjustedMutualInformation(cluster1, cluster2):
-    '''
-    Using the scikit-learn algorithms, calculate the adjusted mutual
-    information for two clusterings.  Assume cluster1 is the
-    reference/ground truth clustering.
-    The adjusted MI accounts for higher scores by chance, particularly
-    in the case where a larger number of clusters leads to a higher MI.
-
-    AMI(U, V) = [MI(U, V) - E(MI(U, V))] / [max(H(U), H(V)) - E(MI(U, V))]
-    where E(MI(U, V)) is the expected mutual information given the
-    number of clusters and H(U), H(V) are the entropies of clusterings
-    U and V.
-    '''
-
-    cont = contingency(cluster1, cluster2)
-    mi = mutualInformation(cluster1, cluster2)
-    sample_size = float(sum([len(cluster1[x]) for x in cluster1.keys()]))
-
-    # Given the number of samples, what is the expected number
-    # of overlaps that would occur by chance?
-    emi = supervised.expected_mutual_information(cont, sample_size)
-
-    # calculate the entropy for each clustering
-    h_clust1, h_clust2 = entropy(cluster1), entropy(cluster2)
-
-    if abs(h_clust1) == 0.0:
-        h_clust1 = 0.0
-    else:
-        pass
-    if abs(h_clust2) == 0.0:
-        h_clust2 = 0.0
-    else:
-        pass
-
-    ami = (mi - emi) / (max(h_clust1, h_clust2) - emi)
-
-    # bug: entropy will return -0 in some instances
-    # make sure this is actually 0 else ami will return None
-    # instead of 0.0
-
-    if np.isnan(ami):
-        ami = np.nan_to_num(ami)
-    else:
-        pass
-
-    return ami
