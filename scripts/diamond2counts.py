@@ -41,10 +41,7 @@ Command line options
 
 '''
 
-import os
 import sys
-import re
-import optparse
 
 import CGAT.Experiment as E
 from CGAT.Diamond import *
@@ -133,17 +130,16 @@ def main(argv=None):
                     best_alignment = best_alignments[0]
                     best_cog = gene2cog[best_alignment.ref]
                 pbest = float(len(
-                        [gene2cog[x.ref]
-                         for x in alignments
-                         if gene2cog[x.ref] == best_cog
-                         ])) / len(alignments)*100
+                    [gene2cog[x.ref]
+                     for x in alignments
+                     if gene2cog[x.ref] == best_cog])) / len(alignments) * 100
                 nalignments = len(alignments)
                 options.stdout.write(
                     "\t".join(map(
-                            str, [alignments[0].qid,
-                                  pbest,
-                                  nalignments])) + "\n"
-                    )
+                        str, [alignments[0].qid,
+                              pbest,
+                              nalignments])) + "\n"
+                )
             else:
                 break
         return

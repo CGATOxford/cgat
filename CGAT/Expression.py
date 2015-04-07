@@ -39,7 +39,6 @@ Methods implemented are:
 
    DESeq
    EdgeR
-   cuffdiff
    ttest
 
 The aim of this module is to run these individual tools and
@@ -100,25 +99,18 @@ from rpy2.robjects.vectors import FloatVector
 
 try:
     import CGAT.Experiment as E
-    import CGAT.Pipeline as P
     import CGAT.Database as Database
     import CGAT.IOTools as IOTools
     import CGAT.Stats as Stats
     import CGAT.Counts as Counts
 except ImportError:
     import Experiment as E
-    import Pipeline as P
     import Database
     import IOTools
     import Stats
     import Counts
 
 import sqlite3
-
-try:
-    PARAMS = P.getParameters()
-except IOError:
-    pass
 
 
 def runDETest(raw_DataFrame,
@@ -2203,7 +2195,7 @@ def runDESeq2(outfile,
         R('''dev.off()''')
 
     # Extract rlog transformed count data...
-    rlog_out = P.snip(outfile, ".tsv.gz") + "_rlog.tsv.gz"
+    rlog_out = IOTools.snip(outfile, ".tsv.gz") + "_rlog.tsv.gz"
     # R('''saveRDS(rld, "%s")''' % rlog_out)
     R('''write.table(assay(rld), file='%s', sep="\t", quote=FALSE)''' % rlog_out)
 
@@ -2413,340 +2405,6 @@ def plotDETagStats(infile, outfile_prefix,
                    outfile_prefix + ".boxplot_%s.png" % column,
                    column)
     return
-
-
-def parseCuffdiff(infile):
-    '''parse a cuffdiff .diff output file.'''
-    min_fpkm = PARAMS["cuffdiff_fpkm_expressed"]
-
-    CuffdiffResult = collections.namedtuple(
-        "CuffdiffResult",
-        "test_id gene_id gene  locus   sample_1 sample_2  "
-        " status  value_1 value_2 l2fold  "
-        "test_stat p_value q_value significant ")
-
-    results = []
-
-    for line in IOTools.openFile(infile):
-        if line.startswith("test_id"):
-            continue
-        data = CuffdiffResult._make(line[:-1].split("\t"))
-        status = data.status
-        significant = [0, 1][data.significant == "yes"]
-        if status == "OK" and (float(data.value_1) < min_fpkm or
-                               float(data.value_2) < min_fpkm):
-            status = "NOCALL"
-
-        try:
-            fold = math.pow(2.0, float(data.l2fold))
-        except OverflowError:
-            fold = "na"
-
-        results.append(GeneExpressionResult._make((
-            data.test_id,
-            data.sample_1,
-            data.value_1,
-            0,
-            data.sample_2,
-            data.value_2,
-            0,
-            data.p_value,
-            data.q_value,
-            data.l2fold,
-            fold,
-            data.l2fold,
-            significant,
-            status)))
-
-    return results
-
-#########################################################################
-#########################################################################
-#########################################################################
-
-
-def loadCuffdiff(infile, outfile):
-    '''load results from differential expression analysis and produce
-    summary plots.
-
-    Note: converts from ln(fold change) to log2 fold change.
-
-    The cuffdiff output is parsed.
-
-    Pairwise comparisons in which one gene is not expressed (fpkm <
-    fpkm_silent) are set to status 'NOCALL'. These transcripts might
-    nevertheless be significant.
-
-    This requires the cummeRbund library to be present in R.
-
-    '''
-
-    prefix = P.toTable(outfile)
-    indir = infile + ".dir"
-
-    if not os.path.exists(indir):
-        P.touch(outfile)
-        return
-
-    # E.info( "building cummeRbund database" )
-    # R('''library(cummeRbund)''')
-    # cuff = R('''readCufflinks(dir = %(indir)s, dbfile=%(indir)s/csvdb)''' )
-    # to be continued
-
-    to_cluster = False
-    dbhandle = sqlite3.connect(PARAMS["database"])
-
-    tmpname = P.getTempFilename()
-
-    # ignore promoters and splicing - no fold change column, but  sqrt(JS)
-    for fn, level in (("cds_exp.diff.gz", "cds"),
-                      ("gene_exp.diff.gz", "gene"),
-                      ("isoform_exp.diff.gz", "isoform"),
-                      # ("promoters.diff.gz", "promotor"),
-                      # ("splicing.diff.gz", "splice"),
-                      ("tss_group_exp.diff.gz", "tss")):
-
-        tablename = prefix + "_" + level + "_diff"
-
-        infile = os.path.join(indir, fn)
-        results = parseCuffdiff(infile)
-
-        writeExpressionResults(tmpname, results)
-
-        statement = '''cat %(tmpname)s
-        | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty-file
-              --add-index=treatment_name
-              --add-index=control_name
-              --add-index=test_id
-              --table=%(tablename)s
-         >> %(outfile)s.log
-         '''
-
-        P.run()
-
-    for fn, level in (("cds.fpkm_tracking.gz", "cds"),
-                      ("genes.fpkm_tracking.gz", "gene"),
-                      ("isoforms.fpkm_tracking.gz", "isoform"),
-                      ("tss_groups.fpkm_tracking.gz", "tss")):
-
-        tablename = prefix + "_" + level + "_levels"
-
-        statement = '''zcat %(indir)s/%(fn)s
-        | python %(scriptsdir)s/csv2db.py %(csv2db_options)s
-              --allow-empty-file
-              --add-index=tracking_id
-              --table=%(tablename)s
-         >> %(outfile)s.log
-         '''
-
-        P.run()
-
-    # Jethro - load tables of sample specific cuffdiff fpkm values into csvdb
-    # IMS: First read in lookup table for CuffDiff/Pipeline sample name
-    # conversion
-    inf = IOTools.openFile(os.path.join(indir, "read_groups.info.gz"))
-    inf.readline()
-    sample_lookup = {}
-
-    for line in inf:
-        line = line.split("\t")
-        our_sample_name = P.snip(line[0])
-        our_sample_name = re.sub("-", "_", our_sample_name)
-        cuffdiff_sample_name = "%s_%s" % (line[1], line[2])
-        sample_lookup[cuffdiff_sample_name] = our_sample_name
-
-    inf.close()
-
-    for fn, level in (("cds.read_group_tracking.gz", "cds"),
-                      ("genes.read_group_tracking.gz", "gene"),
-                      ("isoforms.read_group_tracking.gz", "isoform"),
-                      ("tss_groups.read_group_tracking.gz", "tss")):
-
-        tablename = prefix + "_" + level + "sample_fpkms"
-
-        tmpf = P.getTempFilename(".")
-        inf = IOTools.openFile(os.path.join(indir, fn)).readlines()
-        outf = IOTools.openFile(tmpf, "w")
-
-        samples = []
-        genes = {}
-
-        x = 0
-        for line in inf:
-            if x == 0:
-                x += 1
-                continue
-            line = line.split()
-            gene_id = line[0]
-            condition = line[1]
-            replicate = line[2]
-            fpkm = line[6]
-            status = line[8]
-
-            sample_id = condition + "_" + replicate
-
-            if sample_id not in samples:
-                samples.append(sample_id)
-
-            # IMS: The following block keeps getting its indenting messed
-            # up. It is not part of the 'if sample_id not in samples' block
-            # plesae make sure it does not get made part of it
-            if gene_id not in genes:
-                genes[gene_id] = {}
-                genes[gene_id][sample_id] = fpkm
-            else:
-                if sample_id in genes[gene_id]:
-                    raise ValueError(
-                        'sample_id %s appears twice in file for gene_id %s'
-                        % (sample_id, gene_id))
-                else:
-                    if status != "OK":
-                        genes[gene_id][sample_id] = status
-                    else:
-                        genes[gene_id][sample_id] = fpkm
-
-        samples = sorted(samples)
-
-        # IMS - CDS files might be empty if not cds has been
-        # calculated for the genes in the long term need to add CDS
-        # annotation to denovo predicted genesets in meantime just
-        # skip if cds tracking file is empty
-
-        if len(samples) == 0:
-            continue
-
-        headers = "gene_id\t" + "\t".join([sample_lookup[x] for x in samples])
-        outf.write(headers + "\n")
-
-        for gene in genes.iterkeys():
-            outf.write(gene + "\t")
-            x = 0
-            while x < len(samples) - 1:
-                outf.write(genes[gene][samples[x]] + "\t")
-                x += 1
-
-            # IMS: Please be careful with this line. It keeps getting moved
-            # into the above while block where it does not belong
-            outf.write(genes[gene][samples[len(samples) - 1]] + "\n")
-
-        outf.close()
-
-        statement = ("cat %(tmpf)s |"
-                     " python %(scriptsdir)s/csv2db.py "
-                     "  %(csv2db_options)s"
-                     "  --allow-empty-file"
-                     "  --add-index=gene_id"
-                     "  --table=%(tablename)s"
-                     " >> %(outfile)s.log")
-        P.run()
-
-        os.unlink(tmpf)
-
-    # build convenience table with tracks
-    tablename = prefix + "_isoform_levels"
-    tracks = Database.getColumnNames(dbhandle, tablename)
-    tracks = [x[:-len("_FPKM")] for x in tracks if x.endswith("_FPKM")]
-
-    tmpfile = P.getTempFile(dir=".")
-    tmpfile.write("track\n")
-    tmpfile.write("\n".join(tracks) + "\n")
-    tmpfile.close()
-
-    P.load(tmpfile.name, outfile)
-    os.unlink(tmpfile.name)
-
-
-def runCuffdiff(bamfiles,
-                design_file,
-                geneset_file,
-                outfile,
-                cuffdiff_options="",
-                threads=4,
-                fdr=0.1,
-                mask_file=None):
-    '''estimate differential expression using cuffdiff.
-
-    infiles
-       bam files
-
-    geneset_file
-       geneset to use for the analysis
-
-    design_file
-       design file describing which differential expression to test
-
-    Replicates within each track are grouped.
-    '''
-
-    design = readDesignFile(design_file)
-
-    outdir = outfile + ".dir"
-    try:
-        os.mkdir(outdir)
-    except OSError:
-        pass
-
-    job_threads = threads
-
-    # replicates are separated by ","
-    reps = collections.defaultdict(list)
-    for bamfile in bamfiles:
-        groups = collections.defaultdict()
-        # .accepted.bam kept for legacy reasons (see rnaseq pipeline)
-        track = P.snip(os.path.basename(bamfile), ".bam", ".accepted.bam")
-        if track not in design:
-            E.warn("bamfile '%s' not part of design - skipped" % bamfile)
-            continue
-
-        d = design[track]
-        if not d.include:
-            continue
-        reps[d.group].append(bamfile)
-
-    groups = sorted(reps.keys())
-    labels = ",".join(groups)
-    reps = "   ".join([",".join(reps[group]) for group in groups])
-
-    # Nick - add mask gtf to not assess rRNA and ChrM
-    extra_options = []
-
-    if mask_file:
-        extra_options.append(" -M %s" % os.path.abspath(mask_file))
-
-    extra_options = " ".join(extra_options)
-
-    # IMS added a checkpoint to catch cuffdiff errors
-    # AH: removed log messages about BAM record error
-    # These cause logfiles to grow several Gigs and are
-    # frequent for BAM files not created by tophat.
-    # Error is:
-    # BAM record error: found spliced alignment without XS attribute
-    # AH: compress output in outdir
-    statement = '''date > %(outfile)s.log;
-    hostname >> %(outfile)s.log;
-    cuffdiff --output-dir %(outdir)s
-             --verbose
-             --num-threads %(threads)i
-             --labels %(labels)s
-             --FDR %(fdr)f
-             %(extra_options)s
-             %(cuffdiff_options)s
-             <(gunzip < %(geneset_file)s )
-             %(reps)s
-    2>&1
-    | grep -v 'BAM record error'
-    >> %(outfile)s.log;
-    checkpoint;
-    gzip -f %(outdir)s/*;
-    checkpoint;
-    date >> %(outfile)s.log;
-    '''
-    P.run()
-
-    results = parseCuffdiff(os.path.join(outdir, "gene_exp.diff.gz"))
-
-    writeExpressionResults(outfile, results)
 
 
 def runMockAnalysis(outfile,

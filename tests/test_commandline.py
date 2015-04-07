@@ -114,11 +114,11 @@ def loadScript(script_name):
         os.remove(prefix + ".pyc")
 
     modulename = ".".join((re.sub("/", ".", dirname), basename))
-
     try:
         module = importlib.import_module(modulename)
     except ImportError, msg:
-        sys.stderr.write('could not import %s - skipped: %s\n' % (basename, msg))
+        sys.stderr.write('could not import %s - skipped: %s\n' %
+                         (modulename, msg))
         module = None
 
     return module, modulename
@@ -162,9 +162,13 @@ def test_cmdline():
 
     files = filterFiles(files)
 
+    # make sure to use the current working directory as
+    # primary lookup.
+    sys.path.insert(0, ".")
+
     # files = [
-    #    'scripts/bam2bam.py',
-    #    'scripts/bam2geneprofile.py']
+    #    'scripts/check_db.py',
+    #    'scripts/cgat_build_report_page.py']
 
     for f in files:
         if os.path.isdir(f):
