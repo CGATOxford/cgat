@@ -37,7 +37,6 @@ Example::
 |chr1  |bed  |exon  |15001  |16000  |.  |.  |.  |gene_id "None"; transcript_id "None";  |
 +------+-----+------+-------+-------+---+---+---+---------------------------------------+
 
-
 Example::   
    
    # Convert BED to GTF format

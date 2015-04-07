@@ -63,7 +63,7 @@ import os
 import shutil
 import tempfile
 import CGAT.Experiment as E
-from CGAT.Local import getMakefiles, getScripts, getModules
+from CGATPipelines.Local import getMakefiles, getScripts, getModules
 
 USAGE = """python %s
 """ % sys.argv[0]

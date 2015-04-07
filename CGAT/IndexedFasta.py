@@ -49,6 +49,7 @@ import anydbm
 import random
 import zlib
 import gzip
+import tempfile
 import cStringIO
 from CGAT import Experiment as E
 from AString import AString
@@ -334,8 +335,6 @@ class MultipleFastaIterator:
 
         raise StopIteration
 
-# ------------------------------------------------------------
-
 
 def createDatabase(db, iterator,
                    force=False,
@@ -387,7 +386,9 @@ def createDatabase(db, iterator,
         elif compression == "dictzip":
             import dictzip
 
-            def mangler(x): return x
+            def mangler(x):
+                return x
+
             db_name = db + ".dz"
             write_chunks = False
         elif compression == "bzip2":
@@ -395,12 +396,13 @@ def createDatabase(db, iterator,
 
             def bzip_mangler(x):
                 return bz2.compress(x, 9)
+
             mangler = bzip_mangler
             db_name = db + ".bz2"
             write_chunks = True
         elif compression == "debug":
-
-            def mangler(x): return x
+            def mangler(x):
+                return x
             db_name = db + ".debug"
             write_chunks = True
         elif compression == "rle":
@@ -418,7 +420,8 @@ def createDatabase(db, iterator,
             raise ValueError("specify chunksize in --random-access-points")
 
     else:
-        def mangler(x): return x
+        def mangler(x):
+            return x
         db_name = db + ".fasta"
         write_chunks = False
         index_name = db + ".idx"
@@ -1178,11 +1181,12 @@ def verify(fasta1, fasta2, num_iterations, fragment_size,
     Get segment from fasta1 and check for presence in fasta2.
     """
     if not quiet:
-        stdout.write("verifying %s and %s using %i random segments of length %i\n" %
-                     (fasta1.getDatabaseName(),
-                      fasta2.getDatabaseName(),
-                      num_iterations,
-                      fragment_size))
+        stdout.write(
+            "verifying %s and %s using %i random segments of length %i\n" %
+            (fasta1.getDatabaseName(),
+             fasta2.getDatabaseName(),
+             num_iterations,
+             fragment_size))
         stdout.flush()
     nerrors = 0
     for x in range(num_iterations):
