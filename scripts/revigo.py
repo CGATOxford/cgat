@@ -1650,9 +1650,9 @@ def main(argv):
         E.info("reading gene to go assignments from %s " % options.filename_go)
         all_gene2gos, all_go2infos = \
             GO.ReadGene2GOFromFile(
-             IOTools.openFile(options.filename_go),
-             synonyms=graph.synonyms,
-             obsolete=graph.obsoletes)
+                IOTools.openFile(options.filename_go),
+                synonyms=graph.synonyms,
+                obsolete=graph.obsoletes)
 
         #########################################
         # filter pvalues
@@ -1674,7 +1674,7 @@ def main(argv):
 
         if options.filename_bg:
             background = IOTools.readList(
-                                 IOTools.openFile(options.filename_bg))
+                IOTools.openFile(options.filename_bg))
         else:
             background = list(gene2gos.keys())
 

@@ -6,8 +6,10 @@ Installation instructions
 
 The section below describes how to install the CGAT scripts. Please
 note that we can not test our code on all systems and configurations
-out there. If something does not work, please try a :ref:`CGATCleanInstall`
-or download a copy of the :ref:`CGATInstallationVirtualBoxUbuntu` with all the software installed.
+out there. If something does not work, please try a
+:ref:`CGATCleanInstall` or download a copy of the
+:ref:`CGATInstallationVirtualBoxUbuntu` with all the software
+installed.
 
 Quick installation
 ==================
@@ -113,18 +115,19 @@ Code Collection and all its dependencies inside a newly created environment.
 
 Installation instructions for the following operating systems are available:
 
-* :ref:`CGATInstallationOSX`
+.. toctree::
 
-* :ref:`CGATInstallationLinux`
+  CGATInstallationOSX
+  CGATInstallationLinux
 
 Furthermore, we also provide different means of getting the CGAT Code Collection
 pre-installed:
 
-* :ref:`CGATInstallationVirtualBoxUbuntu`
+.. toctree::
 
-* :ref:`CGATInstallationVagrant`
-
-* :ref:`CGATInstallationDocker`
+   CGATInstallationVirtualBoxUbuntu
+   CGATInstallationVagrant
+   CGATInstallationDocker
 
 .. _GalaxyInstallation:
 
@@ -141,9 +144,11 @@ The sequence of commands is:
 
 2. Install CGAT 
 
-3. Run the `cgat2rdf.py` script (see :doc:`scripts/cgat2rdf`) to create an xml file for inclusion into
-   galaxy_. For example, to create a wrapper for `bam2stats.py` (see :doc:`scripts/bam2stats`), run,
-   where ``cgat-xml`` is the location of tool xml files within galaxy_::
+3. Run the `cgat2rdf.py` script (see :doc:`scripts/cgat2rdf`) to
+   create an xml file for inclusion into galaxy_. For example, to
+   create a wrapper for `bam2stats.py` (see :doc:`scripts/bam2stats`),
+   run, where ``cgat-xml`` is the location of tool xml files within
+   galaxy_::
 
        python <cgat-scripts>cgat2rdf.py --format=galaxy <cgat-scripts>bam2stats.py > <cgat-xml>bam2stats.xml
 
@@ -155,8 +160,9 @@ The sequence of commands is:
       </section>
 
 
-A list of galaxy compatible scripts is in file :file:`galaxy.list`. This file is part of the
-CGAT repository and can be used to create all wrappers in one go::
+A list of galaxy compatible scripts is in file
+:file:`galaxy.list`. This file is part of the CGAT repository and can
+be used to create all wrappers in one go::
 
    cat galaxy.list
    | cgat2rdf.py
@@ -164,7 +170,8 @@ CGAT repository and can be used to create all wrappers in one go::
 	--output-filename-pattern=<galaxy-xml>/%s.xml --format=galaxy
 
 Within galaxy_, CGAT scripts will use samtools_ formatted genomic
-sequences, which are located in the ``sam_fa_indexes`` galaxy_ resource.
+sequences, which are located in the ``sam_fa_indexes`` galaxy_
+resource.
 
 .. _setuptools: https://pypi.python.org/pypi/setuptools
 .. _biopython: http://biopython.org/

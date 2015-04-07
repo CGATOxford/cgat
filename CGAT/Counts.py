@@ -48,121 +48,141 @@ import random
 import sys
 
 
-def loadTagDataPandas(tags_filename, design_filename):
-    '''load tag data for deseq/edger analysis.
-
-    *Infile* is a tab-separated file with counts.
-
-    *design_file* is a tab-separated file with the
-    experimental design with four columns::
-
-      track   include group   pair
-      CW-CD14-R1      0       CD14    1
-      CW-CD14-R2      0       CD14    1
-      CW-CD14-R3      1       CD14    1
-      CW-CD4-R1       1       CD4     1
-      FM-CD14-R1      1       CD14    2
-      FM-CD4-R2       0       CD4     2
-      FM-CD4-R3       0       CD4     2
-      FM-CD4-R4       0       CD4     2
-
-    track
-        name of track - should correspond to column header in *infile*
-    include
-        flag to indicate whether or not to include this data
-    group
-        group indicator - experimental group
-    pair
-        pair that sample belongs to (for paired tests)
-
-    This method creates various R objects:
-
-    countsTable : data frame with counts.
-    groups : vector with groups
-    pairs  : vector with pairs
-
+def geometric_mean(array, axis=0):
+    '''return the geometric mean of an array removing all zero-values but
+    retaining total length
     '''
-
-    counts_table = pd.read_table(sys.stdin, sep="\t", index_col=0, comment="#")
-
-    E.info("read data: %i observations for %i samples" % counts_table.shape)
-
-    E.debug("sample names: %s" % list(counts_table.columns))
-
-    inf = IOTools.openFile(design_filename)
-    design_table = pd.read_csv(inf, sep="\t", index_col=0)
-    inf.close()
-
-    E.debug("design names: %s" % list(design_table.index))
-
-    missing = set(counts_table.columns).difference(design_table.index)
-
-    if missing:
-        E.warn("missing samples from design file are ignored: %s" % missing)
-
-    # remove unnecessary samples
-    design_table = design_table[design_table["include"] != 0]
-    E.debug("included samples: %s" % list(design_table.index))
-
-    counts_table = counts_table[list(design_table.index)]
-    E.info("filtered data: %i observations for %i samples" %
-           counts_table.shape)
-
-    return counts_table, design_table
+    non_zero = ma.masked_values(array, 0)
+    log_a = ma.log(non_zero)
+    return ma.exp(log_a.mean(axis=axis))
 
 
-def filterTagDataPandas(counts_table,
-                        design_table,
-                        filter_min_counts_per_row=1,
-                        filter_min_counts_per_sample=10,
-                        filter_percentile_rowsums=0):
-    '''filter tag data.
+class Counts(object):
+    '''base class to store counts object'''
 
-    * remove rows with at least x number of counts
+    def __init__(self, table):
+        # read in table in the constructor for Counts
+        # e.g counts = Counts(pd.read_csv(...))
+        self.table = table
+        assert self.table.shape, "Counts table is empty"
 
-    * remove samples with a maximum of *min_sample_counts*
+    def restrict(self, design):
+        ''' remove samples not in design '''
 
-    * remove the lowest percentile of rows in the table, sorted
-       by total tags per row
-    '''
+        self.table = self.table.ix[:, design.samples]
 
-    # Remove windows with no data
-    max_counts_per_row = counts_table.max(1)
-    counts_table = counts_table[
-        max_counts_per_row >= filter_min_counts_per_row]
-    observations, samples = counts_table.shape
-    E.info("trimmed data: %i observations for %i samples" %
-           (observations, samples))
+    def removeSamples(self, min_counts_per_sample=10):
+        ''' remove samples without low counts '''
 
-    # remove samples without data
-    max_counts_per_sample = counts_table.max()
+        max_counts_per_sample = self.table.max()
 
-    low_samples = max_counts_per_sample < filter_min_counts_per_sample
-    high_samples = [not x for x in low_samples.tolist()]
-    sample_names = counts_table.columns
-    nlow_samples = sum(low_samples)
+        low_samples = max_counts_per_sample < min_counts_per_sample
+        high_samples = [not x for x in low_samples.tolist()]
+        sample_names = self.table.columns
+        nlow_samples = sum(low_samples)
 
-    if nlow_samples:
-        E.warn("%i empty samples are being removed: %s" %
-               (nlow_samples,
-                ",".join([sample_names[x] for x, y in
+        if nlow_samples:
+            E.warn("%i empty samples are being removed: %s" %
+                   (nlow_samples,
+                    ",".join([sample_names[x] for x, y in
 
-                          enumerate(low_samples) if y])))
-        counts_table = counts_table.iloc[:, high_samples]
+                              enumerate(low_samples) if y])))
+            self.table = self.table.iloc[:, high_samples]
 
-    # percentile filtering
-    if filter_percentile_rowsums > 0:
-        percentile = float(filter_percentile_rowsums) / 100.0
-        sum_counts = counts_table.sum(1)
+    def removeObservationsFreq(self, min_counts_per_row=1):
+        '''remove Observations (e.g genes)
+
+        * remove rows with less than x number of counts
+        '''
+
+        # Remove rows with low counts
+        max_counts_per_row = self.table.max(1)
+        self.table = self.table[
+            max_counts_per_row >= min_counts_per_row]
+        observations, samples = self.table.shape
+        E.info("trimmed data: %i observations for %i samples" %
+               (observations, samples))
+
+    def removeObservationsPerc(self, percentile_rowsums=10):
+        '''remove Observations (e.g genes)
+
+        * remove the lowest percentile of rows in the table, sorted
+           by total tags per row
+        '''
+
+        # percentile filtering
+        percentile = float(percentile_rowsums) / 100.0
+        sum_counts = self.table.sum(1)
         take = sum_counts > sum_counts.quantile(percentile)
         E.info("percentile filtering at level %f: keep=%i, discard=%i" %
-               (filter_percentile_rowsums,
+               (percentile_rowsums,
                 sum(take),
                 len(take) - sum(take)))
-        counts_table = counts_table[take]
+        self.table = self.table[take]
 
-    return counts_table
+    def normalise(self, method="deseq-size-factors"):
 
+        '''return a table with normalized count data.
+
+        Implemented methods are:
+
+        million-counts
+
+           Divide each value by the column total and multiply by 1,000,000
+
+        deseq-size-factors
+
+           Construct a "reference sample" by taking, for each row, the
+           geometric mean of the counts in all samples.
+
+           To get the sequencing depth of a column relative to the
+           reference, calculate for each row the quotient of the counts in
+           your column divided by the counts of the reference sample. Now
+           you have, for each row and column, an estimate of the depth
+           ratio.
+
+           Simply take the median of all the quotients in a column to get
+           the relative depth of the library.
+
+           Divide all values in a column by the normalization factor.
+
+        This method normalises the counts and returns the normalization
+        factors that have been applied.
+
+        '''
+
+        if method == "deseq-size-factors":
+
+            # compute row-wise geometric means
+            geometric_means = geometric_mean(self.table, axis=1)
+
+            # remove 0 geometric means
+            take = geometric_means > 0
+            geometric_means = geometric_means[take]
+            self.table = self.table[take]
+
+            normed = (self.table.T / geometric_means).T
+
+            self.size_factors = normed.median(axis=0)
+
+            normed = self.table / self.size_factors
+
+        elif method == "million-counts":
+            self.size_factors = self.table.sum(axis=0)
+            normed = self.table * 1000000.0 / self.size_factors
+        else:
+            raise NotImplementedError(
+                "normalization method '%s' not implemented" % method)
+
+        self.table = normed
+        # make sure we did not lose any rows or columns
+        assert normed.shape == self.table.shape
+
+
+########################################################################
+# these functions for spike-in should be re-written to work with the ###
+# counts class                                                       ###
+########################################################################
 
 def mapGroups(design_table):
     '''extract groups from the design table and return dictionaries
@@ -269,7 +289,7 @@ def findClusters(df, distance, size, tracks_map, groups):
 
 
 def shuffleRows(df, i_bins, c_bins, tracks_map,  groups,
-                difference, s_max=100, i=1, seed=None):
+                difference, s_max=100, i=1):
     '''take a dataframe and shuffle the rows to obtain spike in rows.
     return the indices to obtain the rows from the original dataframe'''
     counts = np.zeros((len(i_bins) + 1, len(c_bins) + 1))
@@ -283,17 +303,10 @@ def shuffleRows(df, i_bins, c_bins, tracks_map,  groups,
     for iteration in range(0,  i):
         E.info("performing shuffling iteration number %i.." % (iteration + 1))
         if min_occup < s_max:
-            if seed:
-                # this is included for testing purposes
-                E.info("The random seed has been set as: %s" % seed)
-                prng = np.random.RandomState(seed)
-                group1_rand = prng.permutation(df.index)
-                prng = np.random.RandomState(seed + 1)
-                group2_rand = prng.permutation(df.index)
-            else:
-                # remute the df index axes to get a random row order
-                group1_rand = np.random.permutation(df.index)
-                group2_rand = np.random.permutation(df.index)
+            group1_rand = copy.copy(df.index.tolist())
+            group2_rand = copy.copy(df.index.tolist())
+            random.shuffle(group1_rand)
+            random.shuffle(group2_rand)
 
             # subset the dataframe rows in the first random order
             # and by the column_ids in the first group
@@ -482,14 +495,137 @@ def outputSpikes(df, id_column, indices, tracks_map, groups,
                                        dtype={'position': int})
                 n += 1
 
+##########################################################################
+##########################################################################
 
-def geometric_mean(array, axis=0):
-    '''return the geometric mean of an array removing all zero-values but
-    retaining total length
+##########################################################################
+# remove the functions below (now methods for class Counts or          ###
+# class ExpDesign (expression.py)                                      ###
+##########################################################################
+
+
+def loadTagDataPandas(tags_filename, design_filename):
+    '''load tag data for deseq/edger analysis.
+
+    *Infile* is a tab-separated file with counts.
+
+    *design_file* is a tab-separated file with the
+    experimental design with four columns::
+
+      track   include group   pair
+      CW-CD14-R1      0       CD14    1
+      CW-CD14-R2      0       CD14    1
+      CW-CD14-R3      1       CD14    1
+      CW-CD4-R1       1       CD4     1
+      FM-CD14-R1      1       CD14    2
+      FM-CD4-R2       0       CD4     2
+      FM-CD4-R3       0       CD4     2
+      FM-CD4-R4       0       CD4     2
+
+    track
+        name of track - should correspond to column header in *infile*
+    include
+        flag to indicate whether or not to include this data
+    group
+        group indicator - experimental group
+    pair
+        pair that sample belongs to (for paired tests)
+
+    This method creates various R objects:
+
+    countsTable : data frame with counts.
+    groups : vector with groups
+    pairs  : vector with pairs
+
     '''
-    non_zero = ma.masked_values(array, 0)
-    log_a = ma.log(non_zero)
-    return ma.exp(log_a.mean(axis=axis))
+
+    counts_table = pd.read_table(tags_filename, sep="\t",
+                                 index_col=0, comment="#")
+
+    E.info("read data: %i observations for %i samples" % counts_table.shape)
+
+    E.debug("sample names: %s" % list(counts_table.columns))
+
+    inf = IOTools.openFile(design_filename)
+    design_table = pd.read_csv(inf, sep="\t", index_col=0)
+    inf.close()
+
+    E.debug("design names: %s" % list(design_table.index))
+
+    missing = set(counts_table.columns).difference(design_table.index)
+
+    if missing:
+        E.warn("missing samples from design file are ignored: %s" % missing)
+
+    # remove unnecessary samples
+    design_table = design_table[design_table["include"] != 0]
+    E.debug("included samples: %s" % list(design_table.index))
+
+    counts_table = counts_table[list(design_table.index)]
+    E.info("filtered data: %i observations for %i samples" %
+           counts_table.shape)
+
+    return counts_table, design_table
+
+
+def filterTagDataPandas(counts_table,
+                        design_table,
+                        filter_min_counts_per_row=1,
+                        filter_min_counts_per_sample=10,
+                        filter_percentile_rowsums=0):
+    '''filter tag data.
+
+    * remove rows with at least x number of counts
+
+    * remove samples with a maximum of *min_sample_counts*
+
+    * remove the lowest percentile of rows in the table, sorted
+       by total tags per row
+    '''
+
+    # Remove windows with no data
+    max_counts_per_row = counts_table.max(1)
+    counts_table = counts_table[
+        max_counts_per_row >= filter_min_counts_per_row]
+    observations, samples = counts_table.shape
+    E.info("trimmed data: %i observations for %i samples" %
+           (observations, samples))
+
+    # remove samples without data
+    max_counts_per_sample = counts_table.max()
+
+    low_samples = max_counts_per_sample < filter_min_counts_per_sample
+    high_samples = [not x for x in low_samples.tolist()]
+    sample_names = counts_table.columns
+    nlow_samples = sum(low_samples)
+
+    if nlow_samples:
+        E.warn("%i empty samples are being removed: %s" %
+               (nlow_samples,
+                ",".join([sample_names[x] for x, y in
+
+                          enumerate(low_samples) if y])))
+        counts_table = counts_table.iloc[:, high_samples]
+
+    # percentile filtering
+    if filter_percentile_rowsums > 0:
+        percentile = float(filter_percentile_rowsums) / 100.0
+        sum_counts = counts_table.sum(1)
+        take = sum_counts > sum_counts.quantile(percentile)
+        E.info("percentile filtering at level %f: keep=%i, discard=%i" %
+               (filter_percentile_rowsums,
+                sum(take),
+                len(take) - sum(take)))
+        counts_table = counts_table[take]
+
+    # need to return altered design table based on filtering
+    # in case samples are removed!
+
+    design_table = design_table.ix[high_samples]
+
+    nobservations, nsamples = counts_table.shape
+
+    return nobservations, nsamples, counts_table, design_table
 
 
 def normalizeTagData(counts, method="deseq-size-factors"):
@@ -549,3 +685,6 @@ def normalizeTagData(counts, method="deseq-size-factors"):
     assert normed.shape == counts.shape
 
     return normed, size_factors
+
+##########################################################################
+##########################################################################

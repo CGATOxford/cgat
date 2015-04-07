@@ -73,7 +73,6 @@ import re
 import pandas as pd
 import numpy as np
 import CGAT.Experiment as E
-import CGAT.Pipeline as P
 
 
 def groupMappers(design_table, spike_regex, shuffle_suffix, keep_suffix):
@@ -400,7 +399,8 @@ def main(argv=None):
 
     # setup command line parser
     parser = E.OptionParser(
-        version="%prog version: $Id: gtf2fasta.py 2861 2010-02-23 17:36:32Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
     parser.add_option("-t", "--design-file-tsv", dest="design_file",
                       type="string",
