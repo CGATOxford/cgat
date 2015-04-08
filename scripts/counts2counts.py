@@ -371,32 +371,37 @@ def main(argv=None):
         inf.close()
         design = design[design["include"] != 0]
 
-    if options.method in ("filter", "spike"):
-        if options.input_filename_design is None:
-            raise ValueError("method '%s' requires a design file" %
-                             options.method)
+        if options.method in ("filter", "spike"):
+            if options.input_filename_design is None:
+                raise ValueError("method '%s' requires a design file" %
+                                 options.method)
 
-    if options.input_filename_design:
-        assert os.path.exists(options.input_filename_design)
+        if options.input_filename_design:
+            assert os.path.exists(options.input_filename_design)
 
-        # load
-        if options.keep_suffix:
-            # if using suffix, loadTagDataPandas will throw an error as it
-            # looks for column names which exactly match the design
-            # "tracks" need to write function in Counts.py to handle
-            # counts table and design table + suffix
-            counts = pd.read_csv(options.stdin, sep="\t",  comment="#")
-            inf = IOTools.openFile(options.input_filename_design)
-            design = pd.read_csv(inf, sep="\t", index_col=0)
-            inf.close()
-            design = design[design["include"] != 0]
+            # load
+            if options.keep_suffix:
+                # if using suffix, loadTagDataPandas will throw an error as it
+                # looks for column names which exactly match the design
+                # "tracks" need to write function in Counts.py to handle
+                # counts table and design table + suffix
+                counts = pd.read_csv(options.stdin, sep="\t",  comment="#")
+                inf = IOTools.openFile(options.input_filename_design)
+                design = pd.read_csv(inf, sep="\t", index_col=0)
+                inf.close()
+                design = design[design["include"] != 0]
+            else:
+                pass
         else:
             counts, design = Counts.loadTagDataPandas(
                 options.stdin, options.input_filename_design)
     else:
         counts = pd.read_table(options.stdin, sep="\t",
                                index_col=0, comment="#")
-        design = None
+        inf = IOTools.openFile(options.input_filename_design)
+        design = pd.read_csv(inf, sep="\t", index_col=0)
+        inf.close()
+        design = design[design["include"] != 0]
 
     if options.method == "filter":
         # filter
@@ -456,7 +461,11 @@ def main(argv=None):
             options.min_spike = options.max_spike
 
         # restrict design table to first pair only
-        design = design.ix[design['pair'] == 1, ]
+        # handle unpaired data - an empty dataframe has length==0
+        try:
+            assert len(design.ix[design['pair'] != 1, ])
+        except AssertionError:
+            design = design.ix[design['pair'] == 0, ]
 
         # get dictionaries to map group members to column names
         # use different methods depending on whether suffixes are supplied
