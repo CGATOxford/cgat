@@ -370,7 +370,6 @@ def main(argv=None):
         design = pd.read_csv(inf, sep="\t", index_col=0)
         inf.close()
         design = design[design["include"] != 0]
-        print design
 
     if options.method in ("filter", "spike"):
         if options.input_filename_design is None:
