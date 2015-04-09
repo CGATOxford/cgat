@@ -337,11 +337,9 @@ class Counts(object):
         n = 0
         if spike_type == "row":
             for key in indices:
-                #print key
                 for pair in indices[key]:
                     initial, change = getInitialChange(
                         key, width_ibin, min_ibin, width_cbin, min_cbin)
-                    #print initial, change
                     row = ["_".join(map(str,
                                         ("spike-in", initial, change, n)))]
                     row.extend(self.table.ix[pair[0], tracks_map[groups[0]]])
@@ -382,11 +380,6 @@ class Counts(object):
 def means2idxarrays(g1, g2, i_bins, c_bins, difference):
     '''take two arrays of values and return the initial values
     and differences as numpy digitised arrays'''
-
-    # note this currently returns a bin number for values
-    # which fall outside of the bins. This is unwanted behaviour!
-    # one solution would be to make one more bin than required and
-    # throw it away at the end
 
     if difference == "relative":
         # calculate difference between mean values for group1 and group2

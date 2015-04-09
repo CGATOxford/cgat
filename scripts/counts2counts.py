@@ -140,16 +140,10 @@ The generation of spike-ins is extensively parameterised:
     similarly for the initial values. If spike-type=cluster, the min,
     max and width of the subclusters can also be similarly defined.
 
-    Note, in the current implementation, if the values given for
-    max/min initial and change bins do not encompass all possible
-    initial and change values, spikes with initial or change values
-    which fall outside of the bins will be included in the top/bottom
-    bin.
-
 --spike-output-method=[seperate / append]
 
     Spike-ins will be outputted seperately or appended to the end of
-    the original counts table. 
+    the original counts table.
 
 --spike-iterations=[int]
 
