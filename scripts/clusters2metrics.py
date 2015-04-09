@@ -76,7 +76,7 @@ import CGAT.IOTools as IOTools
 import pandas as pd
 import numpy as np
 import itertools
-import CGAT.Timeseries as TS
+import CGATPipelines.PipelineTimeseries as TS
 
 
 def main(argv=None):
