@@ -556,7 +556,6 @@ def loadTagDataPandas(tags_filename, design_filename):
     pairs  : vector with pairs
 
     '''
-
     counts_table = pd.read_table(tags_filename, sep="\t",
                                  index_col=0, comment="#")
 
