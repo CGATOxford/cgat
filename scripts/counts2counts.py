@@ -172,9 +172,11 @@ import numpy as np
 try:
     import CGAT.Experiment as E
     import CGAT.Counts as Counts
+    import CGAT.Expression as Expression
     import CGAT.IOTools as IOTools
 except ImportError:
     import Experiment as E
+    import Expression
     import Counts
     import IOTools
 
@@ -268,10 +270,6 @@ def main(argv=None):
                       help="number of iterations to generate spike-ins\
                       [default=%default].")
 
-    parser.add_option("--spike-id-columns", dest="id_column", action="append",
-                      help="name of identification column\
-                      [default=%default].")
-
     parser.add_option("--spike-cluster-maximum-distance",
                       dest="cluster_max_distance", type="int",
                       help="maximum distance between adjacent loci in cluster\
@@ -324,11 +322,16 @@ def main(argv=None):
         choices=("deseq-size-factors", "million-counts"),
         help="normalization method to apply [%default]")
 
+    parser.add_option("-t", "--tags-tsv-file", dest="input_filename_tags",
+                      type="string",
+                      help="input file with tag counts [default=%default].")
+
     parser.set_defaults(
+        input_filename_tags="-",
         method="filter",
-        filter_min_counts_per_row=1,
-        filter_min_counts_per_sample=10,
-        filter_percentile_rowsums=0,
+        filter_min_counts_per_row=None,
+        filter_min_counts_per_sample=None,
+        filter_percentile_rowsums=None,
         output_method="seperate",
         difference="logfold",
         spike_type="row",
@@ -338,7 +341,6 @@ def main(argv=None):
         min_ibin=0,
         max_ibin=100,
         width_ibin=100,
-        id_columns=None,
         max_spike=100,
         min_spike=None,
         iterations=1,
@@ -347,7 +349,6 @@ def main(argv=None):
         min_sbin=1,
         max_sbin=1,
         width_sbin=1,
-        id_column=None,
         shuffle_suffix=None,
         keep_suffix=None,
         normalization_method="deseq-size-factors",
@@ -355,9 +356,6 @@ def main(argv=None):
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
-
-    assert options.input_filename_design and os.path.exists(
-        options.input_filename_design)
 
     # load
     if options.keep_suffix:
@@ -370,45 +368,70 @@ def main(argv=None):
         design = pd.read_csv(inf, sep="\t", index_col=0)
         inf.close()
         design = design[design["include"] != 0]
-        print design
 
-    if options.method in ("filter", "spike"):
-        if options.input_filename_design is None:
-            raise ValueError("method '%s' requires a design file" %
-                             options.method)
+        if options.method in ("filter", "spike"):
+            if options.input_filename_design is None:
+                raise ValueError("method '%s' requires a design file" %
+                                 options.method)
 
-    if options.input_filename_design:
-        assert os.path.exists(options.input_filename_design)
-
-        # load
-        if options.keep_suffix:
-            # if using suffix, loadTagDataPandas will throw an error as it
-            # looks for column names which exactly match the design
-            # "tracks" need to write function in Counts.py to handle
-            # counts table and design table + suffix
-            counts = pd.read_csv(options.stdin, sep="\t",  comment="#")
-            inf = IOTools.openFile(options.input_filename_design)
-            design = pd.read_csv(inf, sep="\t", index_col=0)
-            inf.close()
-            design = design[design["include"] != 0]
-        else:
-            counts, design = Counts.loadTagDataPandas(
-                options.stdin, options.input_filename_design)
     else:
-        counts = pd.read_table(options.stdin, sep="\t",
-                               index_col=0, comment="#")
-        design = None
+        # create Counts object
+        # TS if spike type is cluster, need to keep "contig" and "position"
+        # columns out of index
+        if options.spike_type == "cluster":
+            index = None,
+        else:
+            index = 0
+
+        if options.input_filename_tags == "-":
+            counts = Counts.Counts(pd.io.parsers.read_csv(
+                sys.stdin, sep="\t", index_col=index, comment="#"))
+        else:
+            counts = Counts.Counts(
+                IOTools.openFile(options.input_filename_tags, "r"),
+                sep="\t", index_col=index, comment="#")
+
+        # TS normalization doesn't require a design table
+        if not options.method == "normalize":
+
+            assert options.input_filename_design and os.path.exists(
+                options.input_filename_design)
+
+            # create Design object
+            design = Expression.ExpDesign(
+                pd.read_csv(
+                    IOTools.openFile(options.input_filename_design, "r"),
+                    sep="\t", index_col=0, comment="#"))
+
+            design.getAttributes()
 
     if options.method == "filter":
+
+        assert (options.filter_min_counts_per_sample is not None or
+                options.filter_min_counts_per_row is not None or
+                options.filter_percentile_rowsums is not None), \
+            "no filtering parameters have been suplied"
+
         # filter
-        nobservations, nsamples, counts, design = Counts.filterTagDataPandas(
-            counts, design,
-            options.filter_min_counts_per_row,
-            options.filter_min_counts_per_sample,
-            options.filter_percentile_rowsums)
+        # remove sample with low counts
+        if options.filter_min_counts_per_sample:
+                counts.removeSamples(
+                    min_counts_per_sample=options.filter_min_counts_per_sample)
+
+        # remove observations with low counts
+        if options.filter_min_counts_per_row:
+                counts.removeObservationsFreq(
+                    min_counts_per_row=options.filter_min_counts_per_row)
+
+        # remove bottom percentile of observations
+        if options.filter_percentile_rowsums:
+                counts.removeObservationsPerc(
+                    percentile_rowsums=options.filter_percentile_rowsums)
+
+        nobservations, nsamples = counts.table.shape
 
         if nobservations == 0:
-            E.warn("no observations - no output")
+            E.warn("no observations remaining after filtering- no output")
             return
 
         if nsamples == 0:
@@ -416,58 +439,46 @@ def main(argv=None):
             return
 
         # write out
-        counts.to_csv(options.stdout, sep="\t", header=True)
+        counts.table.to_csv(options.stdout, sep="\t", header=True)
 
     elif options.method == "normalize":
-        normed, factors = Counts.normalizeTagData(
-            counts,
-            method=options.normalization_method)
-
-        E.info("normalization-data:\n%s" % str(factors))
-        # write out
-        normed.to_csv(options.stdout, sep="\t", header=True)
+        counts.normalise(method=options.normalization_method)
+        counts.table.to_csv(options.stdout, sep="\t", header=True)
 
     elif options.method == "spike":
         # check parameters are sensible and set parameters where they
         # are not explicitly set
-        if options.spike_type == "cluster":
-            msg = "max size of subscluster: %s is greater than min size of\
-            cluster: %s" % (options.max_sbin, options.cluster_min_size)
-            assert options.max_sbin <= options.cluster_min_size, msg
-
-            counts_columns = set(counts.columns.values.tolist())
-            msg2 = "cluster analysis requires columns named 'contig' and\
-            'position' in the dataframe"
-            assert ("contig" in counts_columns and
-                    "position" in counts_columns), msg2
-
-            counts_sort = counts.sort(columns=["contig", "position"])
-            counts_sort.set_index(counts.index, inplace=True)
-
-        if not options.id_column:
-            if options.output_method == "append":
-                msg3 = "id column must be specified to append rows"
-                assert options.spike_type != "row", msg3
-            elif options.output_method != "append":
-                E.info("guessing identification column = 'id'")
-                options.id_column = ["spike"]
-
         if not options.min_spike:
-            E.info("setting spike-minimum to equal spike-maximum")
+            E.info("setting minimum number of spikes per bin to equal"
+                   "maximum number of spikes per bin (%s)" % options.max_spike)
             options.min_spike = options.max_spike
 
+        if options.spike_type == "cluster":
+
+            assert options.max_sbin <= options.cluster_min_size, \
+                ("max size of subscluster: %s is greater than min size of"
+                 "cluster: %s" % (options.max_sbin, options.cluster_min_size))
+
+            counts_columns = set(counts.table.columns.values.tolist())
+
+            assert ("contig" in counts_columns and
+                    "position" in counts_columns), \
+                ("cluster analysis requires columns named 'contig' and"
+                 "'position' in the dataframe")
+
+            counts.sort(sort_columns=["contig", "position"], reset_index=True)
+
         # restrict design table to first pair only
-        design = design.ix[design['pair'] == 1, ]
+        design.firstPairOnly()
 
         # get dictionaries to map group members to column names
         # use different methods depending on whether suffixes are supplied
         if options.keep_suffix:
-            (groups,  g_to_keep_tracks,
-             g_to_spike_tracks) = Counts.mapGroupsWithSuffix(
-                 design, options.shuffle_suffix, options.keep_suffix)
+            g_to_keep_tracks, g_to_spike_tracks = design.mapGroupsSuffix(
+                options.shuffle_suffix, options.keep_suffix)
         else:
             # if no suffixes supplied, spike and keep tracks are the same
-            groups,  g_to_track = Counts.mapGroups(design)
+            g_to_track = design.mapGroups()
             g_to_spike_tracks, g_to_keep_tracks = (g_to_track, g_to_track)
 
         # set up numpy arrays for change and initial values
@@ -496,25 +507,29 @@ def main(argv=None):
                 options.max_sbin, options.min_sbin, options.width_sbin)
 
         elif options.spike_type == "row":
-            counts_sort = counts
+
             E.info("shuffling rows...")
-            output_indices, counts = Counts.shuffleRows(
-                counts_sort, initial_bins, change_bins,
-                g_to_spike_tracks, groups, options.difference,
+            output_indices, bin_counts = counts.shuffleRows(
+                initial_bins, change_bins,
+                g_to_spike_tracks, design.groups, options.difference,
                 options.max_spike, options.iterations)
 
-        filled_bins = Counts.thresholdBins(output_indices, counts,
+        filled_bins = Counts.thresholdBins(output_indices, bin_counts,
                                            options.min_spike)
 
         assert len(filled_bins) > 0, "No bins contained enough spike-ins"
 
         # write out
-        Counts.outputSpikes(
-            counts_sort, options.id_column, filled_bins,
-            g_to_keep_tracks, groups, method=options.output_method,
-            spike_type=options.spike_type, min_cbin=options.min_cbin,
-            width_cbin=options.width_cbin, min_ibin=options.min_ibin,
-            width_ibin=options.width_ibin, min_sbin=options.min_sbin,
+        counts.outputSpikes(
+            filled_bins,
+            g_to_keep_tracks, design.groups,
+            output_method=options.output_method,
+            spike_type=options.spike_type,
+            min_cbin=options.min_cbin,
+            width_cbin=options.width_cbin,
+            min_ibin=options.min_ibin,
+            width_ibin=options.width_ibin,
+            min_sbin=options.min_sbin,
             width_sbin=options.width_sbin)
 
     E.Stop()
