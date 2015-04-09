@@ -61,21 +61,24 @@ normalize
 Input
 -----
 
-The input to this script is a dataframe containing one item per row
-(e.g gene, CpG) and measurements per item in columns
+The input to this script is a counts table containing one item per row
+(e.g gene, CpG) and measurements per item in columns.
+
+If creating row-wise spike-ins, it is expected that the first column
+will contain an identifier for the row
+
+If creating cluster-wise spike-ins, it is expected that the counts table
+will contain columns "contig" and "position" for clustering purposes
 
 The script further requires a design table describing the tests to
 be performed. The design table has for columns::
 
       track   include group   pair
-      CW-CD14-R1      0       CD14    1
-      CW-CD14-R2      0       CD14    1
-      CW-CD14-R3      1       CD14    1
-      CW-CD4-R1       1       CD4     1
-      FM-CD14-R1      1       CD14    2
-      FM-CD4-R2       0       CD4     2
-      FM-CD4-R3       0       CD4     2
-      FM-CD4-R4       0       CD4     2
+      CW-CD14-R1      0       CD14    0
+      CW-CD14-R2      0       CD14    0
+      CW-CD14-R3      1       CD14    0
+      CW-CD4-R1       1       CD4     0
+
 
 track
      name of track - should correspond to column header in the counts
@@ -146,8 +149,7 @@ The generation of spike-ins is extensively parameterised:
 --spike-output-method=[seperate / append]
 
     Spike-ins will be outputted seperately or appended to the end of
-    the original counts table. Note, spikes are appended, an id
-    column(s) must be specified via the --spike-id-columns option.
+    the original counts table. 
 
 --spike-iterations=[int]
 
@@ -221,11 +223,6 @@ def main(argv=None):
                       type="int",
                       help="remove percent of rows with "
                       "lowest total counts [default=%default].")
-
-    parser.add_option("--difference-method", dest="difference",
-                      type="choice", choices=("relative", "logfold"),
-                      help="method to use for calculating difference\
-                      [default=%default].")
 
     parser.add_option("--spike-change-bin-min", dest="min_cbin",
                       type="float",
@@ -316,11 +313,10 @@ def main(argv=None):
                       help="a list of suffixes for the columns which are to be\
                       keep along with the shuffled columns[default=%default].")
 
-    parser.add_option(
-        "--normalization-method",
-        dest="normalization_method", type="choice",
-        choices=("deseq-size-factors", "million-counts"),
-        help="normalization method to apply [%default]")
+    parser.add_option("--normalization-method",
+                      dest="normalization_method", type="choice",
+                      choices=("deseq-size-factors", "million-counts"),
+                      help="normalization method to apply [%default]")
 
     parser.add_option("-t", "--tags-tsv-file", dest="input_filename_tags",
                       type="string",
@@ -442,10 +438,14 @@ def main(argv=None):
         counts.table.to_csv(options.stdout, sep="\t", header=True)
 
     elif options.method == "normalize":
+
         counts.normalise(method=options.normalization_method)
+
+        # write out
         counts.table.to_csv(options.stdout, sep="\t", header=True)
 
     elif options.method == "spike":
+
         # check parameters are sensible and set parameters where they
         # are not explicitly set
         if not options.min_spike:
@@ -510,7 +510,8 @@ def main(argv=None):
 
             E.info("shuffling rows...")
             output_indices, bin_counts = counts.shuffleRows(
-                initial_bins, change_bins,
+                options.min_cbin, options.max_cbin, options.width_cbin,
+                options.min_ibin, options.max_ibin, options.width_ibin,
                 g_to_spike_tracks, design.groups, options.difference,
                 options.max_spike, options.iterations)
 
@@ -527,10 +528,13 @@ def main(argv=None):
             spike_type=options.spike_type,
             min_cbin=options.min_cbin,
             width_cbin=options.width_cbin,
+            max_cbin=options.max_cbin,
             min_ibin=options.min_ibin,
             width_ibin=options.width_ibin,
+            max_ibin=options.max_ibin,
             min_sbin=options.min_sbin,
-            width_sbin=options.width_sbin)
+            width_sbin=options.width_sbin,
+            max_sbin=options.max_sbin,)
 
     E.Stop()
 
