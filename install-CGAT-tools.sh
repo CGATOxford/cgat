@@ -222,14 +222,8 @@ conda config --add channels https://conda.binstar.org/cgat
 
 # install cgat environment
 conda update -q conda --yes
-conda_cleanup
 conda info -a
-conda create -q -n $CONDA_INSTALL_TYPE cgat-r-deps --yes
-conda_cleanup
-conda install -q -n $CONDA_INSTALL_TYPE cgat-bioconductor-deps --yes
-conda_cleanup
-conda install -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE --yes
-conda_cleanup
+conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE --override-channels --channel https://conda.binstar.org/cgat --channel defaults --channel https://conda.binstar.org/r --channel https://conda.binstar.org/asmeurer --yes
 
 # if installation is 'devel' (outside of travis), checkout latest version from github
 if [ "$OS" != "travis" ] ; then
