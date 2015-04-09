@@ -14,13 +14,13 @@ spikeRowsFoldChange:
     stdin: counts_small.tsv.gz
     outputs: [stdout]
     references: [counts_rowspikes_logfold.tsv]
-    options: --design-tsv-file=<DIR>/design2.tsv --method="spike" --spike-type="row" --spike-maximum=1 --spike-change-bin-width=1 --spike-change-bin-max=10 --spike-initial-bin-max=100 --spike-initial-bin-width=10 --random-seed=1234567890 -v0
+    options: --design-tsv-file=<DIR>/design2.tsv --method="spike" --spike-type="row" --spike-maximum=1 --spike-change-bin-width=1 --spike-change-bin-max=10 --spike-initial-bin-max=10 --spike-initial-bin-width=1 --random-seed=1234567890 -v0 --spike-difference-method=logfold
 
 spikeRowsRelative:
     stdin: counts_small.tsv.gz
     outputs: [stdout]
     references: [counts_rowspikes_relative.tsv]
-    options: --design-tsv-file=<DIR>/design2.tsv --method="spike" --spike-type="row" --spike-maximum=1 --spike-change-bin-width=100 --spike-initial-bin-width=10 --spike-change-bin-max=10000 --spike-initial-bin-max=100 --spike-initial-bin-width=10 --difference-method=relative --random-seed=1234567890 -v0
+    options: --design-tsv-file=<DIR>/design2.tsv --method="spike" --spike-type="row" --spike-maximum=1 --spike-change-bin-width=100 --spike-change-bin-max=1000 --spike-initial-bin-max=200 --spike-initial-bin-width=10 --random-seed=1234567890 -v0 --spike-difference-method=relative
 
 # For some reason these tests cause failures on travis, but they
 # work locally in CGAT (error = files are not the same)
