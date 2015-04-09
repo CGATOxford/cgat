@@ -363,7 +363,6 @@ def main(argv=None):
             if options.input_filename_design is None:
                 raise ValueError("method '%s' requires a design file" %
                                  options.method)
-
     else:
         # create Counts object
         # TS if spike type is cluster, need to keep "contig" and "position"
@@ -463,6 +462,7 @@ def main(argv=None):
             counts.sort(sort_columns=["contig", "position"], reset_index=True)
 
         # restrict design table to first pair only
+
         design.firstPairOnly()
 
         # get dictionaries to map group members to column names
