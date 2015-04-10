@@ -216,9 +216,9 @@ export PATH="$CONDA_INSTALL_DIR/bin:$PATH"
 hash -r
 
 # add binstar channels
-conda config --add channels https://conda.binstar.org/asmeurer
-conda config --add channels https://conda.binstar.org/r
-conda config --add channels https://conda.binstar.org/cgat
+#conda config --add channels https://conda.binstar.org/asmeurer
+#conda config --add channels https://conda.binstar.org/r
+#conda config --add channels https://conda.binstar.org/cgat
 
 # install cgat environment
 conda update -q conda --yes
@@ -295,7 +295,7 @@ if [ "$OS" == "travis" ] ; then
    fi
 
    # configure environment
-   export CFLAGS="-O0"
+   export CFLAGS=$CFLAGS" -O0 -I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu"
    export CPATH=$CPATH" -I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu"
    export C_INCLUDE_PATH=$C_INCLUDE_PATH:"/usr/include/x86_64-linux-gnu"
    export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:"/usr/include/x86_64-linux-gnu"
