@@ -63,7 +63,13 @@ import os
 import shutil
 import tempfile
 import CGAT.Experiment as E
-from CGATPipelines.Local import getMakefiles, getScripts, getModules
+
+# Needs refactoring with CGATPipelines
+try:
+    from CGATPipelines.Local import getMakefiles, getScripts, getModules
+except ImportError:
+    pass
+
 
 USAGE = """python %s
 """ % sys.argv[0]
