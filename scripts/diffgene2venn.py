@@ -35,10 +35,8 @@ Command line options
 '''
 
 import sys
-from rpy2.robjects import pandas2ri
 import CGAT.Experiment as E
-import CGATPipelines.PipelineTimeseries as TS
-pandas2ri.activate()
+import CGAT.Timeseries as TS
 
 
 def main(argv=None):
@@ -72,7 +70,6 @@ parses command line options in sys.argv, unless *argv* is given.
     (options, args) = E.Start(parser, argv=argv)
 
     infiles = options.infiles.split(",")
-
     TS.genSigGenes(file_list=infiles,
                    alpha=float(options.alpha),
                    out_dir=options.out_dir)
