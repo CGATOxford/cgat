@@ -290,12 +290,20 @@ if [ "$OS" == "travis" ] ; then
    fi
 
    # configure environment
-   export CFLAGS=$CFLAGS" -O0 -I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu"
-   export CPATH=$CPATH" -I/usr/include/x86_64-linux-gnu -L/usr/lib/x86_64-linux-gnu"
+   export CFLAGS=$CFLAGS" -O0 -I/usr/include/x86_64-linux-gnu -I$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/include -L/usr/lib/x86_64-linux-gnu -L$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/lib"
+   export CPATH=$CPATH" -I/usr/include/x86_64-linux-gnu -I$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/include -L/usr/lib/x86_64-linux-gnu -L$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/lib"
    export C_INCLUDE_PATH=$C_INCLUDE_PATH:/usr/include/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/include
    export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/usr/include/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/include
    export LIBRARY_PATH=$LIBRARY_PATH:/usr/lib/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/lib
    export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/lib:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/lib/R/lib
+
+   echo " Troubleshooting environment variables "
+   echo " CFLAGS = "$CFLAGS
+   echo " CPATH = "$CPATH
+   echo " C_INCLUDE_PATH = "$C_INCLUDE_PATH
+   echo " CPLUS_INCLUDE_PATH = "$CPLUS_INCLUDE_PATH
+   echo " LIBRARY_PATH = "$LIBRARY_PATH
+   echo " LD_LIBRARY_PATH = "$LD_LIBRARY_PATH
 
    cd $TRAVIS_BUILD_DIR
    python setup.py develop
