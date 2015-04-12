@@ -92,10 +92,8 @@ Command line options
 
 import sys
 import pandas as pd
-from rpy2.robjects import pandas2ri
 import CGAT.Experiment as E
-import CGATPipelines.PipelineTimeseries as TS
-pandas2ri.activate()
+import CGAT.Timeseries as TS
 
 
 def main(argv=None):
