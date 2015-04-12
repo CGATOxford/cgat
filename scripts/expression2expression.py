@@ -105,8 +105,7 @@ import sys
 import pandas as pd
 from rpy2.robjects import pandas2ri
 import CGAT.Experiment as E
-import CGATPipelines.PipelineTimeseries as TS
-pandas2ri.activate()
+import CGAT.Timeseries as TS
 
 
 def main(argv=None):
@@ -133,7 +132,7 @@ parses command line options in sys.argv, unless *argv* is given.
 
     parser.add_option("--conditions", dest="conditions", type="string",
                       help="a comma-separated list of experimental conditions")
-    
+
     parser.add_option("--orders", dest="orders", type="int",
                       help="order of polynomial terms to include in"
                       "maSigPro linear model")
