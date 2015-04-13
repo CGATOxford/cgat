@@ -74,6 +74,8 @@ def check_import(filename, outfile):
     # with a cython extension is being re-compiled, but without the proper
     # flags.
     pyxfile = os.path.join(dirname, "_") + basename + ".pyx"
+    import sys
+    sys.stderr.write("pyxfile = %s" % pyxfile)
     if os.path.exists(pyxfile):
         return
 
