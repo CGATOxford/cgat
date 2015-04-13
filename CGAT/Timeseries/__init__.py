@@ -27,7 +27,7 @@ from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import random
 
-import _clusters2metrics as c2m
+import cmetrics as c2m
 
 #################################
 # Clustering assessment functions
