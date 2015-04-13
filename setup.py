@@ -227,8 +227,8 @@ NCL = Extension(
 
 # Timeseries analysis
 Timeseries = Extension(
-    "CGAT.Timeseries._clusters2metrics",
-    ["CGAT/Timeseries/_clusters2metrics.pyx"],
+    "CGAT.Timeseries.cmetrics",
+    ["CGAT/Timeseries/cmetrics.pyx"],
     include_dirs=[numpy.get_include()],
     library_dirs=[],
     libraries=[],
