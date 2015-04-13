@@ -17,12 +17,6 @@ from math import log
 import CGAT.Experiment as E
 import numpy as np
 import pandas as pd
-try:
-    import pyximport
-    pyximport.install(build_in_temp=False)
-    import _clusters2metrics as c2m
-except ImportError:
-    import CGAT._clusters2metrics as c2m
 import itertools
 import sys
 import math
@@ -33,6 +27,7 @@ from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import random
 
+import _clusters2metrics as c2m
 
 #################################
 # Clustering assessment functions
