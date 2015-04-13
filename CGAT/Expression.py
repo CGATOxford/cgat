@@ -75,7 +75,6 @@ To do:
 import math
 import numpy
 import sys
-import os
 import collections
 import itertools
 import re
@@ -85,7 +84,6 @@ import ggplot
 import copy
 import numpy as np
 from scipy.stats import ttest_ind
-
 import matplotlib
 import matplotlib.pyplot as plt
 import pylab
@@ -96,21 +94,14 @@ import rpy2.robjects.numpy2ri
 from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import FloatVector
 
-
 try:
     import CGAT.Experiment as E
-    import CGAT.Database as Database
     import CGAT.IOTools as IOTools
     import CGAT.Stats as Stats
-    import CGAT.Counts as Counts
 except ImportError:
     import Experiment as E
-    import Database
     import IOTools
     import Stats
-    import Counts
-
-import sqlite3
 
 
 def runDETest(raw_DataFrame,
