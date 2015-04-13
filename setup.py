@@ -25,7 +25,7 @@ except ImportError:
         "the CGAT code collection requires cython to "
         "be installed before running setup.py (pip install cython)")
 
-try: 
+try:
     import pysam
 except ImportError:
     raise ImportError(
@@ -204,21 +204,20 @@ Operating System :: MacOS
 """
 
 ##########################################################
-##########################################################
-# Extensions
+# Cython Extensions
 # Connected components cython extension
 Components = Extension(
     'CGAT.Components',
     ['CGAT/Components/Components.pyx',
-     'CGAT/Components/connected_components.cpp',],
+     'CGAT/Components/connected_components.cpp', ],
     library_dirs=[],
-    libraries=[],            
+    libraries=[],
     language="c++",
 )
 
 # Nested containment lists
 NCL = Extension(
-    "CGAT.NCL.cnestedlist",              
+    "CGAT.NCL.cnestedlist",
     ["CGAT/NCL/cnestedlist.pyx",
      "CGAT/NCL/intervaldb.c"],
     library_dirs=[],
@@ -226,17 +225,17 @@ NCL = Extension(
     language="c",
 )
 
-# Nubiscan motif mapping
-#Nubiscan = Extension(
-#    "CGAT.Nubiscan.cnubiscan",                   
-#    [ 'CGAT/Nubiscan/cnubiscan.pyx'],
-#    library_dirs=[],
-#    libraries=[],            
-#    include_dirs = [numpy.get_include()], 
-#    language="c",               
-# )
+# Timeseries analysis
+Timeseries = Extension(
+    "CGAT.Timeseries._clusters2metrics",
+    ["CGAT/Timeseries/_clusters2metrics.pyx"],
+    include_dirs=[numpy.get_include()],
+    library_dirs=[],
+    libraries=[],
+    language="c",
+)
 
-# Automatically build script extensions
+# automatically build pyximport script extensions
 pyx_files = glob.glob("scripts/*.pyx")
 script_extensions = []
 pysam_dirname = os.path.dirname(pysam.__file__)
@@ -267,6 +266,8 @@ for pyx_file in pyx_files:
     )
 
 
+ext_modules = [Components, NCL, Timeseries] + script_extensions
+
 setup(
     # package information
     name='CGAT',
@@ -294,7 +295,7 @@ setup(
     install_requires=install_requires,
     dependency_links=dependency_links,
     # extension modules
-    ext_modules=[Components, NCL] + script_extensions,
+    ext_modules=ext_modules,
     cmdclass={'build_ext': build_ext},
     # other options
     zip_safe=False,
