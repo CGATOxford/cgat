@@ -27,6 +27,7 @@ import os
 import glob
 import traceback
 import imp
+import sys
 
 from nose.tools import ok_
 
@@ -70,13 +71,8 @@ def check_import(filename, outfile):
     # ignore script with pyximport for now, something does not work
     # which can lead to errors in downstream files. Issues for
     # example:
-    # When a pyximport script is imported before one that imports a module
-    # with a cython extension is being re-compiled, but without the proper
-    # flags.
-    pyxfile = os.path.join(dirname, "_") + basename + ".pyx"
-    import sys
-    sys.stderr.write("pyxfile = %s" % pyxfile)
-    if os.path.exists(pyxfile):
+    blob = open(filename).read()
+    if "import pyximport" in blob:
         return
 
     try:
