@@ -1,4 +1,4 @@
-'''bed2table.py - annotate intervals
+'''Bed2table.py - annotate intervals
 =================================
 
 :Author: Andreas Heger
@@ -236,8 +236,8 @@ class CounterPeaks(Counter):
             counts = numpy.zeros(length)
         except ValueError, msg:
             raise ValueError("Error negative length obtained: "
-                             " message=%s contig=%s, start=%s, end=%s" % (
-                              msg, contig, start, end))
+                             " message=%s contig=%s, start=%s, end=%s" %
+                             (msg, contig, start, end))
         nreads = 0
 
         if offsets:

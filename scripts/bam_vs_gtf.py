@@ -41,37 +41,37 @@ Example::
 +====================+=========+
 |spliced_bothoverlap |0        |
 +--------------------+---------+
-|unspliced_overlap	 |0        |
+|unspliced_overlap   |0        |
 +--------------------+---------+
 |unspliced_nooverrun |0        |
 +--------------------+---------+
-|unspliced	         |207      |
+|unspliced	     |207      |
 +--------------------+---------+
 |unspliced_nooverlap |207      |
 +--------------------+---------+
-|spliced_overrun	 |0        |
+|spliced_overrun     |0        |
 +--------------------+---------+
 |spliced_halfoverlap |0        |
 +--------------------+---------+
 |spliced_exact	     |0        |
 +--------------------+---------+
-|spliced_inexact	 |0        |
+|spliced_inexact     |0        |
 +--------------------+---------+
-|unspliced_overrun	 |0        |
+|unspliced_overrun   |0        |
 +--------------------+---------+
-|spliced	         |18       |
+|spliced	     |18       |
 +--------------------+---------+
-|spliced_underrun	 |0        |
+|spliced_underrun    |0        |
 +--------------------+---------+
 |mapped	             |225      |
 +--------------------+---------+
-|unmapped	         |0        |
+|unmapped	     |0        |
 +--------------------+---------+
 |input	             |225      |
 +--------------------+---------+
-|spliced_nooverlap	 |18       |
+|spliced_nooverlap   |18       |
 +--------------------+---------+
-|spliced_ignored	 |0        |
+|spliced_ignored     |0        |
 +--------------------+---------+
 
 Type::

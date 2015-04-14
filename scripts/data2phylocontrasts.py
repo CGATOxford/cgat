@@ -241,7 +241,7 @@ def main(argv=None):
                 for d in result.mContrasts:
                     options.stdout.write(
                         "\t".join(
-                         map(lambda x: options.value_format % x, d)) + "\n ")
+                            map(lambda x: options.value_format % x, d)) + "\n")
 
             elif method == "compute":
 

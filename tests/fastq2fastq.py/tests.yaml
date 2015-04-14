@@ -19,12 +19,26 @@ single_sort_test:
     options: --method=sort 
     description: sort single fastq file by read identifier
 
-single_trim_test:
+single_trim3_test:
     stdin: THP1-stimulated-R1.short.fastq.gz
     outputs: [stdout]
-    references: [test_out_single_end.trim6.tsv.gz]
+    references: [test_out_single_end.trim3.tsv.gz]
     options: --method=trim3 --num-bases 6
     description: trim 6 bases from 3 prime end of each read, single end files only
+
+single_trim5_test:
+    stdin: THP1-stimulated-R1.short.fastq.gz
+    outputs: [stdout]
+    references: [test_out_single_end.trim5.tsv.gz]
+    options: --method=trim5 --num-bases 6
+    description: trim 6 bases from 3 prime end of each read, single end files only
+
+single_grep_test:
+    stdin: THP1-stimulated-R1.short.fastq.gz
+    outputs: [stdout]
+    references: [test_out_single_end.grep.tsv.gz]
+    options: --method=grep --grep-pattern=CCCC.*
+    description: grep for reads starting with pattern
 
 single_uniq_test:
     stdin: THP1-stimulated-R1.short.fastq.gz

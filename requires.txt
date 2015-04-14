@@ -1,4 +1,6 @@
 # latest setutools required for automatic cythonization
+#
+# AH: removed dependencies not required for scripts
 setuptools>=1.1
 pyparsing>=1.5.7
 cython>=0.19
@@ -7,12 +9,12 @@ MySQL-python>1.2.3
 PyYAML>=3.1.0
 alignlib-lite>=0.2.3
 biopython>=1.61
-drmaa>=0.5
-hgapi>=1.3.0
-matplotlib-venn>=0.5
+# AH: drmaa>=0.5
+# AH: hgapi>=1.3.0
+# AH: matplotlib-venn>=0.5
 matplotlib>=1.3.0
 networkx>=1.8.1
-openpyxl>=1.5.7
+# AH: openpyxl>=1.5.7
 pandas>=0.12.0
 pysam>=0.8.0
 rdflib>=0.4.1
@@ -23,13 +25,13 @@ scipy>=0.11
 #https://bitbucket.org/james_taylor/bx-python/get/tip.tar.bz2
 #-e hg+http://bitbucket.org/james_taylor/bx-python#egg=bx-python-0.7.2
 sphinx>=1.0.5
-sphinxcontrib-programoutput>=0.8
-sqlalchemy>=0.7.0
-threadpool>=1.2.7
-web.py>=0.37
+# AH: sphinxcontrib-programoutput>=0.8
+# AH: sqlalchemy>=0.7.0
+# AH: threadpool>=1.2.7
+# AH: web.py>=0.37
 weblogo>=3.0
 ggplot>=0.6.5
-xlwt>=0.7.4
+# xlwt>=0.7.4
 pybedtools>=0.6.5
 pep8>=1.4.0
-CGATReport>=0.2.1
+# CGATReport>=0.2.1
