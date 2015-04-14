@@ -36,7 +36,7 @@ Command line options
 
 import sys
 import CGAT.Experiment as E
-import CGATPipelines.PipelineTimeseries as TS
+import CGAT.Timeseries as TS
 
 
 def main(argv=None):

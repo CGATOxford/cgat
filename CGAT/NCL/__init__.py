@@ -1,9 +1,11 @@
 from cnestedlist import *
 
-import cPickle, sqlite3
+import cPickle
+import sqlite3
 import os
 
 sqlite3.register_converter("pickle", cPickle.loads)
+
 
 class NCLSimple(object):
     """a nested contained list in memory storing

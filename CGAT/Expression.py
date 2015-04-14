@@ -75,7 +75,6 @@ To do:
 import math
 import numpy
 import sys
-import os
 import collections
 import itertools
 import re
@@ -85,7 +84,6 @@ import ggplot
 import copy
 import numpy as np
 from scipy.stats import ttest_ind
-
 import matplotlib
 import matplotlib.pyplot as plt
 import pylab
@@ -96,21 +94,14 @@ import rpy2.robjects.numpy2ri
 from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import FloatVector
 
-
 try:
     import CGAT.Experiment as E
-    import CGAT.Database as Database
     import CGAT.IOTools as IOTools
     import CGAT.Stats as Stats
-    import CGAT.Counts as Counts
 except ImportError:
     import Experiment as E
-    import Database
     import IOTools
     import Stats
-    import Counts
-
-import sqlite3
 
 
 def runDETest(raw_DataFrame,
@@ -265,6 +256,52 @@ class ExpDesign(object):
 
         else:
             pass
+
+    def firstPairOnly(self):
+        ''' restrict the design table to the first pair only
+        if unpaired will retain whole design table'''
+
+        if not self.pairs:
+            self.pairs = self.table['pair'].tolist()
+        self.table = self.table.ix[self.table['pair'] == min(self.pairs), ]
+
+    def mapGroups(self):
+        '''extract groups from the design table and return dictionaries
+        mapping groups to tracks'''
+
+        groups_to_tracks = {}
+
+        for group in self.groups:
+            match_group = (self.table['group'] == group).tolist()
+            tmp_design = self.table.iloc[match_group, ]
+            groups_to_tracks[group] = tmp_design.index.tolist()
+
+        return groups_to_tracks
+
+    def mapGroupsSuffix(self, shuffle_suffix, keep_suffix):
+        '''use suffixes supplied to extract groups from the
+        design table and return dictionaries mapping each group to tracks
+        for keeping with tracks which should be shuffled
+        '''
+
+        groups_to_keep_tracks = {}
+        groups_to_spike_tracks = {}
+
+        keep_suffix = keep_suffix.split(",")
+
+        for group in self.groups:
+            match_group = (self.table['group'] == group).tolist()
+            tmp_design = self.table.iloc[match_group, ]
+
+            groups_to_spike_tracks[group] = [
+                x + shuffle_suffix for x in tmp_design.index.tolist()]
+
+            groups_to_keep_tracks[group] = copy.copy(
+                groups_to_spike_tracks[group])
+            groups_to_keep_tracks[group].extend(
+                [x + y for x in tmp_design.index.tolist() for y in keep_suffix])
+
+        return groups_to_keep_tracks, groups_to_spike_tracks
 
 
 class DEExperiment(object):
