@@ -1,4 +1,9 @@
 
+# use container-based infrastructure on Travis
+# http://docs.travis-ci.com/user/workers/container-based-infrastructure/
+# http://blog.travis-ci.com/2014-12-17-faster-builds-with-container-based-infrastructure/
+sudo: false
+
 language: python
 
 env:
@@ -39,3 +44,4 @@ notifications:
     - nicholas.ilott@kennedy.ox.ac.uk
     - katherine.brown@dpag.ox.ac.uk
     - charlotte.george@dpag.ox.ac.uk
+    - adam.cribbs@dpag.ox.ac.uk

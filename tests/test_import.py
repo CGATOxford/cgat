@@ -68,8 +68,13 @@ def check_import(filename, outfile):
         os.remove(prefix + ".pyc")
 
     # ignore script with pyximport for now, something does not work
-    pyxfile = os.path.join(dirname, "_") + basename + "x"
-    if os.path.exists(pyxfile):
+    # which can lead to errors in downstream files. Issues for
+    # example:
+    # When a pyximport script is imported before one that imports a module
+    # with a cython extension is being re-compiled, but without the proper
+    # flags.
+    blob = open(filename).read()
+    if "import pyximport" in blob:
         return
 
     try:
@@ -95,19 +100,21 @@ def check_import(filename, outfile):
 def test_imports():
     '''test importing
 
-    Relative imports will cause a failure because
-    imp.load_source does not import modules that are in the same
-    directory as the module being loaded from source.
+    Relative imports will cause a failure because imp.load_source does
+    not import modules that are in the same directory as the module
+    being loaded from source.
+
     '''
     outfile = open('test_import.log', 'a')
-
     for label, expression in EXPRESSIONS:
 
         files = glob.glob(expression)
         files.sort()
 
         for f in files:
+
             if os.path.isdir(f):
                 continue
             check_import.description = os.path.abspath(f)
             yield(check_import, os.path.abspath(f), outfile)
+
