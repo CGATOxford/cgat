@@ -104,7 +104,7 @@ import pandas as pd
 import pandas.rpy.common as com
 import itertools
 import re
-import CGATPipelines.PipelineTimeseries as TS
+import CGAT.Timeseries as TS
 
 
 def main(argv=None):

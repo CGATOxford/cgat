@@ -138,16 +138,11 @@ Command line options
 import sys
 import os
 import tempfile
-
 from rpy2.robjects import r as R
 import rpy2.robjects.numpy2ri
 
-try:
-    import CGAT.Experiment as E
-    import CGAT.Expression as Expression
-except ImportError:
-    import Experiment as E
-    import Expression
+import CGAT.Experiment as E
+import CGAT.Expression as Expression
 
 
 def main(argv=None):
