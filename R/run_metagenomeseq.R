@@ -24,6 +24,10 @@ option_list <- list(
                            over to be tested")
                )
 
+# suppress warning messages
+options(warn=-1)
+
+
 ###########################
 # get command line options
 ###########################
@@ -131,7 +135,6 @@ print ("building model and fitting")
 dat.norm <- dat.norm[,notnas]
 
 conds <- pData(dat.norm)$sampleType
-print(conds)
 mod <- model.matrix(~0+conds)
 colnames(mod) <- levels(conds)
 
