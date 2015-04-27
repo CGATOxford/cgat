@@ -277,7 +277,11 @@ class Entry:
 
     def clearAttributes(self, keep_gene_biotype=False):
         if keep_gene_biotype:
-            self.attributes = {"gene_biotype": self.attributes["gene_biotype"]}
+            try:
+                self.attributes = {"gene_biotype":
+                                   self.attributes["gene_biotype"]}
+            except KeyError:
+                pass
         else:
             self.attributes = {}
 
