@@ -275,8 +275,11 @@ class Entry:
         '''return attributes as a dictionary.'''
         return self.attributes
 
-    def clearAttributes(self):
-        self.attributes = {}
+    def clearAttributes(self, keep_gene_biotype=False):
+        if keep_gene_biotype:
+            self.attributes = {"gene_biotype": self.attributes["gene_biotype"]}
+        else:
+            self.attributes = {}
 
     def addAttribute(self, key, value=None):
         self.attributes[key] = value

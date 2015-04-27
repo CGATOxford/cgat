@@ -287,7 +287,7 @@ def find_retained_introns(gene):
     intron_intervals = list(set(
         itertools.chain.from_iterable(intron_intervals)))
     intron_intervals.sort()
-    
+
     for transcript in gene:
         exons = iter(sorted(GTF.asRanges(transcript)))
         introns = iter(intron_intervals)
@@ -805,7 +805,7 @@ def main(argv=None):
             is_gene_id = False
         elif options.method == "rename-genes":
             is_gene_id = True
-            
+
         for gff in GTF.iterator(options.stdin):
             ninput += 1
 
@@ -1233,6 +1233,8 @@ def main(argv=None):
                 # utr_ranges = Intervals.combineAtDistance(
                 # utr_ranges,
                 # options.merge_exons_distance)
+                # TS. Attributes no longer completely cleared as gene_biotype
+                # required downstream
 
                 output_ranges = Intervals.combineAtDistance(
                     output_ranges, options.merge_exons_distance)
@@ -1240,7 +1242,7 @@ def main(argv=None):
                 for feature, start, end in utr_ranges:
                     entry = GTF.Entry()
                     entry.copy(gffs[0])
-                    entry.clearAttributes()
+                    entry.clearAttributes(keep_gene_biotype=True)
                     entry.feature = feature
                     entry.transcript_id = "merged"
                     entry.start = start
@@ -1251,7 +1253,7 @@ def main(argv=None):
 
                     entry = GTF.Entry()
                     entry.copy(gffs[0])
-                    entry.clearAttributes()
+                    entry.clearAttributes(keep_gene_biotype=True)
                     entry.transcript_id = "merged"
                     entry.feature = output_feature
                     entry.start = start
@@ -1262,7 +1264,7 @@ def main(argv=None):
 
                 entry = GTF.Entry()
                 entry.copy(gffs[0])
-                entry.clearAttributes()
+                entry.clearAttributes(keep_gene_biotype=True)
                 entry.transcript_id = entry.gene_id
                 entry.start = output_ranges[0][0]
                 entry.end = output_ranges[-1][1]
@@ -1273,7 +1275,7 @@ def main(argv=None):
                 if len(output_ranges) >= 2:
                     entry = GTF.Entry()
                     entry.copy(gffs[0])
-                    entry.clearAttributes()
+                    entry.clearAttributes(keep_gene_biotype=True)
                     entry.transcript_id = entry.gene_id
                     entry.start = output_ranges[0][1]
                     entry.end = output_ranges[-1][0]
