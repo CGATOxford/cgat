@@ -84,7 +84,7 @@ intersect_transcripts_with_utr:
     references: [hg19.small.sort_gene_intersect_transcripts_with_utr.gtf.gz]
     options: --method=intersect-transcripts --with-utr
 
-/merge_introns:
+merge_introns:
     stdin: hg19.small.sort_gene.gtf.gz
     outputs: [stdout]
     references: [hg19.small.sort_gene_merge_introns.gtf.gz]
