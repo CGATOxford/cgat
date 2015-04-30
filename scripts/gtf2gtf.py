@@ -1247,8 +1247,11 @@ def main(argv=None):
 
             result = []
 
-            biotypes = [x["gene_biotype"] for x in gffs]
-            biotype = ":".join(set(biotypes))
+            try:
+                biotypes = [x["gene_biotype"] for x in gffs]
+                biotype = ":".join(set(biotypes))
+            except KeyError:
+                biotype = None
 
             if options.method == "merge-exons":
                 # need to combine per feature - skip
@@ -1267,7 +1270,8 @@ def main(argv=None):
                     entry.clearAttributes()
                     entry.feature = feature
                     entry.transcript_id = "merged"
-                    entry.addAttribute("gene_biotype", biotype)
+                    if biotype:
+                        entry.addAttribute("gene_biotype", biotype)
                     entry.start = start
                     entry.end = end
                     result.append(entry)
@@ -1278,7 +1282,8 @@ def main(argv=None):
                     entry.copy(gffs[0])
                     entry.clearAttributes()
                     entry.transcript_id = "merged"
-                    entry.addAttribute("gene_biotype", biotype)
+                    if biotype:
+                        entry.addAttribute("gene_biotype", biotype)
                     entry.feature = output_feature
                     entry.start = start
                     entry.end = end
@@ -1290,7 +1295,8 @@ def main(argv=None):
                 entry.copy(gffs[0])
                 entry.clearAttributes()
                 entry.transcript_id = entry.gene_id
-                entry.addAttribute("gene_biotype", biotype)
+                if biotype:
+                    entry.addAttribute("gene_biotype", biotype)
                 entry.start = output_ranges[0][0]
                 entry.end = output_ranges[-1][1]
                 result.append(entry)
@@ -1302,7 +1308,8 @@ def main(argv=None):
                     entry.copy(gffs[0])
                     entry.clearAttributes()
                     entry.transcript_id = entry.gene_id
-                    entry.addAttribute("gene_biotype", biotype)
+                    if biotype:
+                        entry.addAttribute("gene_biotype", biotype)
                     entry.start = output_ranges[0][1]
                     entry.end = output_ranges[-1][0]
                     result.append(entry)
