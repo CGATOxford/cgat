@@ -224,6 +224,10 @@ Options for altering fields within :term:`gtf`.
     the start of the feature.  (Assumes input file is sorted by
     transcript-id)
 
+``set-gene_biotype-to-source``
+    Sets the ``gene_biotype`` attribute from the source column. Will only set
+    if biotype attribute is not present in the current record.
+
 ``rename-duplicates``
     Rename duplicate gene_ids and transcript_ids by addition of
     numerical suffix
@@ -468,6 +472,7 @@ def main(argv=None):
                           "set-gene-to-transcript",
                           "set-protein-to-transcript",
                           "set-score-to-distance",
+                          "set-gene_biotype-to-source",
                           "sort",
                           "transcript2genes",
                           "unset-genes"),
@@ -505,6 +510,20 @@ def main(argv=None):
             ninput += 1
 
             gff.setAttribute("transcript_id", gff.gene_id)
+            options.stdout.write("%s\n" % str(gff))
+
+            noutput += 1
+            nfeatures += 1
+
+    elif options.method == "set-gene_biotype-to-source":
+
+        for gff in GTF.iterator(options.stdin):
+
+            ninput += 1
+
+            if "gene_biotype" not in gff:
+                gff.setAttribute("gene_biotype", gff.source)
+
             options.stdout.write("%s\n" % str(gff))
 
             noutput += 1
@@ -1228,6 +1247,9 @@ def main(argv=None):
 
             result = []
 
+            biotypes = [x["gene_biotype"] for x in gffs]
+            biotype = ":".join(set(biotypes))
+
             if options.method == "merge-exons":
                 # need to combine per feature - skip
                 # utr_ranges = Intervals.combineAtDistance(
@@ -1242,9 +1264,10 @@ def main(argv=None):
                 for feature, start, end in utr_ranges:
                     entry = GTF.Entry()
                     entry.copy(gffs[0])
-                    entry.clearAttributes(keep_gene_biotype=True)
+                    entry.clearAttributes()
                     entry.feature = feature
                     entry.transcript_id = "merged"
+                    entry.addAttribute("gene_biotype", biotype)
                     entry.start = start
                     entry.end = end
                     result.append(entry)
@@ -1253,8 +1276,9 @@ def main(argv=None):
 
                     entry = GTF.Entry()
                     entry.copy(gffs[0])
-                    entry.clearAttributes(keep_gene_biotype=True)
+                    entry.clearAttributes()
                     entry.transcript_id = "merged"
+                    entry.addAttribute("gene_biotype", biotype)
                     entry.feature = output_feature
                     entry.start = start
                     entry.end = end
@@ -1264,8 +1288,9 @@ def main(argv=None):
 
                 entry = GTF.Entry()
                 entry.copy(gffs[0])
-                entry.clearAttributes(keep_gene_biotype=True)
+                entry.clearAttributes()
                 entry.transcript_id = entry.gene_id
+                entry.addAttribute("gene_biotype", biotype)
                 entry.start = output_ranges[0][0]
                 entry.end = output_ranges[-1][1]
                 result.append(entry)
@@ -1275,8 +1300,9 @@ def main(argv=None):
                 if len(output_ranges) >= 2:
                     entry = GTF.Entry()
                     entry.copy(gffs[0])
-                    entry.clearAttributes(keep_gene_biotype=True)
+                    entry.clearAttributes()
                     entry.transcript_id = entry.gene_id
+                    entry.addAttribute("gene_biotype", biotype)
                     entry.start = output_ranges[0][1]
                     entry.end = output_ranges[-1][0]
                     result.append(entry)
@@ -1290,6 +1316,7 @@ def main(argv=None):
                 options.stdout.write("%s\n" % str(x))
                 nfeatures += 1
             noutput += 1
+
     elif options.method == "find-retained-introns":
 
         for gene in GTF.gene_iterator(GTF.iterator(options.stdin)):
