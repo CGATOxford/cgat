@@ -1,3 +1,6 @@
+.. image:: https://travis-ci.org/CGATOxford/cgat.svg?branch=master
+    :target: https://travis-ci.org/CGATOxford/cgat
+
 ===========================
 The CGAT code collection
 ===========================
