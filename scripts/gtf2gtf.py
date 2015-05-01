@@ -1250,7 +1250,7 @@ def main(argv=None):
             try:
                 biotypes = [x["gene_biotype"] for x in gffs]
                 biotype = ":".join(set(biotypes))
-            except KeyError:
+            except AttributeError:
                 biotype = None
 
             if options.method == "merge-exons":
@@ -1258,8 +1258,6 @@ def main(argv=None):
                 # utr_ranges = Intervals.combineAtDistance(
                 # utr_ranges,
                 # options.merge_exons_distance)
-                # TS. Attributes no longer completely cleared as gene_biotype
-                # required downstream
 
                 output_ranges = Intervals.combineAtDistance(
                     output_ranges, options.merge_exons_distance)
