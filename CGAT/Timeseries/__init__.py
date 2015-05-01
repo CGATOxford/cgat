@@ -409,8 +409,9 @@ def covarFilter(infile,
     df.drop(['replicates'], inplace=True, axis=1)
     df.drop(['times'], inplace=True, axis=1)
     df = df.fillna(0.0)
+    r_df = com.convert_to_r_dataframe(df)
 
-    R.assign('diff_data', df)
+    R.assign('diff_data', r_df)
 
     E.info("loading data frame")
 
@@ -646,9 +647,9 @@ def genSigGenes(file_list, alpha, out_dir):
             header = "%s" % header
 
         elif infle.split("/")[0].split(".")[0] == "diff_timepoints":
-            header = infle.split("/")[1].split("-")[0]
+            header = infle.split("/")[-1].split("-")[0]
             header = "%s_%s" % (header.split("_")[0],
-                                header.split("_")[2])
+                                header.split("_")[-1])
 
         in_df = pd.read_table(infle, sep="\t", header=0, index_col=0)
         sig_genes = in_df[in_df['padj'] <= alpha]
@@ -659,7 +660,7 @@ def genSigGenes(file_list, alpha, out_dir):
         condition = "%s-condition" % condition
 
     elif file_list[0].split("/")[0].split(".")[0] == "diff_timepoints":
-        condition = file_list[0].split("/")[1].split("_")[0]
+        condition = file_list[0].split("/")[-1].split(".")[0]
         condition = "%s-time" % condition
 
     drawVennDiagram(deg_dict, condition, out_dir)
@@ -697,7 +698,7 @@ def drawVennDiagram(deg_dict, header, out_dir):
         cat1, cat2, cat3 = keys
 
         R('''png("%(out_dir)s/%(header)s-venn.png", '''
-          '''width=1.8, height=1.8, res=90, units="in")''' % locals())
+          '''width=480, height=480)''' % locals())
         R('''draw.triple.venn(%(area1)d, %(area2)d, %(area3)d, '''
           '''%(n12)d, %(n23)d, %(n13)d, %(n123)d, '''
           '''c('%(cat1)s', '%(cat2)s', '%(cat3)s'), '''
@@ -725,7 +726,7 @@ def drawVennDiagram(deg_dict, header, out_dir):
         cat1, cat2, cat3, cat4 = keys
 
         R('''png("%(out_dir)s/%(header)s-venn.png",'''
-          '''width=2.3, height=2.3, res=300, units="in")''' % locals())
+          '''width=480, height=480)''' % locals())
         R('''draw.quad.venn(%(area1)d, %(area2)d, %(area3)d, %(area4)d,'''
           '''%(n12)d, %(n13)d, %(n14)d, %(n23)d, %(n24)d, %(n34)d,'''
           '''%(n123)d, %(n124)d, %(n134)d, %(n234)d, %(n1234)d,'''
@@ -773,7 +774,7 @@ def drawVennDiagram(deg_dict, header, out_dir):
         cat1, cat2, cat3, cat4, cat5 = keys
 
         R('''png("%(out_dir)s/%(header)s-venn.png", '''
-          '''height=1.8, width=1.8, res=90, units="in")''' % locals())
+          '''height=480, width=480)''' % locals())
         R('''draw.quintuple.venn(%(area1)d, %(area2)d, %(area3)d, '''
           '''%(area4)d, %(area5)d, %(n12)d, %(n13)d, %(n14)d,'''
           '''%(n15)d, %(n23)d, %(n24)d, %(n25)d, %(n34)d, %(n35)d,'''

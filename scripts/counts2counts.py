@@ -371,10 +371,10 @@ def main(argv=None):
             index = None,
         else:
             index = 0
-
         if options.input_filename_tags == "-":
             counts = Counts.Counts(pd.io.parsers.read_csv(
                 sys.stdin, sep="\t", index_col=index, comment="#"))
+
         else:
             counts = Counts.Counts(
                 IOTools.openFile(options.input_filename_tags, "r"),
@@ -438,7 +438,6 @@ def main(argv=None):
         counts.table.to_csv(options.stdout, sep="\t", header=True)
 
     elif options.method == "spike":
-
         # check parameters are sensible and set parameters where they
         # are not explicitly set
         if not options.min_spike:

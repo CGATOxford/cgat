@@ -220,7 +220,6 @@ class Counts(object):
                    for key2 in np.digitize(c_bins, c_bins)}
 
         min_occup = min(bin_counts.flatten())
-
         for iteration in range(0,  i):
             E.info("performing shuffling iteration number %i.." % (
                 iteration + 1))
@@ -239,7 +238,6 @@ class Counts(object):
                 group2_mean = self.table.ix[group2_rand,
                                             tracks_map[groups[1]]].apply(
                                                 np.mean, axis=1).tolist()
-
                 # retrieve the index for the bin in
                 # which each index value falls
                 change_idx, initial_idx = means2idxarrays(
