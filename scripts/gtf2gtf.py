@@ -1250,7 +1250,7 @@ def main(argv=None):
             try:
                 biotypes = [x["gene_biotype"] for x in gffs]
                 biotype = ":".join(set(biotypes))
-            except KeyError:
+            except (KeyError, AttributeError):
                 biotype = None
 
             if options.method == "merge-exons":
