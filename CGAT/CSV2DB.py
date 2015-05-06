@@ -246,7 +246,7 @@ def createTable(dbhandle, error, options,
                    (msg, statement))
             # TODO: check for database locked msg
             if not options.retry:
-                raise error
+                raise error(msg)
             if not re.search("locked", str(msg)):
                 raise error("%s: %s" % (msg, statement))
             time.sleep(5)
@@ -474,9 +474,9 @@ def run(infile, options):
                        (msg, statement))
                 # TODO: check for database locked msg
                 if not options.retry:
-                    raise error
+                    raise error(msg)
                 if not re.search("locked", str(msg)):
-                    raise error
+                    raise error(msg)
                 time.sleep(5)
                 continue
             break
