@@ -26,7 +26,7 @@ from rpy2.robjects.packages import importr
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import random
-
+import os
 import cmetrics as c2m
 
 #################################
@@ -470,8 +470,16 @@ def clusterPCA(infile,
     R('''sink(file='sink_file.txt')''')
     R('''suppressMessages(library("reshape2"))''')
     R('''suppressMessages(library("WGCNA"))''')
-    R('''source("/ifs/devel/michaelm/Time-series/summarySE.R")''')
-    R('''source("/ifs/devel/projects/proj036/r_scripts/clusterEigengenes.R")''')
+    # source from R directory in /ifs/devel/$USER/CGATPipelines/R
+    R('''source("%s")''' %
+      os.path.join(os.path.dirname(E.__file__),
+                   "../R",
+                   "summarySE.R"))
+    R('''source("%s")''' %
+      os.path.join(os.path.dirname(E.__file__),
+                   "../R",
+                   "clusterEigengenes.R"))
+
     R('''cluster_match <- read.table('%(cluster_file)s', h=T, '''
       '''row.names=1)''' % locals())
     R('''express_data <- read.table('%(infile)s', '''
