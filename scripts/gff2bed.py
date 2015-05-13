@@ -17,7 +17,8 @@ Documentation
 
 Users can select the field from the GTF file to be used in the name
 field of the BED file using ``--set-name``. Choices include "gene_id",
-"transcript_id", "class", "family", "feature", "source" and "repName".
+"transcript_id", "class", "family", "feature", "source", "repName"
+and "gene_biotype".
 To specify the input is in GTF format use --is-gtf.
 
 BED files can contain multiple tracks. If required, users can use the
@@ -70,7 +71,7 @@ def main(argv=sys.argv):
         help="field from the GFF/GTF file to use as the "
         "name field in the BED file [%default]",
         choices=("gene_id", "transcript_id", "class", "family",
-                 "feature", "source", "repName"))
+                 "feature", "source", "repName", "gene_biotype"))
 
     parser.add_option(
         "--track", dest="track", type="choice",
