@@ -243,12 +243,13 @@ class SequencePropertiesNA(SequenceProperties):
         fields = SequenceProperties.getFields(self)
         # Counts
         fields.append("%i" % self.mCountsOthers)
-        fields.append("%i" % self.mCountsGC)
-        fields.append("%i" % self.mCountsAT)
+        
         t = 0
         for x in self.mAlphabet:
             fields.append("%i" % self.mCountsNA[x])
             t += self.mCountsNA[x]
+        fields.append("%i" % self.mCountsGC)
+        fields.append("%i" % self.mCountsAT)
         # Percentages
         if t == 0:
             for x in self.mAlphabet:
