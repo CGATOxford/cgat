@@ -1410,7 +1410,7 @@ def consensusClustering(infile,
 
     # plot and save dendrogram of clustering
 
-    R('''png("plots.dir/%(condition)s-dendrogram-consensus_clustering.png")'''
+    R('''png("images.dir/%(condition)s-dendrogram-consensus_clustering.png")'''
       % locals())
     R('''plotDendroAndColors(dendro=clustering, colors=color_cut,'''
       '''groupLabels="Dynamic tree cut",'''
