@@ -224,6 +224,10 @@ Options for altering fields within :term:`gtf`.
     the start of the feature.  (Assumes input file is sorted by
     transcript-id)
 
+``set-gene_biotype-to-source``
+    Sets the ``gene_biotype`` attribute from the source column. Will only set
+    if biotype attribute is not present in the current record.
+
 ``rename-duplicates``
     Rename duplicate gene_ids and transcript_ids by addition of
     numerical suffix
@@ -287,7 +291,7 @@ def find_retained_introns(gene):
     intron_intervals = list(set(
         itertools.chain.from_iterable(intron_intervals)))
     intron_intervals.sort()
-    
+
     for transcript in gene:
         exons = iter(sorted(GTF.asRanges(transcript)))
         introns = iter(intron_intervals)
@@ -468,6 +472,7 @@ def main(argv=None):
                           "set-gene-to-transcript",
                           "set-protein-to-transcript",
                           "set-score-to-distance",
+                          "set-gene_biotype-to-source",
                           "sort",
                           "transcript2genes",
                           "unset-genes"),
@@ -505,6 +510,20 @@ def main(argv=None):
             ninput += 1
 
             gff.setAttribute("transcript_id", gff.gene_id)
+            options.stdout.write("%s\n" % str(gff))
+
+            noutput += 1
+            nfeatures += 1
+
+    elif options.method == "set-gene_biotype-to-source":
+
+        for gff in GTF.iterator(options.stdin):
+
+            ninput += 1
+
+            if "gene_biotype" not in gff:
+                gff.setAttribute("gene_biotype", gff.source)
+
             options.stdout.write("%s\n" % str(gff))
 
             noutput += 1
@@ -805,7 +824,7 @@ def main(argv=None):
             is_gene_id = False
         elif options.method == "rename-genes":
             is_gene_id = True
-            
+
         for gff in GTF.iterator(options.stdin):
             ninput += 1
 
@@ -1228,6 +1247,12 @@ def main(argv=None):
 
             result = []
 
+            try:
+                biotypes = [x["gene_biotype"] for x in gffs]
+                biotype = ":".join(set(biotypes))
+            except (KeyError, AttributeError):
+                biotype = None
+
             if options.method == "merge-exons":
                 # need to combine per feature - skip
                 # utr_ranges = Intervals.combineAtDistance(
@@ -1243,6 +1268,8 @@ def main(argv=None):
                     entry.clearAttributes()
                     entry.feature = feature
                     entry.transcript_id = "merged"
+                    if biotype:
+                        entry.addAttribute("gene_biotype", biotype)
                     entry.start = start
                     entry.end = end
                     result.append(entry)
@@ -1253,6 +1280,8 @@ def main(argv=None):
                     entry.copy(gffs[0])
                     entry.clearAttributes()
                     entry.transcript_id = "merged"
+                    if biotype:
+                        entry.addAttribute("gene_biotype", biotype)
                     entry.feature = output_feature
                     entry.start = start
                     entry.end = end
@@ -1264,6 +1293,8 @@ def main(argv=None):
                 entry.copy(gffs[0])
                 entry.clearAttributes()
                 entry.transcript_id = entry.gene_id
+                if biotype:
+                    entry.addAttribute("gene_biotype", biotype)
                 entry.start = output_ranges[0][0]
                 entry.end = output_ranges[-1][1]
                 result.append(entry)
@@ -1275,6 +1306,8 @@ def main(argv=None):
                     entry.copy(gffs[0])
                     entry.clearAttributes()
                     entry.transcript_id = entry.gene_id
+                    if biotype:
+                        entry.addAttribute("gene_biotype", biotype)
                     entry.start = output_ranges[0][1]
                     entry.end = output_ranges[-1][0]
                     result.append(entry)
@@ -1288,6 +1321,7 @@ def main(argv=None):
                 options.stdout.write("%s\n" % str(x))
                 nfeatures += 1
             noutput += 1
+
     elif options.method == "find-retained-introns":
 
         for gene in GTF.gene_iterator(GTF.iterator(options.stdin)):

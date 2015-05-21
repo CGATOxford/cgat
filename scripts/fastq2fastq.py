@@ -97,9 +97,15 @@ The following methods are implemented (``--method``).
 
     Remove duplicate reads based on read name
 
-``trim``
+``trim3``
 
     Trim a fixed number of nucleotides from the 3' end of reads.
+    (see ``--num-bases``). Note that there are better tools for
+   trimming.
+
+``trim5``
+
+    Trim a fixed number of nucleotides from the 5' end of reads.
     (see ``--num-bases``). Note that there are better tools for
    trimming.
 

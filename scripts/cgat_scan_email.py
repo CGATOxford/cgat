@@ -77,6 +77,8 @@ def generate_message(lines):
 
     block = []
     for line in lines:
+        if not line:
+            continue
         block.append(line)
         if line.startswith("From - "):
             yield reversed(block)
@@ -126,6 +128,8 @@ def main(argv=None):
     for filename in filenames:
         if filename.endswith(".msf"):
             continue
+
+        E.debug("working on %s" % filename)
 
         basename = os.path.basename(filename)
         if basename in options.multiple:
