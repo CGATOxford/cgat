@@ -764,22 +764,27 @@ def Start(parser=None,
 
     if add_mysql_options:
         group = OptionGroup(parser, "MYSQL connection options")
-        group.add_option("-H", "--host", dest="host", type="string",
-                         help="mysql host [%default].")
-        group.add_option("-D", "--database", dest="database", type="string",
-                         help="mysql database [%default].")
-        group.add_option("-U", "--user", dest="user", type="string",
-                         help="mysql username [%default].")
-        group.add_option("-P", "--password", dest="password", type="string",
-                         help="mysql password [%default].")
-        group.add_option("-O", "--port", dest="port", type="int",
-                         help="mysql port [%default].")
+        group.add_option(
+            "--mysql-host", dest="mysql_host", type="string",
+            help="mysql host [%default].")
+        group.add_option(
+            "--mysql-database", dest="mysql_database", type="string",
+            help="mysql database [%default].")
+        group.add_option(
+            "--mysql-user", dest="mysql_user", type="string",
+            help="mysql username [%default].")
+        group.add_option(
+            "--mysql-password", dest="mysql_password", type="string",
+            help="mysql password [%default].")
+        group.add_option(
+            "--mysql-port", dest="mysql_port", type="int",
+            help="mysql port [%default].")
 
-        parser.set_defaults(host="db",
-                            port=3306,
-                            user="",
-                            password="",
-                            database="")
+        parser.set_defaults(mysql_host="db",
+                            mysql_port=3306,
+                            mysql_user="",
+                            mysql_password="",
+                            mysql_database="")
         parser.add_option_group(group)
 
     # restore user defaults

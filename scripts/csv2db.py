@@ -1,5 +1,4 @@
-'''
-csv2db.py - upload table to database
+'''csv2db.py - upload table to database
 ====================================
 
 :Author: Andreas Heger
@@ -15,10 +14,9 @@ create a table from a csv separated file and load data into it.
 This module supports backends for postgres and sqlite3. Column types are
 auto-detected.
 
-Read a table from stdin and create an sqlite3 database. By default, the database
-will reside in a file called csvdb and in a table csv.
+Read a table from stdin and create an sqlite3 database. By default,
+the database will reside in a file called csvdb and in a table csv.
 
-  
 .. todo::
 
    Use file import where appropriate to speed up loading. Currently, this is
@@ -55,7 +53,9 @@ def main(argv=sys.argv):
 
     parser = CSV2DB.buildParser()
 
-    (options, args) = E.Start(parser, argv=argv, add_psql_options=True)
+    (options, args) = E.Start(parser, argv=argv,
+                              add_psql_options=True,
+                              add_mysql_options=True)
 
     if options.from_zipped:
         import gzip
