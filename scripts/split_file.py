@@ -58,6 +58,7 @@ OPTIONS:
 -append                         append data to existing files.
 --pattern-identifier            if given, use this pattern to extract
                                 id from column.
+--chunk-size                    Number of matching records in each output file
 --version                       output version information
 """ % (sys.argv[0], "s")
 
@@ -100,7 +101,8 @@ def main(argv=None):
     param_long_options = [
         "verbose=", "help", "split-regex=", "after", "pattern-output=", "skip",
         "column=", "map=", "dry-run",
-        "header", "remove-key", "append", "pattern-identifier=", "version"]
+        "header", "remove-key", "append", "pattern-identifier=", "version",
+        "chunk-size="]
 
     param_short_options = "v:hr:ap:sc:dek"
 
@@ -116,6 +118,7 @@ def main(argv=None):
     param_remove_key = False
     param_append = "w"
     param_pattern_identifier = None
+    param_chunk_size = 1
 
     try:
         optlist, args = getopt.getopt(sys.argv[1:],
@@ -157,6 +160,9 @@ def main(argv=None):
             param_append = "a"
         elif o == "--pattern-identifier":
             param_pattern_identifier = re.compile(a)
+        elif o == "--chunk-size":
+            param_chunk_size = int(a)
+
 
     print E.GetHeader()
     print E.GetParams()
@@ -247,13 +253,14 @@ def main(argv=None):
         nlines = 0
 
         header = param_header
+        split = 0
+
         for line in sys.stdin:
-            split = 0
 
             if param_split_at_regex and param_split_at_regex.search(line[:-1]):
-                split = True
+                split += 1
 
-            if split:
+            if split == param_chunk_size:
                 if param_after:
                     nlines += 1
                     outfile.write(line)
@@ -264,6 +271,8 @@ def main(argv=None):
                     outfile = CreateOpen(
                         filename, param_append, param_dry_run, header)
                     filenames.add(filename)
+                    split = 0
+
                 nlines = 0
                 if param_after or param_skip:
                     continue

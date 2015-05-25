@@ -301,11 +301,14 @@ def main(argv=None):
 
     filter_min_sequence_length = None
     filter_max_sequence_length = None
+    filter_id_list = None
     for f in options.filter_methods:
         if f.startswith("min-length"):
             filter_min_sequence_length = int(f.split("=")[1])
         elif f.startswith("max-length"):
             filter_max_sequence_length = int(f.split("=")[1])
+        elif f.startswith("id-file"):
+            filter_id_list=[line[:-1] for line in IOTools.openFile(f.split("=")[1])]
 
     def raiseIfNotCodon(l, title):
         '''raise ValueError if sequence length l is not divisible by
@@ -340,6 +343,10 @@ def main(argv=None):
         if sample_proportion:
             if random.random() > sample_proportion:
                 continue
+
+        if not (filter_id_list is None or cur_record.title in filter_id_list):
+            nskipped += 1
+            continue
 
         for method in options.methods:
 
