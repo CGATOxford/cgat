@@ -497,7 +497,7 @@ echo " On the other hand, if you are looking for other advanced installation opt
 echo " https://www.cgat.org/downloads/public/cgat/documentation/CGATInstallation.html"
 echo 
 echo " To test the installation:"
-echo " ./install-CGAT-tools.sh --test [--location <path/to/folder>]"
+echo " ./install-CGAT-tools.sh --test [--location </full/path/to/folder/without/trailing/slash>]"
 echo
 echo " To update the Conda packages:"
 echo " ./install-CGAT-tools.sh --update [--location <path/to/folder>]"
