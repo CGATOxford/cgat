@@ -65,7 +65,10 @@ from CGAT import CSV as CSV
 import sqlite3
 
 
-def executewait(dbhandle, statement, error, retry=False, wait=5):
+def executewait(dbhandle, statement, error,
+                retry=False,
+                wait=5,
+                args=()):
     '''execute sql statement.
 
     Retry on error, if retry is True.
@@ -76,7 +79,7 @@ def executewait(dbhandle, statement, error, retry=False, wait=5):
     i = 20
     while i > 0:
         try:
-            cc.execute(statement)
+            cc.execute(statement, args)
             return cc
         except sqlite3.OperationalError as e:
             msg = e.message
@@ -206,7 +209,10 @@ def createTable(dbhandle, error, options,
     while 1:
         try:
             cc = dbhandle.cursor()
-            cc.execute("DROP TABLE IF EXISTS '%s'" % options.tablename)
+            # mysql: removed '' around table name
+            statement = "DROP TABLE IF EXISTS %s" % options.tablename
+            E.debug(statement)
+            cc.execute(statement)
             dbhandle.commit()
             cc.close()
             E.info("existing table %s deleted" % options.tablename)
@@ -280,6 +286,19 @@ def run(infile, options):
         error = psycopg2.Error
         options.null = "NULL"
         options.string_value = "'%s'"
+        if options.insert_quick:
+            raise ValueError("quick import not implemented.")
+
+    elif options.backend == "mysql":
+        import MySQLdb
+        dbhandle = MySQLdb.connect(host=options.mysql_host,
+                                   user=options.mysql_user,
+                                   passwd=options.mysql_password,
+                                   port=options.mysql_port,
+                                   db=options.mysql_database)
+        error = Exception
+        options.null = "NULL"
+        options.string_value = "%s"
         if options.insert_quick:
             raise ValueError("quick import not implemented.")
 
@@ -486,14 +505,14 @@ def run(infile, options):
         # subprocess and COPY FROM STDIN)
         statement = "INSERT INTO %s VALUES (%%(%s)s)" % (options.tablename,
                                                          ')s, %('.join(take))
-
         # output data used for guessing:
         for d in row_iter(rows, reader):
 
             ninput += 1
-
             E.debug("single insert:\n# %s" % (statement % d))
-            cc = executewait(dbhandle, statement % d, error, options.retry)
+            cc = executewait(dbhandle, statement, error,
+                             retry=options.retry,
+                             args=d)
             cc.close()
 
             if options.loglevel >= 1 and ninput % options.report_step == 0:
@@ -595,7 +614,7 @@ def buildParser():
                       "be supported by the backend [default=%default].")
 
     parser.add_option("-b", "--backend", dest="backend", type="choice",
-                      choices=("pg", "sqlite"),
+                      choices=("pg", "sqlite", "mysql"),
                       help="database backend to choose [default=%default].")
 
     parser.add_option("-i", "--add-index", dest="indices", type="string",
