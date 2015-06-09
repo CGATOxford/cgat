@@ -17,5 +17,11 @@ paired_unsorted:
         references: [paired.tsv]
         options: --sort-bed <DIR>/paired.bam <DIR>/context.paired_unsorted.bed.gz
 
+paired_split:
+        stdin: null
+        outputs: [stdout]
+        references: [paired.tsv]
+        options: --split-intervals <DIR>/paired.bam <DIR>/context.paired.bed.gz
+
 
 

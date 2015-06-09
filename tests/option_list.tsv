@@ -880,6 +880,7 @@ split-at-tag	ok			scripts/farm.py,scripts/nofarm.py
 split-exons	ok			scripts/align_transcripts.py
 split-fasta-identifier	ok			scripts/fasta2table.py
 split-fields	ok			scripts/table2table.py
+split-intervals	ok			scripts/bam_vs_bed.py
 spp-srange-max	ok			scripts/runSPP.py
 spp-srange-min	ok			scripts/runSPP.py
 spp-z-threshold	ok			scripts/runSPP.py
