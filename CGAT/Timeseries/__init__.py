@@ -409,9 +409,14 @@ def covarFilter(infile,
     df.drop(['replicates'], inplace=True, axis=1)
     df.drop(['times'], inplace=True, axis=1)
     df = df.fillna(0.0)
-    r_df = com.convert_to_r_dataframe(df)
 
-    R.assign('diff_data', r_df)
+    # pandas no longer supports explicit type conversion for dataframes
+    # now use rpy2.pandas2ri
+
+    # r_df = com.convert_to_r_dataframe(df)
+    pandas2ri.activate()
+    # R.assign('diff_data', r_df)
+    R.assign('diff_data', df)
 
     E.info("loading data frame")
 
@@ -1409,7 +1414,6 @@ def consensusClustering(infile,
       '''cluster_matched$cluster)''')
 
     # plot and save dendrogram of clustering
-
     R('''png("images.dir/%(condition)s-dendrogram-consensus_clustering.png")'''
       % locals())
     R('''plotDendroAndColors(dendro=clustering, colors=color_cut,'''
