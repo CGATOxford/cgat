@@ -277,7 +277,7 @@ def createTable(dbhandle,
     return take, map_column2type, ignored
 
 
-def run(infile, options):
+def run(infile, options, report_step=10000):
 
     options.tablename = quoteTableName(
         options.tablename, backend=options.backend)
@@ -308,7 +308,7 @@ def run(infile, options):
     elif options.database_backend == "mysql":
         import MySQLdb
         dbhandle = MySQLdb.connect(host=options.database_host,
-                                   user=options.database_user,
+                                   user=options.database_username,
                                    passwd=options.database_password,
                                    port=options.database_port,
                                    db=options.database_name)
@@ -469,9 +469,8 @@ def run(infile, options):
             ninput += 1
             os.write(outfile, "\t".join([str(d[x]) for x in take]) + "\n")
 
-            if options.loglevel >= 1 and ninput % options.report_step == 0:
-                options.stdlog.write("# iteration %i\n" % ninput)
-                options.stdlog.flush()
+            if ninput % report_step == 0:
+                E.info("iteration %i\n" % ninput)
 
         os.close(outfile)
 
@@ -513,7 +512,7 @@ def run(infile, options):
 
             data.append([d[x] for x in take])
 
-            if ninput % options.report_step == 0:
+            if ninput % report_step == 0:
                 E.info("iteration %i" % ninput)
 
         statement = "INSERT INTO %s VALUES (%s)" % (
@@ -552,7 +551,7 @@ def run(infile, options):
                              args=d)
             cc.close()
 
-            if options.loglevel >= 1 and ninput % options.report_step == 0:
+            if ninput % report_step == 0:
                 E.info("iteration %i" % ninput)
 
     E.info("building indices")

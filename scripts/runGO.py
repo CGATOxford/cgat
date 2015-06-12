@@ -40,10 +40,10 @@ and save it in the file :file:`gene2go.data`::
 
    python runGO.py
       --filename-dump=gene2go.data
-      --host=ensembldb.ensembl.org
-      --user=anonymous
-      --database=homo_sapiens_core_54_36p
-      --port=5306
+      --database-host=ensembldb.ensembl.org
+      --database-user=anonymous
+      --database-name=homo_sapiens_core_54_36p
+      --database-port=5306
    > gene2go.log
 
 In order to use GOslim categories, an additional mapping step needs to
@@ -315,7 +315,7 @@ def main(argv=None):
                         filename_gene2name=None
                         )
 
-    (options, args) = E.Start(parser, add_mysql_options=True)
+    (options, args) = E.Start(parser, add_database_options=True)
 
     if options.go2goslim:
         convertGo2Goslim(options)

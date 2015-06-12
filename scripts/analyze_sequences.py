@@ -186,7 +186,7 @@ def main(argv=None):
         filename_map=None,
     )
 
-    (options, args) = E.Start(parser, add_mysql_options=True)
+    (options, args) = E.Start(parser, add_database_options=True)
 
     iterator = FastaIterator.FastaIterator(options.stdin)
 

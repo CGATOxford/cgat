@@ -89,7 +89,7 @@ def main(argv=None):
     parser.set_defaults(database="ensembl_mart_31")
     parser.set_defaults(prefix="dm_go_")
 
-    (options, args) = E.Start(parser, add_mysql_options=True)
+    (options, args) = E.Start(parser, add_database_options=True)
 
     dbhandle.Connect(options)
 
