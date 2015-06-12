@@ -590,7 +590,7 @@ def Start(parser=None,
             csv_dialect. the default is ``excel-tab``, defaulting to
             :term:`tsv` formatted files.
 
-    add_psql_options
+    add_database_options
        ``-C/--connection``
            psql connection string
        ``-U/--user``

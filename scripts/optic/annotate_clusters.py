@@ -182,7 +182,7 @@ def main(argv=None):
     )
 
     (options, args) = E.Start(
-        parser, add_psql_options=True, add_csv_options=True)
+        parser, add_database_options=True, add_csv_options=True)
 
     clusters, nerrors = IOTools.ReadList(sys.stdin)
 

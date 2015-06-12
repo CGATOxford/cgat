@@ -91,7 +91,7 @@ def main(argv=None):
         separator="|")
 
     (options, args) = E.Start(
-        parser, add_psql_options=True, add_csv_options=True)
+        parser, add_database_options=True, add_csv_options=True)
     options.methods = options.methods.split(",")
     dbhandle = pgdb.connect(options.psql_connection)
 

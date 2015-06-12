@@ -333,7 +333,7 @@ def main(argv=None):
         format_percent="%5.2f",
     )
 
-    (options, args) = E.Start(parser, add_psql_options=True)
+    (options, args) = E.Start(parser, add_database_options=True)
 
     if options.filename_peptides:
         peptides = Genomics.ReadPeptideSequences(

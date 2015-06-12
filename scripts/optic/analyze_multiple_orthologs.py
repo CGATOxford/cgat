@@ -87,7 +87,7 @@ def main(argv=None):
         species=None,
     )
 
-    (options, args) = E.Start(parser, add_psql_options=True)
+    (options, args) = E.Start(parser, add_database_options=True)
 
     dbhandle = pgdb.connect(options.psql_connection)
 

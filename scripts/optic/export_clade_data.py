@@ -134,7 +134,7 @@ def main(argv=None):
         separator="|",
     )
 
-    (options, args) = E.Start(parser, add_psql_options=True)
+    (options, args) = E.Start(parser, add_database_options=True)
 
     # database handle for connecting to postgres
     dbhandle = pgdb.connect(options.psql_connection)

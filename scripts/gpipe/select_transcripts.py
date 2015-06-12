@@ -913,7 +913,7 @@ def main(argv=None):
         genome_file=None,
         discard_large_clusters=None)
 
-    (options, args) = E.Start(parser, add_psql_options=True)
+    (options, args) = E.Start(parser, add_database_options=True)
 
     if options.test_nids:
         options.test_nids = options.test_nids.split(",")
