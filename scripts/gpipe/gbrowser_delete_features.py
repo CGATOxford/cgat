@@ -94,7 +94,7 @@ def main(argv=None):
         source_type=None,
     )
 
-    (options, args) = E.Start(parser, add_mysql_options=True)
+    (options, args) = E.Start(parser, add_database_options=True)
 
     dbhandle = MySQLdb.Connect(host=options.host,
                                user=options.user,
