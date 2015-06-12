@@ -54,8 +54,7 @@ def main(argv=sys.argv):
     parser = CSV2DB.buildParser()
 
     (options, args) = E.Start(parser, argv=argv,
-                              add_psql_options=True,
-                              add_mysql_options=True)
+                              add_database_options=True)
 
     if options.from_zipped:
         import gzip
