@@ -423,7 +423,7 @@ def main(argv=None):
         project_name="unknown",
     )
 
-    (options, args) = E.Start(parser, add_psql_options=True)
+    (options, args) = E.Start(parser, add_database_options=True)
 
     options.build_dir = options.package_name + "_" + options.release
     options.sections = options.sections.split(",")

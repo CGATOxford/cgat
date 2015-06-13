@@ -265,7 +265,7 @@ def main(argv=None):
         one_based_coordinates=False,
         filename_filter=None)
 
-    (options, args) = E.Start(parser, add_mysql_options=True)
+    (options, args) = E.Start(parser, add_database_options=True)
 
     t0 = time.time()
     if options.filename_sequences:

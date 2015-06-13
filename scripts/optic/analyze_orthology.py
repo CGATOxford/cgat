@@ -1884,7 +1884,7 @@ def main(argv=None):
         is_query_sbjct=False)
 
     (options, args) = E.Start(
-        parser, add_psql_options=True, add_csv_options=True)
+        parser, add_database_options=True, add_csv_options=True)
     options.methods = options.methods.split(",")
 
     rs = re.compile(options.species_regex)

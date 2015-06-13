@@ -197,7 +197,7 @@ def main(argv=None):
                         reverse=False,
                         method="counts")
 
-    (options, args) = E.Start(parser, add_psql_options=True)
+    (options, args) = E.Start(parser, add_database_options=True)
 
     options.species = options.species.split(",")
     options.locations = options.locations.split(",")

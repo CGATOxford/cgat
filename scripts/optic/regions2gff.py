@@ -764,7 +764,7 @@ def main(argv=None):
         report_step=10000
     )
 
-    (options, args) = E.Start(parser, add_psql_options=True)
+    (options, args) = E.Start(parser, add_database_options=True)
 
     if options.orthologs:
         options.id_format = "schema-id"

@@ -254,7 +254,7 @@ def main(argv=None):
 
     (options, args) = E.Start(parser,
                               add_pipe_options=True,
-                              add_psql_options=True)
+                              add_database_options=True)
 
     if not options.filename_exons1 and not options.filename_exons2:
         dbhandle = pgdb.connect(options.psql_connection)

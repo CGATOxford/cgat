@@ -444,7 +444,7 @@ def main(argv=None):
     )
 
     (options, args) = E.Start(parser,
-                              add_psql_options=True,
+                              add_database_options=True,
                               add_pipe_options=True)
 
     options.quality_clean_set = options.quality_clean_set.split(",")
