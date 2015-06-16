@@ -131,8 +131,17 @@ get_cgat_env() {
 
 if [ $TRAVIS_INSTALL ] ; then
 
-   CGAT_HOME=$TRAVIS_BUILD_DIR
-   CONDA_INSTALL_TYPE="cgat-devel"
+   if [ $TEST_PRODUCTION_SCRIPTS ] ; then
+
+      CGAT_HOME=$TRAVIS_BUILD_DIR
+      CONDA_INSTALL_TYPE="cgat-scripts"
+
+   else
+
+      CGAT_HOME=$TRAVIS_BUILD_DIR
+      CONDA_INSTALL_TYPE="cgat-devel"
+
+   fi # if-production scripts
 
 else
 
@@ -229,6 +238,8 @@ fi
 # get environment variables: CGAT_HOME, CONDA_INSTALL_DIR, CONDA_INSTALL_TYPE
 get_cgat_env
 
+cd $CGAT_HOME
+
 # download and install conda
 wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh
 bash Miniconda-latest-Linux-x86_64.sh -b -p $CONDA_INSTALL_DIR
@@ -320,7 +331,7 @@ get_cgat_env
 setup_env_vars
 
 # setup environment and run tests
-if [ "$OS" == "travis" ] ; then
+if [ $TRAVIS_INSTALL ] ; then
 
    # enable Conda env
    source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_TYPE
@@ -337,6 +348,9 @@ if [ "$OS" == "travis" ] ; then
    elif [ $TEST_CMDLINE ] ; then
       echo -e "restrict:\n    manifest:\n" > tests/_test_commandline.yaml
       nosetests -v tests/test_commandline.py ;
+   elif [ $TEST_PRODUCTION_SCRIPTS  ] ; then
+      echo -e "restrict:\n    manifest:\n" > tests/_test_scripts.yaml
+      nosetests -v tests/test_scripts.py ;
    else
       nosetests -v tests/test_scripts.py ;
    fi
@@ -620,7 +634,7 @@ do
 done # while-loop
 
 # sanity checks
-if [ "$INSTALL_LITE" == "1" ] && [ "$INSTALL_FULL" == "1" ] ; then
+if [ $INSTALL_LITE ] && [ $INSTALL_FULL ] ; then
 
    echo 
    echo " Incorrect input arguments: mixing --full and --lite options is not permitted."
@@ -628,7 +642,7 @@ if [ "$INSTALL_LITE" == "1" ] && [ "$INSTALL_FULL" == "1" ] ; then
    echo
    exit 1
 
-elif [ "$INSTALL_SCRIPTS" == "1" ] && [ "$INSTALL_DEVEL" == "1" ] ; then
+elif [ $INSTALL_SCRIPTS ] && [ $INSTALL_DEVEL ] ; then
 
    echo
    echo " Incorrect input arguments: mixing --cgat-scripts and --cgat-devel is not permitted."
@@ -640,7 +654,7 @@ fi
 
 
 # perform actions according to the input parameters processed
-if [ "$TRAVIS_INSTALL" == "1" ] ; then
+if [ $TRAVIS_INSTALL ] ; then
 
   OS="travis"
   conda_install
@@ -648,23 +662,23 @@ if [ "$TRAVIS_INSTALL" == "1" ] ; then
 
 else 
 
-  if [ "$OS_PKGS" == "1" ] ; then
+  if [ $OS_PKGS ] ; then
      install_os_packages
   fi
 
-  if [ "$INSTALL_SCRIPTS" == "1" ] || [ "$INSTALL_DEVEL" == "1" ] ; then
+  if [ $INSTALL_SCRIPTS ] || [ $INSTALL_DEVEL ] ; then
      conda_install
   fi
 
-  if [ "$INSTALL_TEST" == "1" ] ; then
+  if [ $INSTALL_TEST ] ; then
      conda_test
   fi
 
-  if [ "$INSTALL_UPDATE" == "1" ] ; then
+  if [ $INSTALL_UPDATE ] ; then
      conda_update
   fi
 
-  if [ "$UNINSTALL" == "1" ] ; then
+  if [ $UNINSTALL ] ; then
      uninstall
   fi
 
