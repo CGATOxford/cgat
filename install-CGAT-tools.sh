@@ -281,10 +281,13 @@ if [ "$OS" != "travis" ] ; then
          echo " Please submit this issue via Git Hub: "
          echo " https://github.com/CGATOxford/cgat/issue "
 	 echo
-	 echo " Debugging: "
-	 echo " CGAT_HOME: "$CGAT_HOME
-	 echo " CONDA_INSTALL_DIR: "$CONDA_INSTALL_DIR
-	 echo " CONDA_INSTALL_TYPE: "$CONDA_INSTALL_TYPE
+         echo " Debugging: "
+         echo " CFLAGS: "$CFLAGS
+         echo " CPATH: "$CPATH
+         echo " C_INCLUDE_PATH: "$C_INCLUDE_PATH
+         echo " LIBRARY_PATH: "$LIBRARY_PATH
+         echo " LD_LIBRARY_PATH: "$LD_LIBRARY_PATH
+         echo " PYTHONPATH: "$PYTHONPATH
          echo 
       fi # if-$?
    fi # if INSTALL_DEVEL
