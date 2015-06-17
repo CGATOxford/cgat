@@ -276,6 +276,9 @@ if [ "$OS" != "travis" ] ; then
       # Set up other environment variables
       setup_env_vars
 
+      # brute force: modify console_scripts variable/entry point for cgat command
+      sed -i 's/CGATScripts/scripts/g' setup.py
+
       # Python preparation
       python setup.py develop
 
