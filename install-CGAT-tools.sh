@@ -572,7 +572,7 @@ CGAT_HOME=
 # instead of cloning with git, we can download zipped CGAT code
 INSTALL_ZIP=
 # variable to store input parameters
-INPUT_ARGS=$(getopt -n "$0" -o h0123456789z: --long "help,
+INPUT_ARGS=$(getopt -n "$0" -o h0123456789:z --long "help,
                                                   travis,
                                                   install-os-packages,
                                                   cgat-scripts,
