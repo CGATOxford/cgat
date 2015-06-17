@@ -256,11 +256,19 @@ if [ "$OS" != "travis" ] ; then
 
    DEV_RESULT=0
 
-   if [ "$INSTALL_DEVEL" == "1" ] ; then
+   if [ $INSTALL_DEVEL ] ; then
 
-      # get latest version from Git Hub
-      git clone https://github.com/CGATOxford/cgat.git $CGAT_HOME/cgat-code
-      cd $CGAT_HOME/cgat-code
+      if [ $INSTALL_ZIP ] ; then
+	 # get the latest version from Git Hub in zip format
+	 cd $CGAT_HOME
+         wget https://github.com/CGATOxford/cgat/archive/master.zip
+         unzip master.zip
+	 cd cgat-master/
+      else
+         # get latest version from Git Hub with git clone
+         git clone https://github.com/CGATOxford/cgat.git $CGAT_HOME/cgat-code
+         cd $CGAT_HOME/cgat-code
+      fi
 
       # activate cgat environment
       source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_TYPE
@@ -369,7 +377,13 @@ else
    elif [ "$CONDA_INSTALL_TYPE" == "cgat-devel-lite" ] || [ "$CONDA_INSTALL_TYPE" == "cgat-devel" ] ; then
       # prepare environment
       source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_TYPE
-      cd $CGAT_HOME/cgat-code
+
+      if [ $INSTALL_ZIP ] ; then
+         cd $CGAT_HOME/cgat-master
+      else
+         cd $CGAT_HOME/cgat-code
+      fi
+
       python setup.py develop
       OUTPUT_DIR=`pwd`
 
@@ -555,6 +569,8 @@ UNINSTALL=
 UNINSTALL_DIR=
 # where to install CGAT code
 CGAT_HOME=
+# instead of cloning with git, we can download zipped CGAT code
+INSTALL_ZIP=
 # variable to store input parameters
 INPUT_ARGS=$(getopt -n "$0" -o h0123456789: --long "help,
                                                   travis,
@@ -626,6 +642,11 @@ do
 
       CGAT_HOME="$2"
       shift 2 ;
+
+  elif [ "$1" == "--zip" ] ; then
+
+      INSTALL_ZIP=1
+      shift ;
 
   else
 
