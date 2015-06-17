@@ -261,7 +261,7 @@ if [ "$OS" != "travis" ] ; then
       if [ $INSTALL_ZIP ] ; then
 	 # get the latest version from Git Hub in zip format
 	 cd $CGAT_HOME
-         wget https://github.com/CGATOxford/cgat/archive/master.zip
+         wget --no-check-certificate https://github.com/CGATOxford/cgat/archive/master.zip
          unzip master.zip
 	 cd cgat-master/
       else
