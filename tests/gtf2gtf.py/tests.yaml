@@ -240,3 +240,9 @@ find_retained_introns:
     outputs: [stdout]
     references: [retained_intron_test_out.gtf]
     options: -m find-retained-introns -L /dev/null
+
+genes_to_chunks:
+    stdin: genes_to_chunks_in.gtf
+    outputs: [stdout]
+    references: [genes_to_chunks_out.gtf]
+    options: --method=genes-to-unique-chunks -L /dev/null

@@ -338,7 +338,9 @@ def gene_to_blocks(gene):
     '''Given a bundle of all exons in a gene, create a seperate exon
     for each unqiue part of a exon, as well as one for introns. '''
 
-    exons = [(e.start, e.end) for e in gene if e.feature=="exon"]
+    exons = [(e.start, e.end)
+             for e in gene if e.feature == "exon"]
+
     exons = list(set(sum(exons, ())))
     exons.sort()
 
@@ -346,11 +348,12 @@ def gene_to_blocks(gene):
     entry = entry.copy(gene[0])
     entry.transcript_id = "merged"
     entry.feature = "exon"
+    entry.source = "merged"
 
     for i in range(len(exons)-1):
         entry.start = exons[i]
         entry.end = exons[i+1]
-        entry.attributes["exon_number"] = i
+        entry.attributes["exon_number"] = i + 1
         yield entry
 
 
@@ -1375,7 +1378,7 @@ def main(argv=None):
     elif options.method == "genes-to-unique-chunks":
 
         for gene in GTF.flat_gene_iterator(GTF.iterator(options.stdin)):
-            ninput +=1
+            ninput += 1
             for exon in gene_to_blocks(gene):
                 options.stdout.write("%s\n" % str(exon))
                 nfeatures += 1
