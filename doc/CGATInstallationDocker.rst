@@ -39,7 +39,7 @@ Now you can type::
 
 to get command-line help. Then, any script can be run by typing::
 
-  docker run cgat/scripts <script-name>
+  docker run cgat/scripts <script-name> -h
 
 
 Latest development version
@@ -56,7 +56,7 @@ Now you can type::
 
 to get command-line help. Then, any script can be run by typing::
 
-  docker run cgat/devel <script-name>
+  docker run cgat/devel <script-name> -h
 
 
 Sharing files/folders between your host computer and the CGAT Container
