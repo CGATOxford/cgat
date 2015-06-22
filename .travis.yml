@@ -21,6 +21,7 @@ env:
     - TEST_STYLE=1
     - TEST_CMDLINE=1
     - TEST_IMPORT=1
+    - TEST_PRODUCTION_SCRIPTS=1
 
 python:
   - "2.7"
