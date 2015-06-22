@@ -216,7 +216,7 @@ class ExpDesign(object):
 
     def validate(self, counts, model=None):
 
-        missing = set(counts.table.columns).difference(self.samples)
+        missing = set(self.samples).difference(set(counts.table.columns))
         if len(missing) > 0:
             raise ValueError("following samples in design table are missing"
                              " from counts table: %s" % ", ".join(missing))
@@ -676,6 +676,163 @@ class DEExperiment_edgeR(DEExperiment):
 class DEResult_edgeR(DEResult):
 
     def getResults(self, fdr, DEtype="GLM"):
+        ''' post-process test results table into generic results output '''
+
+        E.info("Generating output - results table")
+
+        df_dict = collections.defaultdict()
+
+        n_rows = self.table.shape[0]
+
+        if DEtype == "GLM":
+            df_dict["treatment_name"] = self.table['contrast']
+            df_dict["control_name"] = self.table['contrast']
+
+        else:
+            # TS: edgeR is currently only set up to run GLM-based tests
+            pass
+
+        df_dict["test_id"] = self.table['observation']
+        df_dict["control_mean"] = self.table['logCPM']
+        df_dict["treatment_mean"] = self.table['logCPM']
+        df_dict["control_std"] = (0,)*n_rows
+        df_dict["treatment_std"] = (0,)*n_rows
+        df_dict["p_value"] = self.table['PValue']
+        df_dict["p_value_adj"] = adjustPvalues(self.table['PValue'])
+        df_dict["significant"] = pvaluesToSignficant(
+            df_dict["p_value_adj"], fdr)
+        df_dict["l2fold"] = list(numpy.log2(self.table['logFC']))
+
+        # TS: the transformed log2 fold change is not transformed!
+        df_dict["transformed_l2fold"] = df_dict["l2fold"]
+
+        # TS: check what happens when no fold change is available
+        # TS: may need an if/else in list comprehension. Raise E.warn too?
+        df_dict["fold"] = [math.pow(2, float(x)) for
+                           x in self.table['logFC']]
+
+        # set all status values to "OK"
+        # TS: again, may need an if/else to check...
+        df_dict["status"] = ("OK",)*n_rows
+
+        self.table = pandas.DataFrame(df_dict)
+        self.table.set_index("test_id", inplace=True)
+
+    def plotMAplot(self, design, outfile_prefix):
+        # need to implement edgeR specific MA plot
+        raise ValueError("MA plotting is not yet implemented for edgeR")
+
+
+class DEExperiment_DESeq(DEExperiment):
+    '''DEExperiment object to run DEseq on counts data
+    '''
+
+    def run(self,
+            counts,
+            design,
+            model=None,
+            ref_group=None,
+            contrasts=None,
+            dispersion_method="pooled",
+            sharing_mode="maximum",
+            fit_type="parametric",
+            outfile_prefix=None):
+
+        # create r objects
+        r_counts = com.convert_to_r_dataframe(counts.table)
+        r_groups = ro.StrVector(design.conditions)
+        r_pairs = ro.StrVector(design.pairs)
+        r_has_pairs = ro.default_py2ri(design.has_pairs)
+        r_has_replicates = ro.default_py2ri(design.has_replicates)
+        r_dispersion_method = ro.default_py2ri(dispersion_method)
+        r_sharing_mode = ro.default_py2ri(sharing_mode)
+        r_fit_type = ro.default_py2ri(fit_type)
+
+        if model is not None:
+            r_factors_df = com.convert_to_r_dataframe(design.factors)
+        else:
+            r_factors_df = ro.default_py2ri(False)
+
+        if ref_group is not None:
+            r_ref_group = ro.default_py2ri(ref_group)
+        else:
+            r_ref_group = ro.default_py2ri(design.groups[0])
+
+        if contrasts is not None:
+            raise ValueError("cannot currently handle user defined contrasts")
+            r_contrasts = ro.default_py2ri(contrasts)
+
+        if dispersion_method == "pooled" and not design.has_replicates:
+            E.warn("cannot use pooled dispersion without replicates, switching"
+                   " to 'blind dispersion method")
+            r_dispersion_method = ro.default_py2ri("blind")
+
+        E.info('running DESeq: groups=%s, pairs=%s, replicates=%s, pairs=%s' %
+               (design.groups, design.pairs, design.has_replicates,
+                design.has_pairs))
+
+        E.info("dispersion_method=%s, fit_type=%s, sharing_mode=%s" %
+               (dispersion_method, fit_type, sharing_mode))
+        
+        print ""
+        
+        # load DESeq
+        R('''suppressMessages(library('DESeq'))''')
+
+        buildCountDataSet = R('''
+        function(counts, groups, dispersion_method, fit_type, sharing_mode){
+
+        # create new counts data object for deseq
+        cds <- newCountDataSet( counts, groups)
+
+        # estimate size factors
+        cds <- estimateSizeFactors(cds)
+        print(sharing_mode)
+        print(dispersion_method)
+        print(fit_type)
+        # estimate dispersion
+        cds <- estimateDispersions(cds, method=dispersion_method,
+               fitType=fit_type, sharingMode=sharing_mode)
+        
+        }''')
+
+        x = ('''{
+        # blind dispersion estimate for variance stabalising transform
+        if (dispersion_method != "blind"){
+        cds_blind <- estimateDispersions(cds, method='blind',
+                     fitType=fit_type, sharingMode=sharing_mode)
+        else {
+        cds_blind = cds
+        }
+        }
+
+        # perform variance stabilization for log2 fold changes
+        vsd = varianceStabilizingTransformation(cds_blind)
+
+        # perform binomial tests
+        combinations_array = combn(groups, 2)
+        number_of_combinations = dim(combinations_array)[2]
+        for (n in seq(1, numb)){
+          group_1 = combinations_array[1,n]
+          group_2 = combinations_array[2,n]
+          res = nbinomTest(cds, group1, group2)
+          print(head(res))
+        }
+        }''')
+
+        buildCountDataSet(r_counts, r_groups,  r_dispersion_method,
+                          r_fit_type, r_sharing_mode)
+
+        result = None
+        # result = DEResult_DESeq(testTable=com.convert_robj(r_lrt_table))
+
+        return result
+
+
+class DEResult_DEResult(DEResult):
+
+    # re-write for DESeq
+    def getResults(self, fdr, DEtype="pairwise"):
         ''' post-process test results table into generic results output '''
 
         E.info("Generating output - results table")
