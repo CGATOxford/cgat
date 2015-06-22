@@ -41,6 +41,9 @@ Code
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import pandas as pd
+from rpy2.robjects import r as R
+import rpy2.robjects as ro
+import pandas.rpy.common as com
 import numpy as np
 import numpy.ma as ma
 import copy
@@ -184,6 +187,95 @@ class Counts(object):
         self.table = self.table.sort(columns=sort_columns)
         if reset_index:
             self.table.set_index(index, inplace=True)
+
+    def log(self, base=2, pseudocount=1):
+        ''' log transform the counts table '''
+        self.table = np.log(self.table + pseudocount)
+
+    def plotDendogram(self, plot_filename=None,
+                      distance_method="euclidean",
+                      clustering_method="ward.D2"):
+
+        r_counts = com.convert_to_r_dataframe(self.table)
+
+        makeDendogram = R('''
+        function(counts){
+          png("%(plot_filename)s")
+          par(mar = c(1,4,1,1))
+          plot(hclust(dist(t(counts), method = "%(distance_method)s"),
+                      method = "%(clustering_method)s"), main="")
+          dev.off()
+        }''' % locals())
+
+        makeDendogram(r_counts)
+
+    def plotPCA(self, variance_plot_filename=None, pca_plot_filename=None,
+                x_axis="PC1", y_axis="PC2"):
+        ''' use the prcomp function in base R to perform principal components
+        analysis '''
+
+        assert (x_axis[0:2] == "PC" and y_axis[0:2] == "PC",
+                "x_axis and y_axis names must start with 'PC'")
+
+        r_counts = com.convert_to_r_dataframe(self.table)
+
+        pc_number_1 = int(x_axis.replace("PC", ""))
+        pc_number_2 = int(y_axis.replace("PC", ""))
+
+        makePCA = R('''
+        function(counts){
+
+          suppressMessages(library(ggplot2))
+          suppressMessages(library(grid))
+
+          gene_pca <- prcomp(t(counts), center = TRUE)
+
+          m_text = element_text(size=15)
+          s_text = element_text(size=10)
+
+
+          variance = gene_pca$sdev^2
+          variance_explained = round(variance/sum(variance), 5)
+
+          variance_df = data.frame("Variance_explained" = variance_explained,
+                                 "PC" = seq(1, length(variance)))
+          p_variance = ggplot(variance_df, aes(x=PC, y=Variance_explained))+
+          geom_point()+
+          geom_line()+
+          theme_classic()+
+          ylab("Variance explained (%%)")+
+          theme(axis.text.x = m_text,
+                axis.title.y = m_text,
+                axis.title.x = m_text,
+                axis.text.y = m_text)
+
+          ggsave("%(variance_plot_filename)s")
+
+          PCs_df = data.frame(gene_pca$x)
+          PCs_df$id_1 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 1)
+          PCs_df$id_2 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 2)
+          PCs_df$id_3 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 3)
+
+          p_pca = ggplot(PCs_df, aes(x=%(x_axis)s, y=%(y_axis)s)) +
+          geom_point(aes(shape=id_3,
+                         colour=interaction(id_1, id_2))) +
+          scale_colour_discrete(name=guide_legend(title='Sample')) +
+          scale_shape_discrete(name=guide_legend(title='Replicate')) +
+          xlab(paste0('PC%(pc_number_1)i (Variance explained = ' ,
+                       round(100 * variance_explained[%(pc_number_1)i], 1),
+                       '%%)')) +
+          ylab(paste0('PC%(pc_number_2)i (Variance explained = ' ,
+                       round(100 * variance_explained[%(pc_number_2)i], 1),
+                       '%%)')) +
+          theme(axis.text.x = s_text, axis.text.y = s_text,
+                title = m_text, legend.text = m_text,
+                legend.title = m_text, legend.key.size = unit(7, "mm"))
+
+          ggsave("%(pca_plot_filename)s")
+
+        }''' % locals())
+
+        makePCA(r_counts)
 
     def shuffleRows(self,
                     min_cbin, max_cbin, width_cbin,

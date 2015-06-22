@@ -227,7 +227,7 @@ set_renumber_duplicates:
     stdin: B_psuedomallei_combined_transcripts.gtf
     outputs: [stdout]
     references: [B_psuedomallei_combined_transcripts_no_duplicates.gtf]
-    options: --method=rename-duplicates
+    options: --method=rename-duplicates --duplicate-feature=both
 
 set_gene_to_transcript:
     stdin: hg19.small.sort_gene.gtf.gz
