@@ -20,8 +20,10 @@ Versions explained
 ------------------
 
 We have now two Docker containers available via DockerHub_:
-* cgat/scripts: comes with the CGAT Code Collection pre-installed (released via PyPi_)
-* cgat/devel: comes with the latest version of the CGAT Code (hosted on GitHub_)
+
+* ``cgat/scripts``: comes with the CGAT Code Collection pre-installed (released via PyPi_). This one is considered as the production version of the scripts.
+
+* ``cgat/devel``: comes with the latest development version of the CGAT Code (hosted on GitHub_) and the scripts are still under a testing stage.
 
 Below we explain how to use each of them.
 
@@ -62,11 +64,11 @@ to get command-line help. Then, any script can be run by typing::
 Sharing files/folders between your host computer and the CGAT Container
 -----------------------------------------------------------------------
 
-There is a data volume within the CGAT Container in::
+There is a data volume within the CGAT Containers in::
 
   /shared/data
 
-In order to share data between with the CGAT container, please select
+In order to share data between with a CGAT container, please select
 a local folder on your host::
 
   /path/to/shared/folder
