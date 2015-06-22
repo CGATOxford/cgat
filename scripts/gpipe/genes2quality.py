@@ -192,7 +192,7 @@ def main(argv=None):
         filter_quality=None
     )
 
-    (options, args) = E.Start(parser, add_psql_options=True)
+    (options, args) = E.Start(parser, add_database_options=True)
 
     if options.priority:
         options.priority = options.priority.split(",")

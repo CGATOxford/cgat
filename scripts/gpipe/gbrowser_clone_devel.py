@@ -142,7 +142,7 @@ def main(argv=None):
         set="flies",
     )
 
-    (options, args) = E.Start(parser, add_mysql_options=True)
+    (options, args) = E.Start(parser, add_database_options=True)
 
     if options.set == "flies":
         data = data_flies

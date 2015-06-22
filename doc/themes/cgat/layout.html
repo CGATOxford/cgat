@@ -1,0 +1,32 @@
+{#
+    default/layout.html
+    ~~~~~~~~~~~~~~~~~~~
+
+    Sphinx layout template for the default theme.
+
+    :copyright: Copyright 2007-2010 by the Sphinx team, see AUTHORS.
+    :license: BSD, see LICENSE for details.
+#}
+{% extends "basic/layout.html" %}
+
+{% set script_files = script_files + ['_static/sorttable.js',
+       		      		      '_static/jquery.min.js',
+				      '_static/jquery.dataTables.min.js',
+				      '_static/notebook.js',
+				      '_static/jssor.js',
+				      '_static/jssor.slider.js',
+				      ] %}
+
+{% block extrahead %}
+   <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+        $('.scrollable').DataTable({
+               "sScrollY":"200px",
+               "sScrollX":"100%",
+               "bAutoWidth":false,
+               "bPaginate":false });
+     });
+    </script>
+    {{ super() }}
+{% endblock %}
+

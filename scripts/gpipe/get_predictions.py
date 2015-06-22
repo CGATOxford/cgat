@@ -115,7 +115,7 @@ def main(argv=None):
         result="exons",
     )
 
-    (options, args) = E.Start(parser, add_psql_options=True)
+    (options, args) = E.Start(parser, add_database_options=True)
 
     dbhandle = pgdb.connect(options.psql_connection)
 

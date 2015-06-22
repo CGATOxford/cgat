@@ -44,7 +44,7 @@ Usage
 
 Type::
 
-   cgat bam_vs_bed BAM BED [OPTIONS] 
+   cgat bam_vs_bed BAM BED [OPTIONS]
    cgat bam_vs_bed --bam-file=BAM --bed-file=BED [OPTIONS]
 
 where BAM is either a bam or bed file and BED is a bed file.
@@ -102,11 +102,20 @@ def main(argv=None):
         "processing. By default the file is assumed to be sorted "
         "[%default]")
 
+    parser.add_option(
+        "--split-intervals", dest="split_intervals",
+        action="store_true",
+        help="treat split BAM intervals, for example spliced intervals, "
+        "as separate intervals. Note that a single alignment might be "
+        "counted several times as a result. "
+        "[%default]")
+
     parser.set_defaults(
         min_overlap=0.5,
         filename_bam=None,
         filename_bed=None,
         sort_bed=False,
+        split_intervals=False,
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -199,10 +208,16 @@ def main(argv=None):
     else:
         bedcmd = filename_bed
 
+    if options.split_intervals:
+        split = "-split"
+    else:
+        split = ""
+
     # IMS: newer versions of intersectBed have a very high memory
     #      requirement unless passed sorted bed files.
-    statement = """intersectBed %(format)s %(filename_bam)s
+    statement = """bedtools intersect %(format)s %(filename_bam)s
     -b %(bedcmd)s
+    %(split)s
     -sorted -bed -wo -f %(min_overlap)f""" % locals()
 
     E.info("starting counting process: %s" % statement)

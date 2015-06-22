@@ -591,7 +591,7 @@ def main(argv=None):
         output_coordinate_format="full",
     )
 
-    (options, args) = E.Start(parser, add_psql_options=True)
+    (options, args) = E.Start(parser, add_database_options=True)
 
     if options.orthologs:
         options.id_format = "schema-id"

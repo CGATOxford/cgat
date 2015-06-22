@@ -526,8 +526,7 @@ def Start(parser=None,
           quiet=False,
           no_parsing=False,
           add_csv_options=False,
-          add_mysql_options=False,
-          add_psql_options=False,
+          add_database_options=False,
           add_pipe_options=True,
           add_cluster_options=False,
           add_output_options=False,
@@ -548,9 +547,7 @@ def Start(parser=None,
     *add_csv_options* add common options for parsing :term:`tsv`
      separated files
 
-    *add_mysql_options* add common options for connecting to mysql_ databases
-
-    *add_psql_options* add common options for connecting to postgres_ databases
+    *add_database_options* add common options for connecting to various databases.
 
     *add_pipe_options* add common options for redirecting input/output
 
@@ -593,7 +590,7 @@ def Start(parser=None,
             csv_dialect. the default is ``excel-tab``, defaulting to
             :term:`tsv` formatted files.
 
-    add_psql_options
+    add_database_options
        ``-C/--connection``
            psql connection string
        ``-U/--user``
@@ -676,17 +673,6 @@ def Start(parser=None,
             csv_lineterminator="\n",
         )
 
-    if add_psql_options:
-        group = OptionGroup(parser, "postgres options")
-        group.add_option("-C", "--connection", dest="psql_connection",
-                         type="string",
-                         help="psql connection string [%default].")
-        group.add_option("-U", "--user", dest="user", type="string",
-                         help="database user name [%default].")
-        parser.set_defaults(psql_connection="fgu202:postgres")
-        parser.set_defaults(user="")
-        parser.add_option_group(group)
-
     if add_cluster_options:
         group = OptionGroup(parser, "cluster options")
         group.add_option("--no-cluster", "--local", dest="without_cluster",
@@ -762,24 +748,35 @@ def Start(parser=None,
 
         parser.add_option_group(group)
 
-    if add_mysql_options:
-        group = OptionGroup(parser, "MYSQL connection options")
-        group.add_option("-H", "--host", dest="host", type="string",
-                         help="mysql host [%default].")
-        group.add_option("-D", "--database", dest="database", type="string",
-                         help="mysql database [%default].")
-        group.add_option("-U", "--user", dest="user", type="string",
-                         help="mysql username [%default].")
-        group.add_option("-P", "--password", dest="password", type="string",
-                         help="mysql password [%default].")
-        group.add_option("-O", "--port", dest="port", type="int",
-                         help="mysql port [%default].")
+    if add_database_options:
+        group = OptionGroup(parser, "Database connection options")
+        group.add_option(
+            "--database-backend", dest="database_backend", type="choice",
+            choices=("sqlite", "mysql", "postgres"),
+            help="database backend [%default].")
+        group.add_option(
+            "--database-host", dest="database_host", type="string",
+            help="database host [%default].")
+        group.add_option(
+            "--database-name", dest="database_name", type="string",
+            help="name of the database [%default].")
+        group.add_option(
+            "--database-username", dest="database_username", type="string",
+            help="database username [%default].")
+        group.add_option(
+            "--database-password", dest="database_password", type="string",
+            help="database password [%default].")
+        group.add_option(
+            "--database-port", dest="database_port", type="int",
+            help="database port [%default].")
 
-        parser.set_defaults(host="db",
-                            port=3306,
-                            user="",
-                            password="",
-                            database="")
+        parser.set_defaults(
+            database_backend="sqlite",
+            database_name="csvdb",
+            database_host="",
+            database_port=3306,
+            database_username="",
+            database_password="")
         parser.add_option_group(group)
 
     # restore user defaults

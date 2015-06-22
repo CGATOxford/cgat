@@ -283,7 +283,7 @@ def main(argv=None):
     )
 
     (options, args) = E.Start(
-        parser, add_psql_options=True, add_csv_options=True)
+        parser, add_database_options=True, add_csv_options=True)
 
     if options.outgroup_species:
         options.outgroup_species = set(options.outgroup_species.split(","))

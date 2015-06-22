@@ -134,7 +134,7 @@ def main(argv=None):
         separator="|",
     )
 
-    (options, args) = E.Start(parser, add_psql_options=True)
+    (options, args) = E.Start(parser, add_database_options=True)
 
     if options.genomes:
         options.genomes = options.genomes.split(",")

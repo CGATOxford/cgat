@@ -104,7 +104,7 @@ def main(argv=None):
         filename_prefix="",
     )
 
-    (options, args) = E.Start(parser, add_psql_options=True)
+    (options, args) = E.Start(parser, add_database_options=True)
 
     if len(args) > 0:
         print USAGE, "no arguments required."

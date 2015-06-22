@@ -121,7 +121,7 @@ def main(argv=None):
     files = "peptides2genes", "peptides.fasta", "genome*.fasta", "reference.exons"
 
     (options, args) = E.Start(parser,
-                              add_psql_options=True,
+                              add_database_options=True,
                               add_pipe_options=True)
 
     if not options.old_schema:

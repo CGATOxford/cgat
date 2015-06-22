@@ -83,7 +83,7 @@ def main(argv=None):
     )
 
     (options, args) = E.Start(parser, add_pipe_options=True,
-                              add_psql_options=True)
+                              add_database_options=True)
 
     data = map(lambda x: x[:-1].split("\t"),
                filter(lambda x: x[0] != "#", sys.stdin.readlines()))
