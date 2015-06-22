@@ -1,3 +1,4 @@
+
 '''gtf2gtf.py - manipulate transcript models
 ============================================
 
@@ -442,7 +443,7 @@ def main(argv=None):
         "--duplicate-feature",
         dest="duplicate_feature",
         type="choice",
-        choices=("gene", "transcript", "ucsc", "coordinates"),
+        choices=("gene", "transcript", "both", "ucsc", "coordinates"),
         help="remove duplicates by gene/transcript. "
         "If ``ucsc`` is chosen, transcripts ending on _dup# are "
         "removed. This is necessary to remove duplicate entries "
@@ -1154,15 +1155,18 @@ def main(argv=None):
 
     elif "rename-duplicates" == options.method:
 
+        assert options.duplicate_feature in ["gene", "transcript", "both"],\
+            ("for renaming duplicates, --duplicate-feature must be set to one "
+             "of 'gene', transcript' or 'both'")
+
         gene_ids = list()
         transcript_ids = list()
         gtfs = list()
 
         for gtf in GTF.iterator(options.stdin):
             gtfs.append(gtf)
-            if gtf.feature == "CDS":
-                gene_ids.append(gtf.gene_id)
-                transcript_ids.append(gtf.transcript_id)
+            gene_ids.append(gtf.gene_id)
+            transcript_ids.append(gtf.transcript_id)
 
         dup_gene = [item for item in set(gene_ids) if gene_ids.count(item) > 1]
         dup_transcript = [item for item in set(transcript_ids)
@@ -1176,13 +1180,14 @@ def main(argv=None):
                                    ([0] * len(dup_transcript))))
 
         for gtf in gtfs:
-            if gtf.feature == "CDS":
+            if options.duplicate_feature in ["both", "gene"]:
                 if gtf.gene_id in dup_gene:
                     gene_dict[gtf.gene_id] = gene_dict[gtf.gene_id] + 1
                     gtf.setAttribute('gene_id',
                                      gtf.gene_id + "." +
                                      str(gene_dict[gtf.gene_id]))
 
+            if options.duplicate_feature in ["both", "transcript"]:
                 if gtf.transcript_id in dup_transcript:
                     transcript_dict[gtf.transcript_id] = \
                         transcript_dict[gtf.transcript_id] + 1
