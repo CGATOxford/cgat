@@ -94,6 +94,7 @@ import rpy2.robjects.numpy2ri
 from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import FloatVector
 
+
 try:
     import CGAT.Experiment as E
     import CGAT.IOTools as IOTools
@@ -102,6 +103,8 @@ except ImportError:
     import Experiment as E
     import IOTools
     import Stats
+
+grdevices = importr('grDevices')
 
 
 def runDETest(raw_DataFrame,
@@ -213,7 +216,7 @@ class ExpDesign(object):
 
     def validate(self, counts, model=None):
 
-        missing = set(counts.table.columns).difference(self.samples)
+        missing = set(self.samples).difference(set(counts.table.columns))
         if len(missing) > 0:
             raise ValueError("following samples in design table are missing"
                              " from counts table: %s" % ", ".join(missing))
@@ -600,8 +603,8 @@ class DEExperiment_edgeR(DEExperiment):
         # contrasts, otherwise, only perform the contrasts specified
         # TS - Function definition should depend on whether contrasts
         # are specified (keep the decision tree in python)
-        # TS - To do: add lrtTest definition for user-supplied contrasts
-
+        # TS - To do: 
+        # add lrtTest definition for user-supplied contrasts
         if contrasts is None:
             lrtTest = R('''
         function(fit, prefix, countsTable, design){
@@ -718,6 +721,355 @@ class DEResult_edgeR(DEResult):
     def plotMAplot(self, design, outfile_prefix):
         # need to implement edgeR specific MA plot
         raise ValueError("MA plotting is not yet implemented for edgeR")
+
+
+class DEExperiment_DESeq(DEExperiment):
+    '''DEExperiment object to run DEseq on counts data
+    '''
+
+    def run(self,
+            counts,
+            design,
+            model=None,
+            ref_group=None,
+            contrasts=None,
+            dispersion_method="pooled",
+            sharing_mode="maximum",
+            fit_type="parametric",
+            outfile_prefix=None):
+
+        # create r objects
+        r_counts = com.convert_to_r_dataframe(counts.table)
+        r_groups = ro.StrVector(design.conditions)
+        r_pairs = ro.StrVector(design.pairs)
+        r_has_pairs = ro.default_py2ri(design.has_pairs)
+        r_has_replicates = ro.default_py2ri(design.has_replicates)
+        r_dispersion_method = ro.default_py2ri(dispersion_method)
+        r_sharing_mode = ro.default_py2ri(sharing_mode)
+        r_fit_type = ro.default_py2ri(fit_type)
+
+        if model is not None:
+            r_factors_df = com.convert_to_r_dataframe(design.factors)
+        else:
+            r_factors_df = ro.default_py2ri(False)
+
+        if ref_group is not None:
+            r_ref_group = ro.default_py2ri(ref_group)
+        else:
+            r_ref_group = ro.default_py2ri(design.groups[0])
+
+        if contrasts is not None:
+            raise ValueError("cannot currently handle user defined contrasts")
+            r_contrasts = ro.default_py2ri(contrasts)
+
+        if dispersion_method == "pooled" and not design.has_replicates:
+            E.warn("cannot use pooled dispersion without replicates, switching"
+                   " to 'blind dispersion method")
+            r_dispersion_method = ro.default_py2ri("blind")
+
+        E.info('running DESeq: groups=%s, pairs=%s, replicates=%s, pairs=%s' %
+               (design.groups, design.pairs, design.has_replicates,
+                design.has_pairs))
+
+        E.info("dispersion_method=%s, fit_type=%s, sharing_mode=%s" %
+               (dispersion_method, fit_type, sharing_mode))
+        
+        print ""
+        
+        # load DESeq
+        R('''suppressMessages(library('DESeq'))''')
+
+        buildCountDataSet = R('''
+        function(counts, groups, dispersion_method, fit_type, sharing_mode){
+
+        # create new counts data object for deseq
+        cds <- newCountDataSet( counts, groups)
+
+        # estimate size factors
+        cds <- estimateSizeFactors(cds)
+        print(sharing_mode)
+        print(dispersion_method)
+        print(fit_type)
+        # estimate dispersion
+        cds <- estimateDispersions(cds, method=dispersion_method,
+               fitType=fit_type, sharingMode=sharing_mode)
+        
+        }''')
+
+        x = ('''{
+        # blind dispersion estimate for variance stabalising transform
+        if (dispersion_method != "blind"){
+        cds_blind <- estimateDispersions(cds, method='blind',
+                     fitType=fit_type, sharingMode=sharing_mode)
+        else {
+        cds_blind = cds
+        }
+        }
+
+        # perform variance stabilization for log2 fold changes
+        vsd = varianceStabilizingTransformation(cds_blind)
+
+        # perform binomial tests
+        combinations_array = combn(groups, 2)
+        number_of_combinations = dim(combinations_array)[2]
+        for (n in seq(1, numb)){
+          group_1 = combinations_array[1,n]
+          group_2 = combinations_array[2,n]
+          res = nbinomTest(cds, group1, group2)
+          print(head(res))
+        }
+        }''')
+
+        buildCountDataSet(r_counts, r_groups,  r_dispersion_method,
+                          r_fit_type, r_sharing_mode)
+
+        result = None
+        # result = DEResult_DESeq(testTable=com.convert_robj(r_lrt_table))
+
+        return result
+
+
+class DEResult_DEResult(DEResult):
+
+    # re-write for DESeq
+    def getResults(self, fdr, DEtype="pairwise"):
+        ''' post-process test results table into generic results output '''
+
+        E.info("Generating output - results table")
+
+        df_dict = collections.defaultdict()
+
+        n_rows = self.table.shape[0]
+
+        if DEtype == "GLM":
+            df_dict["treatment_name"] = self.table['contrast']
+            df_dict["control_name"] = self.table['contrast']
+
+        else:
+            # TS: edgeR is currently only set up to run GLM-based tests
+            pass
+
+        df_dict["test_id"] = self.table['observation']
+        df_dict["control_mean"] = self.table['logCPM']
+        df_dict["treatment_mean"] = self.table['logCPM']
+        df_dict["control_std"] = (0,)*n_rows
+        df_dict["treatment_std"] = (0,)*n_rows
+        df_dict["p_value"] = self.table['PValue']
+        df_dict["p_value_adj"] = adjustPvalues(self.table['PValue'])
+        df_dict["significant"] = pvaluesToSignficant(
+            df_dict["p_value_adj"], fdr)
+        df_dict["l2fold"] = list(numpy.log2(self.table['logFC']))
+
+        # TS: the transformed log2 fold change is not transformed!
+        df_dict["transformed_l2fold"] = df_dict["l2fold"]
+
+        # TS: check what happens when no fold change is available
+        # TS: may need an if/else in list comprehension. Raise E.warn too?
+        df_dict["fold"] = [math.pow(2, float(x)) for
+                           x in self.table['logFC']]
+
+        # set all status values to "OK"
+        # TS: again, may need an if/else to check...
+        df_dict["status"] = ("OK",)*n_rows
+
+        self.table = pandas.DataFrame(df_dict)
+        self.table.set_index("test_id", inplace=True)
+
+    def plotMAplot(self, design, outfile_prefix):
+        # need to implement edgeR specific MA plot
+        raise ValueError("MA plotting is not yet implemented for edgeR")
+
+
+class DEExperiment_DESeq2(DEExperiment):
+    '''DEExperiment object to run DESeq2 on counts data'''
+
+    # TS this is far from ready to use!
+
+    def run(self,
+            counts,
+            design,
+            model=None,
+            ref_group=None,
+            contrasts=None,
+            outfile_prefix=None):
+
+        # create r objects
+        r_counts = com.convert_to_r_dataframe(counts.table)
+        r_groups = ro.StrVector(design.conditions)
+        r_pairs = ro.StrVector(design.pairs)
+        r_has_pairs = ro.default_py2ri(design.has_pairs)
+        r_has_replicates = ro.default_py2ri(design.has_replicates)
+
+        if model is not None:
+            r_factors_df = com.convert_to_r_dataframe(design.factors)
+        else:
+            r_factors_df = ro.default_py2ri(False)
+
+        if ref_group is not None:
+            r_ref_group = ro.default_py2ri(ref_group)
+        else:
+            r_ref_group = ro.default_py2ri(design.groups[0])
+
+        if contrasts is not None:
+            raise ValueError("cannot currently handle user defined contrasts")
+            r_contrasts = ro.default_py2ri(contrasts)
+
+        E.info('running DESeq: groups=%s, pairs=%s, replicates=%s, pairs=%s' %
+               (design.groups, design.pairs, design.has_replicates,
+                design.has_pairs))
+
+        # load DESeq
+        R('''suppressMessages(library('DESeq2'))''')
+
+        # build design matrix
+        buildDesign = R('''
+        function(counts, groups, factors_df){
+
+        if (factors_df != FALSE) {
+          design = factors_df }
+
+        else {
+          design = data.frame(row.names = colnames(counts),
+                              condition = groups) }
+
+        return(design)
+        }''')
+
+        r_design = buildDesign(r_counts, r_groups, r_factors_df)
+
+        # TS - for debugging, remove from final version
+        E.info("design_table:")
+        E.info(r_design)
+
+        print r_design
+
+        buildCountDataSet = R('''
+        function(counts, design){
+        #print(DESeq)
+
+        dds <- DESeqDataSetFromMatrix(
+          countData= counts,
+          colData = design,
+          design = colData)
+
+        dds = DESeq(dds, test="LRT", full=~0+treatment+genotype+replicate,
+                    reduced=~0+treatment+genotype)
+        plotDispEsts(dds)
+        return(dds)
+        }''')
+
+        grdevices.png(file="/ifs/home/toms/ipython_notebook/dispersion.png",
+                      width=512, height=512)
+        r_dds = buildCountDataSet(r_counts, r_design)
+        grdevices.dev_off()
+
+        print r_dds
+        return None
+
+    def null():
+
+        # fit model
+        fitModel = R('''
+        function(countsTable, design, has_replicates, dispersion){
+
+        if (has_replicates == TRUE) {
+
+            # estimate common dispersion
+            countsTable = estimateGLMCommonDisp( countsTable, design )
+
+            # estimate trended dispersion
+            countsTable <- estimateGLMTrendedDisp( countsTable, design)
+
+            # estimate tagwise dispersion
+            countsTable = estimateGLMTagwiseDisp( countsTable, design )
+
+            # fitting model to each tag
+            fit = glmFit( countsTable, design ) }
+
+        else {
+            # fitting model to each tag
+            fit = glmFit(countsTable, design, dispersion=dispersion) }
+
+        return(fit)}''')
+
+        r_fit = fitModel(r_countsTable, r_design,
+                         r_has_replicates, r_dispersion)
+
+        E.info("Conducting liklihood ratio tests")
+
+        # TS - if no contrasts are specified, perform LR test on all possible
+        # contrasts, otherwise, only perform the contrasts specified
+        # TS - Function definition should depend on whether contrasts
+        # are specified (keep the decision tree in python)
+        # TS - To do: add lrtTest definition for user-supplied contrasts
+
+        if contrasts is None:
+            lrtTest = R('''
+        function(fit, prefix, countsTable, design){
+        suppressMessages(library(reshape2))
+
+        lrt_table_list = NULL
+
+        for(coef in seq(2, length(colnames(design)))){
+          lrt = glmLRT(fit, coef = coef)
+
+
+          lrt_table = lrt$table
+          # need to include observations as a seperate column as there will
+          # be non-unique
+          lrt_table$observation = rownames(lrt_table)
+          rownames(lrt_table) <- NULL
+
+          lrt_table_list[[coef]] = lrt_table
+          lrt_table_list[[coef]]['contrast'] = colnames(design)[coef]
+
+          dt <- decideTestsDGE(lrt)
+          isDE <- as.logical(dt)
+          DEnames <- rownames(fit)[isDE]
+
+          contrast = gsub(":", "_interaction_", colnames(design)[coef])
+          png(paste0(contrast, "MAplot.png"))
+          plotSmear(lrt, de.tags=DEnames, cex=0.35, main=contrast)
+          abline(h=c(-1,1), col="blue")
+          dev.off()
+        }
+
+            lrt_final = do.call(rbind, lrt_table_list)
+
+        return(lrt_final)}''')
+
+            r_lrt_table = lrtTest(r_fit, outfile_prefix,
+                                  r_countsTable, r_design)
+        else:
+            # TS - shouldn't get to here as error thrown earlier if
+            # contrasts is not None
+            pass
+
+        E.info("Generating output - cpm table")
+
+        # output cpm table
+        outputCPMTable = R('''function(countsTable, outfile_prefix){
+        suppressMessages(library(reshape2))
+        countsTable.cpm <- cpm(countsTable, normalized.lib.sizes=TRUE)
+        melted <- melt(countsTable.cpm)
+        names(melted) <- c("test_id", "sample", "ncpm")
+
+        # melt columns are factors - convert to string for sorting
+        melted$test_id = levels(melted$test_id)[as.numeric(melted$test_id)]
+        melted$sample = levels(melted$sample)[as.numeric(melted$sample)]
+
+        # sort cpm table by test_id and sample
+        sorted <- melted[with(melted, order(test_id, sample)),]
+        gz <- gzfile(paste0(outfile_prefix,"cpm.tsv.gz"), "w" )
+        write.table(sorted, file=gz, sep = "\t", row.names=FALSE, quote=FALSE)
+        close(gz)}''')
+
+        outputCPMTable(r_countsTable, outfile_prefix)
+
+        result = DEResult_edgeR(testTable=com.convert_robj(r_lrt_table))
+
+        return result
+
 
 ###############################################################################
 
