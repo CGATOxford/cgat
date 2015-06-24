@@ -324,7 +324,7 @@ if [ "$OS" != "travis" ] ; then
       echo
       echo " To activate the CGAT environment type: "
       echo " $ source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_TYPE"
-      [ "$INSTALL_SCRIPTS" == "1" ] && echo " cgat --help"
+      [ $INSTALL_SCRIPTS ] && echo " cgat --help"
       echo
       echo " To deactivate the environment, use:"
       echo " $ source deactivate"
