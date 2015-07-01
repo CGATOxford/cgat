@@ -95,6 +95,11 @@ class RangeCounter:
 class RangeCounterBAM(RangeCounter):
     '''count densities using bam files.
     '''
+
+    def getTotal(self, bamfile):
+        '''return total number of tags in bedfile.'''
+        return bamfile.mapped
+
     def __init__(self, *args, **kwargs ):
         '''
         :param samfiles: list of :term:`bam` formatted files
