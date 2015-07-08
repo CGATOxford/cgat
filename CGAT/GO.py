@@ -818,8 +818,8 @@ def DumpGOFromDatabase(outfile,
         genes = collections.defaultdict(int)
         categories = collections.defaultdict(int)
         ntotal = 0
-
-        statement = GetGOStatement(go_type, options.database, options.species)
+        statement = GetGOStatement(go_type, options.database_name,
+                                   options.species)
 
         results = dbhandle.Execute(statement).fetchall()
 
