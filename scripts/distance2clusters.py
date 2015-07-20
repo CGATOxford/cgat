@@ -89,12 +89,8 @@ Command line options
 '''
 
 import sys
-import pandas as pd
-from rpy2.robjects import pandas2ri
 import CGAT.Experiment as E
 import CGAT.Timeseries as TS
-# do not use, as it is being executed at import.
-# pandas2ri.activate()
 
 
 def main(argv=None):

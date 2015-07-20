@@ -102,8 +102,6 @@ Command line options
 '''
 
 import sys
-import pandas as pd
-from rpy2.robjects import pandas2ri
 import CGAT.Experiment as E
 import CGAT.Timeseries as TS
 
@@ -111,8 +109,8 @@ import CGAT.Timeseries as TS
 def main(argv=None):
     """script main.
 
-parses command line options in sys.argv, unless *argv* is given.
-"""
+    parses command line options in sys.argv, unless *argv* is given.
+    """
 
     if argv is None:
         argv = sys.argv
