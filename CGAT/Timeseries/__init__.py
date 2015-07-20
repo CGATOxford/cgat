@@ -18,6 +18,7 @@ import CGAT.Experiment as E
 import numpy as np
 import pandas as pd
 import itertools
+import os
 import sys
 import math
 from rpy2.robjects import pandas2ri
@@ -27,6 +28,12 @@ import rpy2.robjects as ro
 import random
 
 import cmetrics as c2m
+
+
+def get_r_path(self):
+    """return path of R support functions.
+    """
+    return os.path.dirname(__file__)
 
 #################################
 # Clustering assessment functions
@@ -467,6 +474,12 @@ def clusterPCA(infile,
     Warning: this script will error if there is only one
     cluster. Make sure you have more than one cluster before
     trying to perform uninformative analyses.
+
+    Parameters:
+
+    rpath : string
+        Path of R support libraries
+
     '''
 
     header = cluster_file.split("/")[-1].split("-")[0]
@@ -475,8 +488,11 @@ def clusterPCA(infile,
     R('''sink(file='sink_file.txt')''')
     R('''suppressMessages(library("reshape2"))''')
     R('''suppressMessages(library("WGCNA"))''')
-    R('''source("/ifs/devel/michaelm/Time-series/summarySE.R")''')
-    R('''source("/ifs/devel/projects/proj036/r_scripts/clusterEigengenes.R")''')
+
+    # AH: these were hard-coded paths, parameterized them to point to the
+    # directory of this module's location
+    R('''source("%s")''' % os.path.join(get_r_path(), "summarySE.R"))
+    R('''source("%s")''' % os.path.join(get_r_path(), "clusterEigengenes.R"))
     R('''cluster_match <- read.table('%(cluster_file)s', h=T, '''
       '''row.names=1)''' % locals())
     R('''express_data <- read.table('%(infile)s', '''
