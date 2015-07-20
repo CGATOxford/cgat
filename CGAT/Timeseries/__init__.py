@@ -1423,14 +1423,16 @@ def consensusClustering(infile,
 
     # plot and save dendrogram of clustering
 
-    R('''png("plots.dir/%(condition)s-dendrogram-consensus_clustering.png")'''
-      % locals())
-    R('''plotDendroAndColors(dendro=clustering, colors=color_cut,'''
-      '''groupLabels="Dynamic tree cut",'''
-      '''dendroLabels=F, addGuide=T, guideHang=0.05, '''
-      '''hang=0.03, main="%(condition)s")''' % locals())
-    R('''dev.off()''')
-    R('''sink(file=NULL)''')
+    # AH: disabled, requires plots.dir to exist which might not be the case
+    # AH: and thus causes this method to fail. Path names need to be parameterizable.
+    # R('''png("plots.dir/%(condition)s-dendrogram-consensus_clustering.png")'''
+    #   % locals())
+    # R('''plotDendroAndColors(dendro=clustering, colors=color_cut,'''
+    #   '''groupLabels="Dynamic tree cut",'''
+    #   '''dendroLabels=F, addGuide=T, guideHang=0.05, '''
+    #   '''hang=0.03, main="%(condition)s")''' % locals())
+    # R('''dev.off()''')
+    # R('''sink(file=NULL)''')
     cluster_frame = pandas2ri.ri2py(R["cluster_matched"])
 
     return cluster_frame
