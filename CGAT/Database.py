@@ -64,51 +64,23 @@ class Database:
     def __init__(self):
         pass
 
-    def AddOptions(self, parser):
-        """add connection options to a command line parser.
-        """
-
-        parser.add_option("-D", "--Database", dest="database", type="string",
-                          help="database to connect to.")
-
-        parser.add_option("-H", "--Host", dest="host", type="string",
-                          help="host to connect to.")
-
-        parser.add_option("-U", "--Username", dest="user", type="string",
-                          help="username in database.")
-
-        parser.add_option("-W", "--Password", dest="passwd", type="string",
-                          help="password for database.")
-
-        parser.add_option("-S", "--Socket", dest="socket", type="string",
-                          help="socket of database connection.")
-
-        parser.add_option("-P", "--Port", dest="port", type="string",
-                          help="port to use.")
-
-        parser.set_defaults(
-            host=None,
-            database="",
-            user=None,
-            passwd="",
-            port=None,
-            socket="/tmp/mysql.sock")
-
     def Connect(self, options):
 
         try:
-            if options.port:
-                self.dbhandle = MySQLdb.connect(host=options.host,
-                                                user=options.user,
-                                                passwd=options.password,
-                                                db=options.database,
-                                                port=options.port)
+            if options.database_port:
+                self.dbhandle = MySQLdb.connect(
+                    host=options.database_host,
+                    user=options.database_username,
+                    passwd=options.database_password,
+                    db=options.database_name,
+                    port=options.database_port)
             else:
-                self.dbhandle = MySQLdb.connect(host=options.host,
-                                                user=options.user,
-                                                passwd=options.password,
-                                                db=options.database,
-                                                unix_socket=options.socket)
+                self.dbhandle = MySQLdb.connect(
+                    host=options.database_host,
+                    user=options.database_username,
+                    passwd=options.database_password,
+                    db=options.database_name,
+                    unix_socket=options.database_socket)
             return self.dbhandle
         except _mysql.OperationalError, detail:
             print "------------------------"
