@@ -283,6 +283,8 @@ def deseqNormalize(infile,
                                header=0,
                                sep="\t",
                                compression=comp)
+    # py2ri requires activation
+    pandas2ri.activate()
     rdf = pandas2ri.py2ri(data_frame)
 
     if not conditions:
@@ -411,6 +413,8 @@ def covarFilter(infile,
     df = df.fillna(0.0)
 
     # convert data frame and import into R namespace
+    # py2ri requires activation
+    pandas2ri.activate()
     R.assign('diff_data', pandas2ri.py2ri(df))
 
     E.info("loading data frame")
@@ -533,7 +537,11 @@ def conditionDESeq2(data_frame, header, alpha, res_dir):
 
     E.info("Differential expression testing for %s" % header)
     cols = data_frame.columns
+
+    # py2ri requires activation
+    pandas2ri.activate()
     counts = pandas2ri.py2ri(data_frame)
+
     des_times = ro.IntVector([x.split(".")[1] for x in cols])
     des_reps = ro.StrVector([x.split(".")[2] for x in cols])
     des_cond = ro.StrVector([x.split(".")[0] for x in cols])
@@ -588,7 +596,11 @@ def timepointDESeq2(data_frame, header, alpha, res_dir):
 
     E.info("Differential expression testing for %s" % header)
     cols = data_frame.columns
+
+    # py2ri requires activation
+    pandas2ri.activate()
     counts = pandas2ri.py2ri(data_frame)
+
     des_times = ro.IntVector([x.split(".")[1] for x in cols])
     des_reps = ro.StrVector([x.split(".")[2] for x in cols])
     genes = ro.StrVector([x for x in data_frame.index])
@@ -1204,7 +1216,11 @@ def treeCutting(infile,
     df = df.fillna(0.0)
     genes = df.index
     genes_r = ro.StrVector([g for g in genes])
+
+    # py2ri requires activation
+    pandas2ri.activate()
     rdf = pandas2ri.py2ri(df)
+
     R.assign("distance_data", rdf)
     R.assign("gene_ids", genes_r)
 
@@ -1368,7 +1384,11 @@ def consensusClustering(infile,
     df = pd.read_table(infile, sep="\t", header=0, index_col=0)
     labels = df.index.tolist()
     labels_r = ro.StrVector([l for l in labels])
+
+    # py2ri requires activation
+    pandas2ri.activate()
     df_r = pandas2ri.py2ri(df)
+
     R.assign("distance.frame", df_r)
     R.assign("labels", labels_r)
 
