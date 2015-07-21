@@ -328,7 +328,24 @@ class DEResult(object):
         self.table = testTable
 
     def getResults(self):
-        ''' post-process results into generic output '''
+        ''' post-process results into generic output
+        columns are:
+        - contrast
+        - treatment_name
+        - control_name
+        - test_id
+        - control_mean
+        - treatment_mean
+        - control_std
+        - treatment_std
+        - p_value
+        - p_value_adj
+        - significant
+        - l2fold
+        - transformed_l2fold
+        - fold
+        - status
+        '''
         pass
 
     def summariseDEResults(self):
@@ -347,13 +364,14 @@ class DEResult(object):
 
             tmp_table = self.table[self.table['control_name'] == control]
             tmp_table = tmp_table[tmp_table['treatment_name'] == treatment]
+            tmp_table.reset_index(inplace=True)
 
             # check control, treatment combination exists
             n_rows = tmp_table.shape[0]
             if n_rows > 0:
 
                 if control != treatment:
-                    label = control + "-" + treatment
+                    label = control + "_" + treatment
                 else:
                     label = control
                 label = re.sub(":", "_int_", label)
@@ -374,9 +392,66 @@ class DEResult(object):
 
                 self.Summary[label] = counts
 
-    def plotMAplot(self, design, outfile_prefix):
-        ''' base '''
-        pass
+    def plotMA(self, contrast=None, outfile_prefix=None):
+        ''' base function for making a MA plot '''
+
+        makeMAPlot = R('''
+        function(df){
+
+        suppressMessages(library(ggplot2))
+        suppressMessages(library(grid))
+
+        l_txt = element_text(size=20)
+
+        tmp_df = df[df$contrast=="%(contrast)s",]
+        p = ggplot(tmp_df, aes(log((control_mean+treatment_mean)/2,2),
+                            -transformed_l2fold,
+                            colour=as.factor(significant))) +
+
+        geom_point() + xlab("log2 mean expression") + ylab("log2 fold change")+
+        ggtitle("%(contrast)s") +
+        scale_colour_manual(name="Significant", values=c("black", "#619CFF")) +
+        guides(colour = guide_legend(override.aes = list(size=10)))+
+        theme(axis.text.x = l_txt, axis.text.y = l_txt,
+              axis.title.x = l_txt, axis.title.y = l_txt,
+              legend.title = l_txt, legend.text = l_txt,
+              title=l_txt, legend.key.size=unit(1, "cm"))
+
+        suppressMessages(
+          ggsave(file="%(outfile_prefix)s_%(contrast)s_MA_plot.png",
+          width=10, height=10))}''' % locals())
+
+        makeMAPlot(com.convert_to_r_dataframe(self.table))
+
+    def plotVolcano(self, contrast=None, outfile_prefix=None):
+        ''' base function for Volcano plotting'''
+
+        makeVolcanoPlot = R('''
+        function(df){
+
+        suppressMessages(library(ggplot2))
+        suppressMessages(library(grid))
+
+        l_txt = element_text(size=20)
+
+        tmp_df = df[df$contrast=="%(contrast)s",]
+
+        p = ggplot(tmp_df, aes(transformed_l2fold, -log(p_value,10),
+                   colour=as.factor(significant))) +
+        geom_point() + xlab("log2 fold change") + ylab("p-value (-log10)") +
+        ggtitle("%(contrast)s") +
+        scale_colour_manual(name="Significant", values=c("black", "#619CFF")) +
+        guides(colour = guide_legend(override.aes = list(size=10)))+
+        theme(axis.text.x = l_txt, axis.text.y = l_txt,
+              axis.title.x = l_txt, axis.title.y = l_txt,
+              legend.title = l_txt, legend.text = l_txt,
+              title=l_txt, legend.key.size=unit(1, "cm"))
+
+        suppressMessages(
+          ggsave(file="%(outfile_prefix)s_%(contrast)s_volcano_plot.png",
+          width=10, height=10))}''' % locals())
+
+        makeVolcanoPlot(com.convert_to_r_dataframe(self.table))
 
 
 class DEExperiment_TTest(DEExperiment):
@@ -448,20 +523,8 @@ class DEResult_TTest(DEResult):
 
         # note: the transformed log2 fold change is not transformed for TTest
         self.table["transformed_l2fold"] = self.table["l2fold"]
-
-    def plotMAplot(self, design, outfile_prefix):
-
-        for combination in itertools.combinations(design.groups, 2):
-            control, treatment = combination
-
-            temp_results_df = self.table[
-                (self.table['control_name'] == control) &
-                (self.table['treatment_name'] == treatment)]
-
-            title = "%(control)s_vs_%(treatment)s" % locals()
-            plotOutfile = (outfile_prefix + title + "_MAplot.png")
-
-            makeMAPlot(temp_results_df, title, plotOutfile)
+        self.table["contrast"] = "_vs_".join((self.table['control_name'],
+                                              self.table['treatment_name']))
 
 
 class DEExperiment_edgeR(DEExperiment):
@@ -546,7 +609,7 @@ class DEExperiment_edgeR(DEExperiment):
         if model is None:
             buildDesign = R('''
 
-            function(countsTable, has_pairs, pairs, factors_df){
+            function(countsTable, has_pairs){
 
             if (has_pairs==TRUE) {
               design <- model.matrix( ~pairs + countsTable$samples$group ) }
@@ -557,14 +620,14 @@ class DEExperiment_edgeR(DEExperiment):
             return(design)
             }''')
 
+            r_design = buildDesign(r_countsTable, r_has_pairs)
         else:
             buildDesign = R('''
-            function(countsTable, has_pairs, pairs, factors_df){
+            function(factors_df){
             design <- model.matrix(%s, data=factors_df)
             return(design)}''' % model)
 
-        r_design = buildDesign(r_countsTable, r_has_pairs, r_pairs,
-                               r_factors_df)
+            r_design = buildDesign(r_factors_df)
 
         # TS - for debugging, remove from final version
         E.info("design_table:")
@@ -603,7 +666,7 @@ class DEExperiment_edgeR(DEExperiment):
         # contrasts, otherwise, only perform the contrasts specified
         # TS - Function definition should depend on whether contrasts
         # are specified (keep the decision tree in python)
-        # TS - To do: 
+        # TS - To do:
         # add lrtTest definition for user-supplied contrasts
         if contrasts is None:
             lrtTest = R('''
@@ -684,14 +747,8 @@ class DEResult_edgeR(DEResult):
 
         n_rows = self.table.shape[0]
 
-        if DEtype == "GLM":
-            df_dict["treatment_name"] = self.table['contrast']
-            df_dict["control_name"] = self.table['contrast']
-
-        else:
-            # TS: edgeR is currently only set up to run GLM-based tests
-            pass
-
+        df_dict["treatment_name"] = self.table['contrast']
+        df_dict["control_name"] = self.table['contrast']
         df_dict["test_id"] = self.table['observation']
         df_dict["control_mean"] = self.table['logCPM']
         df_dict["treatment_mean"] = self.table['logCPM']
@@ -727,16 +784,18 @@ class DEExperiment_DESeq(DEExperiment):
     '''DEExperiment object to run DEseq on counts data
     '''
 
+    # TS: this is a work in progress!
+
     def run(self,
             counts,
             design,
             model=None,
+            dispersion_method="pooled",
             ref_group=None,
             contrasts=None,
-            dispersion_method="pooled",
+            outfile_prefix=None,
             sharing_mode="maximum",
-            fit_type="parametric",
-            outfile_prefix=None):
+            fit_type="parametric"):
 
         # create r objects
         r_counts = com.convert_to_r_dataframe(counts.table)
@@ -773,9 +832,7 @@ class DEExperiment_DESeq(DEExperiment):
 
         E.info("dispersion_method=%s, fit_type=%s, sharing_mode=%s" %
                (dispersion_method, fit_type, sharing_mode))
-        
-        print ""
-        
+
         # load DESeq
         R('''suppressMessages(library('DESeq'))''')
 
@@ -793,31 +850,7 @@ class DEExperiment_DESeq(DEExperiment):
         # estimate dispersion
         cds <- estimateDispersions(cds, method=dispersion_method,
                fitType=fit_type, sharingMode=sharing_mode)
-        
-        }''')
 
-        x = ('''{
-        # blind dispersion estimate for variance stabalising transform
-        if (dispersion_method != "blind"){
-        cds_blind <- estimateDispersions(cds, method='blind',
-                     fitType=fit_type, sharingMode=sharing_mode)
-        else {
-        cds_blind = cds
-        }
-        }
-
-        # perform variance stabilization for log2 fold changes
-        vsd = varianceStabilizingTransformation(cds_blind)
-
-        # perform binomial tests
-        combinations_array = combn(groups, 2)
-        number_of_combinations = dim(combinations_array)[2]
-        for (n in seq(1, numb)){
-          group_1 = combinations_array[1,n]
-          group_2 = combinations_array[2,n]
-          res = nbinomTest(cds, group1, group2)
-          print(head(res))
-        }
         }''')
 
         buildCountDataSet(r_counts, r_groups,  r_dispersion_method,
@@ -850,6 +883,7 @@ class DEResult_DEResult(DEResult):
             pass
 
         df_dict["test_id"] = self.table['observation']
+        df_dict["contrast"] = self.table['contrast']
         df_dict["control_mean"] = self.table['logCPM']
         df_dict["treatment_mean"] = self.table['logCPM']
         df_dict["control_std"] = (0,)*n_rows
@@ -883,15 +917,13 @@ class DEResult_DEResult(DEResult):
 class DEExperiment_DESeq2(DEExperiment):
     '''DEExperiment object to run DESeq2 on counts data'''
 
-    # TS this is far from ready to use!
-
     def run(self,
             counts,
             design,
             model=None,
-            ref_group=None,
             contrasts=None,
-            outfile_prefix=None):
+            outfile_prefix=None,
+            fdr=0.1):
 
         # create r objects
         r_counts = com.convert_to_r_dataframe(counts.table)
@@ -900,175 +932,227 @@ class DEExperiment_DESeq2(DEExperiment):
         r_has_pairs = ro.default_py2ri(design.has_pairs)
         r_has_replicates = ro.default_py2ri(design.has_replicates)
 
-        if model is not None:
+        if design.factors is not None:
             r_factors_df = com.convert_to_r_dataframe(design.factors)
         else:
             r_factors_df = ro.default_py2ri(False)
 
-        if ref_group is not None:
-            r_ref_group = ro.default_py2ri(ref_group)
-        else:
-            r_ref_group = ro.default_py2ri(design.groups[0])
-
         if contrasts is not None:
-            raise ValueError("cannot currently handle user defined contrasts")
-            r_contrasts = ro.default_py2ri(contrasts)
+            DEtype = "GLM"
 
-        E.info('running DESeq: groups=%s, pairs=%s, replicates=%s, pairs=%s' %
+            # if model not included, use the column names from design.factors
+            if not model:
+
+                if design.factors is not None:
+                    model = "~" + "+".join(design.factors.columns)
+                    model_terms = design.factors.columns.values.tolist()
+
+                else:
+                    E.warn("need to supply a full model or else "
+                           "additional columns in the design table "
+                           "which will be taken as the full model")
+            else:
+                model_terms = [x for x in re.split("[\+~ ]+", model)[1:]
+                               if x != "0"]
+
+            r_model = ro.default_py2ri(model)
+
+        else:
+            DEtype = "pairwise"
+
+        r_DEtype = ro.default_py2ri(DEtype)
+
+        E.info('running DESeq2: groups=%s, pairs=%s, replicates=%s, pairs=%s, '
+               'additional_factors:' %
                (design.groups, design.pairs, design.has_replicates,
                 design.has_pairs))
+        E.info(design.factors)
 
         # load DESeq
         R('''suppressMessages(library('DESeq2'))''')
 
         # build design matrix
-        buildDesign = R('''
-        function(counts, groups, factors_df){
+        if DEtype == "pairwise":
+            buildDesign = R('''
+              function(counts, groups){
 
-        if (factors_df != FALSE) {
-          design = factors_df }
+                design = data.frame(row.names = colnames(counts),
+                                    condition = groups)
+                return(design)}''')
 
-        else {
-          design = data.frame(row.names = colnames(counts),
-                              condition = groups) }
+            r_design = buildDesign(r_counts, r_groups)
 
-        return(design)
-        }''')
+            buildCountDataSet = R('''
+            function(counts, design){
 
-        r_design = buildDesign(r_counts, r_groups, r_factors_df)
+            for(column in colnames(design)){
+              design[[column]] = factor(design[[column]])
+            }
 
-        # TS - for debugging, remove from final version
-        E.info("design_table:")
-        E.info(r_design)
+            dds <- suppressMessages(DESeqDataSetFromMatrix(
+                     countData= counts,
+                     colData = design,
+                     design = ~condition))
 
-        print r_design
+            return(dds)
+            }''' % locals())
 
-        buildCountDataSet = R('''
-        function(counts, design){
-        #print(DESeq)
+            r_dds = buildCountDataSet(r_counts, r_design)
 
-        dds <- DESeqDataSetFromMatrix(
-          countData= counts,
-          colData = design,
-          design = colData)
+            performDifferentialTesting = R('''
+            function(dds){
+            dds = suppressMessages(DESeq(dds))
 
-        dds = DESeq(dds, test="LRT", full=~0+treatment+genotype+replicate,
-                    reduced=~0+treatment+genotype)
-        plotDispEsts(dds)
-        return(dds)
-        }''')
+            png("%(outfile_prefix)s_dispersion.png")
+            plotDispEsts(dds)
+            dev.off()
 
-        grdevices.png(file="/ifs/home/toms/ipython_notebook/dispersion.png",
-                      width=512, height=512)
-        r_dds = buildCountDataSet(r_counts, r_design)
-        grdevices.dev_off()
+            res = suppressMessages(results(dds, addMLE=TRUE))
+            res = as.data.frame(res)
 
-        print r_dds
-        return None
+            contrast = "condition"
+            res$contrast = contrast
+            contrast_levels = levels(dds@colData[[contrast]])
 
-    def null():
+            if(length(contrast_levels)==2){
+              res$control = contrast_levels[1]
+              res$treatment = contrast_levels[2]}
+            else{
+              res$control = contrast
+              res$treatment = contrast}
 
-        # fit model
-        fitModel = R('''
-        function(countsTable, design, has_replicates, dispersion){
+            return(res)}''' % locals())
 
-        if (has_replicates == TRUE) {
+            results = com.convert_robj(performDifferentialTesting(r_dds))
+            results['test_id'] = results.index
 
-            # estimate common dispersion
-            countsTable = estimateGLMCommonDisp( countsTable, design )
-
-            # estimate trended dispersion
-            countsTable <- estimateGLMTrendedDisp( countsTable, design)
-
-            # estimate tagwise dispersion
-            countsTable = estimateGLMTagwiseDisp( countsTable, design )
-
-            # fitting model to each tag
-            fit = glmFit( countsTable, design ) }
-
-        else {
-            # fitting model to each tag
-            fit = glmFit(countsTable, design, dispersion=dispersion) }
-
-        return(fit)}''')
-
-        r_fit = fitModel(r_countsTable, r_design,
-                         r_has_replicates, r_dispersion)
-
-        E.info("Conducting liklihood ratio tests")
-
-        # TS - if no contrasts are specified, perform LR test on all possible
-        # contrasts, otherwise, only perform the contrasts specified
-        # TS - Function definition should depend on whether contrasts
-        # are specified (keep the decision tree in python)
-        # TS - To do: add lrtTest definition for user-supplied contrasts
-
-        if contrasts is None:
-            lrtTest = R('''
-        function(fit, prefix, countsTable, design){
-        suppressMessages(library(reshape2))
-
-        lrt_table_list = NULL
-
-        for(coef in seq(2, length(colnames(design)))){
-          lrt = glmLRT(fit, coef = coef)
-
-
-          lrt_table = lrt$table
-          # need to include observations as a seperate column as there will
-          # be non-unique
-          lrt_table$observation = rownames(lrt_table)
-          rownames(lrt_table) <- NULL
-
-          lrt_table_list[[coef]] = lrt_table
-          lrt_table_list[[coef]]['contrast'] = colnames(design)[coef]
-
-          dt <- decideTestsDGE(lrt)
-          isDE <- as.logical(dt)
-          DEnames <- rownames(fit)[isDE]
-
-          contrast = gsub(":", "_interaction_", colnames(design)[coef])
-          png(paste0(contrast, "MAplot.png"))
-          plotSmear(lrt, de.tags=DEnames, cex=0.35, main=contrast)
-          abline(h=c(-1,1), col="blue")
-          dev.off()
-        }
-
-            lrt_final = do.call(rbind, lrt_table_list)
-
-        return(lrt_final)}''')
-
-            r_lrt_table = lrtTest(r_fit, outfile_prefix,
-                                  r_countsTable, r_design)
+        # DEtype == "GLM"
         else:
-            # TS - shouldn't get to here as error thrown earlier if
-            # contrasts is not None
-            pass
+            r_design = r_factors_df
 
-        E.info("Generating output - cpm table")
+            buildCountDataSet = R('''
+            function(counts, design, model){
 
-        # output cpm table
-        outputCPMTable = R('''function(countsTable, outfile_prefix){
-        suppressMessages(library(reshape2))
-        countsTable.cpm <- cpm(countsTable, normalized.lib.sizes=TRUE)
-        melted <- melt(countsTable.cpm)
-        names(melted) <- c("test_id", "sample", "ncpm")
+            for(column in colnames(design)){
+              design[[column]] = factor(design[[column]])
+            }
 
-        # melt columns are factors - convert to string for sorting
-        melted$test_id = levels(melted$test_id)[as.numeric(melted$test_id)]
-        melted$sample = levels(melted$sample)[as.numeric(melted$sample)]
+            full_model <- formula("%(model)s")
 
-        # sort cpm table by test_id and sample
-        sorted <- melted[with(melted, order(test_id, sample)),]
-        gz <- gzfile(paste0(outfile_prefix,"cpm.tsv.gz"), "w" )
-        write.table(sorted, file=gz, sep = "\t", row.names=FALSE, quote=FALSE)
-        close(gz)}''')
+            dds <- suppressMessages(DESeqDataSetFromMatrix(
+                     countData= counts,
+                     colData = design,
+                     design = full_model))
 
-        outputCPMTable(r_countsTable, outfile_prefix)
+            return(dds)
+            }''' % locals())
 
-        result = DEResult_edgeR(testTable=com.convert_robj(r_lrt_table))
+            r_dds = buildCountDataSet(r_counts, r_design, r_model)
 
-        return result
+            results = pandas.DataFrame()
+
+            n = 0
+            for contrast in contrasts:
+                assert contrast in design.factors.columns, "contrast not found in\
+                design factors columns"
+                model = [x for x in model_terms if x != contrast]
+                model = "~" + "+".join(model)
+
+                performDifferentialTesting = R('''
+                function(dds){
+
+                ddsLRT = suppressMessages(
+                  DESeq(dds, reduced=formula(%(model)s),betaPrior=TRUE))
+
+                png("%(outfile_prefix)s_dispersion.png")
+                plotDispEsts(ddsLRT)
+                dev.off()
+
+                contrast_levels = as.vector(levels(dds@colData$%(contrast)s))
+
+                for(levels in combn(contrast_levels, 2, simplify=F)){
+
+
+                    res = suppressMessages(results(ddsLRT, addMLE=TRUE,
+                                  contrast=c("%(contrast)s",
+                                  levels[1], levels[2])))
+
+                    png(paste0(c("%(outfile_prefix)s", "%(contrast)s",
+                               levels[1], levels[2], "MA.png"), collapse="_"))
+                    plotMA(res, alpha=%(fdr)s)
+                    dev.off()
+                }
+
+                res = as.data.frame(res)
+                res$contrast = "%(contrast)s"
+
+                if(length(contrast_levels)==2){
+                  tmp_df = data.frame(contrast_levels)
+                  res$control = tmp_df[1,1]
+                  res$treatment = tmp_df[2,1]
+                  }
+                else{
+                  res$control = "%(contrast)s"
+                  res$treatment = "%(contrast)s"}
+
+                return(res)}''' % locals())
+
+                tmp_results = com.convert_robj(performDifferentialTesting(r_dds))
+                tmp_results['test_id'] = tmp_results.index
+
+                # need to set index to sequence of ints to avoid duplications
+                n2 = n+tmp_results.shape[0]
+                tmp_results.index = range(n, n2)
+                n = n2
+
+                results = results.append(tmp_results)
+
+        final_result = DEResult_DESeq2(testTable=results)
+
+        return final_result
+
+
+class DEResult_DESeq2(DEResult):
+
+    def getResults(self, fdr):
+        ''' post-process test results table into generic results output '''
+
+        E.info("Generating output - results table")
+
+        df_dict = collections.defaultdict()
+
+        n_rows = self.table.shape[0]
+
+        df_dict["treatment_name"] = self.table['control']
+        df_dict["control_name"] = self.table['treatment']
+        df_dict["test_id"] = self.table['test_id']
+        df_dict["contrast"] = self.table['contrast']
+        df_dict["control_mean"] = self.table['baseMean']
+        df_dict["treatment_mean"] = self.table['baseMean']
+        df_dict["control_std"] = (0,)*n_rows
+        df_dict["treatment_std"] = (0,)*n_rows
+        df_dict["p_value"] = self.table['pvalue']
+        df_dict["p_value_adj"] = adjustPvalues(self.table['pvalue'])
+        df_dict["significant"] = pvaluesToSignficant(
+            df_dict["p_value_adj"], fdr)
+        df_dict["l2fold"] = self.table['lfcMLE']
+
+        # Transformed l2fold is the shrunken values
+        df_dict["transformed_l2fold"] = self.table['log2FoldChange']
+
+        # TS: check what happens when no fold change is available
+        # TS: may need an if/else in list comprehension. Raise E.warn too?
+        df_dict["fold"] = [math.pow(2, float(x)) for
+                           x in self.table['log2FoldChange']]
+
+        # set all status values to "OK"
+        # TS: again, may need an if/else to check...
+        df_dict["status"] = ("OK",)*n_rows
+
+        self.table = pandas.DataFrame(df_dict)
+        # causes errors if multiple instance of same test_id exist, for example
+        # if multiple constrasts have been tested
+        # self.table.set_index("test_id", inplace=True)
 
 
 ###############################################################################
