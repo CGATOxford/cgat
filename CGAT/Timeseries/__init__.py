@@ -30,7 +30,7 @@ import random
 import cmetrics as c2m
 
 
-def get_r_path(self):
+def get_r_path():
     """return path of R support functions.
     """
     return os.path.dirname(__file__)

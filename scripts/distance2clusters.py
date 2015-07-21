@@ -157,9 +157,7 @@ parses command line options in sys.argv, unless *argv* is given.
     parser.set_defaults(cutHeight=0,
                         conditions=None,
                         split=False,
-                        cluster_size=30,
-                        rpath=None)
-
+                        cluster_size=30)
 
     if options.task == "cluster":
 
@@ -190,8 +188,7 @@ parses command line options in sys.argv, unless *argv* is given.
         cluster_file = files[0]
         data_frame = TS.clusterPCA(infile=infile,
                                    cluster_file=cluster_file,
-                                   image_dir=options.images_dir,
-                                   rpath=options.rpath)
+                                   image_dir=options.images_dir)
 
     else:
         pass
