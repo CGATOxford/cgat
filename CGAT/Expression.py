@@ -523,8 +523,8 @@ class DEResult_TTest(DEResult):
 
         # note: the transformed log2 fold change is not transformed for TTest
         self.table["transformed_l2fold"] = self.table["l2fold"]
-        self.table["contrast"] = self.table['control_name'] + "_vs_" + \
-                                 self.table['treatment_name']
+        self.table["contrast"] = "_vs_".join((self.table['control_name'],
+                                              self.table['treatment_name']))
 
 
 class DEExperiment_edgeR(DEExperiment):
