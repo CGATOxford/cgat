@@ -43,6 +43,7 @@ import CGAT.IOTools as IOTools
 import pandas as pd
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
+from rpy2.robjects import pandas2ri
 import pandas.rpy.common as com
 import numpy as np
 import numpy.ma as ma
@@ -68,6 +69,9 @@ class Counts(object):
         # e.g counts = Counts(pd.read_csv(...))
         self.table = table
         assert self.table.shape, "Counts table is empty"
+
+    def clone(self):
+        return copy.copy(self)
 
     def restrict(self, design):
         ''' remove samples not in design '''
@@ -116,7 +120,7 @@ class Counts(object):
         # percentile filtering
         percentile = float(percentile_rowsums) / 100.0
         sum_counts = self.table.sum(1)
-        take = sum_counts > sum_counts.quantile(percentile)
+        take = sum_counts >= sum_counts.quantile(percentile)
         E.info("percentile filtering at level %f: keep=%i, discard=%i" %
                (percentile_rowsums,
                 sum(take),
@@ -177,20 +181,155 @@ class Counts(object):
             raise NotImplementedError(
                 "normalization method '%s' not implemented" % method)
 
-        self.table = normed
         # make sure we did not lose any rows or columns
         assert normed.shape == self.table.shape
 
-    def sort(self, sort_columns, reset_index=True):
-        ''' sort counts table by columns supplied and reset '''
-        index = range(0, len(self.table.index))
-        self.table = self.table.sort(columns=sort_columns)
-        if reset_index:
-            self.table.set_index(index, inplace=True)
+        self.table = normed
 
-    def log(self, base=2, pseudocount=1):
+    def sort(self, sort_columns, inplace=True):
+        ''' sort counts table by columns'''
+
+        def sort_table(counts):
+            counts.table = counts.table.sort(columns=sort_columns)
+
+        if inplace:
+            sort_table(self)
+            return None
+
+        else:
+            tmp_counts = self.clone()
+            sort_table(tmp_counts)
+            return tmp_counts
+
+    def log(self, base=2, pseudocount=1, inplace=True):
         ''' log transform the counts table '''
-        self.table = np.log(self.table + pseudocount)
+
+        if inplace:
+            self.table = np.log(self.table + pseudocount)
+            return None
+
+        else:
+            tmp_counts = self.clone()
+            tmp_counts.table = np.log(tmp_counts.table + pseudocount)
+            return tmp_counts
+
+    def transform(self, method="vst", inplace=True):
+        '''
+        perform transformation on counts table
+        current methods are:
+         - deseq2 variance stabalising transformation
+         - deseq rlog transformation
+        '''
+
+        assert method in ["vst", "rlog"], ("method must be one of"
+                                           "[vst, rlog]")
+
+        method2function = {"vst": "varianceStabilizingTransformation",
+                           "rlog": "rlog"}
+
+        t_function = method2function[method]
+
+        transform = R('''
+        function(df){
+
+        suppressMessages(library('DESeq2'))
+
+        design = data.frame(row.names = colnames(df),
+                            condition = seq(1, length(colnames(df))))
+
+        dds <- suppressMessages(DESeqDataSetFromMatrix(
+                 countData= df, colData = design, design = ~condition))
+
+        transformed <- suppressMessages(%(t_function)s(dds))
+        transformed_df <- as.data.frame(assay(transformed))
+
+        return(transformed_df)
+        }''' % locals())
+
+        r_counts = com.convert_to_r_dataframe(self.table)
+        r_df = com.convert_robj(transform(r_counts))
+        # losing rownames for some reason during the conversion?!
+        r_df.index = self.table.index
+
+        if inplace:
+            self.table = com.convert_robj(r_df)
+            # R replaces "-" in column names with ".". Revert back!
+            self.table.columns = [x.replace(".", "-")
+                                  for x in self.table.columns]
+        else:
+            tmp_counts = self.clone()
+            tmp_counts.table = com.convert_robj(r_df)
+            tmp_counts.table.columns = [x.replace(".", "-")
+                                        for x in tmp_counts.table.columns]
+            return tmp_counts
+
+    def plotTransformations(self, plot_filename="transformations.png"):
+        '''perform transformations and plot to compare'''
+
+        log = self.log(inplace=False)
+        vst = self.transform(inplace=False, method="vst")
+        rlog = self.transform(inplace=False, method="rlog")
+
+        def counts2meanSdPlot(df):
+            ''' takes a counts object and returns a dataframe with standard
+            deviation vs. average expression'''
+
+            mean_sd_df = pd.DataFrame({"mean": df.table.apply(np.mean, axis=1),
+                                       "std": df.table.apply(np.std, axis=1)})
+
+            mean_sd_df = mean_sd_df[mean_sd_df["mean"] > 0]
+
+            mean_sd_df.sort("mean", inplace=True)
+            return mean_sd_df
+
+        plotTransformations = R('''
+        function(log_df, rlog_df, vst_df, plot_outfile){
+
+          library(ggplot2)
+          library("gridExtra")
+
+          plotMeanSd = function(df, ymax, title){
+            df$index <- as.numeric(row.names(df))
+            df$bin = .bincode(df$index, seq(1,max(df$index),1000))
+
+            l_txt = element_text(size=20)
+            m_txt = element_text(size=15)
+
+            p = ggplot(df, aes(x=index, y=std)) +
+                geom_point(alpha=0.1)  +
+                stat_summary(mapping=aes(x=bin*1000, y=std),
+                             col="red", geom = "point",
+                             fun.y = "median", size=5) +
+            theme_minimal() +
+            ylim(0, ymax) +
+            xlab("index") + ylab("sd") +
+            theme(axis.text.x=element_text(size=15, angle=90,
+                                           hjust=1, vjust=0.5),
+                  axis.text.y=m_txt,
+                  axis.title.y=m_txt,
+                  title=m_txt) +
+            ggtitle(title)
+
+            return (p)
+        }
+
+        max_sd = max(log_df$std, rlog_df$std, vst_df$std)
+
+        p1 = plotMeanSd(log_df, max_sd, "log")
+        p2 = plotMeanSd(rlog_df, max_sd, "rlog")
+        p3 = plotMeanSd(vst_df, max_sd, "vst")
+
+        png("%(plot_filename)s",
+            width=10, height=10, units="in", res=400, pointsize=1)
+        grid.arrange(p1, p2, p3, ncol=3)
+        dev.off()
+        }''' % locals())
+
+        mean_sd_log_df = counts2meanSdPlot(log)
+        mean_sd_vst_df = counts2meanSdPlot(vst)
+        mean_sd_rlog_df = counts2meanSdPlot(rlog)
+
+        plotTransformations(mean_sd_log_df, mean_sd_rlog_df, mean_sd_vst_df)
 
     def plotDendogram(self, plot_filename=None,
                       distance_method="euclidean",
@@ -210,7 +349,8 @@ class Counts(object):
         makeDendogram(r_counts)
 
     def plotPCA(self, variance_plot_filename=None, pca_plot_filename=None,
-                x_axis="PC1", y_axis="PC2"):
+                x_axis="PC1", y_axis="PC2", colour="id_1",
+                shape="id_2"):
         ''' use the prcomp function in base R to perform principal components
         analysis '''
 
@@ -257,10 +397,9 @@ class Counts(object):
           PCs_df$id_3 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 3)
 
           p_pca = ggplot(PCs_df, aes(x=%(x_axis)s, y=%(y_axis)s)) +
-          geom_point(aes(shape=id_3,
-                         colour=interaction(id_1, id_2))) +
+          geom_point(aes(shape=%(shape)s, colour=%(colour)s)) +
           scale_colour_discrete(name=guide_legend(title='Sample')) +
-          scale_shape_discrete(name=guide_legend(title='Replicate')) +
+          scale_shape_discrete(name=guide_legend(title='')) +
           xlab(paste0('PC%(pc_number_1)i (Variance explained = ' ,
                        round(100 * variance_explained[%(pc_number_1)i], 1),
                        '%%)')) +

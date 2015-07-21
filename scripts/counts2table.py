@@ -173,9 +173,7 @@ def main(argv=None):
                       help="output filename [default=%default].")
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices=(
-                          "deseq", "edger", "deseq2",
-                          "ttest", "mock"),
+                      choices=("edger", "deseq2", "mock"),
                       help="differential expression method to apply "
                       "[default=%default].")
 
@@ -195,19 +193,13 @@ def main(argv=None):
                       choices=("maximum", "fit-only", "gene-est-only"),
                       help="deseq sharing mode [default=%default].")
 
-    parser.add_option(
-        "--edger-dispersion",
-        dest="edger_dispersion", type="float",
-        help="dispersion value for edgeR if there are no replicates "
-        "[default=%default].")
+    parser.add_option("--edger-dispersion",
+                      dest="edger_dispersion", type="float",
+                      help="dispersion value for edgeR if there are no "
+                      "replicates [default=%default].")
 
     parser.add_option("-f", "--fdr", dest="fdr", type="float",
                       help="fdr to apply [default=%default].")
-
-    parser.add_option("-p", "--pseudocounts", dest="pseudo_counts",
-                      type="float",
-                      help="pseudocounts to add for mock analyis "
-                      "[default=%default].")
 
     parser.add_option("-R", "--output-R-code", dest="save_r_environment",
                       type="string",
@@ -236,17 +228,6 @@ def main(argv=None):
                       help="remove percent of rows with "
                       "lowest total counts [default=%default].")
 
-    parser.add_option("--deseq2-design-formula",
-                      dest="model",
-                      type="string",
-                      help="Design formula for DESeq2")
-
-    parser.add_option("--deseq2-contrasts",
-                      dest="contrasts",
-                      type="string",
-                      help=("contrasts for post-hoc testing writen"
-                            " variable:control:treatment,..."))
-
     parser.add_option("--model",
                       dest="model",
                       type="string",
@@ -255,14 +236,15 @@ def main(argv=None):
     parser.add_option("--contrasts",
                       dest="contrasts",
                       action="append",
-                      help=("contrasts for post-hoc testing writen"
-                            "-11000, 0-1100, ..."))
+                      help=("contrasts for post-hoc testing writen as comma "
+                            "seperated list `condition,replicate` etc"))
+
     parser.set_defaults(
         input_filename_tags="-",
         input_filename_result=None,
         input_filename_design=None,
         output_filename=sys.stdout,
-        method="deseq",
+        method="deseq2",
         fdr=0.1,
         deseq_dispersion_method="pooled",
         deseq_fit_type="parametric",
@@ -270,7 +252,6 @@ def main(argv=None):
         edger_dispersion=0.4,
         ref_group=None,
         save_r_environment=None,
-        pseudo_counts=0,
         filter_min_counts_per_row=None,
         filter_min_counts_per_sample=None,
         filter_percentile_rowsums=None,
@@ -280,38 +261,26 @@ def main(argv=None):
         spike_foldchange_bin_width=0.5,
         spike_max_counts_per_bin=50,
         model=None,
-        contrasts=None
+        contrasts=None,
+        output_filename_pattern=None
     )
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
-    # TS: these lines were copied over from runExpression.py
-    # they throw an error in Travis as P.getTempfile() doesn't work on Travis
-    # lines replace by if/else below to parse from stdin or flat file
-    #
-    # if options.input_filename_tags == "-":
-    #     fh = P.getTempFile()
-    #     fh.write("".join([x for x in options.stdin]))
-    #     fh.close()
-    #     options.input_filename_tags = fh.name
-    # else:
-    #     fh = None
-    #
-    # assert options.input_filename_tags and os.path.exists(
-    #     options.input_filename_tags)
+    #  assert options.input_filename_design and os.path.exists(
+    #    options.input_filename_design)
 
-    assert options.input_filename_design and os.path.exists(
-        options.input_filename_design)
+    # assert options.output_filename_pattern, "specify --output-filename-pattern"
 
     # create Counts object
     if options.input_filename_tags == "-":
         counts = Counts.Counts(pd.io.parsers.read_csv(
             sys.stdin, sep="\t", index_col=0, comment="#"))
     else:
-        counts = Counts.Counts(
+        counts = Counts.Counts(pd.io.parsers.read_csv(
             IOTools.openFile(options.input_filename_tags, "r"),
-            sep="\t", index_col=0, comment="#")
+            sep="\t", index_col=0, comment="#"))
 
     # create Design object
     design = Expression.ExpDesign(
@@ -345,100 +314,47 @@ def main(argv=None):
     design.revalidate(counts, options.model)
 
     # set up experiment and run tests
-    if options.method == "ttest":
-        outfile_prefix = "ttest_"
+    outfile_prefix = options.output_filename_pattern + options.method
 
+    if options.method == "ttest":
         experiment = Expression.DEExperiment_TTest()
         results = experiment.run(counts, design)
 
     elif options.method == "edger":
-        outfile_prefix = "edger_"
         experiment = Expression.DEExperiment_edgeR()
-        results = experiment.run(counts, design,
+        results = experiment.run(counts,
+                                 design,
                                  model=options.model,
-                                 outfile_prefix=outfile_prefix,
-                                 contrasts=options.contrasts)
+                                 disperion=options.edger_dispersion,
+                                 ref_group=options.ref_group,
+                                 contrasts=options.contrasts,
+                                 outfile_prefix=outfile_prefix)
 
-    results.getResults(fdr=0.01)
+    elif options.method == "deseq2":
+        experiment = Expression.DEExperiment_DESeq2()
+        results = experiment.run(counts,
+                                 design,
+                                 contrasts=options.contrasts,
+                                 outfile_prefix=outfile_prefix,
+                                 fdr=options.fdr)
+
+    results.getResults(fdr=options.fdr)
 
     results.summariseDEResults()
 
-    # MAplot function currently only available for ttest results object
-    if options.method == "ttest":
-        results.plotMAplot(design, outfile_prefix=outfile_prefix)
+    for contrast in set(results.table['contrast']):
+        results.plotVolcano(contrast, outfile_prefix=outfile_prefix)
+        results.plotMA(contrast, outfile_prefix=outfile_prefix)
 
-    results.table.to_csv(sys.stdout, sep="\t", na_rep="NA")
-    # results.table.to_csv(outfile_prefix + "results.tsv",
-    # sep="\t", na_rep="NA")
+    results.table.to_csv(sys.stdout, sep="\t", na_rep="NA", index=False)
 
     # write out summary tables for each comparison/contrast
-    E.info(results.Summary)
     for test_group in results.Summary.keys():
-        outf = IOTools.openFile(outfile_prefix + test_group +
-                                "_summary.tsv", "w")
+        outf = IOTools.openFile("_".join(
+            [outfile_prefix, test_group, "summary.tsv"]), "w")
         outf.write("category\tcounts\n%s\n"
                    % results.Summary[test_group].asTable())
         outf.close()
-
-    '''try:
-        if options.method == "deseq2":
-            Expression.runDESeq2(
-                outfile=options.output_filename,
-                outfile_prefix=options.output_filename_pattern,
-                fdr=options.fdr,
-                ref_group=options.ref_group,
-                model=options.model,
-                contrasts=options.contrasts,
-            )
-
-        elif options.method == "deseq":
-            Expression.runDESeq(
-                outfile=options.output_filename,
-                outfile_prefix=options.output_filename_pattern,
-                fdr=options.fdr,
-                dispersion_method=options.deseq_dispersion_method,
-                fit_type=options.deseq_fit_type,
-                sharing_mode=options.deseq_sharing_mode,
-                ref_group=options.ref_group,
-            )
-
-        elif options.method == "edger":
-            Expression.runEdgeRPandas(
-                counts=counts,
-                design_table=design,
-                outfile=options.output_filename,
-                outfile_prefix=options.output_filename_pattern,
-                fdr=options.fdr,
-                ref_group=options.ref_group,
-                dispersion=options.edger_dispersion)
-
-        elif options.method == "mock":
-            Expression.runMockAnalysis(
-                outfile=options.output_filename,
-                outfile_prefix=options.output_filename_pattern,
-                ref_group=options.ref_group,
-                pseudo_counts=options.pseudo_counts,
-            )
-
-        elif options.method == "ttest":
-            Expression.runTTestPandas(
-                counts_table=counts,
-                design_table=design,
-                outfile=options.output_filename,
-                outfile_prefix=options.output_filename_pattern,
-                fdr=options.fdr)
-
-    except rpy2.rinterface.RRuntimeError:
-        if options.save_r_environment:
-            E.info("saving R image to %s" % options.save_r_environment)
-            R['save.image'](options.save_r_environment)
-
-    if options.save_r_environment:
-        R['save.image'](options.save_r_environment)
-    '''
-
-    # if fh and os.path.exists(fh.name):
-    #    os.unlink(fh.name)
 
     E.Stop()
 
