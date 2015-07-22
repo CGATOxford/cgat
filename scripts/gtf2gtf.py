@@ -65,6 +65,15 @@ appear consecutively within the file. This can be achevied using
 ``--method=sort``.
 
 
+``genes-to-unique-chunks```
+    Divide the complete length of a gene up into chunks that represent 
+    ranges of bases that are all present in the same set of transcripts.
+    E.g. for two overlapping exons an entry will be output representing
+    the overlap and a seperate entry each for the sequences only present
+    in one. Ranges which are between the first TSS and last TTS but not
+    present in any transcript (i.e. merged introns) are also output.
+    Useful for DEXSeq like splicing analysis
+
 ``find-retained-introns``
     Finds intervals within a transcript that represent retained-introns,
     here a retained intron is considered to be an intron in one transcript
@@ -325,6 +334,29 @@ def find_retained_introns(gene):
             yield entry
 
 
+def gene_to_blocks(gene):
+    '''Given a bundle of all exons in a gene, create a seperate exon
+    for each unqiue part of a exon, as well as one for introns. '''
+
+    exons = [(e.start, e.end)
+             for e in gene if e.feature == "exon"]
+
+    exons = list(set(sum(exons, ())))
+    exons.sort()
+
+    entry = GTF.Entry()
+    entry = entry.copy(gene[0])
+    entry.transcript_id = "merged"
+    entry.feature = "exon"
+    entry.source = "merged"
+
+    for i in range(len(exons)-1):
+        entry.start = exons[i]
+        entry.end = exons[i+1]
+        entry.attributes["exon_number"] = i + 1
+        yield entry
+
+
 def main(argv=None):
 
     if not argv:
@@ -456,6 +488,7 @@ def main(argv=None):
                           "exons2introns",
                           "filter",
                           "find-retained-introns",
+                          "genes-to-unique-chunks",
                           "intersect-transcripts",
                           "join-exons",
                           "merge-exons",
@@ -1341,6 +1374,15 @@ def main(argv=None):
                 nfeatures += 1
             if found_any:
                 noutput += 1
+
+    elif options.method == "genes-to-unique-chunks":
+
+        for gene in GTF.flat_gene_iterator(GTF.iterator(options.stdin)):
+            ninput += 1
+            for exon in gene_to_blocks(gene):
+                options.stdout.write("%s\n" % str(exon))
+                nfeatures += 1
+            noutput += 1
 
     else:
         raise ValueError("unknown method '%s'" % options.method)
