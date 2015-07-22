@@ -1,0 +1,11 @@
+chr11	merged	exon	62566011	62566047	.	-	.	gene_id "ENSG00000162231"; transcript_id "merged"; exon_number 1; oId "ENST00000526163"; tss_id "TSS20009"; class_code "="; gene_name "NXF1"; nearest_ref "ENST00000526163";
+chr11	merged	exon	62566048	62566078	.	-	.	gene_id "ENSG00000162231"; transcript_id "merged"; exon_number 2; oId "ENST00000526163"; tss_id "TSS20009"; class_code "="; gene_name "NXF1"; nearest_ref "ENST00000526163";
+chr11	merged	exon	62566079	62566316	.	-	.	gene_id "ENSG00000162231"; transcript_id "merged"; exon_number 3; oId "ENST00000526163"; tss_id "TSS20009"; class_code "="; gene_name "NXF1"; nearest_ref "ENST00000526163";
+chr11	merged	exon	62566317	62566728	.	-	.	gene_id "ENSG00000162231"; transcript_id "merged"; exon_number 4; oId "ENST00000526163"; tss_id "TSS20009"; class_code "="; gene_name "NXF1"; nearest_ref "ENST00000526163";
+chr11	merged	exon	62566729	62567584	.	-	.	gene_id "ENSG00000162231"; transcript_id "merged"; exon_number 5; oId "ENST00000526163"; tss_id "TSS20009"; class_code "="; gene_name "NXF1"; nearest_ref "ENST00000526163";
+chr11	merged	exon	62567585	62567848	.	-	.	gene_id "ENSG00000162231"; transcript_id "merged"; exon_number 6; oId "ENST00000526163"; tss_id "TSS20009"; class_code "="; gene_name "NXF1"; nearest_ref "ENST00000526163";
+chr11	merged	exon	62567849	62567958	.	-	.	gene_id "ENSG00000162231"; transcript_id "merged"; exon_number 7; oId "ENST00000526163"; tss_id "TSS20009"; class_code "="; gene_name "NXF1"; nearest_ref "ENST00000526163";
+chr11	merged	exon	62567959	62568565	.	-	.	gene_id "ENSG00000162231"; transcript_id "merged"; exon_number 8; oId "ENST00000526163"; tss_id "TSS20009"; class_code "="; gene_name "NXF1"; nearest_ref "ENST00000526163";
+chr11	merged	exon	62568566	62568673	.	-	.	gene_id "ENSG00000162231"; transcript_id "merged"; exon_number 9; oId "ENST00000526163"; tss_id "TSS20009"; class_code "="; gene_name "NXF1"; nearest_ref "ENST00000526163";
+chr11	merged	exon	62568674	62568800	.	-	.	gene_id "ENSG00000162231"; transcript_id "merged"; exon_number 10; oId "ENST00000526163"; tss_id "TSS20009"; class_code "="; gene_name "NXF1"; nearest_ref "ENST00000526163";
+chr11	merged	exon	62568801	62568889	.	-	.	gene_id "ENSG00000162231"; transcript_id "merged"; exon_number 11; oId "ENST00000526163"; tss_id "TSS20009"; class_code "="; gene_name "NXF1"; nearest_ref "ENST00000526163";
