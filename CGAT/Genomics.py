@@ -59,7 +59,7 @@ global_translator = string.maketrans("ACGTacgt", "TGCAtgca")
 
 
 def complement(s):
-    """complement a sequence."""
+    """return reverse complement a sequence."""
     return string.translate(s[:], global_translator)[::-1]
 
 

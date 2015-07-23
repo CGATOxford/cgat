@@ -19,7 +19,7 @@ pandas>=0.12.0
 pysam>=0.8.3
 rdflib>=0.4.1
 psycopg2>=2.5
-rpy2>=2.4,<2.5
+rpy2>=2.6
 ruffus>=2.4
 scipy>=0.11
 #https://bitbucket.org/james_taylor/bx-python/get/tip.tar.bz2
