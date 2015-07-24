@@ -40,13 +40,29 @@ Code
 '''
 import os
 import glob
+import tempfile
+import shutil
 import CGAT.Experiment as E
 import CGAT.Fastq as Fastq
 import CGAT.IOTools as IOTools
 
 
-def peek(sra, outdir):
-    ''' returns the full file names for all files which will be extracted'''
+def peek(sra, outdir=None):
+    """return the full file names for all files which will be extracted
+
+    Parameters:
+
+    outdir : path
+        perform extraction in outdir. If outdir is None, the extraction
+        will take place in a temporary directory, which will be deleted
+        afterwards.
+    """
+    
+    if outdir is None:
+        workdir = tempfile.mkdtemp()
+    else:
+        workdir = outdir
+
     # --split-files creates files called prefix_#.fastq.gz,
     # where # is the read number.
     # If file cotains paired end data:
@@ -59,8 +75,8 @@ def peek(sra, outdir):
     #                   You want files 1 and 3.
 
     E.run("""fastq-dump --split-files --gzip -X 1000
-                 --outdir %(outdir)s %(sra)s""" % locals())
-    f = sorted(glob.glob(os.path.join(outdir, "*.fastq.gz")))
+                 --outdir %(workdir)s %(sra)s""" % locals())
+    f = sorted(glob.glob(os.path.join(workdir, "*.fastq.gz")))
     ff = [os.path.basename(x) for x in f]
 
     if len(f) == 1:
@@ -75,12 +91,15 @@ def peek(sra, outdir):
 
     elif len(f) == 3:
         if ff[2].endswith("_3.fastq.gz"):
-            f = glob.glob(os.path.join(outdir, "*_[13].fastq.gz"))
+            f = glob.glob(os.path.join(workdir, "*_[13].fastq.gz"))
         else:
-            f = glob.glob(os.path.join(outdir, "*_[13].fastq.gz"))
+            f = glob.glob(os.path.join(workdir, "*_[13].fastq.gz"))
 
     # check format of fastqs in .sra
     fastq_format = Fastq.guessFormat(IOTools.openFile(f[0], "r"), raises=False)
+
+    if outdir is None:
+        shutil.rmtree(workdir)
 
     return f, fastq_format
 
