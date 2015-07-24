@@ -1,5 +1,4 @@
-'''
-fastqs2fastq.py - merge reads in fastq files
+'''fastqs2fastq.py - merge reads in fastq files
 ============================================
 
 :Author: Andreas Heger
@@ -10,8 +9,8 @@ fastqs2fastq.py - merge reads in fastq files
 Purpose
 -------
 
-This script takes two paired-ended fastq files and outputs a single fastq file
-in which reads have merged.
+This script takes two paired-ended fastq files and outputs a single
+fastq file in which reads have merged.
 
 The two files must be sorted by read identifier.
 
@@ -27,8 +26,8 @@ Example::
           --method=join
           > join.fastq
 
-In this example we take a pair of fastq files, join the reads and save the
-output in :file:`join.fastq`.
+In this example we take a pair of fastq files, join the reads and save
+the output in :file:`join.fastq`.
 
 Type::
 
