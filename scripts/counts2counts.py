@@ -387,12 +387,10 @@ def main(argv=None):
                 options.input_filename_design)
 
             # create Design object
-            design = Expression.ExpDesign(
+            design = Expression.ExperimentalDesign(
                 pd.read_csv(
                     IOTools.openFile(options.input_filename_design, "r"),
                     sep="\t", index_col=0, comment="#"))
-
-            design.getAttributes()
 
     if options.method == "filter":
 
