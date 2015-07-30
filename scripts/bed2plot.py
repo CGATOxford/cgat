@@ -108,7 +108,7 @@ def main(argv=sys.argv):
     )
 
     # add common options (-h/--help, ...) and parse command line
-    (options, args) = E.Start(parser, argv=argv)
+    (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
     igv_process = None
     if options.new_instance:
@@ -158,7 +158,7 @@ def main(argv=sys.argv):
 
             igv.go("%s:%i-%i" % (bed.contig, start, end))
 
-            fn = "%s.%s" % (name, options.format)
+            fn = E.getOutputFile("%s.%s" % (name, options.format))
             E.info("writing snapshot to '%s'" % fn)
             igv.save(fn)
 
