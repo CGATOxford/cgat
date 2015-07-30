@@ -51,6 +51,12 @@ html: _static/toolmap.svg
 	@echo
 	@echo "Build finished. The HTML pages are in _build/html."
 
+coverage:
+	rm -f ../{CGAT,CGATPipelines,scripts}/*.pyc
+	$(SPHINXBUILD) -b coverage $(ALLSPHINXOPTS) _build/coverage
+	@echo
+	@echo "Build finished. The coverage pages are in _build/coverage."
+
 dirhtml:
 	$(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) _build/dirhtml
 	@echo
