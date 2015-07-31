@@ -104,7 +104,9 @@ except ImportError:
     import IOTools
     import Stats
 
-grdevices = importr('grDevices')
+# AH: Only do this on demand, module might not be
+#     be able to be imported if there are any issues.
+# grdevices = importr('grDevices')
 
 
 def runDETest(raw_DataFrame,
@@ -170,19 +172,95 @@ def makeMAPlot(resultsTable, title, outfile):
     plotter(r_resultsTable, title, outfile)
 
 
-class ExpDesign(object):
-    '''base class for design objects'''
+class ExperimentalDesign(object):
+    """Objects representing experimental designs.
 
-    def __init__(self, table):
+    This class takes an experimental design in tabular
+    form and exports several convenience functions and
+    attributes.
+
+    `filename_or_table` can be a filename of a tab-separated table
+    with the following columns.
+
+    track
+       the sample name
+
+    include
+       whether or not this sample should be included
+       in the design
+    
+    group
+       a label grouping several samples into a group
+    
+    pair
+       for paired tests, a numeric identifier linking
+       samples that are paired.
+    
+    An example of an experimtal design with two groups and paired
+    samples is below::
+
+        track   include group     pair
+        sample1 1       treatment 1
+        sample2 1       treatment 2
+        sample3 1       control   1
+        sample4 1       control   2
+
+    When providing `filename_or_table`, the `include` column is used
+    to directly filter the design to remove any non-included samples.
+
+    Additional columns will be added as factors to the design.
+
+    Alternatively, `filename_or_table` can be a pandas DataFrame with
+    sample names as row index and the appropriate columns.
+
+    Attributes
+    -----------
+
+    table : pandas DataFrame
+       dataframe object describing the design
+    group : list
+       list of groups in the design
+    conditions : list
+       group for each sample
+    pairs : list
+       pair status for each sample
+    samples: list
+       sample names
+    factors: list
+       factors for each sample
+    has_replicates : bool
+       True if at least one group has multiple samples
+    has_pairs : bool
+       True if design is a paired design
+
+    """
+
+    def __init__(self, filename_or_table):
         # read in table in the constructor for ExpDesign
         # e.g design = ExpDesign(pd.read_csv(...))
-        self.table = table
+
+        if isinstance(filename_or_table, str):
+            self.table = pandas.read_csv(filename_or_table, sep="\t",
+                                         index_col=0)
+        else:
+            self.table = filename_or_table
+
         assert self.table.shape, "design table is empty"
 
-    def getAttributes(self):
-        ''' parse design file and identify design attributes '''
+        # parse the design table. Users probably expect this
+        # to happen once data is uploaded.
+        self._update()
 
+    def _update(self):
+        """parse design file and fill class attributes.
+
+        Call this function whenever self.table changes.
+        """
+
+        # remove all entries that should not be included
         self.table = self.table[self.table["include"] != 0]
+
+        # define attributes
         self.conditions = self.table['group'].tolist()
         self.pairs = self.table['pair'].tolist()
         # TS - use OrderedDict to retain order in unique
@@ -215,7 +293,7 @@ class ExpDesign(object):
             self.has_pairs = False
 
     def validate(self, counts, model=None):
-
+        
         missing = set(self.samples).difference(set(counts.table.columns))
         if len(missing) > 0:
             raise ValueError("following samples in design table are missing"
@@ -254,31 +332,47 @@ class ExpDesign(object):
         if len(set(self.samples).symmetric_difference(
                 set(counts.table.columns))) > 0:
             self.restrict(counts)
-            self.getAttributes()
+            self._update()
             self.validate(counts, model)
 
         else:
             pass
 
     def firstPairOnly(self):
-        ''' restrict the design table to the first pair only
-        if unpaired will retain whole design table'''
+        '''restrict the design table to the first pair only.
+
+        If unpaired will retain whole design table
+        '''
 
         if not self.pairs:
             self.pairs = self.table['pair'].tolist()
         self.table = self.table.ix[self.table['pair'] == min(self.pairs), ]
 
-    def mapGroups(self):
-        '''extract groups from the design table and return dictionaries
-        mapping groups to tracks'''
+    def getSamplesInGroup(self, group):
+        """return list of sample names belonging to group."""
+        if group not in self.groups:
+            raise KeyError("group '%s' not present")
+        return self.table[self.table["group"] == group].index.tolist()
 
+    def getGroupForSample(self, sample):
+        """return group a sample belongs to"""
+        return self.table.loc[sample]["group"]
+
+    def getGroups2Samples(self):
+        """return a dictionary mapping a group to samples within the group.
+
+        Returns
+        -------
+        dict
+            with groups as keys and list of samples within a group as values.
+        
+        """
         groups_to_tracks = {}
 
         for group in self.groups:
             match_group = (self.table['group'] == group).tolist()
-            tmp_design = self.table.iloc[match_group, ]
-            groups_to_tracks[group] = tmp_design.index.tolist()
-
+            subset = self.table.iloc[match_group, ]
+            groups_to_tracks[group] = subset.index.tolist()
         return groups_to_tracks
 
     def mapGroupsSuffix(self, shuffle_suffix, keep_suffix):
@@ -305,20 +399,6 @@ class ExpDesign(object):
                 [x + y for x in tmp_design.index.tolist() for y in keep_suffix])
 
         return groups_to_keep_tracks, groups_to_spike_tracks
-
-
-class DEExperiment(object):
-    ''' base clase for DE experiments '''
-
-    def __init__(self):
-        pass
-
-    def __call__(self):
-        ''' call DE and generate an initial results table '''
-        self.callDifferentialExpression()
-
-    def run(self):
-        ''' Custom DE functions '''
 
 
 class DEResult(object):
@@ -452,6 +532,20 @@ class DEResult(object):
           width=10, height=10))}''' % locals())
 
         makeVolcanoPlot(com.convert_to_r_dataframe(self.table))
+
+
+class DEExperiment(object):
+    ''' base clase for DE experiments '''
+
+    def __init__(self):
+        pass
+
+    def __call__(self):
+        ''' call DE and generate an initial results table '''
+        self.callDifferentialExpression()
+
+    def run(self):
+        ''' Custom DE functions '''
 
 
 class DEExperiment_TTest(DEExperiment):
