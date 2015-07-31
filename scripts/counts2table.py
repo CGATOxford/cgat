@@ -283,12 +283,11 @@ def main(argv=None):
             sep="\t", index_col=0, comment="#"))
 
     # create Design object
-    design = Expression.ExpDesign(
+    design = Expression.ExperimentalDesign(
         pd.read_csv(IOTools.openFile(options.input_filename_design, "r"),
                     sep="\t", index_col=0, comment="#"))
 
     # validate design against counts and model
-    design.getAttributes()
     design.validate(counts, options.model)
 
     # restrict counts to samples in design table

@@ -32,7 +32,6 @@ Counts.py - methods for manipulating counts data frames
 Utility functions for dealing with counts data frames
 
 Requirements:
-* fastq-dump >= 2.1.7
 
 Code
 ----
@@ -42,9 +41,11 @@ import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import pandas as pd
 from rpy2.robjects import r as R
-import rpy2.robjects as ro
-from rpy2.robjects import pandas2ri
-import pandas.rpy.common as com
+# pandas.rpy.common is deprecated:
+# import pandas.rpy.common as com
+#
+# use from rpy2.robjects import pandas2ri instead
+#
 import numpy as np
 import numpy.ma as ma
 import copy
@@ -62,13 +63,28 @@ def geometric_mean(array, axis=0):
 
 
 class Counts(object):
-    '''base class to store counts object'''
+    """base class to store counts object
 
-    def __init__(self, table):
+    Attributes
+    -----------
+
+    table : pandas DataFrame
+       dataframe object with count data
+
+    """
+
+    def __init__(self, filename_or_table):
         # read in table in the constructor for Counts
         # e.g counts = Counts(pd.read_csv(...))
-        self.table = table
-        assert self.table.shape, "Counts table is empty"
+
+        if isinstance(filename_or_table, str):
+            self.table = pd.read_csv(filename_or_table,
+                                     sep="\t",
+                                     index_col=0)
+        else:
+            self.table = filename_or_table
+
+        assert self.table.shape, "counts table is empty"
 
     def clone(self):
         return copy.copy(self)
@@ -354,8 +370,8 @@ class Counts(object):
         ''' use the prcomp function in base R to perform principal components
         analysis '''
 
-        assert (x_axis[0:2] == "PC" and y_axis[0:2] == "PC",
-                "x_axis and y_axis names must start with 'PC'")
+        assert (x_axis[0:2] == "PC" and y_axis[0:2] == "PC"),\
+            "x_axis and y_axis names must start with 'PC'"
 
         r_counts = com.convert_to_r_dataframe(self.table)
 
