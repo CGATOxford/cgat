@@ -131,17 +131,8 @@ get_cgat_env() {
 
 if [ $TRAVIS_INSTALL ] ; then
 
-   if [ $TEST_PRODUCTION_SCRIPTS ] ; then
-
-      CGAT_HOME=$TRAVIS_BUILD_DIR
-      CONDA_INSTALL_TYPE="cgat-scripts"
-
-   else
-
-      CGAT_HOME=$TRAVIS_BUILD_DIR
-      CONDA_INSTALL_TYPE="cgat-devel"
-
-   fi # if-production scripts
+   CGAT_HOME=$TRAVIS_BUILD_DIR
+   CONDA_INSTALL_TYPE="cgat-devel"
 
 else
 
