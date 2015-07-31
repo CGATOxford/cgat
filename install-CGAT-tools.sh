@@ -291,7 +291,7 @@ if [ "$OS" != "travis" ] ; then
          echo " Installation did not finish properly. "
          echo 
          echo " Please submit this issue via Git Hub: "
-         echo " https://github.com/CGATOxford/cgat/issue "
+         echo " https://github.com/CGATOxford/cgat/issues "
 	 echo
          echo " Debugging: "
          echo " CFLAGS: "$CFLAGS
@@ -311,7 +311,7 @@ if [ "$OS" != "travis" ] ; then
       echo " Installation did not finish properly. "
       echo
       echo " Please submit this issue via Git Hub: "
-      echo " https://github.com/CGATOxford/cgat/issue "
+      echo " https://github.com/CGATOxford/cgat/issues "
       echo
       echo " Debugging: "
       echo " CGAT_HOME: "$CGAT_HOME
@@ -463,7 +463,7 @@ if [ ! $? -eq 0 ] ; then
    echo " There was a problem updating the installation. "
    echo 
    echo " Please submit this issue via Git Hub: "
-   echo " https://github.com/CGATOxford/cgat/issue "
+   echo " https://github.com/CGATOxford/cgat/issues "
    echo 
 
 else 
