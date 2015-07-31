@@ -470,7 +470,7 @@ def main(argv=None):
                 options.shuffle_suffix, options.keep_suffix)
         else:
             # if no suffixes supplied, spike and keep tracks are the same
-            g_to_track = design.mapGroups()
+            g_to_track = design.getGroups2Samples()
             g_to_spike_tracks, g_to_keep_tracks = (g_to_track, g_to_track)
 
         # set up numpy arrays for change and initial values
