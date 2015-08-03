@@ -58,7 +58,7 @@ Manipulating gene-models
 ++++++++++++++++++++++++
 
 Options that can be used to alter the features represented in a :term:`gtf`
-file.
+file. Only one method can be specified at once.
 
 Input gtfs need to be sorted so that features for a gene or transcript
 appear consecutively within the file. This can be achevied using
@@ -483,6 +483,7 @@ def main(argv=None):
         "[%default]")
 
     parser.add_option("-m", "--method", dest="method", type="choice",
+                      action="append",
                       choices=(
                           "add-protein-id",
                           "exons2introns",
@@ -510,7 +511,8 @@ def main(argv=None):
                           "sort",
                           "transcript2genes",
                           "unset-genes"),
-                      help="Method to apply [%default].")
+                      help="Method to apply [%default]."
+                      "Please only select one.")
 
     parser.set_defaults(
         sort_order="gene",
@@ -536,6 +538,11 @@ def main(argv=None):
 
     if options.method is None:
         raise ValueError("please specify a --method")
+
+    if len(options.method) > 1:
+        raise ValueError("multiple --method arguements specified")
+    else:
+        options.method = options.method[0]
 
     if options.method == "set-transcript-to-gene":
 
