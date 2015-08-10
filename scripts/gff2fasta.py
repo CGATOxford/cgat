@@ -110,6 +110,10 @@ Options
 ``--masker``
   Masker type to use: dust, dustmasker, soft or none
 
+``--fold-at``
+  Fold the fasta sequence every n bases
+
+
 Command line options
 --------------------
 '''
@@ -196,6 +200,10 @@ def main(argv=None):
         choices=("dust", "dustmasker", "softmask", "none"),
         help="apply masker [%default].")
 
+    parser.add_option(
+        "--fold-at", dest="fold_at", type="int",
+        help="fold sequence every n bases[%default].")
+
     parser.set_defaults(
         is_gtf=False,
         genome_file=None,
@@ -208,7 +216,8 @@ def main(argv=None):
         extend_at=None,
         extend_by=100,
         extend_with=None,
-        masker=None
+        masker=None,
+        fold_at=None
     )
 
     (options, args) = E.Start(parser)
@@ -359,13 +368,20 @@ def main(argv=None):
             if options.extend_at in ("3", "both"):
                 s[-1] = s[-1] + extension
 
+        if options.fold_at:
+            n = options.fold_at
+            s = "".join(s)
+            seq = "\n".join([s[i:i+n] for i in range(0, len(s), n)])
+        else:
+            seq = "\n".join(s)
+
         options.stdout.write(">%s %s:%s:%s\n%s\n" % (name,
                                                      contig,
                                                      strand,
                                                      ";".join(
                                                          ["%i-%i" %
                                                           x for x in out]),
-                                                     "\n".join(s)))
+                                                     seq))
 
         noutput += 1
 
