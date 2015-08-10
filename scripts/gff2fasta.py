@@ -30,6 +30,13 @@ The input can also be a :term:`gtf` formatted file. In that case, use the
    python gff2fasta.py --genome-file=hg19 --is-gtf < features.gtf >\
  features.fasta
 
+If you want to add a polyA tail onto each transcript you can use the `extend`
+options:
+
+   python gff2fasta.py --genome-file=hg19 --is-gtf
+   --extend-at=3 --extend-by=125 --extend-with=A
+   < features.gtf > features.fasta
+
 If you want to merge the sequence of similar features together, please use
 ``--merge-overlapping``::
 
@@ -93,6 +100,12 @@ Options
 ``--extend-by``
   Used in conjunction with ``--extend-at``, the number of nucleotides to extend
   by
+
+``--extend-with``
+  Optional. Used in conjunction with ``--extend-at`` and ``--extend-by``. 
+  Instead of extending by the genomic sequence, extend by this string repeated
+  n times, where n is --entend-by
+
 
 ``--masker``
   Masker type to use: dust, dustmasker, soft or none
@@ -175,6 +188,10 @@ def main(argv=None):
         help="extend by # bases [default=%default]")
 
     parser.add_option(
+        "--extend-with", dest="extend_with", type="string",
+        help="extend using base [default=%default]")
+
+    parser.add_option(
         "--masker", dest="masker", type="choice",
         choices=("dust", "dustmasker", "softmask", "none"),
         help="apply masker [%default].")
@@ -190,6 +207,7 @@ def main(argv=None):
         max_length=0,
         extend_at=None,
         extend_by=100,
+        extend_with=None,
         masker=None
     )
 
@@ -296,7 +314,7 @@ def main(argv=None):
 
         out = intervals
 
-        if options.extend_at:
+        if options.extend_at and not options.extend_with:
             if options.extend_at == "5only":
                 intervals = [(max(0, intervals[0][0] - options.extend_by),
                               intervals[0][0])]
@@ -332,6 +350,14 @@ def main(argv=None):
                                      "%s: regions=%s len=%i\n" %
                                      (name, str(intervals), l))
                 continue
+
+        if options.extend_at and options.extend_with:
+            extension = "".join((options.extend_with,) * options.extend_by)
+
+            if options.extend_at in ("5", "both"):
+                s[1] = extension + s[1]
+            if options.extend_at in ("3", "both"):
+                s[-1] = s[-1] + extension
 
         options.stdout.write(">%s %s:%s:%s\n%s\n" % (name,
                                                      contig,
