@@ -102,7 +102,7 @@ Options
   by
 
 ``--extend-with``
-  Optional. Used in conjunction with ``--extend-at`` and ``--extend-by``. 
+  Optional. Used in conjunction with ``--extend-at`` and ``--extend-by``.
   Instead of extending by the genomic sequence, extend by this string repeated
   n times, where n is --entend-by
 
