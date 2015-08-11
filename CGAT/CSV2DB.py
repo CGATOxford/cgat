@@ -293,6 +293,8 @@ def run(infile, options, report_step=10000):
 
     existing_tables = set()
 
+    quick_import_separator = "\t"
+
     if options.database_backend == "postgres":
         import psycopg2
         raise NotImplementedError("needs refactoring for commandline options")
@@ -349,9 +351,12 @@ def run(infile, options, report_step=10000):
         existing_tables = set([x[0] for x in cc])
         cc.close()
 
+        # use , as separator
         quick_import_statement = \
-            "sqlite3 -header -csv -separator '\t' %s '.import %%s %s'" % \
+            "sqlite3 %s '.import %%s %s'" % \
             (options.database, options.tablename)
+
+        quick_import_separator = "|"
 
     if options.header is not None:
         options.header = [x.strip() for x in options.header.split(",")]
@@ -467,7 +472,8 @@ def run(infile, options, report_step=10000):
         for d in row_iter(rows, reader):
 
             ninput += 1
-            os.write(outfile, "\t".join([str(d[x]) for x in take]) + "\n")
+            os.write(outfile, quick_import_separator.join(
+                [str(d[x]) for x in take]) + "\n")
 
             if ninput % report_step == 0:
                 E.info("iteration %i\n" % ninput)
