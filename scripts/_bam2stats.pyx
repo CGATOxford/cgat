@@ -1,5 +1,3 @@
-#cimport csamtools
-
 from pysam.chtslib cimport *
 from pysam.csamfile cimport *
 from pysam.cfaidx cimport *
@@ -8,6 +6,8 @@ from libc.stdint cimport int8_t
 from libc.stdio cimport puts, printf
 import collections, array, struct, sys
 import CGAT.Experiment as E
+
+import hashlib
 
 FLAGS = {
     1: 'paired',
@@ -20,7 +20,7 @@ FLAGS = {
     128: 'read2',
     256: 'secondary',
     512: 'qc_fail',
-    1024: 'duplicate'  }
+    1024: 'duplicate'}
 
 cdef struct CountsType:
     int8_t is_mapped
@@ -35,13 +35,12 @@ cdef struct CountsType:
     int8_t is_qcfail
     int8_t is_duplicate
 
-def count( Samfile samfile,
-           remove_rna,
-           rna,
-           filename_fastq = None,
-           outfile_details = None):
+def count(AlignmentFile samfile,
+          remove_rna,
+          rna,
+          filename_fastq=None,
+          outfile_details=None):
     '''
-
     '''
     cdef bint _remove_rna = remove_rna
 
@@ -66,14 +65,14 @@ def count( Samfile samfile,
     mapq_filtered = collections.defaultdict(int)
     mapq_all = collections.defaultdict(int)
 
-    cdef int * flags_counts = <int*>calloc( len(FLAGS), sizeof(int) )
+    cdef int * flags_counts = <int*>calloc(len(FLAGS), sizeof(int))
 
     # helper variables
     cdef int last_tid = -1
     cdef int last_pos = 0
 
-    duplicates = collections.defaultdict( int )
-    counts = collections.defaultdict( int )
+    duplicates = collections.defaultdict(int)
+    counts = collections.defaultdict(int)
     cdef int count = 0
 
     cdef int tid = -1
@@ -99,7 +98,7 @@ def count( Samfile samfile,
     cdef int chop = 0
 
     if count_fastq:
-        E.info( "reading fastq file" )
+        E.info("reading fastq file")
         # Using a python dictionary here is due
         # for a large amount of memory usage.
         # Alternatives to dictionary
@@ -114,12 +113,15 @@ def count( Samfile samfile,
                 # chop off /1 or /2 as mappers usually remove these
                 # suffices. Test only the first.
                 name = fq.name
-                if name.endswith("/1") or name.endswith("/2"): chop = -2
+                if name.endswith("/1") or name.endswith("/2"):
+                    chop = -2
                 
             if chop != 0:
-                reads[fq.name[:chop]] = fastq_nreads
+                name = hashlib.md5(fq.name[:chop]).digest()
             else:
-                reads[fq.name] = fastq_nreads
+                name = hashlib.md5(fq.name).digest()
+
+            reads[name] = fastq_nreads
 
             fastq_nreads += 1
         
@@ -143,8 +145,9 @@ def count( Samfile samfile,
             if position != NULL: 
                 position[0] = '\0'
 
+            md5 = hashlib.md5(read_name).digest()
             try:
-                fastq_count = &fastq_counts[reads[read_name]]
+                fastq_count = &fastq_counts[reads[md5]]
             except KeyError:
                 fastq_notfound += 1
                 continue
