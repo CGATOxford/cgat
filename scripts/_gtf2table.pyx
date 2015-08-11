@@ -87,7 +87,7 @@ class Counter:
     def getStrand(self):
         return self.mGFFs[0].strand
 
-    def getGeneId( self ):
+    def getGeneId(self):
         return self.mGFFs[0].gene_id
     
     def getSequence(self, segments):
@@ -105,7 +105,7 @@ class Counter:
         else:
             return "".join(s)
 
-    def getExons( self ):
+    def getExons(self):
         """merge small introns into single exons. The following features are
         aggregated as exons: exon, CDS, UTR, UTR3, UTR5
 
@@ -113,11 +113,12 @@ class Counter:
         """
         ranges = GTF.asRanges(self.mGFFs,
                               feature = ("exon", "CDS", "UTR", "UTR5", "UTR3"))
-        assert len(ranges) > 0, "no exons in gene"
+        if len(ranges) == 0:
+            raise ValueError("no exons in set for %s" % self.getGeneId())
         return Intervals.combineAtDistance(ranges,
                                            self.mMinIntronSize)
 
-    def getCDS( self ):
+    def getCDS(self):
         """merge small introns into single exons. The following features are aggregated
         as exons: exon, CDS, UTR, UTR3, UTR5
         """
@@ -125,9 +126,8 @@ class Counter:
         return Intervals.combineAtDistance(ranges,
                                            self.mMinIntronSize)
 
-    def getIntrons( self ):
+    def getIntrons(self):
         exons = self.getExons()
-        assert len(exons) > 0, "no exons in gene %s" % self.getGeneId()
         introns = []
         last = exons[0][1]
         for e in exons[1:]:
@@ -135,7 +135,7 @@ class Counter:
             last = e[1]
         return introns
 
-    def getSegments( self ):
+    def getSegments(self):
         if self.section == "exons":
             return self.getExons()
         elif self.section == "introns":

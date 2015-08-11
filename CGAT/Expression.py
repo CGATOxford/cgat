@@ -79,7 +79,6 @@ import collections
 import itertools
 import re
 import pandas
-import pandas.rpy.common as com
 import ggplot
 import copy
 import numpy as np
@@ -90,7 +89,8 @@ import pylab
 
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
-import rpy2.robjects.numpy2ri
+from rpy2.robjects import pandas2ri
+pandas2ri.activate()
 from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import FloatVector
 
@@ -167,7 +167,7 @@ def makeMAPlot(resultsTable, title, outfile):
 
     ggsave(plot = p, file = outfile, width=7, height=7)}''')
 
-    r_resultsTable = com.convert_to_r_dataframe(resultsTable)
+    r_resultsTable = pandas2ri.py2ri(resultsTable)
 
     plotter(r_resultsTable, title, outfile)
 
@@ -501,7 +501,7 @@ class DEResult(object):
           ggsave(file="%(outfile_prefix)s_%(contrast)s_MA_plot.png",
           width=10, height=10))}''' % locals())
 
-        makeMAPlot(com.convert_to_r_dataframe(self.table))
+        makeMAPlot(pandas2ri.py2ri(self.table))
 
     def plotVolcano(self, contrast=None, outfile_prefix=None):
         ''' base function for Volcano plotting'''
@@ -531,7 +531,7 @@ class DEResult(object):
           ggsave(file="%(outfile_prefix)s_%(contrast)s_volcano_plot.png",
           width=10, height=10))}''' % locals())
 
-        makeVolcanoPlot(com.convert_to_r_dataframe(self.table))
+        makeVolcanoPlot(pandas2ri.py2ri(self.table))
 
 
 class DEExperiment(object):
@@ -647,7 +647,7 @@ class DEExperiment_edgeR(DEExperiment):
             raise ValueError("no replicates and no dispersion")
 
         # create r objects
-        r_counts = com.convert_to_r_dataframe(counts.table)
+        r_counts = pandas2ri.py2ri(counts.table)
         r_groups = ro.StrVector(design.conditions)
         r_pairs = ro.StrVector(design.pairs)
         r_has_pairs = ro.default_py2ri(design.has_pairs)
@@ -659,7 +659,7 @@ class DEExperiment_edgeR(DEExperiment):
             r_dispersion = ro.default_py2ri(False)
 
         if model is not None:
-            r_factors_df = com.convert_to_r_dataframe(design.factors)
+            r_factors_df = pandas2ri.py2ri(design.factors)
         else:
             r_factors_df = ro.default_py2ri(False)
 
@@ -825,7 +825,7 @@ class DEExperiment_edgeR(DEExperiment):
 
         outputCPMTable(r_countsTable, outfile_prefix)
 
-        result = DEResult_edgeR(testTable=com.convert_robj(r_lrt_table))
+        result = DEResult_edgeR(testTable=pandas2ri.ri2py(r_lrt_table))
 
         return result
 
@@ -892,7 +892,7 @@ class DEExperiment_DESeq(DEExperiment):
             fit_type="parametric"):
 
         # create r objects
-        r_counts = com.convert_to_r_dataframe(counts.table)
+        r_counts = pandas2ri.py2ri(counts.table)
         r_groups = ro.StrVector(design.conditions)
         r_pairs = ro.StrVector(design.pairs)
         r_has_pairs = ro.default_py2ri(design.has_pairs)
@@ -902,7 +902,7 @@ class DEExperiment_DESeq(DEExperiment):
         r_fit_type = ro.default_py2ri(fit_type)
 
         if model is not None:
-            r_factors_df = com.convert_to_r_dataframe(design.factors)
+            r_factors_df = pandas2ri.py2ri(design.factors)
         else:
             r_factors_df = ro.default_py2ri(False)
 
@@ -951,7 +951,7 @@ class DEExperiment_DESeq(DEExperiment):
                           r_fit_type, r_sharing_mode)
 
         result = None
-        # result = DEResult_DESeq(testTable=com.convert_robj(r_lrt_table))
+        # result = DEResult_DESeq(testTable=pandas2ri.ri2py(r_lrt_table))
 
         return result
 
@@ -1020,14 +1020,14 @@ class DEExperiment_DESeq2(DEExperiment):
             fdr=0.1):
 
         # create r objects
-        r_counts = com.convert_to_r_dataframe(counts.table)
+        r_counts = pandas2ri.py2ri(counts.table)
         r_groups = ro.StrVector(design.conditions)
         r_pairs = ro.StrVector(design.pairs)
         r_has_pairs = ro.default_py2ri(design.has_pairs)
         r_has_replicates = ro.default_py2ri(design.has_replicates)
 
         if design.factors is not None:
-            r_factors_df = com.convert_to_r_dataframe(design.factors)
+            r_factors_df = pandas2ri.py2ri(design.factors)
         else:
             r_factors_df = ro.default_py2ri(False)
 
@@ -1117,7 +1117,7 @@ class DEExperiment_DESeq2(DEExperiment):
 
             return(res)}''' % locals())
 
-            results = com.convert_robj(performDifferentialTesting(r_dds))
+            results = pandas2ri.ri2py(performDifferentialTesting(r_dds))
             results['test_id'] = results.index
 
         # DEtype == "GLM"
@@ -1191,7 +1191,7 @@ class DEExperiment_DESeq2(DEExperiment):
 
                 return(res)}''' % locals())
 
-                tmp_results = com.convert_robj(performDifferentialTesting(r_dds))
+                tmp_results = pandas2ri.ri2py(performDifferentialTesting(r_dds))
                 tmp_results['test_id'] = tmp_results.index
 
                 # need to set index to sequence of ints to avoid duplications
@@ -3566,7 +3566,7 @@ def runEdgeRPandas(counts,
     E.info('running EdgeR: groups=%s, pairs=%s, replicates=%s, pairs=%s' %
            (groups, pairs, has_replicates, has_pairs))
 
-    r_counts = com.convert_to_r_dataframe(counts)
+    r_counts = pandas2ri.py2ri(counts)
 
     passDFtoRGlobalEnvironment = R('''function(df){
     countsTable <<- df}''')
@@ -3611,7 +3611,7 @@ def runEdgeRPandas(counts,
         ggsave("%(outfile_prefix)sbalance_groups.png", plot = p)}
         ''' % locals())
 
-        r_pairs_df = com.convert_to_r_dataframe(pairs_df)
+        r_pairs_df = pandas2ri.py2ri(pairs_df)
         plot_pairs(r_pairs_df)
 
         # output difference between pairs within groups
@@ -3653,11 +3653,11 @@ def runEdgeRPandas(counts,
         ggsave("%(outfile_prefix)sbalance_pairs.png", plot = p)}
         ''' % locals())
 
-        r_pairs_in_groups_df = com.convert_to_r_dataframe(pairs_in_groups_df)
+        r_pairs_in_groups_df = pandas2ri.py2ri(pairs_in_groups_df)
         plot_pairs_in_groups(r_pairs_in_groups_df)
 
     # create r objects
-    r_counts = com.convert_to_r_dataframe(counts)
+    r_counts = pandas2ri.py2ri(counts)
     r_groups = ro.StrVector(conds)
     r_pairs = ro.StrVector(pairs)
     r_has_pairs = ro.default_py2ri(has_pairs)
@@ -3766,7 +3766,7 @@ def runEdgeRPandas(counts,
         abline(h=c(-2, 2), col='dodgerblue')
         dev.off()}''' % "','".join(groups))
 
-    lrt_table = com.convert_robj(r_lrt_table)
+    lrt_table = pandas2ri.ri2py(r_lrt_table)
 
     n_rows = lrt_table.shape[0]
     df_dict = makeEmptyDataFrameDict()

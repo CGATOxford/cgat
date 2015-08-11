@@ -41,11 +41,8 @@ import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import pandas as pd
 from rpy2.robjects import r as R
-# pandas.rpy.common is deprecated:
-# import pandas.rpy.common as com
-#
-# use from rpy2.robjects import pandas2ri instead
-#
+from rpy2.robjects import pandas2ri
+pandas2ri.activate()
 import numpy as np
 import numpy.ma as ma
 import copy
@@ -167,7 +164,9 @@ class Counts(object):
            Simply take the median of all the quotients in a column to get
            the relative depth of the library.
 
-           Divide all values in a column by the normalization factor.
+           Divide all values in a column by the normalization factor. This
+           normalization method removes all rows with a geometric mean of
+           0.
 
         This method normalises the counts and returns the normalization
         factors that have been applied.
@@ -262,19 +261,19 @@ class Counts(object):
         return(transformed_df)
         }''' % locals())
 
-        r_counts = com.convert_to_r_dataframe(self.table)
-        r_df = com.convert_robj(transform(r_counts))
+        r_counts = pandas2ri.py2ri(self.table)
+        r_df = pandas2ri.ri2py(transform(r_counts))
         # losing rownames for some reason during the conversion?!
         r_df.index = self.table.index
 
         if inplace:
-            self.table = com.convert_robj(r_df)
+            self.table = pandas2ri.ri2py(r_df)
             # R replaces "-" in column names with ".". Revert back!
             self.table.columns = [x.replace(".", "-")
                                   for x in self.table.columns]
         else:
             tmp_counts = self.clone()
-            tmp_counts.table = com.convert_robj(r_df)
+            tmp_counts.table = pandas2ri.ri2py(r_df)
             tmp_counts.table.columns = [x.replace(".", "-")
                                         for x in tmp_counts.table.columns]
             return tmp_counts
@@ -351,7 +350,7 @@ class Counts(object):
                       distance_method="euclidean",
                       clustering_method="ward.D2"):
 
-        r_counts = com.convert_to_r_dataframe(self.table)
+        r_counts = pandas2ri.py2ri(self.table)
 
         makeDendogram = R('''
         function(counts){
@@ -373,7 +372,7 @@ class Counts(object):
         assert (x_axis[0:2] == "PC" and y_axis[0:2] == "PC"),\
             "x_axis and y_axis names must start with 'PC'"
 
-        r_counts = com.convert_to_r_dataframe(self.table)
+        r_counts = pandas2ri.py2ri(self.table)
 
         pc_number_1 = int(x_axis.replace("PC", ""))
         pc_number_2 = int(y_axis.replace("PC", ""))

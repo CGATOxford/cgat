@@ -98,10 +98,7 @@ Command line options
 
 import sys
 import CGAT.Experiment as E
-import rpy2.robjects as ro
-from rpy2.robjects import r as R
 import pandas as pd
-import pandas.rpy.common as com
 import itertools
 import re
 import CGAT.Timeseries as TS
