@@ -8,6 +8,7 @@ import collections, array, struct, sys
 import CGAT.Experiment as E
 
 import hashlib
+import base64
 
 FLAGS = {
     1: 'paired',
@@ -211,7 +212,7 @@ def count(AlignmentFile samfile,
         if read._delegate.core.flag & 4: continue
 
         if read.tid != last_tid:
-            contig = samfile.getrname( read.rname )
+            contig = samfile.getrname(read.rname)
 
         # note: does not take into account gaps within reads
         # or partial overlap.
@@ -435,20 +436,23 @@ def count(AlignmentFile samfile,
         if outfile_details:
             if outfile_details != sys.stdout:
                 # later: get access FILE * object
-                outfile_details.write("read\tis_unmapped\tmate_is_unmapped\tis_paired\tmapped_is_read1\tmapped_is_read2\tis_proper_pair\tis_qcfail\tis_duplicate\n" )
+                outfile_details.write("read_md5\tis_unmapped\tmate_is_unmapped\tis_paired\tmapped_is_read1\tmapped_is_read2\tis_proper_pair\tis_qcfail\tis_duplicate\n")
                 for qname, index in reads.items():
                     fastq_count = &fastq_counts[index]
-
-                    outfile_details.write("%s\t%s\n" % (qname, "\t".join( \
-                                map(str,
-                                    (fastq_count.is_unmapped,
-                                     fastq_count.mate_is_unmapped,
-                                     fastq_count.is_paired,
-                                     fastq_count.mapped_is_read1,
-                                     fastq_count.mapped_is_read2,
-                                     fastq_count.is_proper_pair,
-                                     fastq_count.is_qcfail,
-                                     fastq_count.is_duplicate
+                    
+                    # remove "\n" from base64 encoded md5
+                    outfile_details.write("%s\t%s\n" % (
+                        base64.encodestring(qname)[:-1],
+                        "\t".join( \
+                                   map(str,
+                                       (fastq_count.is_unmapped,
+                                        fastq_count.mate_is_unmapped,
+                                        fastq_count.is_paired,
+                                        fastq_count.mapped_is_read1,
+                                        fastq_count.mapped_is_read2,
+                                        fastq_count.is_proper_pair,
+                                        fastq_count.is_qcfail,
+                                        fastq_count.is_duplicate
                                     ) )) ))
 
             else:
