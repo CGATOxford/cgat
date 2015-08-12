@@ -42,12 +42,14 @@ import CGAT.IOTools as IOTools
 import pandas as pd
 from rpy2.robjects import r as R
 from rpy2.robjects import pandas2ri
-pandas2ri.activate()
 import numpy as np
 import numpy.ma as ma
 import copy
 import random
 import sys
+
+# activate pandas/rpy conversion
+pandas2ri.activate()
 
 
 def geometric_mean(array, axis=0):
