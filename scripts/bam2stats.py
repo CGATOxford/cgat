@@ -1,5 +1,5 @@
 '''bam2stats.py - compute stats from a bam-file
-============================================
+===============================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -146,7 +146,7 @@ Usage
 
 Example::
 
-   cat in.bam | python bam2stats.py -
+   python bam2stats.py in.bam
 
 This command will generate various statistics based on the supplied
 BAM file, such as percentage reads mapped and percentage reads mapped
@@ -256,6 +256,11 @@ Type::
    cgat bam2stats --help
 
 for command line help.
+
+Bam2stats can read from standard input::
+
+   cat in.bam | python bam2stats.py -
+
 
 Documentation
 -------------
@@ -389,7 +394,8 @@ def main(argv=None):
 
     parser.add_option(
         "-d", "--output-details", dest="output_details", action="store_true",
-        help="output per-read details [%default]")
+        help="output per-read details into a separate file. Read names are "
+        "md5/base64 encoded [%default]")
 
     parser.add_option(
         "-q", "--fastq-file", dest="filename_fastq",
@@ -415,10 +421,12 @@ def main(argv=None):
     else:
         rna = None
 
-    if options.stdin == sys.stdin:
-        pysam_in = pysam.Samfile("-", "rb")
+    if len(args) > 0:
+        pysam_in = pysam.AlignmentFile(args[0], "rb")
+    elif options.stdin == sys.stdin:
+        pysam_in = pysam.AlignmentFile("-", "rb")
     else:
-        raise NotImplementedError("-I option not implemented")
+        pysam_in = pysam.AlignmentFile(options.stdin, "rb")
 
     if options.output_details:
         outfile_details = E.openOutputFile("details", "w")
@@ -437,7 +445,8 @@ def main(argv=None):
                          outfile_details=outfile_details)
 
     if max_hi > 0 and max_hi != max(nh_all.keys()):
-        E.warn("max_hi(%i) is inconsistent with max_nh (%i) - counts will be corrected"
+        E.warn("max_hi(%i) is inconsistent with max_nh (%i) "
+               "- counts will be corrected"
                % (max_hi, max(nh_all.keys())))
 
     outs = options.stdout
