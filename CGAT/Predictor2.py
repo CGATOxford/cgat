@@ -19,7 +19,105 @@ import CGAT.Experiment as E
 import CGAT.PredictionParser as PredictionParser
 
 
-class Predictor(E.Experiment):
+class Experiment:
+
+    mShortOptions = ""
+    mLongOptions = []
+
+    mLogLevel = 0
+    mTest = 0
+    mDatabaseName = None
+
+    mName = sys.argv[0]
+
+    def __init__(self):
+
+        # process command-line arguments
+        (self.mOptlist, self.mArgs) = self.ParseCommandLine()
+
+        # set options now
+        self.ProcessOptions(self.mOptlist)
+
+    def DumpParameters(self):
+        """dump parameters of this object. All parameters start with a
+        lower-case m."""
+
+        members = self.__dict__
+
+        print "#" + "-" * 50
+        print "#" + string.join(sys.argv)
+        print "# pid: %i, system:" % os.getpid(), string.join(os.uname(), ",")
+        print "#" + "-" * 50
+        print "# Parameters for instance of <" + self.mName + \
+            "> on " + time.asctime(time.localtime(time.time()))
+
+        member_keys = list(members.keys())
+        member_keys.sort()
+        for member in member_keys:
+            if member[0] == 'm':
+                print "# %-40s:" % member, members[member]
+
+        print "#" + "-" * 50
+        sys.stdout.flush()
+
+    def ProcessOptions(self, optlist):
+        """Sets options in this module. Please overload as necessary."""
+
+        for o, a in optlist:
+            if o in ("-V", "--Verbose"):
+                self.mLogLevel = string.atoi(a)
+            elif o in ("-T", "--test"):
+                self.mTest = 1
+
+    def ProcessArguments(self, args):
+        """Perform actions as given in command line arguments."""
+
+        if self.mLogLevel >= 1:
+            self.DumpParameters()
+
+        for arg in args:
+            if arg[-1] == ")":
+                statement = "self.%s" % arg
+            else:
+                statement = "self.%s()" % arg
+            exec statement
+
+            if self.mLogLevel >= 1:
+                print "-" * 50
+                print statement + " finished at " + \
+                    time.asctime(time.localtime(time.time()))
+                print "-" * 50
+
+    def ParseCommandLine(self):
+        """Call subroutine with command line arguments."""
+
+        self.mShortOptions = self.mShortOptions + "V:D:T"
+        self.mLongOptions.append("Verbose=")
+        self.mLongOptions.append("Database=")
+        self.mLongOptions.append("Test")
+
+        try:
+            optlist, args = getopt.getopt(sys.argv[1:],
+                                          self.mShortOptions,
+                                          self.mLongOptions)
+        except getopt.error, msg:
+            self.PrintUsage()
+            print msg
+            sys.exit(2)
+
+        return optlist, args
+
+    def Process(self):
+        self.ProcessArguments(self.mArgs)
+
+    def PrintUsage(self):
+        """print usage information."""
+
+        print "# valid short options are:", self.mShortOptions
+        print "# valid long options are:", str(self.mLongOptions)
+
+
+class Predictor(Experiment):
 
     mLogLevel = 0
     mKeepTemp = False

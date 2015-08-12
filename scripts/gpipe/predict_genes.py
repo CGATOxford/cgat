@@ -33,7 +33,7 @@ Purpose
 -------
 
 .. todo::
-   
+
    describe purpose of the script.
 
 Usage
@@ -209,7 +209,7 @@ class MaskerSeg (Masker):
 
 
 # --------------------------------------------------------------------------
-class TranscriptPredictor(E.Experiment):
+class TranscriptPredictor(Experiment):
 
     mSensitivityLevelStart = 0
 

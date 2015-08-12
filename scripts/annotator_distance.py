@@ -36,7 +36,6 @@ Command line options
 
 import os
 import sys
-import optparse
 import collections
 import itertools
 import CGAT.GTF as GTF
