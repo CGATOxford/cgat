@@ -87,13 +87,12 @@ import matplotlib
 import matplotlib.pyplot as plt
 import pylab
 
+import rpy2
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
-pandas2ri.activate()
 from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import FloatVector
-
 
 try:
     import CGAT.Experiment as E
@@ -103,6 +102,9 @@ except ImportError:
     import Experiment as E
     import IOTools
     import Stats
+
+# activate pandas/rpy conversion
+pandas2ri.activate()
 
 # AH: Only do this on demand, module might not be
 #     be able to be imported if there are any issues.
