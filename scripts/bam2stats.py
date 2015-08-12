@@ -394,7 +394,8 @@ def main(argv=None):
 
     parser.add_option(
         "-d", "--output-details", dest="output_details", action="store_true",
-        help="output per-read details [%default]")
+        help="output per-read details into a separate file. Read names are "
+        "md5/base64 encoded [%default]")
 
     parser.add_option(
         "-q", "--fastq-file", dest="filename_fastq",
