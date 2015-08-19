@@ -170,6 +170,11 @@ class Counts(object):
            normalization method removes all rows with a geometric mean of
            0.
 
+        total-counts
+
+           Normalise all values in a column by the column sum of counts
+           / average column counts across all rows
+
         This method normalises the counts and returns the normalization
         factors that have been applied.
 
@@ -190,6 +195,17 @@ class Counts(object):
             self.size_factors = normed.median(axis=0)
 
             normed = self.table / self.size_factors
+
+        elif method == "total-count":
+
+            # compute column-wise sum
+            column_sums = self.table.sum(axis=0)
+            column_sums_mean = geometric_mean(column_sums)
+            column_sums_mean = np.mean(column_sums)
+
+            self.size_factors = [(column_sums_mean/x) for x in column_sums]
+
+            normed = self.table * self.size_factors
 
         elif method == "million-counts":
             self.size_factors = self.table.sum(axis=0)
