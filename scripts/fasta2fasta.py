@@ -308,7 +308,7 @@ def main(argv=None):
         elif f.startswith("max-length"):
             filter_max_sequence_length = int(f.split("=")[1])
         elif f.startswith("id-file"):
-            filter_id_list=[line[:-1] for line in IOTools.openFile(f.split("=")[1])]
+            filter_id_list = [line[:-1] for line in IOTools.openFile(f.split("=")[1])]
 
     def raiseIfNotCodon(l, title):
         '''raise ValueError if sequence length l is not divisible by

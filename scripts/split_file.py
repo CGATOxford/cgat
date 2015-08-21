@@ -163,7 +163,6 @@ def main(argv=None):
         elif o == "--chunk-size":
             param_chunk_size = int(a)
 
-
     print E.GetHeader()
     print E.GetParams()
 
