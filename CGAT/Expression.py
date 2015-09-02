@@ -3099,7 +3099,7 @@ def outputTagSummary(filename_tags,
     outfilename = output_filename_pattern + "max_counts.tsv.gz"
     E.info("outputting maximum counts per window to %s" % outfilename)
     R('''write.table(table(max_counts),
-    file='%(outfilename)s',
+    file=gzfile('%(outfilename)s'),
     sep="\t",
     row.names=FALSE,
     quote=FALSE)''' %
