@@ -280,18 +280,18 @@ class Counts(object):
         }''' % locals())
 
         r_counts = pandas2ri.py2ri(self.table)
-        r_df = pandas2ri.ri2py(transform(r_counts))
+        df = pandas2ri.ri2py(transform(r_counts))
         # losing rownames for some reason during the conversion?!
-        r_df.index = self.table.index
+        df.index = self.table.index
 
         if inplace:
-            self.table = pandas2ri.ri2py(r_df)
+            self.table = df
             # R replaces "-" in column names with ".". Revert back!
             self.table.columns = [x.replace(".", "-")
                                   for x in self.table.columns]
         else:
             tmp_counts = self.clone()
-            tmp_counts.table = pandas2ri.ri2py(r_df)
+            tmp_counts.table = df
             tmp_counts.table.columns = [x.replace(".", "-")
                                         for x in tmp_counts.table.columns]
             return tmp_counts
@@ -381,9 +381,9 @@ class Counts(object):
 
         makeDendogram(r_counts)
 
-    def plotPCA(self, variance_plot_filename=None, pca_plot_filename=None,
-                x_axis="PC1", y_axis="PC2", colour="id_1",
-                shape="id_2"):
+    def plotPCA(self, design,
+                variance_plot_filename=None, pca_plot_filename=None,
+                x_axis="PC1", y_axis="PC2", colour="group", shape="group"):
         ''' use the prcomp function in base R to perform principal components
         analysis '''
 
@@ -391,12 +391,13 @@ class Counts(object):
             "x_axis and y_axis names must start with 'PC'"
 
         r_counts = pandas2ri.py2ri(self.table)
+        r_design = pandas2ri.py2ri(design.table)
 
         pc_number_1 = int(x_axis.replace("PC", ""))
         pc_number_2 = int(y_axis.replace("PC", ""))
 
         makePCA = R('''
-        function(counts){
+        function(counts, design){
 
           suppressMessages(library(ggplot2))
           suppressMessages(library(grid))
@@ -425,14 +426,16 @@ class Counts(object):
           ggsave("%(variance_plot_filename)s")
 
           PCs_df = data.frame(gene_pca$x)
-          PCs_df$id_1 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 1)
-          PCs_df$id_2 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 2)
-          PCs_df$id_3 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 3)
+          PCs_df['sample'] <- rownames(PCs_df)
+          PCs_df = merge(PCs_df, design, by = "sample")
+          #PCs_df$id_1 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 1)
+          #PCs_df$id_2 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 2)
+          #PCs_df$id_3 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 3)
 
           p_pca = ggplot(PCs_df, aes(x=%(x_axis)s, y=%(y_axis)s)) +
           geom_point(aes(shape=%(shape)s, colour=%(colour)s)) +
-          scale_colour_discrete(name=guide_legend(title='Sample')) +
-          scale_shape_discrete(name=guide_legend(title='')) +
+          #scale_colour_discrete(name=guide_legend(title='')) +
+          #scale_shape_discrete(name=guide_legend(title='')) +
           xlab(paste0('PC%(pc_number_1)i (Variance explained = ' ,
                        round(100 * variance_explained[%(pc_number_1)i], 1),
                        '%%)')) +
@@ -447,7 +450,61 @@ class Counts(object):
 
         }''' % locals())
 
-        makePCA(r_counts)
+        makePCA(r_counts, r_design)
+
+    def plotPairwiseCorrelations(self, outfile):
+        ''' use the ggpairs ggplot2 wrapper from GGally to plot all pairwise
+        correlations between the samples '''
+
+        plotGGpairs = R('''
+        function(df){
+
+        library(ggplot2)
+        library(GGally)
+
+        colnames(df) <- gsub("-", "_", colnames(df))
+
+        n_samples = length(colnames(df))
+
+        p = ggpairs(data = df,
+                    lower = list(continuous = "points", combo = "dot",
+                                 params=list(size=0.5, density=0.2)),
+                    upper = list(params=list(size=n_samples)),
+                                 axisLabels='show') +
+             theme_bw()
+
+        width <- height <- n_samples * 100
+
+        png("%(outfile)s", width=width, height=height, units = "px")
+        print(p)
+        dev.off()}''' % locals())
+
+        r_counts = pandas2ri.py2ri(self.table)
+
+        plotGGpairs(r_counts)
+
+    def heatmap(self):
+        ''' plots a heatmap '''
+        plotHeatmap = R('''
+        function(df){
+
+        library("Biobase")
+        library("RColorBrewer")
+        library("gplots")
+
+        hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
+        png("%()s", width=600, height=600, units="px")
+        heatmap.2(as.matrix(df_dir_adj),
+                  col = hmcol, scale="none", trace="none", margin=c(18, 10),
+                  key=FALSE, dendrogram=columns, cexCol=2,
+                  hclustfun = function(x) hclust(x, method = 'average'),
+                  distfun = function(x) as.dist(1 - cor(t(x), method="spearman")))
+        dev.off()
+        }''' % locals())
+
+        r_counts = pandas2ri.py2ri(self.table)
+
+        plotHeatmap(r_counts)
 
     def shuffleRows(self,
                     min_cbin, max_cbin, width_cbin,
