@@ -464,7 +464,7 @@ class Counts(object):
     def plotPairwiseCorrelations(self, outfile, subset=False):
         ''' use the R base pairs function to plot all pairwise
         correlations between the samples
-        
+
         subset will randomly subset n rows to speed up plotting'''
 
         plotGGpairs = R('''
@@ -517,7 +517,7 @@ class Counts(object):
 
     def heatmap(self, plotfile):
         ''' plots a heatmap '''
-        # to do: add option to parse design file and add coloured row for 
+        # to do: add option to parse design file and add coloured row for
         # variable specified in design file.
 
         plotHeatmap = R('''

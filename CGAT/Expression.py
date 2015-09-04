@@ -188,14 +188,14 @@ class ExperimentalDesign(object):
     include
        whether or not this sample should be included
        in the design
-    
+
     group
        a label grouping several samples into a group
-    
+
     pair
        for paired tests, a numeric identifier linking
        samples that are paired.
-    
+
     An example of an experimtal design with two groups and paired
     samples is below::
 
@@ -293,7 +293,7 @@ class ExperimentalDesign(object):
             self.has_pairs = False
 
     def validate(self, counts, model=None):
-        
+
         missing = set(self.samples).difference(set(counts.table.columns))
         if len(missing) > 0:
             raise ValueError("following samples in design table are missing"
@@ -365,7 +365,7 @@ class ExperimentalDesign(object):
         -------
         dict
             with groups as keys and list of samples within a group as values.
-        
+
         """
         groups_to_tracks = {}
 
@@ -1156,7 +1156,6 @@ class DEExperiment_DESeq2(DEExperiment):
                 design factors columns"
                 model = [x for x in model_terms if x != contrast]
                 model = "~" + "+".join(model)
-
 
                 performDifferentialTesting = R('''
                 function(dds){
