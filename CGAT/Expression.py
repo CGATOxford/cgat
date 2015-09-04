@@ -85,8 +85,6 @@ import numpy as np
 from scipy.stats import ttest_ind
 import matplotlib
 import matplotlib.pyplot as plt
-import pylab
-
 import rpy2
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
@@ -3522,7 +3520,7 @@ def plotCorrelationHeatmapMatplot(counts, outfile, method="correlation",
     plt.yticks(np.arange(0.5, len(df.index), 1), df.index)
     plt.xticks(np.arange(0.5, len(df.columns), 1), df.columns, rotation=90)
     plt.tight_layout()
-    pylab.savefig(outfile)
+    plt.savefig(outfile)
 
 
 def runEdgeRPandas(counts,

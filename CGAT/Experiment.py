@@ -174,12 +174,10 @@ Complete reference
 
 '''
 
-import string
 import re
 import sys
 import time
 import inspect
-import getopt
 import copy
 import os
 import logging
@@ -366,10 +364,6 @@ class AppendCommaOption(optparse.Option):
             optparse.Option.take_action(
                 self, action, dest, opt, value, values, parser)
 
-#################################################################
-#################################################################
-#################################################################
-
 
 class OptionParser(optparse.OptionParser):
 
@@ -439,8 +433,6 @@ def openFile(filename, mode="r", create_dir=False):
     else:
         return open(filename, mode)
 
-#################################################################
-
 
 def getHeader():
     """return a header string with command line options and timestamp
@@ -489,21 +481,6 @@ def getFooter():
             " ".join(map(lambda x: "%5.2f" % x, os.times()[:4])),
             global_id)
 
-######################################################################
-# Deprecated old call interface
-
-
-def GetFooter():
-    return getFooter()
-
-
-def GetHeader():
-    return getHeader()
-
-
-def GetParams():
-    return getParams()
-
 
 class MultiLineFormatter(logging.Formatter):
 
@@ -545,21 +522,22 @@ def Start(parser=None,
     *return_parser* return the parser object, no parsing
 
     *add_csv_options* add common options for parsing :term:`tsv`
-     separated files
+    separated files
 
-    *add_database_options* add common options for connecting to various databases.
+    *add_database_options* add common options for connecting to various
+    databases.
 
     *add_pipe_options* add common options for redirecting input/output
 
     *add_cluster_options* add common options for scripts submitting
-     jobs to the cluster
+    jobs to the cluster
 
     *add_output_options* add commond options for working with multiple
-     output files
+    output files
 
     *returns* a tuple (options,args) with options
-        (a :py:class:`E.OptionParser` object
-        and a list of positional arguments.
+    (a :py:class:`E.OptionParser` object
+    and a list of positional arguments.
 
     The :py:func:`Start` method will also set up a file logger.
 
@@ -1108,104 +1086,6 @@ class Counter(object):
                          for x in sorted(self._counts.iteritems()))
 
 
-class Experiment:
-
-    mShortOptions = ""
-    mLongOptions = []
-
-    mLogLevel = 0
-    mTest = 0
-    mDatabaseName = None
-
-    mName = sys.argv[0]
-
-    def __init__(self):
-
-        # process command-line arguments
-        (self.mOptlist, self.mArgs) = self.ParseCommandLine()
-
-        # set options now
-        self.ProcessOptions(self.mOptlist)
-
-    def DumpParameters(self):
-        """dump parameters of this object. All parameters start with a
-        lower-case m."""
-
-        members = self.__dict__
-
-        print "#" + "-" * 50
-        print "#" + string.join(sys.argv)
-        print "# pid: %i, system:" % os.getpid(), string.join(os.uname(), ",")
-        print "#" + "-" * 50
-        print "# Parameters for instance of <" + self.mName + \
-            "> on " + time.asctime(time.localtime(time.time()))
-
-        member_keys = list(members.keys())
-        member_keys.sort()
-        for member in member_keys:
-            if member[0] == 'm':
-                print "# %-40s:" % member, members[member]
-
-        print "#" + "-" * 50
-        sys.stdout.flush()
-
-    def ProcessOptions(self, optlist):
-        """Sets options in this module. Please overload as necessary."""
-
-        for o, a in optlist:
-            if o in ("-V", "--Verbose"):
-                self.mLogLevel = string.atoi(a)
-            elif o in ("-T", "--test"):
-                self.mTest = 1
-
-    def ProcessArguments(self, args):
-        """Perform actions as given in command line arguments."""
-
-        if self.mLogLevel >= 1:
-            self.DumpParameters()
-
-        for arg in args:
-            if arg[-1] == ")":
-                statement = "self.%s" % arg
-            else:
-                statement = "self.%s()" % arg
-            exec statement
-
-            if self.mLogLevel >= 1:
-                print "-" * 50
-                print statement + " finished at " + \
-                    time.asctime(time.localtime(time.time()))
-                print "-" * 50
-
-    def ParseCommandLine(self):
-        """Call subroutine with command line arguments."""
-
-        self.mShortOptions = self.mShortOptions + "V:D:T"
-        self.mLongOptions.append("Verbose=")
-        self.mLongOptions.append("Database=")
-        self.mLongOptions.append("Test")
-
-        try:
-            optlist, args = getopt.getopt(sys.argv[1:],
-                                          self.mShortOptions,
-                                          self.mLongOptions)
-        except getopt.error, msg:
-            self.PrintUsage()
-            print msg
-            sys.exit(2)
-
-        return optlist, args
-
-    def Process(self):
-        self.ProcessArguments(self.mArgs)
-
-    def PrintUsage(self):
-        """print usage information."""
-
-        print "# valid short options are:", self.mShortOptions
-        print "# valid long options are:", str(self.mLongOptions)
-
-
 def run(statement,
         return_stdout=False,
         return_popen=False,
@@ -1244,3 +1124,19 @@ def run(statement,
         if retcode < 0:
             raise OSError("process was terminated by signal %i" % -retcode)
         return retcode
+
+
+######################################################################
+# Deprecated old call interface
+
+
+def GetFooter():
+    return getFooter()
+
+
+def GetHeader():
+    return getHeader()
+
+
+def GetParams():
+    return getParams()
