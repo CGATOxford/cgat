@@ -52,8 +52,8 @@ the underlying samtools library. See for example :doc:`scripts/bam2stats`.
 
 To add an extension, the following needs to be in place:
 
-1. The main script (:file:`scripts/bam2stats.py`). The important lines in this script
-   are::
+1. The main script (:file:`scripts/bam2stats.py`). The important lines
+   in this script are::
 
       try:
           import pyximport
@@ -63,29 +63,30 @@ To add an extension, the following needs to be in place:
           import CGAT._bam2stats as _bam2stats
 
    The snippet first attempts to build and import the extension by
-   setting up pyximport_ and then importing the cython module
-   as :file:`_bam2stats`. 
-   In case this fails, as is the case for an installed code, it 
-   looks for a pre-built extension (by ``setup.py``) in the CGAT 
-   pacakge.
+   setting up pyximport_ and then importing the cython module as
+   :file:`_bam2stats`.  In case this fails, as is the case for an
+   installed code, it looks for a pre-built extension (by
+   ``setup.py``) in the CGAT pacakge.
  
-2. The cython implementation :file:`_bam2stats.pyx`. This script imports the pysam API via::
+2. The cython implementation :file:`_bam2stats.pyx`. This script
+   imports the pysam API via::
 
       from csamtools cimport *
 
-   This statement imports, amongst others, :class:`AlignedRead` into the namespace. Speed can be
-   gained from declaring variables. For example, to efficiently iterate
-   over a file, an :class:`AlignedRead` object is declared::
+   This statement imports, amongst others, :class:`AlignedRead` into
+   the namespace. Speed can be gained from declaring variables. For
+   example, to efficiently iterate over a file, an
+   :class:`AlignedRead` object is declared::
 
       # loop over samfile
       cdef AlignedRead read
       for read in samfile:
           ...
 
-3. A :file:`pyxbld` providing pyximport_ with build information. 
-   Required are the locations of the samtools and pysam header libraries 
-   of a source installation of pysam plus the :file:`csamtools.so` 
-   shared library. For example::
+3. A :file:`pyxbld` providing pyximport_ with build information.
+   Required are the locations of the samtools and pysam header
+   libraries of a source installation of pysam plus the
+   :file:`csamtools.so` shared library. For example::
 
      def make_ext(modname, pyxfilename):
 	 from distutils.extension import Extension
@@ -99,10 +100,11 @@ To add an extension, the following needs to be in place:
 			  define_macros = pysam.get_defines() )
 
 
-If the script :file:`bam2stats.py` is called the first time, pyximport_ will 
-compile the cython_ extension :file:`_bam2stats.pyx` and make it available 
-to the script. Compilation requires a working compiler and cython_ installation.
-Each time :file:`_bam2stats.pyx` is modified, a new compilation will take place.
+If the script :file:`bam2stats.py` is called the first time,
+pyximport_ will compile the cython_ extension :file:`_bam2stats.pyx`
+and make it available to the script. Compilation requires a working
+compiler and cython_ installation.  Each time :file:`_bam2stats.pyx`
+is modified, a new compilation will take place.
 
 pyximport_ comes with cython_.
 
@@ -112,12 +114,11 @@ Writing recipes
 Recipes are short use cases demonstrating the use of one or more
 CGAT utilities to address a specific problem.
 
-Recipes should be written as ipython_ notebooks. The recipe
-notebooks are stored in the :file:`recipes` directory in
-the repository. Each recipe is within its individual directory.
-This minimizes interference between each document, but also means
-that currently each notebook needs a separate notebook server to
-be developped.
+Recipes should be written as ipython_ notebooks. The recipe notebooks
+are stored in the :file:`recipes` directory in the repository. Each
+recipe is within its individual directory.  This minimizes
+interference between each document, but also means that currently each
+notebook needs a separate notebook server to be developped.
 
 To build all recipes, type::
 
@@ -183,8 +184,6 @@ Best practice for CGAT pipelines:
    Only add them in files where the actual dependency arises, see
    :doc:`modules/Requirements`.
    
-
-
 
 
 
