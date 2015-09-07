@@ -55,8 +55,8 @@ class ComponentPosition:
 
 
 class AGP:
+    """Parser for AGP formatted files."""
 
-    # ------------------------------------------------------------
     def readFromFile(self, infile):
         """read an agp file.
 

@@ -37,15 +37,15 @@ extensions = ['sphinx.ext.autodoc',
               'sphinx.ext.pngmath', 
               'sphinx.ext.ifconfig',
 	      'sphinx.ext.inheritance_diagram',
-              'CGATReport.only_directives',
-              'CGATReport.report_directive',
-              'CGATReport.errors_directive',
-              'CGATReport.warnings_directive',
-              'CGATReport.roles',
 	      'sphinxcontrib.programoutput',
-	      'sphinx.ext.intersphinx' ]
+	      'sphinx.ext.intersphinx',
+	      'sphinx.ext.napoleon']
 
 intersphinx_mapping = {'python': ('http://docs.python.org/2.7', None)}
+
+# coverage configuration
+coverage_ignore_functions = ["main"]
+
 
 # order of autodocumented functions
 autodoc_member_order="bysource"
@@ -71,7 +71,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'CGAT'
-copyright = u'2011, 2012, 2013, 2014 Andreas Heger'
+copyright = u'2011, 2012, 2013, 2014, 2015 Andreas Heger'
 
 
 # Included at the end of each rst file
@@ -84,6 +84,7 @@ rst_epilog = '''
 .. _Galaxy: https://main.g2.bx.psu.edu/
 .. _cython: http://cython.org/
 .. _python: http://python.org/
+.. _ipython: http://ipython.org/
 .. _pyximport: http://www.prescod.net/pyximport/
 .. _sphinx: http://sphinx-doc.org/
 .. _ruffus: http://www.ruffus.org.uk/

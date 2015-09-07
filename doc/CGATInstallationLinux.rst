@@ -192,7 +192,7 @@ and you will need to clone CGAT's Git Hub repository to actually get the code::
 .. _PipInstall:
 
 Installation with ``pip``
-=====================
+==========================
 
 Please note that this installation process is no longer supported
 so you may experience problems due to missing dependencies.

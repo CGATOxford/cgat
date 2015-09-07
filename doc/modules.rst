@@ -183,8 +183,6 @@ Modules not sorted into categories.
    modules/Variants.rst
    modules/WrapperIDR.rst
    modules/WrapperMACS.rst
-   modules/WrapperMEDIPS.rst
-   modules/WrapperSPP.rst
    modules/WrapperZinba.rst
 
 

@@ -75,7 +75,7 @@ iterating over the file. The metrics output are:
 +------------------------+------------------------------------------+
 |reads_unmapped          |number of reads unmapped in file. Assumes |
 |                        |that there is only one                    |
-|                        | entry per unmapped read.                 |
+|                        |entry per unmapped read.                  |
 +------------------------+------------------------------------------+
 |reads_missing           |number of reads missing, if number of     |
 |                        |reads given by --input-rea ds. Otherwise  |
@@ -150,7 +150,7 @@ Example::
 
 This command will generate various statistics based on the supplied
 BAM file, such as percentage reads mapped and percentage reads mapped
-in pairs. The output looks like this::
+in pairs. The output looks like this:
 
 +-----------------------------+------+-------+-----------------+
 |category                     |counts|percent|of               |
