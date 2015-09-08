@@ -30,11 +30,7 @@ Command line options
 
 '''
 import sys
-import string
-import re
-import optparse
 import CGAT.Experiment as E
-import CGAT.PredictionParser as PredictionParser
 
 
 def main(argv=None):

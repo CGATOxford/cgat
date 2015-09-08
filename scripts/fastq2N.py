@@ -1,5 +1,4 @@
-'''
-fastq2N.py -
+'''fastq2N.py -
 =============================================
 
 :Author: Andreas Heger
@@ -11,10 +10,10 @@ Purpose
 -------
 
 .. todo::
-   
-   This script takes as input a fastq file and converts a position (base) to an N
-   call. This is to keep all reads in line should there be an overrepresentation
-   of N calls in any samples.
+
+   This script takes as input a fastq file and converts a position
+   (base) to an N call. This is to keep all reads in line should there
+   be an overrepresentation of N calls in any samples.
 
 Usage
 -----
@@ -34,10 +33,7 @@ Command line options
 
 '''
 
-import os
 import sys
-import re
-import optparse
 import CGAT.Experiment as E
 import CGAT.Fastq as Fastq
 import gzip

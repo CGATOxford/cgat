@@ -107,15 +107,10 @@ Command line options
 
 """
 
-import os
 import sys
-import re
-import optparse
 import collections
-
-import CGAT.Experiment as E
-
 import pysam
+import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IndexedGenome as IndexedGenome
 import CGAT.Genomics as Genomics

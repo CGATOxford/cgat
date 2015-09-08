@@ -31,14 +31,9 @@ Command line options
 
 '''
 import sys
-import re
 import string
-import os
-import optparse
-
-import CGAT.Experiment as E
-import CGAT.Histogram as Histogram
 import scipy
+import CGAT.Experiment as E
 
 
 def PrintValues(outfile, values,  options, prefix="", titles=None):

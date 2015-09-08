@@ -32,7 +32,6 @@ Command line options
 from numpy import *
 from numpy.linalg import norm
 from time import time
-from sys import stdout
 
 
 def nmf(V, Winit, Hinit, tol, timelimit, maxiter, log=None):

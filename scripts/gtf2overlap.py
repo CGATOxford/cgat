@@ -1,5 +1,4 @@
-'''
-gtf2Overlap.py
+'''gtf2Overlap.py
 =============================================
 
 :Author: Nick Ilott
@@ -10,9 +9,10 @@ gtf2Overlap.py
 Purpose
 -------
 
-Take two gtf files, merge transcripts, intersect them and draw a venn diagram of the overlap.
-This is a crude way if assessing the overlap between two gtf files. Results in a locus
-intersection. The intersection keeps all records in gtf-a that intersect gtf-b
+Take two gtf files, merge transcripts, intersect them and draw a venn
+diagram of the overlap.  This is a crude way if assessing the overlap
+between two gtf files. Results in a locus intersection. The
+intersection keeps all records in gtf-a that intersect gtf-b
 
 Usage
 -----
@@ -34,16 +34,12 @@ Command line options
 
 import os
 import sys
-import re
-import optparse
-import itertools
 import random
 import CGAT.Experiment as E
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
 from rpy2.robjects import r as R
 from rpy2.robjects.vectors import FloatVector
-from rpy2.robjects.vectors import StrVector
 
 
 def main(argv=None):

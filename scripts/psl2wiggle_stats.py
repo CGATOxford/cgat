@@ -33,11 +33,6 @@ Command line options
 '''
 
 import sys
-import re
-import string
-import optparse
-import time
-import os
 import glob
 
 import CGAT.Experiment as E

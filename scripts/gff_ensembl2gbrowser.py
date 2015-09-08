@@ -31,16 +31,7 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import getopt
-import time
-import sets
-import optparse
-import math
-import tempfile
 
 import CGAT.Experiment as E
 

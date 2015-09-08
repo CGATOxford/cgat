@@ -1,5 +1,4 @@
-"""
-gtf2alleles.py - predict effects of variants on gene set
+"""gtf2alleles.py - predict effects of variants on gene set
 ========================================================
 
 :Author: Andreas Heger
@@ -10,8 +9,8 @@ gtf2alleles.py - predict effects of variants on gene set
 Purpose
 -------
 
-build from a gene set in gtf format an allelic gene set in which
-each transcript is split into separate alleles. 
+build from a gene set in gtf format an allelic gene set in which each
+transcript is split into separate alleles.
 
 Alleles are built from variants stored in an sqlite database (see the
 options ``--database`` and ``--tablename``).
@@ -38,14 +37,10 @@ Command line options
 
 """
 
-import os
 import sys
-import re
-import optparse
 import collections
 import sqlite3
 
-import numpy
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.IndexedFasta as IndexedFasta
@@ -57,27 +52,27 @@ import alignlib_lite
 import pysam
 
 Allele = collections.namedtuple('Allele',
-                                '''cds, 
-                                    peptide, 
-                                    nexons,
-                                    cds_starts,
-                                    exon_starts,
-                                    frames,
-                                    is_nmd_knockout,
-                                    is_splice_truncated,
-                                    is_stop_truncated,
-                                    nframeshifts,
-                                    ncorrected_frameshifts,
-                                    nuncorrected_frameshits,
-                                    peptide_first_stop,
-                                    peptide_len,
-                                    cds_first_stop,
-                                    cds_len,
-                                    reference_first_stop_start,
-                                    reference_first_stop_end,
-                                    cds_original_len,
-                                    nsplice_noncanonical,
-                                 ''')
+                                '''cds,
+                                peptide,
+                                nexons,
+                                cds_starts,
+                                exon_starts,
+                                frames,
+                                is_nmd_knockout,
+                                is_splice_truncated,
+                                is_stop_truncated,
+                                nframeshifts,
+                                ncorrected_frameshifts,
+                                nuncorrected_frameshits,
+                                peptide_first_stop,
+                                peptide_len,
+                                cds_first_stop,
+                                cds_len,
+                                reference_first_stop_start,
+                                reference_first_stop_end,
+                                cds_original_len,
+                                nsplice_noncanonical,
+                                ''')
 
 
 class VariantGetter(object):

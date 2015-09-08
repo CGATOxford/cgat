@@ -33,9 +33,7 @@ Code
 ----
 
 '''
-import re
 import string
-import sys
 
 try:
     import alignlib_lite

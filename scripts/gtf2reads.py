@@ -57,12 +57,7 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import optparse
-import types
 import random
 import CGAT.GTF as GTF
 import CGAT.Experiment as E
@@ -70,10 +65,8 @@ import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Genomics as Genomics
 import CGAT.SequencePairProperties as SequencePairProperties
 import CGAT.Iterators as Iterators
-
 import numpy
 import numpy.random
-import random
 
 
 def getMutatedSequence(sequence, divergence):

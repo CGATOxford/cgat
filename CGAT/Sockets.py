@@ -31,7 +31,6 @@ Look at the end of the file for example usage.
 """
 
 import sys
-import os
 import string
 import getopt
 

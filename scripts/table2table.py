@@ -99,20 +99,15 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import optparse
 import math
-import types
 import itertools
 import collections
 
 import CGAT.Experiment as E
 import CGAT.CSV as CSV
 import CGAT.Stats as Stats
-import scipy.stats
+import scipy
 
 
 def getColumns(fields, columns="all"):

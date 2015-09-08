@@ -30,19 +30,9 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
 import re
-import optparse
-import math
-import time
-import tempfile
-import subprocess
-
-
 import CGAT.Experiment as E
-import Bio
 import CGAT.FastaIterator as FastaIterator
 
 # ------------------------------------------------------------

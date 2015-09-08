@@ -34,12 +34,7 @@ Command line options
 
 '''
 import sys
-import re
-import string
 import os
-import getopt
-import time
-import optparse
 import math
 import bisect
 import CGAT.Experiment as E

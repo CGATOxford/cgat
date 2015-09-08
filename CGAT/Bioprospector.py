@@ -8,10 +8,8 @@ Bioprospector.py - Parser for Bioprospector output
 :Tags: Python
 """
 
-import string
 import sys
 import re
-import types
 import collections
 
 import weblogolib

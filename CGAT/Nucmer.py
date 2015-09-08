@@ -3,15 +3,10 @@
 # from nucmer
 #####################################################
 
-import os
-import sys
-import re
-
 
 class Coords(object):
 
-    '''
-    class for reading, writing etc the output from 
+    '''class for reading, writing etc the output from 
     show-coords - with nucmer
     '''
 

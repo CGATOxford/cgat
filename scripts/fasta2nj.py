@@ -33,17 +33,8 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
 import re
-import getopt
-import tempfile
-import time
-import optparse
-import math
-import glob
-
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 

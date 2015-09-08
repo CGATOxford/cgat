@@ -26,9 +26,6 @@ Regions.py - helper functions for working with genomic segments
 Version: $Id: Regions.py 2781 2009-09-10 11:33:14Z andreas $
 """
 
-import os
-import string
-import re
 import bisect
 
 

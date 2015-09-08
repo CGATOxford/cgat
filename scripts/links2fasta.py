@@ -35,10 +35,7 @@ import os
 import sys
 import string
 import re
-import getopt
-import tempfile
 import time
-import optparse
 
 import CGAT.Experiment as E
 import CGAT.BlastAlignments as BlastAlignments

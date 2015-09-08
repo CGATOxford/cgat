@@ -125,9 +125,7 @@ To do:
 '''
 
 import sys
-import os
 import pandas as pd
-from rpy2.robjects import r as R
 
 try:
     import CGAT.Experiment as E

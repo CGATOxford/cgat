@@ -134,7 +134,6 @@ import sys
 import pandas as pd
 import CGAT.Experiment as E
 import CGAT.Timeseries as TS
-import numpy as np
 
 
 def main(argv=None):

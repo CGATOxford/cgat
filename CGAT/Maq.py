@@ -33,9 +33,6 @@ Code
 ----
 
 '''
-import copy
-import string
-import collections
 
 
 class Error(Exception):

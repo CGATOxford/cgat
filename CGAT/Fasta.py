@@ -31,9 +31,6 @@ Fasta.py - Methods for dealing with fasta files.
 
 """
 
-import string
-import os
-import sys
 import re
 
 

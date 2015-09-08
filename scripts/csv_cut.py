@@ -1,5 +1,4 @@
-'''
-csv_cut.py - select columns from a table
+'''csv_cut.py - select columns from a table
 ========================================
 
 :Author: Andreas Heger
@@ -14,7 +13,7 @@ extract named columns from a csv formatted table
 
 
 .. todo::
-   
+
    describe purpose of the script.
 
 Usage
@@ -24,8 +23,8 @@ Extract the two columns gene and length from a table in standard input::
 
    python csv_cut.py gene length < stdin
 
-The script permits the use of patterns. For example, the command 
-will select the column gene and all columns that contain the part 'len'::
+The script permits the use of patterns. For example, the command will
+select the column gene and all columns that contain the part 'len'::
 
    python csv_cut.py gene %len% < stdin
 
@@ -39,16 +38,8 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
 import re
-import getopt
-import time
-import optparse
-import math
-import tempfile
-
 import CGAT.Experiment as E
 import csv
 import _csv

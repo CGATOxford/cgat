@@ -29,16 +29,8 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
 import re
-import getopt
-import time
-import optparse
-import math
-import tempfile
-
 import CGAT.Experiment as E
 import csv
 
@@ -68,10 +60,11 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: csv2csv.py 2782 2009-09-10 11:40:29Z andreas $")
+        version="%prog version: $Id$")
 
-    parser.add_option("-s", "--method=sort --sort-order", dest="sort", type="string",
-                      help="fields to take (in sorted order).")
+    parser.add_option(
+        "-s", "--method=sort --sort-order", dest="sort", type="string",
+        help="fields to take (in sorted order).")
 
     (options, args) = E.Start(parser, add_csv_options=True)
 

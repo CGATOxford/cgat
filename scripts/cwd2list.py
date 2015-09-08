@@ -1,5 +1,4 @@
-'''
-cwd2list.py
+'''cwd2list.py
 ====================================================
 
 :Author: 
@@ -10,16 +9,17 @@ cwd2list.py
 Purpose
 -------
 
-create a flat file that represents the current state of the current working directory.
-Useful for when data is deleted due to space contraints. If files need to be recreated
-then the difference between the current present and previous states can be assessed.
+create a flat file that represents the current state of the current
+working directory.  Useful for when data is deleted due to space
+contraints. If files need to be recreated then the difference between
+the current present and previous states can be assessed.
 
 Usage
 -----
 
 Example::
 
-   python cwd2list.py 
+   python cwd2list.py
 
 Type::
 
@@ -34,9 +34,6 @@ Command line options
 
 import os
 import sys
-import re
-import optparse
-import collections
 import time
 import datetime
 

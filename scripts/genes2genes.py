@@ -37,8 +37,6 @@ Command line options
 
 import sys
 import collections
-import pickle
-
 import CGAT.Experiment as E
 import CGAT.Biomart as Biomart
 

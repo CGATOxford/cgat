@@ -31,26 +31,10 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import tempfile
-import subprocess
-import optparse
-import math
-
-
 import CGAT.Experiment as E
 import CGAT.Blat as Blat
-import CGAT.IOTools as IOTools
-
-# import psyco_full
-import sys
 import bx.bitset
-import bx.bitset_builders
-
-# ------------------------------------------------------------------------
 
 
 def main(argv=None):

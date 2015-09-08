@@ -481,7 +481,6 @@ import CGAT.Intervals as Intervals
 
 import bx
 import bx.bbi.bigwig_file
-import bx.intervals.io
 import bx.intervals.intersection
 
 try:

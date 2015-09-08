@@ -43,16 +43,11 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
 import string
-import re
 import getopt
-import tempfile
 
 import CGAT.Experiment as E
-import CGAT.Genomics as Genomics
-import CGAT.Exons as Exons
 import CGAT.WrapperBaseML as WrapperBaseML
 import CGAT.WrapperGblocks as WrapperGblocks
 import alignlib_lite

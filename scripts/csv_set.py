@@ -31,19 +31,10 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import getopt
-import time
-import optparse
-import math
-import tempfile
 
 import CGAT.Experiment as E
 import CGAT.CSV as CSV
-import csv
 import hashlib
 
 

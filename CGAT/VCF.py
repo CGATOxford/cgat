@@ -40,7 +40,6 @@ Code
 
 '''
 import sys
-import gzip
 
 
 class VCFEntry:

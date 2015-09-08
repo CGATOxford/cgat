@@ -11,10 +11,7 @@ As of biopython 1.5.6, the MAST parser is broken.
 
 """
 
-import string
-import sys
 import re
-import types
 
 
 class Match:

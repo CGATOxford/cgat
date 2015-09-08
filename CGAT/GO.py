@@ -33,16 +33,9 @@ Code
 ----
 
 '''
-import os
 import sys
-import string
 import re
-import getopt
-import time
-import optparse
 import math
-import tempfile
-import subprocess
 import random
 import collections
 
@@ -51,7 +44,6 @@ import scipy.stats
 import scipy.special
 import numpy
 from CGAT import Stats as Stats
-from CGAT import Database as Database
 from CGAT import Experiment as E
 from CGAT import IOTools as IOTools
 from CGAT import CSV as CSV

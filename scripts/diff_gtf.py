@@ -128,10 +128,7 @@ Command line options
 '''
 
 import sys
-import string
 import re
-import optparse
-import collections
 import numpy
 
 import CGAT.Experiment as E
