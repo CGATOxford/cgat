@@ -17,7 +17,6 @@ Genomics
    modules/IndexedFasta.rst
    modules/Intervals.rst
    modules/Mali.rst
-   modules/MaliIO.rst
    modules/Masker.rst
    modules/SequencePairProperties.rst
    modules/SequenceProperties.rst
@@ -29,11 +28,6 @@ Genomics
    modules/Maq.rst
    modules/Wiggle.rst
    modules/AGP.rst
-   modules/Regions.rst
-   modules/Synteny.rst
-   modules/AlignedPairs.rst
-   modules/ProfileLibrary.rst
-   modules/ProfileLibraryCompass.rst
 
 Phylogeny
 ---------
@@ -53,22 +47,8 @@ Parsers and wrappers
 .. toctree::
    :maxdepth: 1
 
-   modules/WrapperAdaptiveCAI.rst
-   modules/WrapperBaseML.rst
-   modules/WrapperBl2Seq.rst
-   modules/WrapperBlastZ.rst
-   modules/WrapperClustal.rst
    modules/WrapperCodeML.rst
-   modules/WrapperDBA.rst
-   modules/WrapperDialign.rst
-   modules/WrapperENC.rst
-   modules/WrapperExonerate.rst
-   modules/WrapperGblocks.rst
-   modules/WrapperNJTree.rst
-   modules/WrapperSlr.rst
-   modules/WrapperHmmer.rst
    modules/WrapperMuscle.rst
-   modules/WrapperPhylip.rst
 
 Math and Stats
 ---------------
@@ -82,20 +62,6 @@ Math and Stats
    modules/Stats.rst
    modules/MatlabTools.rst
    modules/MatrixTools.rst
-
-Gpipe and OPTIC
----------------
-
-.. toctree::
-   :maxdepth: 1
-
-   modules/Exons.rst
-   modules/Orthologs.rst
-   modules/Prediction.rst
-   modules/PredictionFile.rst
-   modules/PredictionParser.rst
-   modules/Predictor.rst
-   modules/BlastAlignments.rst 
 
 CGAT infrastructure
 -------------------
@@ -121,8 +87,6 @@ Toolboxes for generic problems.
    modules/IOTools.rst
    modules/Iterators.rst
    modules/Database.rst
-   modules/ExternalList.rst
-   modules/ProgressBar.rst
 
 Plotting
 --------
@@ -136,25 +100,8 @@ Other
    :maxdepth: 2
 
    modules/RLE.rst
-   modules/SVGDuplicationsWheel.rst
-   modules/SVGTree.rst
    modules/SVGdraw.rst
    modules/SetTools.rst
-   modules/Sockets.rst
-   modules/GraphTools.rst
-   modules/Cluster.rst
-
-Obsolete
---------
-
-.. toctree::
-   :maxdepth: 2
-
-   modules/Intervalls.rst
-   modules/IntervallsWeighted.rst
-   modules/SaryFasta.rst
-   modules/Fasta.rst
-   modules/SuffixArray.rst
 
 Unsorted
 ---------
@@ -165,7 +112,6 @@ Modules not sorted into categories.
    :maxdepth: 2
 
    modules/Bioprospector.rst
-   modules/BlatTest.rst 
    modules/CBioPortal.rst 
    modules/CSV2DB.rst 
    modules/Expression.rst 
@@ -183,8 +129,6 @@ Modules not sorted into categories.
    modules/Variants.rst
    modules/WrapperIDR.rst
    modules/WrapperMACS.rst
-   modules/WrapperMEDIPS.rst
-   modules/WrapperSPP.rst
    modules/WrapperZinba.rst
 
 

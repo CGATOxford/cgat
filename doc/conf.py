@@ -84,6 +84,7 @@ rst_epilog = '''
 .. _Galaxy: https://main.g2.bx.psu.edu/
 .. _cython: http://cython.org/
 .. _python: http://python.org/
+.. _ipython: http://ipython.org/
 .. _pyximport: http://www.prescod.net/pyximport/
 .. _sphinx: http://sphinx-doc.org/
 .. _ruffus: http://www.ruffus.org.uk/

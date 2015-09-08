@@ -1,5 +1,5 @@
 
 .. automodule:: intervaltable2bed
 
-.. program-output:: python ../scripts/intervaltable2bed.py --no-usage --help
+.. program-output:: python ../scripts/intervaltable2bed.py --help
 

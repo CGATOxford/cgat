@@ -1,5 +1,5 @@
 
 .. automodule:: data2histogram
 
-.. program-output:: python ../scripts/data2histogram.py --no-usage --help
+.. program-output:: python ../scripts/data2histogram.py --help
 

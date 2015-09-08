@@ -3,7 +3,7 @@ Reference
 =========
 
 This section describes the layout of the code repository and contains
-a reference to the complete contents of the pipeline collection.
+a reference to the complete contents of the code collection.
 
 Repository layout
 =================
@@ -32,7 +32,7 @@ Contents
 ========
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    scripts.rst
    modules.rst

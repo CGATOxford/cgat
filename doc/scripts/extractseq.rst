@@ -1,5 +1,5 @@
 
 .. automodule:: extractseq
 
-.. program-output:: python ../scripts/extractseq.py --no-usage --help
+.. program-output:: python ../scripts/extractseq.py --help
 
