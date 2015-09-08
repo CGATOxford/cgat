@@ -118,7 +118,8 @@ and returns a version string.
 Running tests
 -------------
 
-In order to run the tests on CGAT scripts, type::
+The CGAT code collection runs both under nose or py.test. In order to
+run the tests on CGAT scripts under the nose framework, type::
 
    nosetests tests/test_scripts.py
 
@@ -132,6 +133,10 @@ a single script, for example ``beds2counts.py``, add the following::
 
    restrict:
          regex: beds2counts.py
+
+To run the tests using py.test, type::
+
+   py.test tests/test_scripts.py
 
 Testing for style
 =================
@@ -184,4 +189,17 @@ There are some unit tests for specific functions in modules, but
 a testing regime has not been formalized.
 
 .. _pep8: http://legacy.python.org/dev/peps/pep-0008/
+
+Code coverage
+=============
+
+Code coverage for modules can be computed if the
+`python coverage <https://pypi.python.org/pypi/coverage>`_ module has
+been installed. To compute coverage, use::
+
+   nosetests --with-coverage --cover-package=CGAT --cover-package=scripts tests/test_scripts.py
+
+or using py.test::
+
+   py.test -s tests/test_scripts.py --cov=`pwd` >& out
 

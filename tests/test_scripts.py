@@ -30,6 +30,8 @@ import yaml
 import time
 import hashlib
 
+import TestUtils
+
 from nose.tools import ok_
 
 SUBDIRS = ("gpipe", "optic")
@@ -77,7 +79,9 @@ def compute_checksum(filename):
 
 def check_script(test_name, script, stdin,
                  options, outputs,
-                 references, workingdir):
+                 references,
+                 working_dir,
+                 current_dir):
     '''check script.
 
     # 1. Name of the script
@@ -85,7 +89,7 @@ def check_script(test_name, script, stdin,
     # 3. Option string
     # 4. List of output files to collect
     # 5. List of reference files
-    workingdir - directory of test data
+    working_dir - directory of test data
     '''
     tmpdir = tempfile.mkdtemp()
 
@@ -95,17 +99,17 @@ def check_script(test_name, script, stdin,
     if stdin:
         if stdin.endswith(".gz"):
             # zcat on osX requires .Z suffix
-            stdin = 'gunzip < %s/%s |' % (os.path.abspath(workingdir), stdin)
+            stdin = 'gunzip < %s/%s |' % (os.path.abspath(working_dir), stdin)
         else:
-            stdin = 'cat %s/%s |' % (os.path.abspath(workingdir), stdin)
+            stdin = 'cat %s/%s |' % (os.path.abspath(working_dir), stdin)
     else:
         stdin = ""
 
     if options:
         options = re.sub("%TMP%", tmpdir, options)
         options = re.sub("<TMP>", tmpdir, options)
-        options = re.sub("%DIR%", os.path.abspath(workingdir), options)
-        options = re.sub("<DIR>", os.path.abspath(workingdir), options)
+        options = re.sub("%DIR%", os.path.abspath(working_dir), options)
+        options = re.sub("<DIR>", os.path.abspath(working_dir), options)
     else:
         options = ""
 
@@ -121,6 +125,9 @@ def check_script(test_name, script, stdin,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE,
                                cwd=tmpdir)
+
+    if DEBUG:
+        print "tmpdir=", tmpdir
 
     process_stdout, process_stderr = process.communicate()
 
@@ -142,7 +149,7 @@ def check_script(test_name, script, stdin,
                 output = stdout
             elif output.startswith("<DIR>/") or \
                     output.startswith("%DIR%/"):
-                output = os.path.join(workingdir, output[6:])
+                output = os.path.join(working_dir, output[6:])
             else:
                 output = os.path.join(tmpdir, output)
 
@@ -151,7 +158,7 @@ def check_script(test_name, script, stdin,
                 msg = "output file '%s'  does not exist: %s" %\
                       (output, statement)
 
-            reference = os.path.join(workingdir, reference)
+            reference = os.path.join(working_dir, reference)
             if not fail and not os.path.exists(reference):
                 fail = True
                 msg = "reference file '%s' does not exist (%s): %s" %\
@@ -173,6 +180,14 @@ def check_script(test_name, script, stdin,
                                     test_name,
                                     t2-t1))
     LOGFILE.flush()
+
+    # preserve coverage information, this gets stored it tmpdir, but
+    # needs to be moved to the current directory to be merged.
+    coverage_files = glob.glob(os.path.join(tmpdir, ".coverage*"))
+    for f in coverage_files:
+        shutil.move(os.path.abspath(f),
+                    os.path.join(current_dir, os.path.basename(f)))
+
     if not DEBUG:
         shutil.rmtree(tmpdir)
     ok_(not fail, msg)
@@ -181,36 +196,49 @@ def check_script(test_name, script, stdin,
 def test_scripts():
     '''yield list of scripts to test.'''
 
-    scriptdirs = glob.glob("tests/*.py")
+    # the current directory
+    current_dir = os.getcwd()
 
-    if os.path.exists("tests/_test_scripts.yaml"):
-        config = yaml.load(open("tests/_test_scripts.yaml"))
+    # directory location of tests
+    testing_dir = TestUtils.get_tests_directory()
+
+    # directory location of scripts
+    scripts_dir = os.path.join(os.path.dirname(testing_dir), "scripts")
+
+    # directories with tests (correspond to script names and
+    # hence end in .py)
+    test_dirs = glob.glob(os.path.join(testing_dir, "*.py"))
+
+    # the config file
+    config_file = os.path.join(testing_dir, "_test_scripts.yaml")
+
+    if os.path.exists(config_file):
+        config = yaml.load(open(config_file))
         if config is not None:
             if "restrict" in config and config["restrict"]:
                 values = config["restrict"]
                 if "glob" in values:
-                    scriptdirs = glob.glob("tests/*.py")
-
+                    test_dirs = os.path.join(testing_dir, values["glob"])
                 if "manifest" in values:
                     # take scripts defined in the MANIFEST.in file
-                    scriptdirs = [x for x in open("MANIFEST.in")
-                                  if x.startswith("include scripts") and
-                                  x.endswith(".py\n")]
-                    scriptdirs = [re.sub("include\s*scripts/", "tests/",
-                                         x[:-1]) for x in scriptdirs]
+                    test_dirs = [x for x in open("MANIFEST.in")
+                                 if x.startswith("include scripts") and
+                                 x.endswith(".py\n")]
+                    test_dirs = [re.sub("include\s*scripts/", "tests/",
+                                        x[:-1]) for x in test_dirs]
 
                 if "regex" in values:
                     rx = re.compile(values["regex"])
-                    scriptdirs = filter(rx.search, scriptdirs)
+                    test_dirs = filter(rx.search, test_dirs)
 
     # ignore those which don't exist as tests (files added through MANIFEST.in,
     # such as version.py, __init__.py, ...
-    scriptdirs = [x for x in scriptdirs if os.path.exists(x)]
+    test_dirs = [x for x in test_dirs if os.path.exists(x)]
 
     # ignore non-directories
-    scriptdirs = [x for x in scriptdirs if os.path.isdir(x)]
+    test_dirs = [x for x in test_dirs if os.path.isdir(x)]
 
-    scriptdirs.sort()
+    test_dirs.sort()
 
     # restrict tests run according to chunk parameters
     starting_test_number = os.getenv('CGAT_TASK_ID', None)
@@ -220,27 +248,27 @@ def test_scripts():
         starting_test_number, test_increment = \
             (int(starting_test_number) - 1,
              int(test_increment))
-        scriptdirs = scriptdirs[starting_test_number:
-                                starting_test_number + test_increment]
+        test_dirs = test_dirs[starting_test_number:
+                              starting_test_number + test_increment]
     except TypeError:
         pass
 
-    for scriptdir in scriptdirs:
+    for test_script in test_dirs:
 
-        script_name = os.path.basename(scriptdir)
+        script_name = os.path.basename(test_script)
 
-        check_main.description = os.path.join(scriptdir, "def_main")
+        check_main.description = os.path.join(script_name, "def_main")
         yield (check_main,
-               os.path.abspath(os.path.join("scripts", script_name)))
+               os.path.abspath(os.path.join(scripts_dir, script_name)))
 
-        fn = '%s/tests.yaml' % scriptdir
+        fn = '%s/tests.yaml' % test_script
         if not os.path.exists(fn):
             continue
 
         script_tests = yaml.load(open(fn))
 
         for test, values in script_tests.items():
-            check_script.description = os.path.join(scriptdir, test)
+            check_script.description = os.path.join(script_name, test)
 
             # deal with scripts in subdirectories. These are prefixed
             # by a "<subdir>_" for example: optic_compare_projects.py
@@ -253,12 +281,13 @@ def test_scripts():
 
             yield(check_script,
                   test,
-                  os.path.abspath(os.path.join("scripts", script_name)),
+                  os.path.abspath(os.path.join(scripts_dir, script_name)),
                   values.get('stdin', None),
                   values['options'],
                   values['outputs'],
                   values['references'],
-                  scriptdir)
+                  test_script,
+                  current_dir)
 
 
 def _read(fn):
