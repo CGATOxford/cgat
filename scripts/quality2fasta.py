@@ -44,7 +44,6 @@ class FromFastaIterator:
                  default=None):
         """default: set all quality scores to this default value."""
 
-        import FastaIterator
         self.mInputIterator = FastaIterator.FastaIterator(infile)
         self.mOutputIterator = self._iterate()
         self.mNOverFlow = 0

@@ -164,17 +164,10 @@ import sys
 import os
 import pandas as pd
 import numpy as np
-
-try:
-    import CGAT.Experiment as E
-    import CGAT.Counts as Counts
-    import CGAT.Expression as Expression
-    import CGAT.IOTools as IOTools
-except ImportError:
-    import Experiment as E
-    import Expression
-    import Counts
-    import IOTools
+import CGAT.Experiment as E
+import CGAT.Counts as Counts
+import CGAT.Expression as Expression
+import CGAT.IOTools as IOTools
 
 
 def main(argv=None):

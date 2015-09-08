@@ -34,8 +34,8 @@ Code
 
 '''
 import numpy
-from CGAT import WrapperCodeML as WrapperCodeML
 from CGAT import Mali as Mali
+from CGAT import WrapperCodeML as WrapperCodeML
 
 
 class SequencePairProperties:
