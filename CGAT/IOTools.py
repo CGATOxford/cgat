@@ -1038,7 +1038,7 @@ def readList(infile,
        When given, automatically transform/map the values given
        this dictionary.
     with_title : bool
-       If true, ignore first line with header.
+       If true, first line of file is title and will be ignored.
 
     Returns
     -------
@@ -1064,10 +1064,7 @@ def readList(infile,
             d = map_category[d]
         m.append(d)
 
-    if with_title:
-        return title, m
-    else:
-        return m
+    return m
 
 
 def readMultiMap(infile,

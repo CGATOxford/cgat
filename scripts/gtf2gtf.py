@@ -997,7 +997,7 @@ def main(argv=None):
 
             if options.filename_filter:
 
-                ids, nerrors = IOTools.ReadList(
+                ids = IOTools.readList(
                     IOTools.openFile(options.filename_filter, "r"))
                 E.info("read %i ids" % len(ids))
 
