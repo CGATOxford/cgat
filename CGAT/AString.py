@@ -24,13 +24,11 @@
 AString.py - strings as arrays of characters
 ============================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
-:Tags: Python
+This module provides the :class:`AString` class to efficiently
+represent long, chromosomal nucleotide sequences in memory.
 
-Code
-----
+Reference
+---------
 
 '''
 from array import array

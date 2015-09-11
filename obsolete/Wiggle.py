@@ -1,18 +1,20 @@
 """
-Wiggle.py - Support for the `wiggle`_ format used by `ucsc`_.
-=============================================================
+Wiggle.py - Support for the `wiggle`_ format
+============================================
 
-:Author: 
-:Release: $Id$
-:Date: |today|
-:Tags: Python
+This module provides a class for random acces inside wiggle files.
+The implementation is derived from python.bx.
 
-.. _wiggle: http://genome.ucsc.edu/FAQ/FAQformat.html#format5
-.. _ucsc: ??
+
+
 """
 
-# I had to re-implement the reader, so that random access would work.
-
+# AH: I had to re-implement the reader, so that random access would work.
+#
+#     I think the background was the script psl2wiggle_stats which 
+#     worked from per-chromosome wiggle files that were bz2 block
+#     compressed (phastcons scores). I think now these are available
+#     as bigwig files.
 
 import numpy
 from bx import interval_index_file
@@ -29,7 +31,7 @@ class WiggleIndexedAccess(interval_index_file.AbstractIndexedAccess):
         """return a list of numpy arrays.
 
         Each entry in the list is a tuple (pos, array),
-        where pos refers to the residue number of the 
+        where pos refers to the residue number of the
         first position in pos.
 
         dtype: numpy datatype

@@ -1,6 +1,6 @@
 '''
 fasta2distances.py - analyze pairs of sequences
-=============================================
+===============================================
 
 :Author: Andreas Heger
 :Release: $Id$

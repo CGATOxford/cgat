@@ -44,8 +44,12 @@ _static/toolmap.svg:
 	-mkdir _static
 	neato -Tsvg toolmap.dot > $@
 
+_static/dependency_graph.svg: ../dependency_graph/cgat_raw.svg
+	@echo adding dependency graph
+	cp $< $@
+
 # remove the pyc file - otherwise errors when importing pipeline and other scripts
-html: _static/toolmap.svg
+html: _static/toolmap.svg _static/dependency_graph.svg
 	rm -f ../{CGAT,CGATPipelines,scripts}/*.pyc
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) _build/html
 	@echo

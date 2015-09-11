@@ -20,17 +20,19 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-'''
-Blat.py - tools for working with psl formatted files and data
+'''Blat.py - tools for working with PSL formatted files and data
 =============================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
-:Tags: Python
+This module provides a class to parse :term:`PSL` formatted
+files such as those output by the BLAT tool.
 
-Code
-----
+This module defines the :class:`Blat.Match` class representing a
+single entry and a series of iterators to iterate of :term:`PSL`
+formatted files (:func:`iterator`, :func:`iterator_target_overlap`,
+...).
+
+Reference
+---------
 
 '''
 import copy
@@ -47,7 +49,6 @@ from CGAT import Experiment as E
 
 
 class Error(Exception):
-
     """Base class for exceptions in this module."""
 
     def __str__(self):
@@ -84,7 +85,7 @@ match   mis-    rep.    N's     Q gap   Q gap   T gap   T gap   strand  Q       
 
 class Match:
 
-    """a psl match.
+    """a :term:`psl` formatted alignment.
 
     Block coordinates are on the forward strand for target and on
     the forward/reverse strand for the query depending on the strand.
@@ -125,24 +126,31 @@ class Match:
         About the psl psl format from the manual at
         http://genome.ucsc.edu/google/goldenPath/help/pslSpec.html
 
-        '''
-        In general the coordinates in psl files are "zero based half open." The first base in a sequence is numbered zero rather than one. 
-        When representing a range the end coordinate is not included in the range. Thus the first 100 bases of a sequence are represented
-        as 0-100, and the second 100 bases are represented as 100-200. 
+        ::
+           In general the coordinates in psl files are "zero based
+           half open." The first base in a sequence is numbered zero
+           rather than one.  When representing a range the end
+           coordinate is not included in the range. Thus the first 100
+           bases of a sequence are represented as 0-100, and the
+           second 100 bases are represented as 100-200.
 
-        There is a another little unusual feature in the .psl format. It has to do with how coordinates are handled on the negative strand. 
-        In the qStart/qEnd fields the coordinates are where it matches from the point of view of the forward strand (even when the match is 
-        on the reverse strand). However on the qStarts[] list, the coordinates are reversed.
-        '''
+           There is a another little unusual feature in the .psl
+           format. It has to do with how coordinates are handled on
+           the negative strand.  In the qStart/qEnd fields the
+           coordinates are where it matches from the point of view of
+           the forward strand (even when the match is on the reverse
+           strand). However on the qStarts[] list, the coordinates are
+           reversed.
 
-        I want to work in forward coordinates for the query and forward/reverse coordinates
-        for the sbjct.
+        This class works in forward coordinates for the query and
+        forward/reverse coordinates for the sbjct.
 
         For a negative strand match, the following is done:
            * invert mSbjctFrom and mSbjctTo with mSbjctLength
            * add block sizes to mQueryStarts and mSbjctStarts
            * invert mQueryStarts and mSbjctStarts
            * reverse blocksize, mQueryStarts and mSbjctStarts
+
         """
 
         block_sizes = self.mBlockSize
@@ -174,9 +182,10 @@ class Match:
     def switchTargetStrand(self):
         """switch the target strand. 
 
-        Use in cases in which a feature has been defined on the negative target strand
-        with reverse coordinates. The result will be the same alignment using forward
-        coordinates on the target.
+        Use in cases in which a feature has been defined on the
+        negative target strand with reverse coordinates. The result
+        will be the same alignment using forward coordinates on the
+        target.
 
         This method will also update the query strand and coordinates.
         """
@@ -187,10 +196,12 @@ class Match:
 
         # invert alignment
         self.mQueryBlockStarts = [
-            self.mQueryLength - x - y for x, y in zip(query_starts, block_sizes)]
+            self.mQueryLength - x - y
+            for x, y in zip(query_starts, block_sizes)]
         self.mQueryBlockStarts.reverse()
         self.mSbjctBlockStarts = [
-            self.mSbjctLength - x - y for x, y in zip(sbjct_starts, block_sizes)]
+            self.mSbjctLength - x - y
+            for x, y in zip(sbjct_starts, block_sizes)]
         self.mSbjctBlockStarts.reverse()
         self.mBlockSizes.reverse()
 
@@ -261,7 +272,7 @@ class Match:
     def fromMaq(self, maq):
         """build BLAT entry from a MAQ match.
 
-        see Maq.py
+        see :class:`Maq.Match`.
         """
         start = maq.start - 1
         l = maq.mLength
@@ -282,7 +293,9 @@ class Match:
 
     def getBlocks(self):
         """return a list of aligned blocks."""
-        return zip(self.mQueryBlockStarts, self.mSbjctBlockStarts, self.mBlockSizes)
+        return zip(self.mQueryBlockStarts,
+                   self.mSbjctBlockStarts,
+                   self.mBlockSizes)
 
     def __str__(self):
         return "\t".join(map(str, (
@@ -339,14 +352,15 @@ class Match:
 
         map_target2query = alignlib_lite.py_makeAlignmentBlocks()
 
-        f = alignlib_lite.py_AlignmentFormatBlat("%i\t%i\t%i\t%i\t%s\t%s\t%s\n" % (
-            min(self.mSbjctBlockStarts),
-            max(self.mSbjctBlockStarts),
-            min(self.mQueryBlockStarts),
-            max(self.mQueryBlockStarts),
-            ",".join([str(x) for x in self.mSbjctBlockStarts]) + ",",
-            ",".join([str(x) for x in self.mQueryBlockStarts]) + ",",
-            ",".join([str(x) for x in self.mBlockSizes]) + ","))
+        f = alignlib_lite.py_AlignmentFormatBlat(
+            "%i\t%i\t%i\t%i\t%s\t%s\t%s\n" % (
+                min(self.mSbjctBlockStarts),
+                max(self.mSbjctBlockStarts),
+                min(self.mQueryBlockStarts),
+                max(self.mQueryBlockStarts),
+                ",".join([str(x) for x in self.mSbjctBlockStarts]) + ",",
+                ",".join([str(x) for x in self.mQueryBlockStarts]) + ",",
+                ",".join([str(x) for x in self.mBlockSizes]) + ","))
         f.copy(map_target2query)
         return map_target2query
 
@@ -378,7 +392,8 @@ class Match:
 
         self.mQueryFrom, self.mQueryTo, self.mSbjctFrom, self.mSbjctTo = \
             map(int,
-                (self.mQueryFrom, self.mQueryTo, self.mSbjctFrom, self.mSbjctTo))
+                (self.mQueryFrom, self.mQueryTo,
+                 self.mSbjctFrom, self.mSbjctTo))
 
         # queryfrom and queryto are always forward strand coordinates
         if use_strand and self.strand == "-":

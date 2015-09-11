@@ -43,7 +43,8 @@ extensions = ['sphinx.ext.autodoc',
               'CGATReport.warnings_directive',
               'CGATReport.roles',
 	      'sphinxcontrib.programoutput',
-	      'sphinx.ext.intersphinx' ]
+	      'sphinx.ext.intersphinx',
+	      'sphinx.ext.napoleon' ]
 
 intersphinx_mapping = {'python': ('http://docs.python.org/2.7', None)}
 

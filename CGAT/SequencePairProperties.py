@@ -20,19 +20,18 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-'''
-SequencePairProperties.py -
-======================================================
+"""SequencePairProperties.py - Computing metrics for aligned sequences
+======================================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
-:Tags: Python
+This module provides methods for extracting and reporting sequence
+properties of aligned nucleotide sequences such as percent identity,
+substitution rate, etc.
 
-Code
-----
 
-'''
+Reference
+---------
+
+"""
 import numpy
 from CGAT import Mali as Mali
 from CGAT import WrapperCodeML as WrapperCodeML

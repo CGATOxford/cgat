@@ -1,5 +1,4 @@
-'''
-table2table.py - operate on tables
+'''table2table.py - operate on tables
 ==================================
 
 :Author: Andreas Heger
@@ -37,11 +36,12 @@ flatten-table
    Output a table as row/column/value tuples.
 
 as-column
-   Output table as a single column. Colums in the original table are appended and output.
+   Output table as a single column. Colums in the original table are
+   appended and output.
 
 collapse-table
-   Collapse a table of two columns with row names in the first column. Outputs a table
-   with multiple columns for each row name.
+   Collapse a table of two columns with row names in the first
+   column. Outputs a table with multiple columns for each row name.
 
 Methods for numerical columns
 +++++++++++++++++++++++++++++

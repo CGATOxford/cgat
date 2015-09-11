@@ -21,16 +21,15 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-Maq.py - 
-======================================================
+Maq.py - Working with Maq formatted files
+=========================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
-:Tags: Python
+This module provides a parser for the output of the maq mapper.
+As this mapper is out of use, the contents here are of historical
+interest only.
 
-Code
-----
+Reference
+---------
 
 '''
 

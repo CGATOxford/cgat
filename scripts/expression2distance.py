@@ -38,7 +38,7 @@ This correlates time series with respect to their behaviour, and is somewhat
 analagous to template matching of time series expression profiles.
 
 Cross correlation
-================
+=================
 
 The normalised cross-correlation uses the numpy correlate function, normalised
 for length of the leading time series.

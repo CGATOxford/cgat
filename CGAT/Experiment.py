@@ -20,21 +20,20 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-'''Experiment.py - Tools for scripts
-=================================
+'''Experiment.py - Tools for writing reproducible scripts
+=========================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
-:Tags: Python
-
-The :mod:`Experiment` modules contains utility functions for logging
-and record keeping of scripts.
+The :mod:`Experiment` modules contains utility functions for argument
+parsing, logging and record keeping within scripts.
 
 This module is imported by most CGAT scripts. It provides convenient
 and consistent methods for
 
    * `Record keeping`_
+   * `Argument parsing`_
+   * `Input/Output redirection`_
+   * `Logging`_
+   * `Running external commands`_
    * `Benchmarking`_
 
 See :doc:`../scripts/cgat_script_template` on how to use this module.
@@ -49,7 +48,7 @@ The basic usage of this module within a script is::
     import optparse
     import CGAT.Experiment as E
 
-    def main( argv = None ):
+    def main(argv=None):
         """script main.
 
         parses command line options in sys.argv, unless *argv* is given.
@@ -58,27 +57,26 @@ The basic usage of this module within a script is::
         if not argv: argv = sys.argv
 
         # setup command line parser
-        parser = E.OptionParser( version = "%prog version: $Id$",
-                                        usage = globals()["__doc__"] )
+        parser = E.OptionParser(version="%prog version: $Id$",
+                                usage=globals()["__doc__"] )
 
         parser.add_option("-t", "--test", dest="test", type="string",
-                          help="supply help"  )
+                          help="supply help")
 
-        ## add common options (-h/--help, ...) and parse
-        ## command line
-        (options, args) = E.Start( parser )
+        # add common options (-h/--help, ...) and parse
+        # command line
+        (options, args) = E.Start(parser)
 
         # do something
         # ...
-        E.info( "an information message" )
-        E.warn( "a warning message")
+        E.info("an information message")
+        E.warn("a warning message)
 
         ## write footer and output benchmark information.
         E.Stop()
 
     if __name__ == "__main__":
-        sys.exit( main( sys.argv) )
-
+        sys.exit(main(sys.argv))
 
 Record keeping
 --------------
@@ -86,8 +84,6 @@ Record keeping
 The central functions in this module are the :py:func:`Start` and
 :py:func:`Stop` methods which are called before or after any work is
 done within a script.
-
-.. autofunction:: Experiment.Start
 
 The :py:func:`Start` is called with an E.OptionParser object.
 :py:func:`Start` will add additional command line arguments, such as
@@ -143,8 +139,6 @@ It is followed by a list of all options that have been set in the script.
 Once completed, a script will call the :py:func:`Stop` function to
 signify the end of the experiment.
 
-.. autofunction:: Experiment.Stop
-
 :py:func:`Stop` will output to the log file that the script has
 concluded successfully. Below is typical output::
 
@@ -163,11 +157,133 @@ The footer contains information about:
 The unique job id can be used to easily retrieve matching information
 from a concatenation of log files.
 
+Argument parsing
+----------------
+
+The module provides :class:`OptionParser` to facilitate option
+parsing.  :class:`OptionParser` is derived from the
+:py:class:`optparse.OptionParser` class, but has improvements to
+provide better formatted output on the command line. It also allows to
+provide a comma-separated list to options that accept multiple
+arguments. Thus, ``--method=sort --method=crop`` and
+``--method=sort,crop`` are equivalent.
+
+Additionally, there are set of commonly used option groups that are
+used in many scripts. The :func:`Start` method has options to automatically
+add these. For example::
+
+   (options, args) = E.Start(parser, add_output_options=True)
+
+will add the option ``--output-filename-pattern``. Similarly::
+
+   (options, args) = E.Start(parser, add_database_options=True)
+
+will add multiple options for scripts accessing databases, such as
+``--database-host`` and ``--database-username``.
+
+Input/Output redirection
+------------------------
+
+:func:`Start` adds the options ``--stdin``, ``--stderr` and
+``--stdout`` which allow using files as input/output streams.
+
+To make this work, scripts should not read from sys.stdin or write to
+sys.stdout directly, but instead use ``options.stdin`` and
+``options.stdout``. For example to simply read all lines from stdin
+and write to stdout, use::
+
+   (options, args) = E.Start(parser)
+
+   input_data = options.stdin.readlines()
+   options.stdout.write("".join(input_data))
+
+The script can then be used in many different contexts::
+
+   cat in.data | python script.py > out.data
+   python script.py --stdin=in.data > out.data
+   python script.py --stdin=in.data --stdout=out.data
+
+The method handles gzip compressed files transparently. The following
+are equivalent::
+
+   zcat in.data.gz | python script.py | gzip > out.data.gz
+   python script.py --stdin=in.data.gz --stdout=out.data.gz
+
+For scripts producing multiple output files, use the argument
+``add_output_options=True`` to :func:`Start`. This provides the option
+``--output-filename-pattern`` on the command line. The user can then
+supply a pattern for output files. Any ``%s`` appearing in the pattern
+will be substituted by a ``section``. Inside the script, When opening
+an output file, use the method :func:`openOutputFile` to provide a
+file object::
+
+   output_histogram = E.openOutputFile(section="histogram")
+   output_stats = E.openOutputFile(section="stats")
+
+If the user calls the script with::
+
+   python script.py --output-filename-pattern=sample1_%s.tsv.gz
+
+the script will create the files ``sample1_histogram.tsv.gz`` and
+``sample1_stats.tsv.gz``.
+
+This method will also add the option ``--force-output`` to permit
+overwriting existing files.
+
+Logging
+-------
+
+:py:mod:`Experiment` provides the well known logging methods from
+the :py:mod:`logging` module such as :py:func:`info`,
+:py:func:`warn`, etc. These are provided so that no additional import
+of the :py:mod:`logging` module is required, but either functions
+can be used.
+
+Frequently, a user wants to know when processing data how many have
+been input, how many have been output, how many have been
+successfull, etc. The :class:`Counter` class helps in record keeping.
+To use, simply create :class:`Counter` object before your main processing
+loop, add counts during processing and output a final log message::
+
+   couter = E.Counter()
+
+   for x in range(1000):
+      counter.input += 1
+
+      if x < 900:
+          counter.output += 1
+      else:
+          counter.error += 1
+
+   E.log(counter)
+
+:class:`Counter` automatically adds new fields.
+
+Running external commands
+-------------------------
+
+The :func:`run` method is a shortcut :py:func:`subprocess.call` and
+similar methods with some additional sanity checking.
+
 Benchmarking
 ------------
 
-TODO
+The :func:`Start` method records basic benchmarking information when a
+script starts and :func:`Stop` outputs it as part of its final log
+message::
 
+    # job finished in 11 seconds at Thu Mar 29 13:06:44 2012 -- 11.36 0.45 0.00 0.01 -- e1c16e80-03a1-4023-9417-f3e44e33bdcd
+
+See `Record keeping`_ for an explanations of the fields.
+
+To facilitate collecting benchmark information from running multiple
+scripts, these data can be tagged and saved in a separate file. See the
+command line options ``--timeit``, ``--timeit-name``, ``--timeit-header``
+in :func:`Start`.
+
+The module contains some decorator functions for benchmarking
+(:func:`benchmark`) and caching function (:func:`cachedfunction`) or
+class method (:func:`cachedmethod`) calls.
 
 Complete reference
 ------------------
@@ -244,6 +360,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 class BetterFormatter(optparse.IndentedHelpFormatter):
+    """A formatter for :class:`OptionParser` outputting indented
+    help text.
+    """
 
     def __init__(self, *args, **kwargs):
 
@@ -510,36 +629,10 @@ def Start(parser=None,
           return_parser=False):
     """set up an experiment.
 
-    *param parser* an :py:class:`E.OptionParser` instance with
-     command line options.
-
-    *param argv* command line options to parse. Defaults to :py:data:`sys.argv`
-
-    *quiet* set :term:`loglevel` to 0 - no logging
-
-    *no_parsing* do not parse command line options
-
-    *return_parser* return the parser object, no parsing
-
-    *add_csv_options* add common options for parsing :term:`tsv`
-    separated files
-
-    *add_database_options* add common options for connecting to various
-    databases.
-
-    *add_pipe_options* add common options for redirecting input/output
-
-    *add_cluster_options* add common options for scripts submitting
-    jobs to the cluster
-
-    *add_output_options* add commond options for working with multiple
-    output files
-
-    *returns* a tuple (options,args) with options
-    (a :py:class:`E.OptionParser` object
-    and a list of positional arguments.
-
-    The :py:func:`Start` method will also set up a file logger.
+    The :py:func:`Start` method will set up a file logger and add some
+    default and some optional options to the command line parser.  It
+    will then parse the command line and set up input/output
+    redirection and start a timer for benchmarking purposes.
 
     The default options added by this method are:
 
@@ -589,6 +682,47 @@ def Start(parser=None,
     add_output_options
        ``-P/--output-filename-pattern``
             Pattern to use for output filenames.
+
+    Arguments
+    ---------
+
+    param parser : :py:class:`E.OptionParser`
+       instance with command line options.
+
+    argv : list
+        command line options to parse. Defaults to
+        :py:data:`sys.argv`
+
+    quiet : bool
+        set :term:`loglevel` to 0 - no logging
+
+    no_parsing : bool
+        do not parse command line options
+
+    return_parser : bool
+        return the parser object, no parsing. Useful for inspecting
+        the command line options of a script without running it.
+
+    add_csv_options : bool
+        add common options for parsing :term:`tsv` separated files.
+
+    add_database_options : bool
+        add common options for connecting to various databases.
+
+    add_pipe_options : bool
+        add common options for redirecting input/output
+
+    add_cluster_options : bool
+        add common options for scripts submitting jobs to the cluster
+
+    add_output_options : bool
+        add commond options for working with multiple output files
+
+    Returns
+    -------
+    tuple
+       (:py:class:`E.OptionParser` object, list of positional
+       arguments)
 
     """
 
@@ -824,7 +958,11 @@ def Start(parser=None,
 
 
 def Stop():
-    """stop the experiment."""
+    """stop the experiment.
+
+    This method performs final book-keeping, closes the output streams
+    and writes the final log messages indicating script completion.
+    """
 
     if global_options.loglevel >= 1 and global_benchmark:
         t = time.time() - global_starting_time
@@ -884,6 +1022,192 @@ def Stop():
         outfile.write(result)
         outfile.close()
 
+
+def log(loglevel, message):
+    """log message at loglevel."""
+    logging.log(loglevel, message)
+
+
+def info(message):
+    '''log information message, see the :mod:`logging` module'''
+    logging.info(message)
+
+
+def warning(message):
+    '''log warning message, see the :mod:`logging` module'''
+    logging.warning(message)
+
+
+def warn(message):
+    '''log warning message, see the :mod:`logging` module'''
+    logging.warning(message)
+
+
+def debug(message):
+    '''log debugging message, see the :mod:`logging` module'''
+    logging.debug(message)
+
+
+def error(message):
+    '''log error message, see the :mod:`logging` module'''
+    logging.error(message)
+
+
+def critical(message):
+    '''log critical message, see the :mod:`logging` module'''
+    logging.critical(message)
+
+
+def getOutputFile(section):
+    '''return filename to write to, replacing any ``%s`` with section in
+    the output pattern for files (``--output-filename-pattern``).
+    '''
+    return re.sub("%s", section, global_options.output_filename_pattern)
+
+
+def openOutputFile(section, mode="w"):
+    """open file for writing substituting section in the
+    output_pattern (if defined).
+
+    If the filename ends with ".gz", the output is opened
+    as a gzip'ed file.
+
+    Arguments
+    ---------
+    section : string
+       section will replace any %s in the pattern for output files.
+
+    mode : char
+       file opening mode
+
+    Returns
+    -------
+    File
+        an opened file
+    """
+
+    fn = getOutputFile(section)
+    try:
+        if fn == "-":
+            return global_options.stdout
+        else:
+            if not global_options.output_force and os.path.exists(fn):
+                raise OSError(
+                    ("file %s already exists, use --force-output to "
+                     "overwrite existing files.") % fn)
+            if fn.endswith(".gz"):
+                return gzip.open(fn, mode)
+            else:
+                return open(fn, mode)
+    except AttributeError:
+        return global_options.stdout
+
+
+class Counter(object):
+    '''a counter class.
+
+    The counter acts both as a dictionary and a object permitting
+    attribute access.
+
+    Counts are automatically initialized to 0.
+
+    Instantiate and use like this::
+
+       c = Counter()
+       c.input += 1
+       c.output += 2
+       c["skipped"] += 1
+
+       print str(c)
+    '''
+
+    __slots__ = ["_counts"]
+
+    def __init__(self):
+        """Store data returned by function."""
+        object.__setattr__(self, "_counts", collections.defaultdict(int))
+
+    def __setitem__(self, key, value):
+        self._counts[key] = value
+
+    def __getitem__(self, key):
+        return self._counts[key]
+
+    def __getattr__(self, name):
+        return self._counts[name]
+
+    def __setattr__(self, name, value):
+        self._counts[name] = value
+
+    def __str__(self):
+        return ", ".join("%s=%i" % x for x in self._counts.iteritems())
+
+    def __iadd__(self, other):
+        try:
+            for key, val in other.iteritems():
+                self._counts[key] += val
+        except:
+            raise TypeError("unknown type")
+        return self
+
+    def iteritems(self):
+        return self._counts.iteritems()
+
+    def asTable(self):
+        '''return values as tab-separated table (without header).
+
+        Key, value pairs are sorted lexicographically.
+        '''
+        return '\n'.join("%s\t%i" % x
+                         for x in sorted(self._counts.iteritems()))
+
+
+def run(statement,
+        return_stdout=False,
+        return_popen=False,
+        **kwargs):
+    '''execute a command line statement.
+
+    By default this method returns the code returned by the executed
+    command. If *return_stdout* is True, the contents of stdout are
+    returned as a file object. If *return_popen*, the Popen object is
+    returned.
+
+    ``kwargs`` are passed on to subprocess.call,
+    subprocess.check_output or subprocess.Popen.
+
+    Raises
+    ------
+
+    OSError
+       If process failed or was terminated.
+
+    '''
+
+    # remove new lines
+    statement = " ".join(re.sub("\t+", " ", statement).split("\n")).strip()
+
+    if "<(" in statement:
+        shell = os.environ.get('SHELL', "/bin/bash")
+        if "bash" not in shell:
+            raise ValueError(
+                "require bash for advanced shell syntax: <()")
+        # Note: pipes.quote is deprecated. In Py3, use shlex.quote
+        # (not present in Py2.7)
+        statement = "%s -c %s" % (shell, pipes.quote(statement))
+
+    if return_stdout:
+        return subprocess.check_output(statement, shell=True, **kwargs)
+    elif return_popen:
+        return subprocess.Popen(statement, shell=True, **kwargs)
+    else:
+        retcode = subprocess.call(statement, shell=True, **kwargs)
+        if retcode < 0:
+            raise OSError("process was terminated by signal %i" % -retcode)
+        return retcode
+
+
+# some convenient decorators
 
 def benchmark(func):
     """decorator collecting wall clock time spent in decorated method."""
@@ -959,172 +1283,6 @@ class Memoize(object):
         else:
             object = self.cache[args] = self.fn(self.instance, *args)
             return object
-
-
-def log(loglevel, message):
-    """log message at loglevel."""
-    logging.log(loglevel, message)
-
-
-def info(message):
-    '''log information message, see the :mod:`logging` module'''
-    logging.info(message)
-
-
-def warning(message):
-    '''log warning message, see the :mod:`logging` module'''
-    logging.warning(message)
-
-
-def warn(message):
-    '''log warning message, see the :mod:`logging` module'''
-    logging.warning(message)
-
-
-def debug(message):
-    '''log debugging message, see the :mod:`logging` module'''
-    logging.debug(message)
-
-
-def error(message):
-    '''log error message, see the :mod:`logging` module'''
-    logging.error(message)
-
-
-def critical(message):
-    '''log critical message, see the :mod:`logging` module'''
-    logging.critical(message)
-
-
-def getOutputFile(section):
-    '''return filename to write to.'''
-    return re.sub("%s", section, global_options.output_filename_pattern)
-
-
-def openOutputFile(section, mode="w"):
-    """open file for writing substituting section in the
-    output_pattern (if defined).
-
-    If the filename ends with ".gz", the output is opened
-    as a gzip'ed file.
-    """
-
-    fn = getOutputFile(section)
-    try:
-        if fn == "-":
-            return global_options.stdout
-        else:
-            if not global_options.output_force and os.path.exists(fn):
-                raise OSError(
-                    ("file %s already exists, use --force-output to "
-                     "overwrite existing files.") % fn)
-            if fn.endswith(".gz"):
-                return gzip.open(fn, mode)
-            else:
-                return open(fn, mode)
-    except AttributeError:
-        return global_options.stdout
-
-
-class Counter(object):
-
-    '''a counter class.
-
-    The counter acts both as a dictionary and
-    a object permitting attribute access.
-
-    Counts are automatically initialized to 0.
-
-    Instantiate and use like this::
-
-       c = Counter()
-       c.input += 1
-       c.output += 2
-       c["skipped"] += 1
-
-       print str(c)
-    '''
-
-    __slots__ = ["_counts"]
-
-    def __init__(self):
-        """Store data returned by function."""
-        object.__setattr__(self, "_counts", collections.defaultdict(int))
-
-    def __setitem__(self, key, value):
-        self._counts[key] = value
-
-    def __getitem__(self, key):
-        return self._counts[key]
-
-    def __getattr__(self, name):
-        return self._counts[name]
-
-    def __setattr__(self, name, value):
-        self._counts[name] = value
-
-    def __str__(self):
-        return ", ".join("%s=%i" % x for x in self._counts.iteritems())
-
-    def __iadd__(self, other):
-        try:
-            for key, val in other.iteritems():
-                self._counts[key] += val
-        except:
-            raise TypeError("unknown type")
-        return self
-
-    def iteritems(self):
-        return self._counts.iteritems()
-
-    def asTable(self):
-        '''return values as tab-separated table (without header).
-
-        Key, value pairs are sorted lexicographically.
-        '''
-        return '\n'.join("%s\t%i" % x
-                         for x in sorted(self._counts.iteritems()))
-
-
-def run(statement,
-        return_stdout=False,
-        return_popen=False,
-        **kwargs):
-    '''execute a command line statement.
-
-    By default this method returns the code returned by the executed
-    command. If *return_stdout* is True, the contents of stdout are
-    returned as a file object. If *return_popen*, the Popen object
-    is returned.
-
-    ``kwargs`` are passed on to subprocess.call,
-    subprocess.check_output or subprocess.Popen.
-
-    raises OSError if process failed or was terminated.
-    '''
-
-    # remove new lines
-    statement = " ".join(re.sub("\t+", " ", statement).split("\n")).strip()
-
-    if "<(" in statement:
-        shell = os.environ.get('SHELL', "/bin/bash")
-        if "bash" not in shell:
-            raise ValueError(
-                "require bash for advanced shell syntax: <()")
-        # Note: pipes.quote is deprecated. In Py3, use shlex.quote
-        # (not present in Py2.7)
-        statement = "%s -c %s" % (shell, pipes.quote(statement))
-
-    if return_stdout:
-        return subprocess.check_output(statement, shell=True, **kwargs)
-    elif return_popen:
-        return subprocess.Popen(statement, shell=True, **kwargs)
-    else:
-        retcode = subprocess.call(statement, shell=True, **kwargs)
-        if retcode < 0:
-            raise OSError("process was terminated by signal %i" % -retcode)
-        return retcode
-
 
 ######################################################################
 # Deprecated old call interface

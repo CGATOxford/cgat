@@ -1166,7 +1166,7 @@ def main(argv=sys.argv):
                                          options.resolution,
                                          st.ci95upper *
                                          options.resolution,
-                                         IOTools.prettyFloat(st.qvalue),
+                                         IOTools.val2str(st.qvalue),
                                          segments_per_label[label],
                                          workspaces_per_label[label],
                                          ))

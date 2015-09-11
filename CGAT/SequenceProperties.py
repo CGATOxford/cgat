@@ -20,22 +20,35 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-'''
-SequenceProperties.py - compute properties of sequences
-=======================================================
+"""SequenceProperties.py - Computing metrics of nucleotide sequences
+=================================================================
 
-Classes for extracting and reporting sequence properties on
-nucleotide sequences.
+This module provides methods for extracting and reporting sequence
+properties of nucleotide sequences such as the composition, length,
+etc.
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
-:Tags: Python
+The classes provide the algorithms to provide the property. They will
+store the latest result for output. Thus, processing is a two-step procedure::
 
-Code
-----
+   from SequenceProperties import SequencePropertiesLength, SequencePropertiesNA
 
-'''
+   counters = [SequencePropertiesLength(), SequencePropertiesNA()]
+
+   # output column headers
+   headers = sum(c.getHeaders() for c in counters]
+   print "\t".join(headers)
+
+   for sequence in sequences:
+      # load sequence in each counter
+      for c in counters:
+          c.loadSequence(sequence)
+      # output results
+      print "\t".join(map(str, counters))
+
+Reference
+---------
+
+"""
 from __future__ import division
 import string
 import re

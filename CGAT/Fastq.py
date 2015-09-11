@@ -20,17 +20,24 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-'''
-Fastq.py - methods for dealing with fastq files
+'''Fastq.py - methods for dealing with fastq files
 ===============================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
-:Tags: Python
+This module provides an iterator of :term:`fastq` formatted files
+(:func:`iterate`). Additional iterators allow guessing of the quality
+score format (:func:`iterate_guess`) or converting them
+(:func:`iterate_convert`) while iterating through a file.
 
-Code
-----
+:func:`guessFormat` inspects a fastq file to guess the quality score format
+and :func:`getOffset` returns the numeric offset for quality score conversion
+for a particular quality score format.
+
+.. note::
+   Another way to access the information in :term:`fastq` formatted
+   files is through pysam_.
+
+Reference
+---------
 
 '''
 
@@ -47,7 +54,21 @@ RANGES = {
 
 
 class Record:
+    """A record representing a :term:`fastq` formatted record.
 
+    Attributes
+    ----------
+    identifier : string
+       Sequence identifier
+    seq : string
+       Sequence
+    quals : string
+       String representation of quality scores.
+    format : string
+       Quality score format. Can be one of ``sanger``,
+       ``illumina-1.8``, ``solexa`` or ``phred64``.
+
+    """
     def __init__(self, identifier, seq, quals, format=None):
         self.identifier, self.seq, self.quals, format = (
             identifier, seq, quals, format)
@@ -70,10 +91,12 @@ class Record:
         return r
 
     def trim(self, trim3, trim5=0):
+        """remove nucleotides/quality scores from the 3' and 5' ends."""
         self.seq = self.seq[trim5:-trim3]
         self.quals = self.quals[trim5:-trim3]
 
     def trim5(self, trim5=0):
+        """remove nucleotides/quality scores from the 5' ends."""
         self.seq = self.seq[trim5:]
         self.quals = self.quals[trim5:]
 
@@ -136,7 +159,32 @@ def iterate(infile):
 def iterate_guess(infile, max_tries=10000, guess=None):
     '''iterate over contents of fastq file.
 
-    guess quality format.
+    Guess quality format by looking at the first `max_tries` entries and
+    then subsequently setting the quality score format for each entry.
+
+    Arguments
+    ---------
+    infile : File
+       File or file-like object to iterate over
+    max_tries : int
+       Number of records to examine for guessing the quality score
+       format.
+    guess : string
+       Default format. This format will be chosen in the quality
+       score format is ambiguous. The method checks if the `guess`
+       is compatible with the records read so far.
+
+    Yields
+    ------
+    fastq
+        An object of type :class:`Record`.
+
+    Raises
+    ------
+    ValueError
+        If the ranges of the fastq records are not compatible,
+        are incompatible with guess or are ambiguous.
+
     '''
     quals = set(RANGES.keys())
     cache = []
@@ -179,7 +227,35 @@ def iterate_guess(infile, max_tries=10000, guess=None):
 def iterate_convert(infile, format, max_tries=10000, guess=None):
     '''iterate over contents of fastq file.
 
-    guess quality format and set it to new format.
+    The quality score format is guessed and all subsequent records
+    are converted to `format`.
+
+    Arguments
+    ---------
+    infile : File
+       File or file-like object to iterate over
+    format : string
+       Quality score format to convert all records into.
+    max_tries : int
+       Number of records to examine for guessing the quality score
+       format.
+    guess : string
+       Default format. This format will be chosen in the quality
+       score format is ambiguous. The method checks if the `guess`
+       is compatible with the records read so far.
+
+    Yields
+    ------
+    fastq
+        An object of type :class:`Record`.
+
+    Raises
+    ------
+    ValueError
+        If the ranges of the fastq records are not compatible,
+        are incompatible with guess or are ambiguous.
+
+
     '''
 
     quals = set(RANGES.keys())
@@ -226,7 +302,25 @@ def iterate_convert(infile, format, max_tries=10000, guess=None):
 def guessFormat(infile, max_lines=10000, raises=True):
     '''guess format of FASTQ File.
 
-    If *raises* , a ValueError is raised if there is not a single format.
+    Arguments
+    ---------
+    infile : File
+       File or file-like object to iterate over
+    max_lines : int
+       Number of lines to examine for guessing the quality score
+       format.
+    raises : bool
+       Raise ValueError if format is ambiguous
+
+    Returns
+    -------
+    formats : list
+       list of quality score formats compatible with the file
+
+    Raises
+    ------
+    ValueError
+        If the ranges of the fastq records are not compatible.
 
     '''
 
@@ -258,9 +352,14 @@ def guessFormat(infile, max_lines=10000, raises=True):
 def getOffset(format, raises=True):
     '''returns the ASCII offset for a certain format.
 
-    If *raises* , a ValueError is raised if there is not a single offset.
+    If `raises` is set a ValueError is raised if there is not a single
+    offset. Otherwise, a minimum offset is returned.
 
-    Otherwise, a minimum offset is returned.
+    Returns
+    -------
+    offset : int
+       The quality score offset
+
     '''
     if type(format) in (set, list, tuple):
         offsets = set([RANGES[f][0] for f in format])

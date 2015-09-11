@@ -359,21 +359,19 @@ class GOResult:
 
     def __str__(self):
         """return string representation."""
-        return "%i\t%i\t%s\t%i\t%i\t%s\t%s\t%6.4e\t%6.4e\t%6.4e" % (self.mSampleCountsCategory,
-                                                                    self.mSampleCountsTotal,
-                                                                    IOTools.prettyPercent(
-                                                                        self.mSampleCountsCategory, self.mSampleCountsTotal),
-                                                                    self.mBackgroundCountsCategory,
-                                                                    self.mBackgroundCountsTotal,
-                                                                    IOTools.prettyPercent(
-                                                                        self.mBackgroundCountsCategory, self.mBackgroundCountsTotal),
-                                                                    IOTools.prettyFloat(
-                                                                        self.mRatio),
-                                                                    self.mPValue,
-                                                                    self.mProbabilityOverRepresentation,
-                                                                    self.mProbabilityUnderRepresentation)
-
-# ------------------------------------------------------------------------
+        return "%i\t%i\t%s\t%i\t%i\t%s\t%s\t%6.4e\t%6.4e\t%6.4e" % \
+            (self.mSampleCountsCategory,
+             self.mSampleCountsTotal,
+             IOTools.prettyPercent(
+                 self.mSampleCountsCategory, self.mSampleCountsTotal),
+             self.mBackgroundCountsCategory,
+             self.mBackgroundCountsTotal,
+             IOTools.prettyPercent(
+                 self.mBackgroundCountsCategory, self.mBackgroundCountsTotal),
+             IOTools.val2str(self.mRatio),
+             self.mPValue,
+             self.mProbabilityOverRepresentation,
+             self.mProbabilityUnderRepresentation)
 
 
 class GOResults:
