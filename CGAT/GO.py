@@ -46,6 +46,7 @@ import numpy
 from CGAT import Stats as Stats
 from CGAT import Experiment as E
 from CGAT import IOTools as IOTools
+from CGAT import Database as Database
 from CGAT import CSV as CSV
 
 from rpy2.robjects import r as R
@@ -754,8 +755,6 @@ def GetGOStatement(go_type, database, species):
 
     return statement
 
-# ------------------------------------------------------------------------
-
 
 def ReadGene2GOFromDatabase(dbhandle, go_type, database, species):
     """read go assignments from ensembl database.
@@ -768,7 +767,8 @@ def ReadGene2GOFromDatabase(dbhandle, go_type, database, species):
     """
 
     statement = GetGOStatement(go_type, database, species)
-    result = dbhandle.Execute(statement).fetchall()
+    result = Database.executewait(dbhandle, statement,
+                                  retries=0).fetchall()
 
     gene2go = {}
     go2info = collections.defaultdict(GOInfo)
@@ -781,8 +781,6 @@ def ReadGene2GOFromDatabase(dbhandle, go_type, database, species):
         go2info[goid] = gi
 
     return gene2go, go2info
-
-# ---------------------------------------------------------------------------
 
 
 def DumpGOFromDatabase(outfile,
@@ -811,7 +809,8 @@ def DumpGOFromDatabase(outfile,
         statement = GetGOStatement(go_type, options.database_name,
                                    options.species)
 
-        results = dbhandle.Execute(statement).fetchall()
+        results = Database.executewait(
+            dbhandle, statement, retries=0).fetchall()
 
         for result in results:
             outfile.write("\t".join(map(str, (go_type,) + result)) + "\n")
