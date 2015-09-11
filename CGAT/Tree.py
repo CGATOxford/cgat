@@ -20,11 +20,14 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 """
-Tree.py - A phylogenetic tree 
+Tree.py - A phylogenetic tree
 =============================
 
 The :class:`Tree` is derived from the class from Bio.Nexus.Trees.Tree
 adding some additional functionality.
+
+Reference
+---------
 
 """
 import math
