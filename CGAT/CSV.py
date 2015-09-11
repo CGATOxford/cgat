@@ -165,14 +165,27 @@ def readTable(infile,
               dialect="excel-tab"):
     """read a table from infile
 
-    returns table as rows or as columns.
-    If remove_incomplete, incomplete rows are simply ignored.
+    Arguments
+    ---------
+    infile : File
+       File or list of lines
+    as_rows : bool
+       If true, return table as a list of rows. Otherwise,
+       return as a list of columns.
+    ignore_incomplete : bool
+       If true, incomplete rows are ignored.
+    dialect : string
+       CSV dialect.
+
+    Returns
+    -------
+    fields : list
+        List of field names
+    rows : list
+        List of rows
     """
 
-    if isinstance(lines, file):
-        lines = lines.readlines()
-
-    lines = filter(lambda x: x[0] != "#", lines)
+    lines = [x for x in infile if x[0] != "#"]
 
     if len(lines) == 0:
         return [], []
@@ -200,8 +213,10 @@ def readTable(infile,
         for r, row in enumerate(table):
             if len(row) != nfields:
                 if not ignore_incomplete:
-                    raise ValueError("missing elements in line %s, received=%s, expected=%s" %
-                                     (r, str(row),  str(fields)))
+                    raise ValueError(
+                        "missing elements in line %s, received=%s, "
+                        "expected=%s" %
+                        (r, str(row),  str(fields)))
 
                 raise ValueError
 
@@ -212,28 +227,34 @@ def readTable(infile,
 
 
 def readTables(infile, *args, **kwargs):
-    """read a set of csv tables.
+    """read a set of csv tables from a single file.
 
-    Individual tables are separated by // on a single line.
+    Tables within the file should be separated by `//`.
+
+    See :func:`readTable` for additional arguments.
+
+    Arguments
+    ---------
+    infile : File
+       File or list of lines
+
+    Returns
+    -------
+    tables : list
+        A list of tuples (fields, data), one for each table.
     """
 
-    lines = filter(lambda x: x[0] != "#", infile.readlines())
+    lines = [x for x in infile if x[0] != "#"]
     chunks = filter(lambda x: lines[x][:2] == "//", range(len(lines)))
     if not lines[-1].startswith("//"):
         chunks.append(len(lines))
 
-    class Result:
-        pass
     result = []
 
     start = 0
     for end in chunks:
-
         fields, table = readTable(lines[start:end], *args, **kwargs)
-        r = Result()
-        r.mFields = fields
-        r.mTable = table
-        result.append(r)
+        result.append((fields, table))
         start = end + 1
 
     return result
@@ -258,13 +279,23 @@ def __DoGroup(rows, group_column, group_function, missing_value="na"):
     return values
 
 
-def GroupTable(table,
+def groupTable(table,
                group_column=0,
                group_function=min,
                missing_value="na"):
     '''group table by *group_column*.
 
     The table need not be sorted.
+    Arguments
+    ---------
+    table : list
+        List of rows
+    group_column : int
+        Column to group on
+    group_function : function
+        Function to apply on grouped values
+    missing_value : string
+        String to use for missing values.
     '''
 
     table.sort(lambda x, y: cmp(x[group_column], y[group_column]))
@@ -278,7 +309,8 @@ def GroupTable(table,
 
             if last_value is not None:
                 new_table.append(
-                    __DoGroup(rows, group_column, group_function, missing_value))
+                    __DoGroup(rows, group_column, group_function,
+                              missing_value))
 
             rows = []
             last_value = row[group_column]
@@ -292,11 +324,28 @@ def GroupTable(table,
     return new_table
 
 
-def getConvertedTable(table, columns, function=float,
-                      skip_errors=False):
+def convertTable(table, columns, function=float,
+                 skip_errors=False):
+    """convert values in particular columns of a table to a new type.
 
-    # convert values to floats (except for group_column)
-    # Delete rows with unconvertable values
+    Arguments
+    ---------
+    table : list
+        Rows in the table. Each row is a list or tuple.
+    columns : list
+        Indices of columns to convert
+    function : function
+        Function to apply for conversion
+    skip_errors : bool
+        If True, errors are ignored and rows with unconvertible
+        values are ignored. The default is to raise a ValueError.
+
+    Returns
+    -------
+    table : list
+        A new table with the converted values.
+
+    """
     new_table = []
     for row in table:
         skip = False

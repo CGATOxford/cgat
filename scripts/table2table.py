@@ -224,17 +224,13 @@ def readAndGroupTable(infile, options):
             new_table.append(new_row)
     table = new_table
 
-    new_rows = CSV.GroupTable(table,
+    new_rows = CSV.groupTable(table,
                               group_column=0,
                               group_function=f)
 
     options.stdout.write("\t".join(new_fields) + "\n")
     for row in new_rows:
         options.stdout.write("\t".join(map(str, row)) + "\n")
-
-##########################################################
-##########################################################
-##########################################################
 
 
 def readAndExpandTable(infile, options):
