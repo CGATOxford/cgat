@@ -62,16 +62,6 @@ Algorithms
    modules/SequenceProperties.rst
    modules/Variants.rst
 
-Phylogeny
----------
-
-.. toctree::
-   :maxdepth: 1
-
-   modules/Tree.rst
-   modules/TreeTools.rst
-   modules/RateEstimation.rst
-
 
 Wrappers
 --------
@@ -125,6 +115,10 @@ Toolboxes for generic problems.
    modules/CSV.rst
    modules/Iterators.rst
    modules/Database.rst
+   modules/SetTools.rst
+   modules/Tree.rst
+   modules/TreeTools.rst
+
 
 CGAT infrastructure
 ===================
@@ -148,7 +142,7 @@ Other
 
    modules/RLE.rst
    modules/SVGdraw.rst
-   modules/SetTools.rst
+   modules/RateEstimation.rst
 
 Unsorted
 ---------
