@@ -41,9 +41,7 @@ class ObjectPosition(object):
 
 
 class AGP(object):
-    """represent data from AGP formatted files to permit mapping to genomic
-    locations.
-    """
+    """Parser for AGP formatted files."""
 
     def readFromFile(self, infile):
         """read an agp file.

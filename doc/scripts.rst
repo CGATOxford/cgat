@@ -15,7 +15,6 @@ Genomics
    scripts/bam2geneprofile.rst
    scripts/bed2bed.rst
    scripts/bed2gff.rst
-
    scripts/gff2bed.rst
    scripts/psl2assembly.rst
    scripts/psl2psl.rst
@@ -138,6 +137,15 @@ Stats
  
 Tools
 -----
+
+Cluster and jobs
+++++++++++++++++
+
+.. toctree::
+   :maxdepth: 1
+
+   scripts/clean.rst
+   scripts/split_file.rst
 
 Other
 ++++++
