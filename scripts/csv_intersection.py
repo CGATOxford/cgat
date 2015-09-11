@@ -33,6 +33,7 @@ Command line options
 '''
 import sys
 import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 import CGAT.CSV as CSV
 import csv
 import hashlib
@@ -78,8 +79,8 @@ def main(argv=None):
 
     options.filename1, options.filename2 = args
 
-    table1 = CSV.ReadTable(open(options.filename1, "r"))
-    table2 = CSV.ReadTable(open(options.filename2, "r"))
+    table1 = CSV.ReadTable(IOTools.openFile(options.filename1, "r"))
+    table2 = CSV.ReadTable(IOTools.openFile(options.filename2, "r"))
 
     if options.unique:
         outfile = UniqueBuffer(sys.stdout)
@@ -123,7 +124,7 @@ def main(argv=None):
 
         first_row = True
         for row in reader:
-            row = CSV.ConvertDictionary(row)
+            row = IOTools.convertDictionary(row)
             writer.writerow(row)
 
     E.Stop()

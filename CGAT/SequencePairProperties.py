@@ -25,7 +25,8 @@
 
 This module provides methods for extracting and reporting sequence
 properties of aligned nucleotide sequences such as percent identity,
-substitution rate, etc.
+substitution rate, etc. Usage is the same as
+:mod:`SequencePairProperties`.
 
 
 Reference
@@ -274,8 +275,12 @@ class SequencePairPropertiesCountsCodons(SequencePairPropertiesCountsNa):
 
 
 class SequencePairPropertiesPID(SequencePairPropertiesDistance):
+    """Percent identity.
 
-    """the first characters are ACGT."""
+    The percent identity is the ratio of the number of identical
+    residues divided by the number of aligned residues.
+
+    """
     mGapChars = ("-", "."),
 
     def __init__(self, *args, **kwargs):
@@ -284,7 +289,7 @@ class SequencePairPropertiesPID(SequencePairPropertiesDistance):
 
     def loadPair(self, seq1, seq2):
 
-        nidentical, naligned, nunaligned = 0, 0, 0
+        nidentical, naligned = 0, 0
         for c1, c2 in zip(seq1.upper(), seq2.upper()):
             if c1 in self.mGapChars or c2 in self.mGapChars:
                 continue

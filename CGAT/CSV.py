@@ -1,79 +1,22 @@
-"""
-CSV.py - Tools for parsing CSV files
+"""CSV.py - Tools for parsing CSV files
 ========================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
-:Tags: Python
+The methods in this module provide utility functions for
+working with :term:`CSV` or :term:`TSV` formatted files.
+
+With pandas providing fast and flexible access to :term:`CSV`
+formatted files, most of the functionaly here is now superfluous.
+
+:class:`DictReader` is derived from :py:class:`csv.DictReader`
+and adds the capability to skip comment characters.
 
 """
 
-import re
 import types
 import csv
 
 
-def ConvertDictionary(d, map={}):
-    """tries to convert values in a dictionary.
-
-    if map contains 'default', a default conversion is enforced.
-    For example, to force int for every column but column id,
-    supply map = {'default' : "int", "id" : "str" }
-    """
-
-    rx_int = re.compile("^\s*[+-]*[0-9]+\s*$")
-    rx_float = re.compile("^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$")
-
-    # pre-process with 'default'
-    if "default" in map:
-        k = "default"
-        if map[k] == "int":
-            default = int
-        elif map[k] == "float":
-            default = float
-        elif map[k] == "string":
-            default = str
-    else:
-        default = False
-
-    for k, vv in d.items():
-
-        if vv is None:
-            continue
-        v = vv.strip()
-        try:
-            if k in map:
-                if map[k] == "int":
-                    d[k] = int(v)
-                elif map[k] == "float":
-                    d[k] = float(v)
-                elif map[k] == "string":
-                    pass
-                continue
-            elif default:
-                if v != "":
-                    d[k] = default(v)
-                else:
-                    d[k] = v
-                continue
-        except TypeError, msg:
-            raise TypeError("conversion in field: %s, %s" % (k, msg))
-
-        try:
-            if rx_int.match(v):
-                d[k] = int(v)
-            elif rx_float.match(v):
-                d[k] = float(v)
-        except TypeError, msg:
-            raise TypeError(
-                "expected string or buffer: offending value = '%s' " % str(v))
-        except ValueError, msg:
-            raise ValueError("conversion error: %s, %s" % (msg, str(d)))
-    return d
-
-
-def GetMapColumn2Type(rows, ignore_empty=False, get_max_values=False):
+def getMapColumn2Type(rows, ignore_empty=False, get_max_values=False):
     """map fields to types based on rows.
 
     Preference is Int to Float to String.
@@ -122,14 +65,11 @@ def GetMapColumn2Type(rows, ignore_empty=False, get_max_values=False):
     else:
         return map_column2type, ignored
 
-# -----------------------------------------------------------
-
 
 class CommentStripper:
+    """Iterator for stripping comments from file.
 
-    """iterator class for stripping comments from file.
-
-    This iterator will skip any lines beginning with '#'
+    This iterator will skip any lines beginning with ``#``
     or any empty lines at the beginning of the output.
     """
 
@@ -149,8 +89,7 @@ class CommentStripper:
 
 
 class DictReader(csv.DictReader):
-
-    """like csv.DictReader, but skip comments (lines starting with "#").
+    """Like csv.DictReader, but skip lines starting with ``#``.
     """
 
     def __init__(self, infile, *args, **kwargs):
@@ -191,10 +130,14 @@ class UnicodeDictReader(csv.DictReader):
 
 
 class DictReaderLarge:
+    """Substitute for :py:class:`csv.DictReader` that handles very large
+    fields.
 
-    """drop-in for csv.DictReader - handles very large fields
+    :py:mod:`csv` is implemented in C and limits the number of columns
+    per table. This class has no such limit, but will not be as fast.
 
-    Warning - minimal implementation - does not handle dialects
+    This class is only a minimal implementation. For example, it does
+    not handle dialects.
     """
 
     def __init__(self, infile, fieldnames, *args, **kwargs):
@@ -213,8 +156,6 @@ class DictReaderLarge:
         data = line[:-1].split("\t")
         assert len(data) == self.mNFields
         return dict(zip(self.mFieldNames, data))
-
-##########################################################################
 
 
 def ReadTable(lines,
@@ -269,11 +210,9 @@ def ReadTable(lines,
 
     return fields, table
 
-##########################################################################
-
 
 def ReadTables(infile, *args, **kwargs):
-    """read a set of csv tables. 
+    """read a set of csv tables.
 
     Individual tables are separated by // on a single line.
     """
@@ -369,7 +308,7 @@ def getConvertedTable(table, columns, function=float,
                     skip = True
                     break
                 else:
-                    raise ValueError, msg
+                    raise ValueError(msg)
 
         if not skip:
             new_table.append(row)

@@ -22,7 +22,6 @@ Genomics
    scripts/psl2gff.rst
    scripts/psl2map.rst
    scripts/psl2wiggle.rst
-   scripts/psl2wiggle_stats.rst
    scripts/diff_gtf.rst
    scripts/fasta2gff.rst
    scripts/gff2psl.rst
@@ -104,7 +103,6 @@ Matrices and Tables
    scripts/csv_intersection.rst
    scripts/csv_rename.rst
    scripts/csv_set.rst
-   scripts/csv_uniq.rst
    scripts/cat_tables.rst
    scripts/matrix2matrix.rst
    scripts/matrix2stats.rst

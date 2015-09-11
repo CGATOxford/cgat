@@ -51,16 +51,16 @@ Algorithms
    :maxdepth: 1
 
    modules/AString.rst 
-   modules/Intervals.rst
-   modules/Mali.rst
-   modules/SequencePairProperties.rst
-   modules/SequenceProperties.rst
+   modules/Counts.rst
+   modules/Expression.rst 
    modules/GO.rst
    modules/Genomics.rst
+   modules/Intervals.rst
+   modules/Mali.rst
    modules/Motifs.rst
+   modules/SequencePairProperties.rst
+   modules/SequenceProperties.rst
    modules/Variants.rst
-   modules/Expression.rst 
-   modules/Counts.rst
 
 Phylogeny
 ---------

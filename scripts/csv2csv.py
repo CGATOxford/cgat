@@ -30,24 +30,9 @@ Command line options
 
 '''
 import sys
-import re
-import CGAT.Experiment as E
 import csv
-
-
-def ConvertDictionary(d):
-    """tries to convert values in a dictionary.
-    """
-
-    rx_int = re.compile("^[+-]*[0-9]+$")
-    rx_float = re.compile("^[+-]*[0-9.+-eE]+$")
-    for k, v in d.items():
-        if rx_int.match(v):
-            d[k] = int(v)
-        elif rx_float.match(v):
-            d[k] = float(v)
-
-    return d
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 
 
 def main(argv=None):
@@ -68,23 +53,23 @@ def main(argv=None):
 
     (options, args) = E.Start(parser, add_csv_options=True)
 
-    reader = csv.DictReader(sys.stdin, dialect=options.csv_dialect)
+    reader = csv.DictReader(E.stdin, dialect=options.csv_dialect)
 
     if options.sort:
         fields = options.sort.split(",")
     else:
         fields = None
 
-    writer = csv.DictWriter(sys.stdout,
+    writer = csv.DictWriter(E.stdout,
                             fields,
                             dialect=options.csv_dialect,
                             lineterminator=options.csv_lineterminator,
                             extrasaction='ignore')
 
-    print "\t".join(fields)
+    E.stdout.write("\t".join(fields) + "\n")
 
     for row in reader:
-        row = ConvertDictionary(row)
+        row = IOTools.convertDictionary(row)
         writer.writerow(row)
 
     E.Stop()

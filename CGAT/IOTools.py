@@ -37,6 +37,7 @@ These include methods for
 
 * converting values for input/output, such as :func:`val2str`,
   :func:`str2val`, :func:`prettyPercent`, :func:`human2bytes`,
+  :func:`convertDictionary`.
 
 * iterating over file contents, such as :func:`iterate`,
   :func:`iterator_split`,
@@ -589,6 +590,69 @@ def human2bytes(s):
         prefix[s] = 1 << (i+1)*10
 
     return int(num * prefix[letter])
+
+
+def convertDictionary(d, map={}):
+    """convert string values in a dictionary to numeric types.
+
+    Arguments
+    d : dict
+       The dictionary to convert
+    map : dict
+       If map contains 'default', a default conversion is enforced.
+       For example, to force int for every column but column ``id``,
+       supply map = {'default' : "int", "id" : "str" }
+    """
+
+    rx_int = re.compile("^\s*[+-]*[0-9]+\s*$")
+    rx_float = re.compile("^[-+]?[0-9]*\.?[0-9]+([eE][-+]?[0-9]+)?$")
+
+    # pre-process with 'default'
+    if "default" in map:
+        k = "default"
+        if map[k] == "int":
+            default = int
+        elif map[k] == "float":
+            default = float
+        elif map[k] == "string":
+            default = str
+    else:
+        default = False
+
+    for k, vv in d.items():
+
+        if vv is None:
+            continue
+        v = vv.strip()
+        try:
+            if k in map:
+                if map[k] == "int":
+                    d[k] = int(v)
+                elif map[k] == "float":
+                    d[k] = float(v)
+                elif map[k] == "string":
+                    pass
+                continue
+            elif default:
+                if v != "":
+                    d[k] = default(v)
+                else:
+                    d[k] = v
+                continue
+        except TypeError, msg:
+            raise TypeError("conversion in field: %s, %s" % (k, msg))
+
+        try:
+            if rx_int.match(v):
+                d[k] = int(v)
+            elif rx_float.match(v):
+                d[k] = float(v)
+        except TypeError, msg:
+            raise TypeError(
+                "expected string or buffer: offending value = '%s' " % str(v))
+        except ValueError, msg:
+            raise ValueError("conversion error: %s, %s" % (msg, str(d)))
+    return d
 
 
 class nested_dict(collections.defaultdict):
