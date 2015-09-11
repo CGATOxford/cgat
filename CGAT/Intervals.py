@@ -43,14 +43,24 @@ Reference
 
 
 def getLength(intervals):
-    '''return sum of intervals lengths'''
+    """return sum of intervals lengths.
+
+    >>> getLength([(10,20), (30,40)])
+    20
+
+    """
     return sum([x[1] - x[0] for x in intervals])
 
 
 def combine(intervals):
-    """combine overlapping intervals.
+    """combine overlapping and adjacent intervals.
 
-    Overlapping intervals are merged.
+    >>> combine([(10,20), (30,40)])
+    [(10, 20), (30, 40)]
+    >>> combine([(10,20), (20,40)])
+    [(10, 40)]
+    >>> combine([(10,20), (15,40)])
+    [(10, 40)]
     """
     if not intervals:
         return []
@@ -89,6 +99,29 @@ def prune(intervals, first=None, last=None):
 
 def complement(intervals, first=None, last=None):
     """complement a list of intervals with intervals not in list.
+
+    >>> complement([(10,20), (15,40)])
+    []
+    >>> complement([(10,20), (30,40)])
+    [(20, 30)]
+    >>> complement([(10,20), (30,40)], first=5)
+    [(5, 10), (20, 30)]
+
+    Arguments
+    ---------
+    intervals : list
+        List of intervals
+    first : int
+        First position. If given, the interval from `first` to
+        the first position in `intervals` is added.
+    last : int
+        Last position. If given, the interval from the last position
+        in `intervals` to `last` is added.
+
+    Returns
+    -------
+    intervals : list
+        A new list of intervals
     """
 
     if len(intervals) == 0:
@@ -116,6 +149,15 @@ def complement(intervals, first=None, last=None):
         new_intervals.append((last_to, last))
 
     return new_intervals
+
+
+def addComplementIntervals(intervals, first=None, last=None):
+    """complement a list of intervals with intervals not
+    in list and return both.
+
+    The resulting interval list is sorted.
+    """
+    return sorted(intervals + complement(intervals, first, last))
 
 
 def joined_iterator(intervals1, intervals2):
@@ -255,13 +297,6 @@ def fromArray(a):
         intervals.append((start, len(a)))
 
     return intervals
-
-
-def addComplementIntervals(intervals, first=None, last=None):
-    """complement a list of intervals with intervals not
-    in list and return both.
-    """
-    return intervals + complement(intervals, first, last)
 
 
 def combineAtDistance(intervals, min_distance):
