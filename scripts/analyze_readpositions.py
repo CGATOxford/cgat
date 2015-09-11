@@ -57,7 +57,7 @@ def main(argv=None):
 
     (options, args) = E.Start(parser, add_csv_options=True)
 
-    fields, table = CSV.ReadTable(sys.stdin, dictreader=CSV.DictReaderLarge)
+    fields, table = CSV.readTable(sys.stdin, dictreader=CSV.DictReaderLarge)
 
     map_fields2column = {}
     for x in fields:

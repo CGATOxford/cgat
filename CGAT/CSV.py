@@ -158,7 +158,7 @@ class DictReaderLarge:
         return dict(zip(self.mFieldNames, data))
 
 
-def ReadTable(lines,
+def readTable(infile,
               as_rows=True,
               with_header=True,
               ignore_incomplete=False,
@@ -211,7 +211,7 @@ def ReadTable(lines,
     return fields, table
 
 
-def ReadTables(infile, *args, **kwargs):
+def readTables(infile, *args, **kwargs):
     """read a set of csv tables.
 
     Individual tables are separated by // on a single line.
@@ -229,7 +229,7 @@ def ReadTables(infile, *args, **kwargs):
     start = 0
     for end in chunks:
 
-        fields, table = ReadTable(lines[start:end], *args, **kwargs)
+        fields, table = readTable(lines[start:end], *args, **kwargs)
         r = Result()
         r.mFields = fields
         r.mTable = table

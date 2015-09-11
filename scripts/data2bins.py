@@ -107,7 +107,7 @@ def main(argv=None):
     else:
         infile = sys.stdin
 
-    fields, data = CSV.ReadTable(infile)
+    fields, data = CSV.readTable(infile)
 
     c = options.column
     values = [float(x[c]) for x in data]

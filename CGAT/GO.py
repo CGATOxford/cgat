@@ -943,7 +943,7 @@ def ReadGeneLists(filename_genes, gene_pattern=None):
     else:
         infile = IOTools.openFile(filename_genes, "r")
 
-    headers, table = CSV.ReadTable(infile.readlines(), as_rows=False)
+    headers, table = CSV.readTable(infile.readlines(), as_rows=False)
 
     if filename_genes != "-":
         infile.close()

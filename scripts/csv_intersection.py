@@ -79,8 +79,8 @@ def main(argv=None):
 
     options.filename1, options.filename2 = args
 
-    table1 = CSV.ReadTable(IOTools.openFile(options.filename1, "r"))
-    table2 = CSV.ReadTable(IOTools.openFile(options.filename2, "r"))
+    table1 = CSV.readTable(IOTools.openFile(options.filename1, "r"))
+    table2 = CSV.readTable(IOTools.openFile(options.filename2, "r"))
 
     if options.unique:
         outfile = UniqueBuffer(sys.stdout)
