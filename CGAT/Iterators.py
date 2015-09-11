@@ -2,7 +2,7 @@
 Iterators.py - Iterator functions
 =================================
 
-A collection of useful, general purpose iterators.
+A collection of general purpose iterators.
 
 """
 

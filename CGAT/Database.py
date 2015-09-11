@@ -20,11 +20,10 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-'''
-Database.py - Database utility functions
-========================================
+'''Database.py - Database utility functions
+===========================================
 
-This module contains functions to work with a relational
+This module contains convenience functions to work with a relational
 database.
 
 
@@ -32,16 +31,8 @@ Reference
 ---------
 
 '''
-import os
-import sys
 import time
-import string
-import traceback
 import re
-import MySQLdb
-import _mysql           # necessary for exception handling
-
-WARNINGS = 1            # print out warnings?
 
 
 def executewait(dbhandle, statement, error=Exception, regex_error="locked",
@@ -128,5 +119,4 @@ def toTSV(dbhandle, outfile, statement, remove_none=True):
 
     outfile.write("\n".join(
         ["\t".join(map(f, x)) for x in cc]))
-
 
