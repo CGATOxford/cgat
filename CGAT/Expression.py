@@ -1265,12 +1265,7 @@ class DEExperiment_Sleuth(DEExperiment):
     The run method expects all kallisto abundance.h5 files to be under
     a single directory with a subdirectory for each sample
 
-    kallisto abundance files have no transcript ids, just transcript
-    numbers if a map files is provided (tab-seperated values),
-    transcript_ids are imported into results
     '''
-    # to do:
-    # implement an option to add gene_ids to results?
 
     def run(self,
             base_dir,
@@ -1278,6 +1273,8 @@ class DEExperiment_Sleuth(DEExperiment):
             model=None,
             contrast=None,
             outfile_prefix=None,
+            counts=None,
+            tpm=None,
             fdr=0.1):
 
         # Design table needs a "sample" column
@@ -1304,8 +1301,42 @@ class DEExperiment_Sleuth(DEExperiment):
 
         so = createSleuthObject(r_design_df)
 
+        # write out counts and tpm tables if required
+        if counts:
+
+            makeCountsTable = R('''
+            function(so){
+
+            library('reshape')
+
+            df = cast(so$obs_raw, target_id~sample, value = "est_counts")
+            colnames(df)[1] <- "transcript_id"
+            write.table(df, "%(counts)s", sep="\t", row.names=F, quote=F)
+
+            }''' % locals())
+
+            makeCountsTable(so)
+
+        if tpm:
+
+            makeTPMTable = R('''
+            function(so){
+
+            library('reshape')
+
+            df = cast(so$obs_raw, target_id~sample, value = "tpm")
+            colnames(df)[1] <- "transcript_id"
+            write.table(df, "%(tpm)s", sep="\t", row.names=F, quote=F)
+
+            }''' % locals())
+
+            makeTPMTable(so)
+
         differentialTesting = R('''
         function(so){
+
+        suppressMessages(library('sleuth'))
+
         so <- sleuth_test(so, which_beta = '%(contrast)s')
 
         p_ma = plot_ma(so, '%(contrast)s')
