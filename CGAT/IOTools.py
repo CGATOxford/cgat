@@ -1306,3 +1306,75 @@ def ReadMap(*args, **kwargs):
 def ReadList(*args, **kwargs):
     """deprecated, use readList()"""
     return readList(*args, **kwargs)
+
+
+def writeLines(outfile, lines, header=False):
+    ''' expects [[[line1-field1],[line1-field2 ] ],... ]'''
+    handle = openFile(outfile, "w")
+
+    if header:
+        handle.write("\t".join([str(title) for title in header]) + "\n")
+
+    for line in lines:
+        handle.write("\t".join([str(field) for field in line]) + "\n")
+
+    handle.close()
+
+
+def txtToDict(filename, key=None, sep="\t"):
+    '''make a dictionary from a text file keyed
+    on the specified column.'''
+
+    # Please see function in readDict()
+    count = 0
+    result = {}
+    valueidx, keyidx = False, False
+    field_names = []
+
+    with open(filename, "r") as fh:
+        for line in fh:
+            if line.startswith("#"):
+                continue
+            if count == 0:
+                fieldn = 0
+                for rawfield in line.split(sep):
+                    field = rawfield.strip()
+                    if field == key:
+                        keyidx = fieldn
+                    field_names.append(field)
+                    fieldn += 1
+
+                if not keyidx:
+                    raise ValueError("key name not found in header")
+                # if not valueidx:
+                #   raise ValueError(
+                #     "value name not found in header")
+            else:
+                fields = [x.strip() for x in line.split(sep)]
+                fieldn = 0
+                thiskey = fields[keyidx]
+                result[thiskey] = {}
+                for field in fields:
+                    if fieldn == keyidx:
+                        pass
+                    else:
+                        colkey = field_names[fieldn]
+                        result[thiskey][colkey] = field
+                    fieldn += 1
+            count += 1
+
+    return(result)
+
+
+def pickle(file_name, obj):
+    '''dump a python object to a file using pickle'''
+    with open(file_name, "wb") as pkl_file:
+        pickle.dump(obj, pkl_file)
+    return
+
+
+def unpickle(file_name):
+    '''retrieve a pickled python object from a file'''
+    with open(file_name, "r") as pkl_file:
+        data = pickle.load(pkl_file)
+    return data
