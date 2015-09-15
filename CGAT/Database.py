@@ -33,6 +33,7 @@ Reference
 '''
 import time
 import re
+from pandas import DataFrame
 
 
 def executewait(dbhandle, statement, error=Exception, regex_error="locked",
@@ -119,4 +120,131 @@ def toTSV(dbhandle, outfile, statement, remove_none=True):
 
     outfile.write("\n".join(
         ["\t".join(map(f, x)) for x in cc]))
+
+
+def db_execute(cc, statements):
+    '''excute a statement or statements against a cursor'''
+
+    if type(statements) not in (list, tuple):
+        statements = [statements]
+
+    for statement in statements:
+        cc.execute(statement)
+
+
+def execute(queries, dbhandle=None, attach=False):
+    '''Execute a statement or a  list of statements (sequentially)'''
+
+    cc = dbhandle.cursor()
+
+    if attach:
+        db_execute(cc, attach)
+
+    db_execute(cc, queries)
+    cc.close()
+
+
+def fetch(query, dbhandle=None, attach=False):
+    '''Fetch all query results and return'''
+
+    cc = dbhandle.cursor()
+
+    if attach:
+        db_execute(cc, attach)
+
+    sqlresult = cc.execute(query).fetchall()
+    cc.close()
+    return sqlresult
+
+
+def fetch_with_names(query,
+                     dbhandle=None,
+                     attach=False):
+    '''Fetch query results and returns them as an array of row arrays, in
+       which the first entry is an array of the field names
+
+    '''
+
+    cc = dbhandle.cursor()
+    if attach:
+        db_execute(cc, attach)
+
+    sqlresult = cc.execute(query).fetchall()
+    data = []
+    # http://stackoverflow.com/questions/4147707/
+    # python-mysqldb-sqlite-result-as-dictionary
+    field_names = [d[0] for d in cc.description]
+    data.append([name for name in field_names])
+    for record in sqlresult:
+        line = [field for field in record]
+        data.append(line)
+
+    cc.close()
+    return data
+
+
+def fetch_DataFrame(query,
+                    dbhandle=None,
+                    attach=False):
+    '''Fetch query results and returns them as a pandas dataframe'''
+
+    cc = dbhandle.cursor()
+
+    if attach:
+        if type(attach) is str:
+            db_execute(cc, attach)
+        elif isinstance(attach, (tuple, list)):
+            for attach_statement in attach:
+                db_execute(cc, attach_statement)
+
+    sqlresult = cc.execute(query).fetchall()
+    cc.close()
+
+    # see http://pandas.pydata.org/pandas-docs/dev/generated/
+    # pandas.DataFrame.from_records.html#pandas.DataFrame.from_records
+    # this method is design to handle sql_records with proper type
+    # conversion
+
+    field_names = [d[0] for d in cc.description]
+    pandas_DataFrame = DataFrame.from_records(
+        sqlresult,
+        columns=field_names)
+    return pandas_DataFrame
+
+
+def write_DataFrame(dataframe,
+                    tablename,
+                    dbhandle=None,
+                    index=False,
+                    if_exists='replace'):
+    '''write a pandas dataframe to an sqlite db, index on given columns
+       index columns given as a string or list eg. "gene_id" or
+       ["gene_id", "start"]
+
+    '''
+
+    dataframe.to_sql(tablename,
+                     con=dbhandle,
+                     flavor='sqlite',
+                     if_exists=if_exists)
+
+    def indexStat(tablename, column):
+        istat = ('create index %(tablename)s_%(column)s '
+                 'on %(tablename)s(%(column)s)') % locals()
+        return istat
+
+    if index:
+
+        cc = dbhandle.cursor()
+
+        if type(index) is str:
+            istat = indexStat(tablename, index)
+            print istat
+            db_execute(cc, istat)
+        elif isinstance(index, (tuple, list)):
+            for column in index:
+                istat = indexStat(tablename, column)
+                db_execute(cc, istat)
+
+        cc.close()
 
