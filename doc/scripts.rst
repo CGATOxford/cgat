@@ -242,7 +242,6 @@ Unsorted
    scripts/counts2table.rst
    scripts/coverage2stats.rst
    scripts/csv_select.rst
-   scripts/cwd2list.rst
    scripts/data2resamples.rst
    scripts/data2spike.rst
    scripts/diamond2counts.rst
