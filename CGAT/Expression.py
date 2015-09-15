@@ -2969,7 +2969,8 @@ def runDESeq2(outfile,
 
         # write data to outfile
         res_df = R('''res_df <- as.data.frame(res)''')
-        df_out = com.load_data("res_df")
+        R.data('res_df')
+        df_out = pandas2ri.ri2py(res_df)
         df_out["treatment"] = [treatment, ]*len(df_out.index)
         df_out["control"] = [control, ]*len(df_out.index)
         df_out["variable"] = [variable, ]*len(df_out.index)
