@@ -42,7 +42,10 @@ Reference
 '''
 
 from math import log
-from CGAT import Experiment as E
+
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
+
 # see http://en.wikipedia.org/wiki/FASTQ_format
 # ranges are conservative - they are open-ended
 RANGES = {
@@ -372,3 +375,20 @@ def getOffset(format, raises=True):
                 "inconsistent offsets for multiple formats: %s" % offsets)
 
     return RANGES[format][0]
+
+
+def getReadLength(filename):
+    '''return readlength from a fastq file.
+
+    Only the first read is inspected. If there are
+    different read lengths in the file, the result
+    will be inaccurate.
+
+    Returns
+    -------
+    read_length : int
+    '''
+
+    with IOTools.openFile(filename) as infile:
+        record = iterate(infile).next()
+        return len(record.seq)
