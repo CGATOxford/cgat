@@ -60,6 +60,9 @@ def merge_pairs(Samfile input_samfile,
         if read.pos < read.mpos:
             # lower coordinates, ignore
             continue
+        elif read.pos == read.mpos and flag & 64:
+            # disambiguate, take second in pair
+            continue
         else:
             # taking the downstream pair allows to incl
             xstart = read.next_reference_start

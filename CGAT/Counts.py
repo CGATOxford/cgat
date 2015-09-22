@@ -142,13 +142,13 @@ class Counts(object):
                 len(take) - sum(take)))
         self.table = self.table[take]
 
-    def normalise(self, method="deseq-size-factors"):
+    def normalise(self, method="deseq-size-factors", row_title="total"):
 
         '''return a table with normalized count data.
 
         Implemented methods are:
 
-        million-counts
+        total-column
 
            Divide each value by the column total and multiply by 1,000,000
 
@@ -169,6 +169,11 @@ class Counts(object):
            Divide all values in a column by the normalization factor. This
            normalization method removes all rows with a geometric mean of
            0.
+
+        total-row
+
+           Divide each value in a sample by the value in a particular row.
+           The name of the row is given by `row_title`.
 
         This method normalises the counts and returns the normalization
         factors that have been applied.
@@ -191,8 +196,12 @@ class Counts(object):
 
             normed = self.table / self.size_factors
 
-        elif method == "million-counts":
+        elif method == "total-column":
             self.size_factors = self.table.sum(axis=0)
+            normed = self.table * 1000000.0 / self.size_factors
+        elif method == "total-row":
+            self.size_factors = self.table.loc[row_title]
+            self.table.drop(row_title, inplace=True)
             normed = self.table * 1000000.0 / self.size_factors
         else:
             raise NotImplementedError(
@@ -898,7 +907,7 @@ def normalizeTagData(counts, method="deseq-size-factors"):
 
     Implemented methods are:
 
-    million-counts
+    total-column
 
        Divide each value by the column total and multiply by 1,000,000
 
@@ -939,7 +948,7 @@ def normalizeTagData(counts, method="deseq-size-factors"):
 
         normed = counts / size_factors
 
-    elif method == "million-counts":
+    elif method == "total-column":
         size_factors = counts.sum(axis=0)
         normed = counts * 1000000.0 / size_factors
     else:
