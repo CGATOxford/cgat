@@ -494,9 +494,10 @@ def main(argv=None):
                  if y < options.minimum_counts])
             E.info("removing %i categories with less than %i genes" %
                    (len(to_remove), options.minimum_counts))
-            removeCategories(gene2go, to_remove)
+            GO.removeCategories(gene2go, to_remove)
 
-            ngenes, ncategories, nmaps, counts_per_category = CountGO(gene2go)
+            ngenes, ncategories, nmaps, counts_per_category = \
+                GO.CountGO(gene2go)
             E.info("assignments after filtering: %i genes mapped "
                    "to %i categories (%i maps)" % (
                        ngenes, ncategories, nmaps))
@@ -617,19 +618,19 @@ def main(argv=None):
                 sys.exit(0)
 
             #############################################################
-            outfile = getFileName(options,
-                                  go=test_ontology,
-                                  section='foreground',
-                                  set=genelist_name)
+            outfile = GO.getFileName(options,
+                                     go=test_ontology,
+                                     section='foreground',
+                                     set=genelist_name)
 
             outfile.write("gene_id\n%s\n" % ("\n".join(sorted(foreground))))
             if options.output_filename_pattern:
                 outfile.close()
 
-            outfile = getFileName(options,
-                                  go=test_ontology,
-                                  section='background',
-                                  set=genelist_name)
+            outfile = GO.getFileName(options,
+                                     go=test_ontology,
+                                     section='background',
+                                     set=genelist_name)
 
             # Jethro bug fix - see section 'build background' for assignment
             outfile.write("gene_id\n%s\n" % ("\n".join(sorted(background))))
