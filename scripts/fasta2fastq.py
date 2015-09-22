@@ -1,7 +1,7 @@
 '''fasta2fastq.py - simulate reads from fasta
 =====================================
 
-:Author: Andreas Heger
+:Author: Tom Smith
 :Release: $Id$
 :Date: |today|
 :Tags: Sequences
@@ -9,16 +9,20 @@
 Purpose
 -------
 
-Simulate illumina sequence reads from a fasta file. The primary use
-case will be the generation of simulation RNA-Seq reads
+Simulate illumina sequence reads from a fasta file. The number of
+reads per entry is randomly selected from the range given. The primary
+use case is expected to be the generation of simulation RNA-Seq reads
 
 Available edit operations are:
 
 paired
    generate paired-end reads (defaults to single end)
 
-reads-per-entry
-   the number of reads to simulate for each fasta entry
+min-reads-per-entry
+   the minimum number of reads to simulate for each fasta entry
+
+max-reads-per-entry
+   the maximum number of reads to simulate for each fasta entry
 
 phred
    the sequencing error rate (phred scale)
@@ -105,11 +109,12 @@ def generateRead(entry, read_length=50, error_rate=40, paired=False,
 
         while position != "OK":
 
-            r1_start = random.randint(0, len(entry))
+            r1_start = random.randint(0, len(entry)-read_length)
             r2_start = (r1_start + read_length +
                         int(np.random.normal(insert_mean, insert_sd)))
 
-            if r2_start <= len(entry) - read_length:
+            if ((r2_start <= len(entry) - read_length) and
+                (r2_start >= r1_start)):
 
                 position = "OK"
 
@@ -159,8 +164,13 @@ def main(argv=None):
         help="insert length standard deviation [default = %default].")
 
     parser.add_option(
-        "--reads-per-entry", dest="reads_per_entry", type="int",
-        help="number of reads/read pairs per fasta entry "
+        "--min-reads-per-entry", dest="min_reads_per_entry", type="int",
+        help="minimum number of reads/read pairs per fasta entry "
+        "[default = %default].")
+
+    parser.add_option(
+        "--max-reads-per-entry", dest="max_reads_per_entry", type="int",
+        help="maximum number of reads/read pairs per fasta entry "
         "[default = %default].")
 
     parser.add_option(
@@ -172,7 +182,11 @@ def main(argv=None):
         help="phred quality score [default = %default].")
 
     parser.add_option(
-        "--fastq-out2", dest="fastq_out2", type="string",
+        "--output-counts", dest="output_counts", type="string",
+        help="name for counts outfile [default=%default].")
+
+    parser.add_option(
+        "--output-fastq2-out", dest="fastq2_out", type="string",
         help="filename for second fastq outfile [default=%default].")
 
     parser.set_defaults(
@@ -180,18 +194,20 @@ def main(argv=None):
         paired=False,
         insert_mean=0,
         insert_sd=1,
-        reads_per_entry=1,
+        min_reads_per_entry=1,
+        max_reads_per_entry=1,
         read_length=50,
-        fastq_out2=None,
+        fastq2_out=None,
+        output_counts=None,
         phred=30
     )
 
     (options, args) = E.Start(parser)
 
     if options.paired:
-        assert options.fastq_out2, ("must specify a second fastq outfile for "
-                                    "paired end (--fastq-out2)")
-        outf2 = IOTools.openFile(options.fastq_out2, "w")
+        assert options.fastq2_out, ("must specify a second fastq outfile for "
+                                    "paired end (--output-fastq2-out)")
+        outf2 = IOTools.openFile(options.fastq2_out, "w")
 
     # the sequence quality string will always be the same so define here
     sequence_quality = chr(options.q_format + options.phred)
@@ -202,21 +218,37 @@ def main(argv=None):
     # set a cut off of twice the read/pair length for short entries
     if options.paired:
         minimum_entry_length = (
-            2 * ((options.read_length * 2) + options.insert_mean))
+            2 * (options.read_length * 2) + options.insert_mean)
     else:
-        minimum_entry_length = options.read_length * 2
+        minimum_entry_length = 2 * options.read_length
+
+    counts_out = IOTools.openFile(options.output_counts, "w")
+    counts_out.write("%s\n" % "\t".join(("id", "read_count")))
+
+    skipped = 0
+    not_skipped = 0
 
     for entry in iterator:
 
+        # reject short fasta entries
+        if len(entry.sequence) < minimum_entry_length:
+            E.info("skipping short transcript: %s length=%i"
+                   % (entry.title, len(entry.sequence)))
+            skipped += 1
+            continue
+
+        else:
+            not_skipped += 1
+
         entry.sequence = entry.sequence.upper()
+        entry_id = entry.title.split()[0]
 
-        for i in range(0, options.reads_per_entry):
+        count = random.randint(options.min_reads_per_entry,
+                               options.max_reads_per_entry + 1)
 
-            # reject short fasta entries
-            if len(entry.sequence) < minimum_entry_length:
-                E.info("skipping short transcript: %s length=%i"
-                       % (entry.title, len(entry.sequence)))
-                continue
+        counts_out.write("%s\n" % "\t".join(map(str, (entry_id, count))))
+
+        for i in range(0, count + 1):
 
             read = generateRead(entry=entry.sequence,
                                 read_length=options.read_length,
@@ -229,20 +261,25 @@ def main(argv=None):
 
                 r1, r2 = read
 
-                h1 = "@%s_%i/1" % (entry.title.split()[0], i)
-                h2 = "@%s_%i/2" % (entry.title.split()[0], i)
+                h1 = "@%s_%i/1" % (entry_id, i)
+                h2 = "@%s_%i/2" % (entry_id, i)
 
                 options.stdout.write("\n".join((h1, r1, "+", qual)) + "\n")
                 outf2.write("\n".join((h2, r2, "+", qual)) + "\n")
 
             else:
 
-                h = "@%s_%i/1" % (entry.title.split()[0], i)
+                h = "@%s_%i/1" % (entry_id, i)
 
                 options.stdout.write("\n".join((h, read, "+", qual)) + "\n")
 
     if options.paired:
         outf2.close()
+
+    counts_out.close()
+
+    E.info("Reads simulated for %i fasta entries, %i entries skipped"
+           % (not_skipped, skipped))
 
     E.Stop()
 
