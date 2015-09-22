@@ -114,7 +114,7 @@ class Counts(object):
     def removeObservationsFreq(self, min_counts_per_row=1):
         '''remove Observations (e.g genes)
 
-        * remove rows with less than x number of counts
+        * remove rows with less than x counts
         '''
 
         # Remove rows with low counts
@@ -170,6 +170,11 @@ class Counts(object):
            normalization method removes all rows with a geometric mean of
            0.
 
+        total-counts
+
+           Normalise all values in a column by the column sum of counts
+           / average column counts across all rows
+
         This method normalises the counts and returns the normalization
         factors that have been applied.
 
@@ -190,6 +195,17 @@ class Counts(object):
             self.size_factors = normed.median(axis=0)
 
             normed = self.table / self.size_factors
+
+        elif method == "total-count":
+
+            # compute column-wise sum
+            column_sums = self.table.sum(axis=0)
+            column_sums_mean = geometric_mean(column_sums)
+            column_sums_mean = np.mean(column_sums)
+
+            self.size_factors = [(column_sums_mean/x) for x in column_sums]
+
+            normed = self.table * self.size_factors
 
         elif method == "million-counts":
             self.size_factors = self.table.sum(axis=0)
@@ -264,18 +280,18 @@ class Counts(object):
         }''' % locals())
 
         r_counts = pandas2ri.py2ri(self.table)
-        r_df = pandas2ri.ri2py(transform(r_counts))
+        df = pandas2ri.ri2py(transform(r_counts))
         # losing rownames for some reason during the conversion?!
-        r_df.index = self.table.index
+        df.index = self.table.index
 
         if inplace:
-            self.table = pandas2ri.ri2py(r_df)
+            self.table = df
             # R replaces "-" in column names with ".". Revert back!
             self.table.columns = [x.replace(".", "-")
                                   for x in self.table.columns]
         else:
             tmp_counts = self.clone()
-            tmp_counts.table = pandas2ri.ri2py(r_df)
+            tmp_counts.table = df
             tmp_counts.table.columns = [x.replace(".", "-")
                                         for x in tmp_counts.table.columns]
             return tmp_counts
@@ -365,22 +381,28 @@ class Counts(object):
 
         makeDendogram(r_counts)
 
-    def plotPCA(self, variance_plot_filename=None, pca_plot_filename=None,
-                x_axis="PC1", y_axis="PC2", colour="id_1",
-                shape="id_2"):
+    def plotPCA(self, design,
+                variance_plot_filename=None, pca_plot_filename=None,
+                x_axis="PC1", y_axis="PC2", colour="group", shape="group"):
         ''' use the prcomp function in base R to perform principal components
-        analysis '''
+        analysis.
 
+        Can specify colour and shape as either variables from design table
+        or sample names (seperated into id_1, id_2, id_3 based on samples
+        having names formated e.g Tissue-Treatment-Replicate)'''
+
+        # TS: swap this for regexes
         assert (x_axis[0:2] == "PC" and y_axis[0:2] == "PC"),\
             "x_axis and y_axis names must start with 'PC'"
 
         r_counts = pandas2ri.py2ri(self.table)
+        r_design = pandas2ri.py2ri(design.table)
 
         pc_number_1 = int(x_axis.replace("PC", ""))
         pc_number_2 = int(y_axis.replace("PC", ""))
 
         makePCA = R('''
-        function(counts){
+        function(counts, design){
 
           suppressMessages(library(ggplot2))
           suppressMessages(library(grid))
@@ -406,17 +428,23 @@ class Counts(object):
                 axis.title.x = m_text,
                 axis.text.y = m_text)
 
-          ggsave("%(variance_plot_filename)s")
+          ggsave("%(variance_plot_filename)s", width=10, height=10, unit="cm")
 
           PCs_df = data.frame(gene_pca$x)
+          PCs_df['sample'] <- rownames(PCs_df)
+          design['sample'] <- gsub("-", ".", rownames(design))
+
+          PCs_df = merge(PCs_df, design)
+
           PCs_df$id_1 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 1)
           PCs_df$id_2 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 2)
           PCs_df$id_3 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 3)
 
           p_pca = ggplot(PCs_df, aes(x=%(x_axis)s, y=%(y_axis)s)) +
-          geom_point(aes(shape=%(shape)s, colour=%(colour)s)) +
-          scale_colour_discrete(name=guide_legend(title='Sample')) +
-          scale_shape_discrete(name=guide_legend(title='')) +
+          geom_point(aes(shape=as.factor(%(shape)s),
+                         colour=as.factor(%(colour)s))) +
+          scale_colour_discrete(name=guide_legend(title='%(shape)s')) +
+          scale_shape_discrete(name=guide_legend(title='%(colour)s')) +
           xlab(paste0('PC%(pc_number_1)i (Variance explained = ' ,
                        round(100 * variance_explained[%(pc_number_1)i], 1),
                        '%%)')) +
@@ -425,13 +453,95 @@ class Counts(object):
                        '%%)')) +
           theme(axis.text.x = s_text, axis.text.y = s_text,
                 title = m_text, legend.text = m_text,
-                legend.title = m_text, legend.key.size = unit(7, "mm"))
+                legend.title = m_text)
 
-          ggsave("%(pca_plot_filename)s")
+          ggsave("%(pca_plot_filename)s", width=10, height=10, unit="cm")
 
         }''' % locals())
 
-        makePCA(r_counts)
+        makePCA(r_counts, r_design)
+
+    def plotPairwiseCorrelations(self, outfile, subset=False):
+        ''' use the R base pairs function to plot all pairwise
+        correlations between the samples
+
+        subset will randomly subset n rows to speed up plotting'''
+
+        plotGGpairs = R('''
+        function(df){
+
+        write.table(df, file="%(outfile)s.tsv", sep="\t")
+
+        colnames(df) <- gsub("-", "_", colnames(df))
+
+        width <- height <-  length(colnames(df)) * 100
+
+        png("%(outfile)s", width=width, height=height, units = "px")
+
+        panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...){
+          usr <- par("usr"); on.exit(par(usr))
+          par(usr = c(0, 1, 0, 1))
+          r <- abs(cor(x, y))
+          txt <- format(c(r, 0.123456789), digits = digits)[1]
+          txt <- paste0(prefix, txt)
+          if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+          text(0.5, 0.5, txt, cex = cex.cor * r * 50)}
+
+        panel.hist = function (x, ...) {
+          par(new = TRUE)
+          hist(x,
+               breaks=30,
+               col = "light blue",
+               probability = TRUE,
+               axes = FALSE,
+               main = "")
+          rug(x)}
+
+        pairs(df, pch=20, cex=0.1,
+              lower.panel = panel.smooth, upper.panel = panel.cor,
+              diag.panel=panel.hist)
+
+        dev.off()
+        }''' % locals())
+
+        if subset:
+            if len(self.table.index) > subset:
+                rows = random.sample(self.table.index, subset)
+                r_counts = pandas2ri.py2ri(self.table.ix[rows])
+            else:
+                r_counts = pandas2ri.py2ri(self.table)
+        else:
+            r_counts = pandas2ri.py2ri(self.table)
+
+        plotGGpairs(r_counts)
+
+    def heatmap(self, plotfile):
+        ''' plots a heatmap '''
+        # to do: add option to parse design file and add coloured row for
+        # variable specified in design file.
+
+        plotHeatmap = R('''
+        function(df){
+
+        library("Biobase")
+        library("RColorBrewer")
+        library("gplots")
+
+        hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
+        png("%(plotfile)s", width=1000, height=1000, units="px")
+        write.table(df, file="%(plotfile)s.tsv", sep="\t")
+        heatmap.2(as.matrix(df),
+                  col = hmcol, scale="none", trace="none", margin=c(18, 10),
+                  dendrogram="column", cexCol=2,
+                  labRow = "",
+                  hclustfun = function(x) hclust(x, method = 'average'),
+                  distfun = function(x) as.dist(1 - cor(t(x), method="spearman")))
+        dev.off()
+        }''' % locals())
+
+        r_counts = pandas2ri.py2ri(self.table)
+
+        plotHeatmap(r_counts)
 
     def shuffleRows(self,
                     min_cbin, max_cbin, width_cbin,

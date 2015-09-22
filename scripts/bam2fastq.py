@@ -87,7 +87,10 @@ def main(argv=None):
     if not fastqfile2.endswith(".gz"):
         fastqfile2 += ".gz"
 
-    samfile = pysam.Samfile("-", "rb")
+    if options.stdin != sys.stdin:
+        samfile = pysam.Samfile(options.stdin.name, "rb")
+    else:
+        samfile = pysam.Samfile("-", "rb")
 
     tmpdir = tempfile.mkdtemp()
 

@@ -34,7 +34,8 @@ a single interval. The strand is set according to the first read in a
 pair.
 
 Usage
-----
+-----
+
 ::
 
    cgat bam2bed BAMFILE [--merge-pairs] [options]

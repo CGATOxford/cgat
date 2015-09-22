@@ -206,31 +206,13 @@ Stats
 Tools
 -----
 
-Databases
-+++++++++
-
-.. toctree::
-   :maxdepth: 1
-
-   scripts/mysql_clone_database.rst
-   scripts/psql_add_tables.rst
-   scripts/psql_clone_database.rst
-   scripts/check_db.rst
-
 Cluster and jobs
 ++++++++++++++++
 
 .. toctree::
    :maxdepth: 1
 
-   scripts/farm.rst
-   scripts/qkill.rst
-   scripts/nofarm.rst
-   scripts/run.rst
-   scripts/submit.rst
    scripts/clean.rst
-   scripts/cgat_cluster_distribute.rst
-   scripts/cgat_logfiles2tsv.rst
    scripts/split_file.rst
 
 Other
@@ -240,10 +222,8 @@ Other
    :maxdepth: 1
 
    scripts/rename_links.rst
-   scripts/cgat_log2wiki.rst
    scripts/cgat_script_template.rst
    scripts/convert_time2seconds.rst
-   scripts/cgat_html_add_toc.rst
    scripts/set_diff.rst
 
 .. Pipelines
@@ -455,7 +435,6 @@ Unsorted
    scripts/bed2table.rst
    scripts/beds2beds.rst
    scripts/blast2table.rst
-   scripts/cgat_build_report_page.rst
    scripts/chain2stats.rst
    scripts/combine_tables.rst
    scripts/diff_chains.rst
@@ -484,7 +463,6 @@ Unsorted
    scripts/probeset2gene.rst
    scripts/cgat_rebuild_extensions.rst
    scripts/revigo.rst
-   scripts/cgat_ruffus_profile.rst
    scripts/run_function.rst
    scripts/snp2snp.rst
    scripts/solexa2stats.rst
