@@ -70,6 +70,9 @@ total-column
 total-row
     Divide counts by the value in a row called ``total`` and remove
     that row.
+total-count
+    Normalise all values in a column by the ratio of the per-column
+    sum of counts and the average column count across all rows.
 
 Normalized counts in ``total-column`` and ``total-row`` are multiplied
 by 10e6.
@@ -319,6 +322,7 @@ def main(argv=None):
     parser.add_option("--normalization-method",
                       dest="normalization_method", type="choice",
                       choices=("deseq-size-factors",
+                               "total-count",
                                "total-column",
                                "total-row"),
                       help="normalization method to apply [%default]")

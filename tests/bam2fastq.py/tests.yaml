@@ -11,3 +11,8 @@ default_test:
     references: [example.1.fastq.gz,example.2.fastq.gz]
     options: 1.fastq.gz 2.fastq.gz
 
+test_reading_from_file:
+    stdin: null
+    outputs: [1.fastq.gz,2.fastq.gz]
+    references: [example.1.fastq.gz,example.2.fastq.gz]
+    options: -I <DIR>/example.bam 1.fastq.gz 2.fastq.gz
