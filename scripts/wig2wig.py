@@ -1,5 +1,4 @@
-'''
-wig2wig.py - manipulate wiggle files
+'''wig2wig.py - manipulate wiggle files
 ====================================
 
 Purpose
@@ -9,24 +8,15 @@ manipulate wig-formatted files.
 
 The script currently implements the following methods:
 
-1. sanitize-genome: remove all empty intervals and intervals on unknown contigs. 
-   Intervals extending beyond a contig a truncated. 
+1. sanitize-genome: remove all empty intervals and intervals on
+   unknown contigs.  Intervals extending beyond a contig a truncated.
+
 '''
 
 import sys
 import re
-import string
-import optparse
-import time
-import os
-import itertools
-import tempfile
-import subprocess
-import shutil
-
 import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
-import CGAT.IOTools as IOTools
 
 
 def sanitizeGenome(infile, outfile, contigs):

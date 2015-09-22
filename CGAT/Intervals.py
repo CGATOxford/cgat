@@ -20,25 +20,47 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
+'''Intervals.py - Utility functions for working with intervals
+===========================================================
+
+This module contains utility functions for working intervals
+or list of intervals.
+
+An interval is a tuple of a start and end coordinate in python's
+0-based, half-open notation such as::
+
+    (12, 20)
+
+An interval list is simply a list of such intervals.
+
+The majority of the functions in this module take one or more lists of
+intervals and return one or more new lists of intervals.
+
+Reference
+---------
+
 '''
-Intervals.py - 
-======================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
-:Tags: Python
 
-Code
-----
+def getLength(intervals):
+    """return sum of intervals lengths.
 
-'''
+    >>> getLength([(10,20), (30,40)])
+    20
+
+    """
+    return sum([x[1] - x[0] for x in intervals])
 
 
 def combine(intervals):
-    """combine intervals.
+    """combine overlapping and adjacent intervals.
 
-    Overlapping intervals are concatenated into larger intervals.
+    >>> combine([(10,20), (30,40)])
+    [(10, 20), (30, 40)]
+    >>> combine([(10,20), (20,40)])
+    [(10, 40)]
+    >>> combine([(10,20), (15,40)])
+    [(10, 40)]
     """
     if not intervals:
         return []
@@ -61,8 +83,6 @@ def combine(intervals):
 
     return new_intervals
 
-#----------------------------------------------------------------
-
 
 def prune(intervals, first=None, last=None):
     """truncates all intervals that are extending beyond first or last.
@@ -76,11 +96,32 @@ def prune(intervals, first=None, last=None):
         new_intervals.append((max(first, start), min(end, last)))
     return new_intervals
 
-#----------------------------------------------------------------
-
 
 def complement(intervals, first=None, last=None):
     """complement a list of intervals with intervals not in list.
+
+    >>> complement([(10,20), (15,40)])
+    []
+    >>> complement([(10,20), (30,40)])
+    [(20, 30)]
+    >>> complement([(10,20), (30,40)], first=5)
+    [(5, 10), (20, 30)]
+
+    Arguments
+    ---------
+    intervals : list
+        List of intervals
+    first : int
+        First position. If given, the interval from `first` to
+        the first position in `intervals` is added.
+    last : int
+        Last position. If given, the interval from the last position
+        in `intervals` to `last` is added.
+
+    Returns
+    -------
+    intervals : list
+        A new list of intervals
     """
 
     if len(intervals) == 0:
@@ -109,21 +150,158 @@ def complement(intervals, first=None, last=None):
 
     return new_intervals
 
-#----------------------------------------------------------------
-
 
 def addComplementIntervals(intervals, first=None, last=None):
     """complement a list of intervals with intervals not
     in list and return both.
-    """
-    return intervals + complement(intervals, first, last)
 
-#----------------------------------------
+    The resulting interval list is sorted.
+    """
+    return sorted(intervals + complement(intervals, first, last))
+
+
+def joined_iterator(intervals1, intervals2):
+    """iterate over the combination of two intervals.
+
+    returns the truncated intervals delineating the
+    ranges of overlap between intervals1 and intervals2.
+    """
+
+    intervals1.sort()
+    intervals2.sort()
+
+    x, y = 0, 0
+    while x < len(intervals1) and y < len(intervals2):
+
+        xfrom, xto = intervals1[x]
+        yfrom, yto = intervals2[y]
+
+        if xto <= yfrom:
+            x += 1
+        elif yto <= xfrom:
+            y += 1
+        else:
+            mto = min(xto, yto)
+            mfrom = max(xfrom, yfrom)
+
+            yield (mfrom, mto)
+
+            if xto < yto:
+                x += 1
+            elif yto < xto:
+                y += 1
+            else:
+                x += 1
+                y += 1
+
+
+def intersect(intervals1, intervals2):
+    """intersect two interval sets.
+
+    Return a set of intervals that is spanned by intervals in
+    both sets. Returns the union of the two intervals.
+    """
+    if not intervals1 or not intervals2:
+        return []
+
+    result = []
+    for start, end in joined_iterator(intervals1, intervals2):
+
+        overlap = end - start
+        if overlap:
+            result.append((start, end))
+
+    return result
+
+
+def truncate(intervals1, intervals2):
+    """truncate intervals in intervals1 by intervals2
+
+    Example: truncate( [(0,5)], [(0,3)] ) = [(3,5)]
+    """
+    if not intervals1:
+        return []
+    if not intervals2:
+        return intervals1
+
+    intervals2 = combine(intervals2)
+
+    result = []
+    intersection = intersect(intervals1, intervals2)
+
+    if not intersection:
+        return intervals1
+
+    y = 0
+    for start, end in intervals1:
+
+        # retrieve all overlapping in intersection
+        ovl = []
+        while y < len(intersection):
+            mask_start, mask_end = intersection[y]
+            if mask_start >= end:
+                break
+            if mask_start >= start:
+                ovl.append((mask_start, mask_end))
+            y += 1
+
+        # build truncated segments
+        last = start
+        for mask_start, mask_end in ovl:
+            if mask_start - last > 0:
+                result.append((last, mask_start))
+            last = mask_end
+        if end - last > 0:
+            result.append((last, end))
+
+    return result
+
+
+def calculateOverlap(intervals1, intervals2):
+    """calculate overlap between two list of intervals.
+
+    The intervals within each set should not be overlapping.
+    """
+
+    if not intervals1 or not intervals2:
+        return 0
+
+    overlap = 0
+    for start, end in joined_iterator(intervals1, intervals2):
+        overlap += end - start
+
+    return overlap
+
+
+def fromArray(a):
+    """get intervals from a binary array."""
+
+    if len(a) == 0:
+        return []
+
+    was_a = a[0]
+    if was_a:
+        start = 0
+
+    intervals = []
+    for x in range(1, len(a)):
+        is_a = a[x]
+        if is_a and not was_a:
+            start = x
+            was_a = is_a
+        elif not is_a and was_a:
+            if start is not None:
+                intervals.append((start, x))
+            was_a = is_a
+    if is_a:
+        intervals.append((start, len(a)))
+
+    return intervals
 
 
 def combineAtDistance(intervals, min_distance):
-    """combine a list intervals and merge those that are less than a certain
-    distance apart.
+    """combine a list intervals and merge those that are less than a
+    certain distance apart.
     """
 
     if not intervals:
@@ -149,32 +327,10 @@ def combineAtDistance(intervals, min_distance):
 
     return new_intervals
 
-#----------------------------------------
-
-
-def DeleteSmallIntervals(intervals, min_length):
-    """combine a list of non-overlapping intervals,
-    and delete those that are too small.
-    """
-
-    if not intervals:
-        return []
-
-    new_intervals = []
-
-    for this_from, this_to in intervals:
-        if (this_to - this_from + 1) >= min_length:
-            new_intervals.append((this_from, this_to))
-
-    return new_intervals
-
-#----------------------------------------------------------------
-
 
 def getIntersections(intervals):
-    """combine intervals.
+    """return regions were two intervals are overlapping.
 
-    Overlapping intervals are reduced to their intersection.
     """
     if not intervals:
         return []
@@ -212,10 +368,8 @@ def getIntersections(intervals):
     return new_intervals
 
 
-#----------------------------------------------------------------
 def RemoveIntervalsContained(intervals):
-    """
-    remove intervals that are fully contained in another.
+    """remove intervals that are fully contained in another
 
     [(10, 100), (20, 50), (70, 120), (130, 200), (10, 50), (140, 210), (150, 200)]
 
@@ -249,8 +403,6 @@ def RemoveIntervalsContained(intervals):
     new_intervals.append((last_from, last_to))
 
     return new_intervals
-
-#----------------------------------------------------------------
 
 
 def RemoveIntervalsSpanning(intervals):
@@ -301,8 +453,6 @@ def RemoveIntervalsSpanning(intervals):
 
     return new_intervals
 
-#----------------------------------------------------------------
-
 
 def ShortenIntervalsOverlap(intervals, to_remove):
     """shorten intervals, so that there is no
@@ -352,158 +502,4 @@ def ShortenIntervalsOverlap(intervals, to_remove):
 
     return new_intervals
 
-#----------------------------------------------------------------
 
-
-def joined_iterator(intervals1, intervals2):
-    """iterate over the combination of two intervals.
-
-    returns the truncated intervals delineating the
-    ranges of overlap between intervals1 and intervals2.
-    """
-
-    intervals1.sort()
-    intervals2.sort()
-
-    x, y = 0, 0
-    while x < len(intervals1) and y < len(intervals2):
-
-        xfrom, xto = intervals1[x]
-        yfrom, yto = intervals2[y]
-
-        if xto <= yfrom:
-            x += 1
-        elif yto <= xfrom:
-            y += 1
-        else:
-            mto = min(xto, yto)
-            mfrom = max(xfrom, yfrom)
-
-            yield (mfrom, mto)
-
-            if xto < yto:
-                x += 1
-            elif yto < xto:
-                y += 1
-            else:
-                x += 1
-                y += 1
-
-#----------------------------------------------------------------
-
-
-def intersect(intervals1, intervals2):
-    """intersect two interval sets.
-
-    Return a set of intervals that is spanned by intervals in
-    both sets. Returns the union of the two intervals.
-    """
-    if not intervals1 or not intervals2:
-        return []
-
-    result = []
-    for start, end in joined_iterator(intervals1, intervals2):
-
-        overlap = end - start
-        if overlap:
-            result.append((start, end))
-
-    return result
-
-#----------------------------------------------------------------
-
-
-def getLength(intervals):
-    '''return sum of intervals.'''
-    return sum([x[1] - x[0] for x in intervals])
-
-#----------------------------------------------------------------
-
-
-def truncate(intervals1, intervals2):
-    """truncate intervals in intervals1 by intervals2
-
-    Example: truncate( [(0,5)], [(0,3)] ) = [(3,5)]
-    """
-    if not intervals1:
-        return []
-    if not intervals2:
-        return intervals1
-
-    intervals2 = combine(intervals2)
-
-    result = []
-    intersection = intersect(intervals1, intervals2)
-
-    if not intersection:
-        return intervals1
-
-    y = 0
-    for start, end in intervals1:
-
-        # retrieve all overlapping in intersection
-        ovl = []
-        while y < len(intersection):
-            mask_start, mask_end = intersection[y]
-            if mask_start >= end:
-                break
-            if mask_start >= start:
-                ovl.append((mask_start, mask_end))
-            y += 1
-
-        # build truncated segments
-        last = start
-        for mask_start, mask_end in ovl:
-            if mask_start - last > 0:
-                result.append((last, mask_start))
-            last = mask_end
-        if end - last > 0:
-            result.append((last, end))
-
-    return result
-
-#----------------------------------------------------------------
-
-
-def calculateOverlap(intervals1, intervals2):
-    """calculate overlap between intervals.
-
-    The intervals within each set should not be overlapping.
-    """
-
-    if not intervals1 or not intervals2:
-        return 0
-
-    overlap = 0
-    for start, end in joined_iterator(intervals1, intervals2):
-        overlap += end - start
-
-    return overlap
-
-#----------------------------------------------------------------
-
-
-def fromArray(a):
-    """get intervals from a binary array."""
-
-    if len(a) == 0:
-        return []
-
-    was_a = a[0]
-    if was_a:
-        start = 0
-
-    intervals = []
-    for x in range(1, len(a)):
-        is_a = a[x]
-        if is_a and not was_a:
-            start = x
-            was_a = is_a
-        elif not is_a and was_a:
-            if start is not None:
-                intervals.append((start, x))
-            was_a = is_a
-    if is_a:
-        intervals.append((start, len(a)))
-
-    return intervals

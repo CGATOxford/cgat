@@ -31,14 +31,7 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import optparse
-import time
-import random
-import rpy2
 from rpy2.robjects import r as R
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools

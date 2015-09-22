@@ -125,20 +125,12 @@ To do:
 '''
 
 import sys
-import os
 import pandas as pd
-from rpy2.robjects import r as R
 
-try:
-    import CGAT.Experiment as E
-    import CGAT.Expression as Expression
-    import CGAT.IOTools as IOTools
-    import CGAT.Counts as Counts
-except ImportError:
-    import Experiment as E
-    import Expression
-    import IOTools
-    import Counts
+import CGAT.Experiment as E
+import CGAT.Expression as Expression
+import CGAT.IOTools as IOTools
+import CGAT.Counts as Counts
 
 
 def main(argv=None):

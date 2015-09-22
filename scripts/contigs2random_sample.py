@@ -47,14 +47,11 @@ Command line options
 
 import os
 import sys
-import re
 import optparse
-import CGAT.Experiment as E
-import CGAT.FastaIterator as FastaIterator
-import collections
-import itertools
 import glob
 import random
+import CGAT.Experiment as E
+import CGAT.FastaIterator as FastaIterator
 import CGAT.IOTools as IOTools
 
 

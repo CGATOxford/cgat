@@ -1,5 +1,5 @@
 
 .. automodule:: maf2psl
 
-.. program-output:: python ../scripts/maf2psl.py --no-usage --help
+.. program-output:: python ../scripts/maf2psl.py --help
 

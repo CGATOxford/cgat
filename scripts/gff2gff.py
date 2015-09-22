@@ -128,7 +128,6 @@ import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Intervals as Intervals
 import collections
 import numpy
-import bx.intervals.io
 import bx.intervals.intersection
 
 

@@ -1,23 +1,25 @@
-"""
-annotator_distance.py - statistical significance of distance between genomic segments
+"""annotator_distance.py - statistical significance of distance between genomic segments
 =====================================================================================
 
 Purpose
 -------
 
-The script :file:`annotator_distance.py` computes the statististical significance 
-of the association between segments on a genome.
+The script :file:`annotator_distance.py` computes the statististical
+significance of the association between segments on a genome.
 
-The genome is arranged into ``workspaces``, contiguous blocks in the genome that are
-labeled at their termini. An example of workspaces are intergenic spaces labeled ``3'`` 
-or ``5'`` according to the adjacent gene.
+The genome is arranged into ``workspaces``, contiguous blocks in the
+genome that are labeled at their termini. An example of workspaces are
+intergenic spaces labeled ``3'`` or ``5'`` according to the adjacent
+gene.
 
-Within the workspace are ``segments`` of interest, for example transcription factor binding
-sites. The script counts the distance of a segment to the nearest ``workspace`` terminus. 
-The counts are aggregated over all workspaces.
+Within the workspace are ``segments`` of interest, for example
+transcription factor binding sites. The script counts the distance of
+a segment to the nearest ``workspace`` terminus.  The counts are
+aggregated over all workspaces.
 
-Next, the script randomly rearranges ``segments`` within a ``workspace`` in order to test the 
-statistical significance of the observed counts.
+Next, the script randomly rearranges ``segments`` within a
+``workspace`` in order to test the statistical significance of the
+observed counts.
 
 The script implements various sampling and counting methods.
 
@@ -32,6 +34,7 @@ for command line usage.
 
 Command line options
 --------------------
+
 """
 
 import os
@@ -43,7 +46,6 @@ import CGAT.Bed as Bed
 import CGAT.Intervals as Intervals
 import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
-import bx.intervals.io
 import bx.intervals.intersection
 import numpy
 import random
@@ -53,7 +55,6 @@ import scipy
 import scipy.stats
 
 import matplotlib.pyplot as plt
-from matplotlib import _pylab_helpers
 
 # global functions, defined once for optimization purposes
 normalize_transform = lambda x, y: numpy.array(x, float) / (sum(x) + y)
@@ -73,10 +74,10 @@ def readWorkspace(infile,
     Available workspace builders are:
 
     gff
-       take a gff file. 
+       take a gff file.
 
     gtf-intergenic
-       build workspace from intergenic segments in a gtf file. 
+       build workspace from intergenic segments in a gtf file.
 
     gtf-intronic
        build workspace from intronic segments in a gtf file
@@ -1165,7 +1166,7 @@ def main(argv=sys.argv):
                                          options.resolution,
                                          st.ci95upper *
                                          options.resolution,
-                                         IOTools.prettyFloat(st.qvalue),
+                                         IOTools.val2str(st.qvalue),
                                          segments_per_label[label],
                                          workspaces_per_label[label],
                                          ))

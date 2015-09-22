@@ -142,13 +142,13 @@ class Counts(object):
                 len(take) - sum(take)))
         self.table = self.table[take]
 
-    def normalise(self, method="deseq-size-factors"):
+    def normalise(self, method="deseq-size-factors", row_title="total"):
 
         '''return a table with normalized count data.
 
         Implemented methods are:
 
-        million-counts
+        total-column
 
            Divide each value by the column total and multiply by 1,000,000
 
@@ -170,10 +170,15 @@ class Counts(object):
            normalization method removes all rows with a geometric mean of
            0.
 
-        total-counts
+        total-row
 
-           Normalise all values in a column by the column sum of counts
-           / average column counts across all rows
+           Divide each value in a sample by the value in a particular row.
+           The name of the row is given by `row_title`.
+
+        total-count
+
+           Normalise all values in a column by the ratio of the per-column
+           sum of counts and the average column count across all rows.
 
         This method normalises the counts and returns the normalization
         factors that have been applied.
@@ -200,15 +205,20 @@ class Counts(object):
 
             # compute column-wise sum
             column_sums = self.table.sum(axis=0)
-            column_sums_mean = geometric_mean(column_sums)
             column_sums_mean = np.mean(column_sums)
 
-            self.size_factors = [(column_sums_mean/x) for x in column_sums]
-
+            self.size_factors = [(column_sums_mean / x) for x in column_sums]
             normed = self.table * self.size_factors
 
-        elif method == "million-counts":
+        elif method == "total-column":
+
             self.size_factors = self.table.sum(axis=0)
+            normed = self.table * 1000000.0 / self.size_factors
+
+        elif method == "total-row":
+
+            self.size_factors = self.table.loc[row_title]
+            self.table.drop(row_title, inplace=True)
             normed = self.table * 1000000.0 / self.size_factors
         else:
             raise NotImplementedError(
@@ -1008,7 +1018,7 @@ def normalizeTagData(counts, method="deseq-size-factors"):
 
     Implemented methods are:
 
-    million-counts
+    total-column
 
        Divide each value by the column total and multiply by 1,000,000
 
@@ -1049,7 +1059,7 @@ def normalizeTagData(counts, method="deseq-size-factors"):
 
         normed = counts / size_factors
 
-    elif method == "million-counts":
+    elif method == "total-column":
         size_factors = counts.sum(axis=0)
         normed = counts * 1000000.0 / size_factors
     else:

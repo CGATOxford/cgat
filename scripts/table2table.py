@@ -1,5 +1,4 @@
-'''
-table2table.py - operate on tables
+'''table2table.py - operate on tables
 ==================================
 
 :Author: Andreas Heger
@@ -37,11 +36,12 @@ flatten-table
    Output a table as row/column/value tuples.
 
 as-column
-   Output table as a single column. Colums in the original table are appended and output.
+   Output table as a single column. Colums in the original table are
+   appended and output.
 
 collapse-table
-   Collapse a table of two columns with row names in the first column. Outputs a table
-   with multiple columns for each row name.
+   Collapse a table of two columns with row names in the first
+   column. Outputs a table with multiple columns for each row name.
 
 Methods for numerical columns
 +++++++++++++++++++++++++++++
@@ -99,20 +99,15 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import optparse
 import math
-import types
 import itertools
 import collections
 
 import CGAT.Experiment as E
 import CGAT.CSV as CSV
 import CGAT.Stats as Stats
-import scipy.stats
+import scipy
 
 
 def getColumns(fields, columns="all"):
@@ -178,7 +173,7 @@ def readAndTransposeTable(infile, options):
 def readAndGroupTable(infile, options):
     """read table from infile and group.
     """
-    fields, table = CSV.ReadTable(
+    fields, table = CSV.readTable(
         infile, with_header=options.has_headers, as_rows=True)
     options.columns = getColumns(fields, options.columns)
     assert options.group_column not in options.columns
@@ -229,17 +224,13 @@ def readAndGroupTable(infile, options):
             new_table.append(new_row)
     table = new_table
 
-    new_rows = CSV.GroupTable(table,
+    new_rows = CSV.groupTable(table,
                               group_column=0,
                               group_function=f)
 
     options.stdout.write("\t".join(new_fields) + "\n")
     for row in new_rows:
         options.stdout.write("\t".join(map(str, row)) + "\n")
-
-##########################################################
-##########################################################
-##########################################################
 
 
 def readAndExpandTable(infile, options):
@@ -250,7 +241,7 @@ def readAndExpandTable(infile, options):
     that all values have space.
     '''
 
-    fields, table = CSV.ReadTable(
+    fields, table = CSV.readTable(
         infile, with_header=options.has_headers, as_rows=True)
 
     options.stdout.write("\t".join(fields) + "\n")
@@ -281,7 +272,7 @@ def readAndCollapseTable(infile, options, missing_value=""):
     column. Outputs a table with multiple columns for each row name.
     '''
 
-    fields, table = CSV.ReadTable(
+    fields, table = CSV.readTable(
         infile, with_header=options.has_headers, as_rows=True)
 
     if len(fields) != 2:
@@ -330,7 +321,7 @@ def computeFDR(infile, options):
     '''compute FDR on a table.
     '''
 
-    fields, table = CSV.ReadTable(
+    fields, table = CSV.readTable(
         infile, with_header=options.has_headers, as_rows=True)
 
     options.stdout.write("\t".join(fields) + "\n")
@@ -356,7 +347,7 @@ def computeFDR(infile, options):
 
 def readAndJoinTable(infile, options):
 
-    fields, table = CSV.ReadTable(
+    fields, table = CSV.readTable(
         infile, with_header=options.has_headers, as_rows=True)
 
     join_column = options.join_column - 1
@@ -613,7 +604,7 @@ def main(argv=None):
         # IMS: bug fixed to make work. Also added options for keying
         # on a particular and adding custom column headings
 
-        fields, table = CSV.ReadTable(
+        fields, table = CSV.readTable(
             options.stdin, with_header=options.has_headers, as_rows=True)
 
         options.columns = getColumns(fields, options.columns)
@@ -646,7 +637,7 @@ def main(argv=None):
 
     elif options.as_column:
 
-        fields, table = CSV.ReadTable(
+        fields, table = CSV.readTable(
             options.stdin, with_header=options.has_headers, as_rows=True)
         options.columns = getColumns(fields, options.columns)
         table = zip(*table)
@@ -659,7 +650,7 @@ def main(argv=None):
     elif options.split_fields:
 
         # split comma separated fields
-        fields, table = CSV.ReadTable(options.stdin,
+        fields, table = CSV.readTable(options.stdin,
                                       with_header=options.has_headers,
                                       as_rows=True)
 
@@ -716,7 +707,7 @@ def main(argv=None):
         ######################################################################
         ######################################################################
         # Apply remainder of transformations
-        fields, table = CSV.ReadTable(
+        fields, table = CSV.readTable(
             options.stdin, with_header=options.has_headers, as_rows=False)
         # convert columns to list
         table = [list(x) for x in table]
@@ -857,7 +848,7 @@ def main(argv=None):
 
                 other_table_name = options.parameters[0]
                 del options.parameters[0]
-                other_fields, other_table = CSV.ReadTable(
+                other_fields, other_table = CSV.readTable(
                     open(other_table_name, "r"),
                     with_header=options.has_headers,
                     as_rows=False)

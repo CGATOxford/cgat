@@ -1,5 +1,4 @@
-"""
-convert adjacency lists to edge lists
+"""convert adjacency lists to edge lists
 =====================================
 
 :Author: Andreas Heger
@@ -10,8 +9,7 @@ convert adjacency lists to edge lists
 Purpose
 -------
 
-convert a graph in table format into a graph 
-with links.
+convert a graph in table format into a graph with links.
 
 A table in graph format stores adjacency lists for each node, for example::
 
@@ -37,11 +35,7 @@ Command line options
 
 """
 
-import os
 import sys
-import re
-import optparse
-
 import CGAT.Experiment as E
 
 
@@ -58,8 +52,9 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id$", usage=globals()["__doc__"])
 
-    parser.add_option("-e", "--header-names", dest="headers", type="string",
-                      help="',' separated list of node headers [default=%default].")
+    parser.add_option(
+        "-e", "--header-names", dest="headers", type="string",
+        help="',' separated list of node headers [default=%default].")
 
     parser.set_defaults(
         headers="node1,node2",

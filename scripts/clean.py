@@ -37,10 +37,7 @@ Command line options
 import os
 import sys
 import re
-import string
-import optparse
 import glob
-import subprocess
 import os.path
 import CGAT.Experiment as E
 

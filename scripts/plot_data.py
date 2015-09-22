@@ -36,16 +36,9 @@ Command line options
 
 '''
 import sys
-import re
 import string
 import os
-import getopt
-import time
-import optparse
-
 import CGAT.Experiment as E
-import CGAT.Histogram as Histogram
-import CGAT.MatlabTools as MatlabTools
 import numpy
 import numpy.ma as MA
 

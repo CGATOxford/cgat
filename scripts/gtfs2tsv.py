@@ -1,5 +1,4 @@
-'''
-gtfs2tsv.py - compare two genesets
+'''gtfs2tsv.py - compare two genesets
 ==================================
 
 :Author: Andreas Heger
@@ -10,12 +9,13 @@ gtfs2tsv.py - compare two genesets
 Purpose
 -------
 
-This script compares two genesets (required) in :term:`gtf`-formatted files and
-output lists of shared and unique genes.
+This script compares two genesets (required) in :term:`gtf`-formatted
+files and output lists of shared and unique genes.
 
-It outputs the results of the comparison into various sections. The sections
-are split into separate output files whose names are determined by the
-``--output-filename-pattern`` option. The sections are:
+It outputs the results of the comparison into various sections. The
+sections are split into separate output files whose names are
+determined by the ``--output-filename-pattern`` option. The sections
+are:
 
 ``genes_ovl``
    Table with overlapping genes
@@ -99,11 +99,7 @@ Command line options
 
 '''
 import sys
-import string
-import re
 import os
-import optparse
-import collections
 import CGAT.Experiment as E
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools

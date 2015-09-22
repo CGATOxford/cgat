@@ -125,7 +125,6 @@ import CGAT.Genomics as Genomics
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Intervals as Intervals
 import CGAT.Masker as Masker
-import bx.intervals.io
 import bx.intervals.intersection
 
 

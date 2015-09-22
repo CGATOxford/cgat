@@ -36,10 +36,11 @@ import string
 import re
 import math
 import tempfile
-import CGAT.Experiment as E
-import CGAT.SVGdraw as SVGdraw
 import bisect
 import numpy
+import CGAT.Experiment as E
+import CGAT.SVGdraw as SVGdraw
+import CGAT.CorrespondenceAnalysis as CorrespondenceAnalysis
 import CGAT.Stats as Stats
 
 
@@ -904,7 +905,6 @@ def main(argv=None):
         if len(row_names) * len(col_names) > 10000:
             E.info("no sorting as matrix too large")
         else:
-            import CorrespondenceAnalysis
             matrix = numpy.ones((len(row_names), len(col_names)), numpy.float)
             map_rows = dict(zip(row_names, range(len(row_names))))
             x = 0

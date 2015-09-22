@@ -1,5 +1,4 @@
-'''
-expression2expression.py - RNAseq filtering and normalisation
+'''expression2expression.py - RNAseq filtering and normalisation
 =============================================================
 
 :Author: Mike Morgan
@@ -9,8 +8,8 @@ expression2expression.py - RNAseq filtering and normalisation
 
 Purpose
 -------
-Script for normalisation and transformation of RNAseq
-timeseries data.
+
+Script for normalisation and transformation of RNAseq timeseries data.
 
 Script functions are:
 * Normalise RNAseq libraries using DESeq size factors
@@ -23,24 +22,25 @@ expression data
 Usage
 -----
 
-# applying library size normalisation and variance stabilising transformation
-head input_counts.tsv
+::
+   # applying library size normalisation and variance stabilising transformation
+   head input_counts.tsv
 
-# zero-values and genes with mean counts <10 are filtered out
-gene_id            LPS.000.R1  LPS.000.R2  LPS.000.R3  LPS.001.R1  LPS.001.R2
-ENSMUSG00000000544 0           0           0           0           0
-ENSMUSG00000000817 13          8           12          5           20
-ENSMUSG00000001138 3878        3868        2484        1340        1266
-ENSMUSG00000001143 2891        2668        1573        931         1041
+   # zero-values and genes with mean counts <10 are filtered out
+   gene_id            LPS.000.R1  LPS.000.R2  LPS.000.R3  LPS.001.R1  LPS.001.R2
+   ENSMUSG00000000544 0           0           0           0           0
+   ENSMUSG00000000817 13          8           12          5           20
+   ENSMUSG00000001138 3878        3868        2484        1340        1266
+   ENSMUSG00000001143 2891        2668        1573        931         1041
 
-python timeseries_analysis.py --task=deseq --replicates=R1,R2,R3
-          --time=0,1,3,6,12,24,48 input_counts.tsv > output_file.tsv
+   python timeseries_analysis.py --task=deseq --replicates=R1,R2,R3
+             --time=0,1,3,6,12,24,48 input_counts.tsv > output_file.tsv
 
-head output_file.tsv
+   head output_file.tsv
 
-gene_id            LPS.000.R1  LPS.000.R2  LPS.000.R3  LPS.001.R1  LPS.001.R2
-ENSMUSG00000001138 11.20       11.06       11.16       10.73       10.35
-ENSMUSG00000001143 10.78       10.53       10.50       10.21       10.07
+   gene_id            LPS.000.R1  LPS.000.R2  LPS.000.R3  LPS.001.R1  LPS.001.R2
+   ENSMUSG00000001138 11.20       11.06       11.16       10.73       10.35
+   ENSMUSG00000001143 10.78       10.53       10.50       10.21       10.07
 
 
 Input files is provided as the final argument to the script.  The exact form
@@ -49,11 +49,12 @@ Input files is provided as the final argument to the script.  The exact form
 Options
 -------
 
-Each set of options is dependent on the task applied.  Not all options are
- appropriate for all tasks.  Please see details below for the exact intended
- usage of these options.
+Each set of options is dependent on the task applied.  Not all options
+are appropriate for all tasks.  Please see details below for the exact
+intended usage of these options.
 
 task::
+
   The task to perform on the input.  This will determine which options will
   be functional.
 
@@ -99,6 +100,7 @@ for command line help.
 
 Command line options
 --------------------
+
 '''
 
 import sys

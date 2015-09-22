@@ -7,11 +7,6 @@
 '''CBioPortal.py - Interface with the Sloan-Kettering cBioPortal webservice
 ========================================================================
 
-:Author: Ian Sudbery
-:Release:  $Id$
-:Date: |today|
-:Tags: Python
-
 The Sloan Kettering cBioPortal webservice provides access to a
 database of results of genomics experiments on various cancers. The
 database is organised into studies, each study contains a number of
@@ -83,6 +78,9 @@ A commandline interface is provided for convenience, syntax::
 
    python CBioPortal.py [options] command(s)
 
+Reference
+---------
+
 '''
 import urllib2
 import re
@@ -98,18 +96,22 @@ from CGAT import Experiment as E
 
 
 class CBioPortal():
+    """connect to the cBioPortal Database.
+
+    If no url is specified the default url is used. A list of of valid
+    study ids is retrieved from the database. This both confirms that
+    the datavase is reachable, and provides cached checking for the
+    ids provided. If a study or study name is provided then this is
+    set as the defualt study for this session and the details of the
+    availible profiles and cases is retrieved.  'Study' is the study
+    id. If both study and study_name are specified then the study id
+    is used.
+    """
 
     url = "http://www.cbioportal.org/public-portal/webservice.do"
 
     def __init__(self, url=None, study=None, study_name=None,
                  case_list_id=None):
-        ''' connect to the cBioPortal Database. If no url is specified the default url
-        is used. A list of of valid study ids is retrieved from the database. This
-        both confirms that the datavase is reachable, and provides cached checking for the
-        ids provided. If a study or study name is provided then this is set as the defualt
-        study for this session and the details of the availible profiles and cases is retrieved.
-        'Study' is the study id. If both study and study_name are specified then the 
-        study id is used '''
 
         if url:
             self.url = url
@@ -142,13 +144,13 @@ class CBioPortal():
         if case_list_id:
             self.setDefaultCaseList(case_list_id)
 
-##########################################################################
-
     def _executeQuery(self, command, args=None):
-        '''execute the provided command on the database. args are specified as a dictionary.
-        error checking on the results is performed here and the returned value is a list of
-        lists with each list representing a row of the returned table. '''
+        """execute the provided command on the database.
 
+        args are specified as a dictionary.  error checking on the
+        results is performed here and the returned value is a list of
+        lists with each list representing a row of the returned table.
+        """
         try:
             argument_string = "&".join(["%s=%s" % (x, args[x]) for x in args])
             command_string = "&".join([command, argument_string])
@@ -214,7 +216,6 @@ class CBioPortal():
             return_table.append(odict(zip(headers, line.split("\t"))))
 
         return return_table
-##########################################################################
 
     def _getStudyId(self, study, study_name):
 
@@ -239,26 +240,28 @@ class CBioPortal():
         else:
             return None
 
-##########################################################################
-
     def getCancerStudies(self):
-        ''' Fetchs the list of cancer studies currently in the database. Returns list
-        of dictionaries with three entries 'cancer_study_id','name' and 'description'.
-        Also caches this data to verify the validity of later calls '''
+        """Fetches the list of cancer studies currently in the database.
 
+        Returns list of dictionaries with three entries
+        'cancer_study_id','name' and 'description'.  Also caches this
+        data to verify the validity of later calls
+        """
         cancer_studies = self._executeQuery("getCancerStudies")
         self.cancer_studies = cancer_studies
         self._valid_study_ids = [x['cancer_study_id'] for x in cancer_studies]
 
         return self.cancer_studies
 
-##########################################################################
-
     def getGeneticProfiles(self, study=None, study_name=None):
-        ''' Fetches the valid genetic profiles for a particular study. study is the study id.
-        If both study and study_name are specified, study is used. If neither study nor study
-        name is specified then the default study is used if set, if not a value error is raised.
-        Returns a list of dictionaries '''
+        """Fetches the valid genetic profiles for a particular study.
+
+        study is the study id.  If both study and study_name are
+        specified, study is used. If neither study nor study name is
+        specified then the default study is used if set, if not a
+        value error is raised.
+        Returns a list of dictionaries
+        """
 
         study = self._getStudyId(study, study_name)
 
@@ -268,67 +271,86 @@ class CBioPortal():
         genetic_studies = self._executeQuery(command="getGeneticProfiles",
                                              args=dict(cancer_study_id=study))
         return genetic_studies
-##########################################################################
 
     def getCaseLists(self, study=None, study_name=None):
-        ''' Retrieves meta-data regarding all case lists stored about a specific cancer study.
-        For example, a within a particular study, only some cases may have sequence data, and
-        another subset of cases may have been sequenced and treated with a specific therapeutic
-        protocol. Multiple case lists may be associated with each cancer study, and this method
-        enables you to retrieve meta-data regarding all of these case lists. 
+        """Retrieves meta-data regarding all case lists stored about a
+        specific cancer study.
 
-        Data is returned as a list of dictionaries with the following entries:
-         * case_list_id: a unique ID used to identify the case list ID in subsequent
-           interface calls. This is a human readable ID. For example, "gbm_all" identifies
-           all cases profiles in the TCGA GBM study.
+        For example, a within a particular study, only some cases may
+        have sequence data, and another subset of cases may have been
+        sequenced and treated with a specific therapeutic
+        protocol. Multiple case lists may be associated with each
+        cancer study, and this method enables you to retrieve
+        meta-data regarding all of these case lists.
+
+        Data is returned as a list of dictionaries with the following
+        entries:
+
+         * case_list_id: a unique ID used to identify the case list ID
+           in subsequent interface calls. This is a human readable
+           ID. For example, "gbm_all" identifies all cases profiles in
+           the TCGA GBM study.
 
          * case_list_name: short name for the case list.
 
          * case_list_description: short description of the case list.
 
-         * cancer_study_id: cancer study ID tied to this genetic profile. Will match the
-           input cancer_study_id.
-         * case_ids: space delimited list of all case IDs that make up this case list. '''
+         * cancer_study_id: cancer study ID tied to this genetic
+           profile. Will match the input cancer_study_id.
+
+         * case_ids: space delimited list of all case IDs that make up
+           this case list.
+        """
 
         study = self._getStudyId(study, study_name)
 
         if not study:
             raise ValueError("A study must be specified if no default is set")
 
-        case_lists = self._executeQuery(command="getCaseLists",
-                                        args=dict({'cancer_study_id': study}))
+        case_lists = self._executeQuery(
+            command="getCaseLists",
+            args=dict
+            ({'cancer_study_id': study}))
         return case_lists
 
-##########################################################################
+    def getProfileData(self, gene_list, case_set_id=None,
+                       genetic_profile_id=None, study=None, study_name=None):
+        """Retrieves genomic profile data for one or more genes.
 
-    def getProfileData(self, gene_list, case_set_id=None, genetic_profile_id=None, study=None, study_name=None):
-        ''' Retrieves genomic profile data for one or more genes
-        You can specify one gene and many profiles or one profile and many genes. 
-        If you specify no genetic profiles then all genetic profiles for the specified or 
-        default study are used if the case_set_id is from that study otherwise a ValueError 
+        You can specify one gene and many profiles or one profile and
+        many genes.  If you specify no genetic profiles then all
+        genetic profiles for the specified or default study are used
+        if the case_set_id is from that study otherwise a ValueError
         is raised.
 
-        Return value depends on the parameters. If you specify a single genetic profile
-        and multiple genes a list of ordered dictionaries with the following entires:
+        Return value depends on the parameters. If you specify a
+        single genetic profile and multiple genes a list of ordered
+        dictionaries with the following entries::
 
             gene_id: Entrez Gene ID
             common: HUGO Gene Symbol
             entries 3 - N: Data for each case
 
-        If you specify multi genetic prfiles and a single gene, a list of ordered dictoraries
-        with the following entries is returned:
+        If you specify multi genetic profiles and a single gene, a
+        list of ordered dictoraries with the following entries is
+        returned::
 
             genetic_profile_id: The Genetic Profile ID.
             alteration_type: The Genetic Alteration Type, e.g. MUTATION, MUTATION_EXTENDED, COPY_NUMBER_ALTERATION, or MRNA_EXPRESSION.
             gene_id: Entrez Gene ID.
             common: HUGO Gene Symbol.
-            Columns 5 - N: Data for each case. '''
+            Columns 5 - N: Data for each case.
+
+        """
 
         # Do some pre-query checking.
 
         if len(gene_list) > 1 and len(genetic_profile_id) > 1:
-            raise ValueError("%i genes and %i profiles specified\n.Please specify either one gene many profiles or one profile many genes" % (
-                len(gene_list), len(genetic_profile_id)))
+            raise ValueError(
+                "%i genes and %i profiles specified\n.Please "
+                "specify either one gene many profiles or one "
+                "profile many genes" % (
+                    len(gene_list), len(genetic_profile_id)))
 
         study_id = self._getStudyId(study, study_name)
         case_set_id = self._getCaseListId(case_set_id, study_id)
@@ -339,28 +361,31 @@ class CBioPortal():
         gene_list = ",".join(gene_list)
         genetic_profile_id = ",".join(genetic_profile_id)
 
-        profile_data = self._executeQuery(command="getProfileData",
-                                          args={'case_set_id': case_set_id,
-                                                  'genetic_profile_id': genetic_profile_id,
-                                                  'gene_list': gene_list})
+        profile_data = self._executeQuery(
+            command="getProfileData",
+            args={'case_set_id': case_set_id,
+                  'genetic_profile_id': genetic_profile_id,
+                  'gene_list': gene_list})
 
         return profile_data
 
-##########################################################################
+    def getMutationData(self, gene_list, genetic_profile_id, case_set_id=None,
+                        study=None, study_name=None):
+        '''For data of type EXTENDED_MUTATION, you can request the full set of
+        annotated extended mutation data.
 
-    def getMutationData(self, gene_list, genetic_profile_id, case_set_id=None, study=None, study_name=None):
-        '''For data of type EXTENDED_MUTATION, you can request the full set of annotated
-        extended mutation data. This enables you to, for example, determine which sequencing 
-        center sequenced the mutation, the amino acid change that results from the mutation,
-        or gather links to predicted functional consequences of the mutation.
+        This enables you to, for example, determine which sequencing
+        center sequenced the mutation, the amino acid change that
+        results from the mutation, or gather links to predicted
+        functional consequences of the mutation.
 
         Query Format
 
 
             case_set_id= [case set ID] (required)
             genetic_profile_id= [a single genetic profile IDs] (required).
-            gene_list= [one or more genes, specified as HUGO Gene Symbols or Entrez Gene IDs](required)
-
+            gene_list= [one or more genes, specified as HUGO Gene Symbols or
+                 Entrez Gene IDs](required)
 
         Response Format
 
@@ -369,26 +394,30 @@ class CBioPortal():
             entrez_gene_id: Entrez Gene ID.
             gene_symbol: HUGO Gene Symbol.
             case_id: Case ID.
-            sequencing_center: Sequencer Center responsible for identifying this mutation. 
+            sequencing_center: Sequencer Center responsible for identifying
+                this mutation. 
                                For example: broad.mit.edu.
-            mutation_status: somatic or germline mutation status. all mutations returned will be 
-                               of type somatic.
+            mutation_status: somatic or germline mutation status. all mutations
+                         returned will be of type somatic.
             mutation_type: mutation type, such as nonsense, missense, or frameshift_ins.
             validation_status: validation status. Usually valid, invalid, or unknown.
             amino_acid_change: amino acid change resulting from the mutation.
-            functional_impact_score: predicted functional impact score, as predicted by: Mutation 
-                               Assessor.
+
+            functional_impact_score: predicted functional impact score,
+                 as predicted by: Mutation Assessor.
             xvar_link: Link to the Mutation Assessor web site.
-            xvar_link_pdb: Link to the Protein Data Bank (PDB) View within Mutation Assessor web site.
-            xvar_link_msa: Link the Multiple Sequence Alignment (MSA) view within the
-                            Mutation Assessor web site.
+            xvar_link_pdb: Link to the Protein Data Bank (PDB) View within
+                       Mutation Assessor web site.
+            xvar_link_msa: Link the Multiple Sequence Alignment (MSA) view
+                 within the Mutation Assessor web site.
             chr: chromosome where mutation occurs.
             start_position: start position of mutation.
             end_position: end position of mutation.
 
-       If a default study is set then a check will be performed to set
-       if the supplied case id is from the specified study. The study
-       can be over written using the study and study_name parameters
+        If a default study is set then a check will be performed to
+        set if the supplied case id is from the specified study. The
+        study can be over written using the study and study_name
+        parameters
 
         '''
 
@@ -404,7 +433,8 @@ class CBioPortal():
 
             if genetic_profile_id not in proiles:
                 raise ValueError(
-                    "%s not a valid genetic profile for study %s" % (genetic_profile_id, gene_id))
+                    "%s not a valid genetic profile for study %s" %
+                    (genetic_profile_id, gene_id))
         genetic_profile_id = ",".join(genetic_profile_id)
         gene_list = ",".join(gene_list)
         mutation_data = self._executeQuery(
@@ -414,11 +444,12 @@ class CBioPortal():
                        "gene_list": gene_list}))
         return mutation_data
 
-##########################################################################
-
     def getClinicalData(self, case_set_id=None, study=None, study_name=None):
-        ''' Retrieves overall survival, disease free survival and age at diagnosis for specified
-        cases. Due to patient privacy restrictions, no other clinical data is available.
+        '''Retrieves overall survival, disease free survival and age at
+        diagnosis for specified cases.
+
+        Due to patient privacy restrictions, no other clinical data is
+        available.
 
         Query Format
         ------------
@@ -432,34 +463,40 @@ class CBioPortal():
 
             case_id: Unique Case Identifier.
             overall_survival_months: Overall survival, in months.
-            overall_survival_status: Overall survival status, usually indicated as "LIVING" or "DECEASED".
+            overall_survival_status: Overall survival status, usually
+                 indicated as "LIVING" or "DECEASED".
             disease_free_survival_months: Disease free survival, in months.
-            disease_free_survival_status: Disease free survival status, usually indicated as "DiseaseFree" or "Recurred/Progressed".
+            disease_free_survival_status: Disease free survival status,
+                 usually indicated as "DiseaseFree" or "Recurred/Progressed".
             age_at_diagnosis: Age at diagnosis.
 
-        If a study is specified or a defualt study is set, then the case_set_id will be tested to 
-        check if it exists for that study. '''
+        If a study is specified or a defualt study is set, then the
+        case_set_id will be tested to check if it exists for that
+        study.
+
+        '''
 
         study_id = self._getStudyId(study, study_name)
 
         case_set_id = self._getCaseListId(case_set_id, study_id)
 
-        clincal_data = self._executeQuery(command="getClinicalData",
-                                          args=dict({'case_set_id': case_set_id}))
+        clincal_data = self._executeQuery(
+            command="getClinicalData",
+            args=dict({'case_set_id': case_set_id}))
         return clincal_data
 
-##########################################################################
-
-    def getProteinArrayInfo(self, protein_array_type=None, gene_list=None, study=None, study_name=None):
-        ''' Retrieves information on antibodies used by reverse-phase protein arrays (RPPA) to
-        measure protein/phosphoprotein levels.
+    def getProteinArrayInfo(self, protein_array_type=None, gene_list=None,
+                            study=None, study_name=None):
+        '''Retrieves information on antibodies used by reverse-phase protein
+        arrays (RPPA) to measure protein/phosphoprotein levels.
 
         Query Format
         ------------
 
             cancer_study_id= [cancer study ID] (required)
             protein_array_type= [protein_level or phosphorylation]
-            gene_list= [one or more genes, specified as HUGO Gene Symbols or Entrez Gene IDs]. 
+            gene_list= [one or more genes, specified as HUGO Gene
+            Symbols or Entrez Gene IDs].
 
         Response Format
         ---------------
@@ -467,12 +504,15 @@ class CBioPortal():
         A list of dictionaries with the following entires:
 
             ARRAY_ID: The protein array ID.
-            ARRAY_TYPE: The protein array antibody type, i.e. protein_level or phosphorylation.
+            ARRAY_TYPE: The protein array antibody type, i.e. protein_level
+                or phosphorylation.
             GENE: The targeted gene name (HUGO gene symbol).
             RESIDUE: The targeted resdue(s).
 
-        If no study is specified the default study is used. If that is not specified an error is 
-        raised. '''
+        If no study is specified the default study is used. If that is
+        not specified an error is raised.
+
+        '''
 
         study = self._getStudyId(study, study_name)
         args = dict({'cancer_study_id': study})
@@ -488,24 +528,23 @@ class CBioPortal():
 
         return protein_array_info
 
-##########################################################################
-
-    def getProteinArrayData(self, protein_array_id=None, case_set_id=None, array_info=0, study=None, study_name=None):
-        ''' Retrieves protein and/or phosphoprotein levels measured by reverse-phase protein
-        arrays (RPPA).
+    def getProteinArrayData(self, protein_array_id=None, case_set_id=None,
+                            array_info=0, study=None, study_name=None):
+        '''Retrieves protein and/or phosphoprotein levels measured by
+        reverse-phase protein arrays (RPPA).
 
         Query Format
         ------------
 
         case_set_id= [case set ID]
-        protein_array_id= [one or more protein array IDs] as list. 
+        protein_array_id= [one or more protein array IDs] as list.
         array_info= [1 or 0]. If 1, antibody information will also be exported.
 
         Response Format 1
         -----------------
 
-        If the parameter of array_info is not specified or it is not 1, returns a list of dictionaries
-        with the following columns.
+        If the parameter of array_info is not specified or it is not
+        1, returns a list of dictionaries with the following columns.
 
         ARRAY_ID: The protein array ID.
         Columns 2 - N: Data for each case.
@@ -513,17 +552,21 @@ class CBioPortal():
         Response Format 2
         -----------------
 
-        If the parameter of array_info is 1, you will receive a list of ordered dictionaries with the 
-        following entires:
+        If the parameter of array_info is 1, you will receive a list
+        of ordered dictionaries with the following entires:
 
         ARRAY_ID: The protein array ID.
-        ARRAY_TYPE: The protein array antibody type, i.e. protein_level or phosphorylation.
+        ARRAY_TYPE: The protein array antibody type, i.e. protein_level or
+             phosphorylation.
         GENE: The targeted gene name (HUGO gene symbol).
         RESIDUE: The targeted resdue(s).
         Columns 5 - N: Data for each case.
 
-        If the defualt study is set then the case_set_id will be check. The default study can be
-        overidden using the study or study_name parameters. '''
+        If the defualt study is set then the case_set_id will be
+        check. The default study can be overidden using the study or
+        study_name parameters.
+
+        '''
 
         study_id = self._getStudyId(study, study_name)
 
@@ -539,13 +582,13 @@ class CBioPortal():
 
         return protein_array_data
 
-##########################################################################
-
     def getLink(self, gene_list, study=None, study_name=None,  report="full"):
         '''return a perminant link to the cBioPortal report for the gene_list
-            cancer_study_id=[cancer study ID]
-            gene_list=[a comma separated list of HUGO gene symbols] (required)
-            report=[report to display; can be one of: full (default), oncoprint_html] '''
+            cancer_study_id=[cancer study ID] gene_list=[a comma
+            separated list of HUGO gene symbols] (required)
+            report=[report to display; can be one of: full (default),
+            oncoprint_html]
+        '''
 
         study = self._getStudyId(study, study_name)
         if not study:
@@ -556,12 +599,12 @@ class CBioPortal():
         url = "/".join(self.url.split("/")[:-1])
 
         gene_list = ",".join(gene_list)
-        return "%s/link.do?cancer_study_id=%s&gene_list=%s&report=%s" % (url, study, gene_list, report)
-
-##########################################################################
+        return "%s/link.do?cancer_study_id=%s&gene_list=%s&report=%s" %\
+            (url, study, gene_list, report)
 
     def getOncoprintHTML(self, gene_list, study=None, study_name=None):
-        ''' returns the HTML for the oncoprint report for the specified gene list and study '''
+        '''returns the HTML for the oncoprint report for the specified gene
+        list and study'''
 
         url = "/".join(self.url.split("/")[0:-1])
         gene_list = ",".join(gene_list)
@@ -569,26 +612,27 @@ class CBioPortal():
             url, study, gene_list)
         return urllib2.urlopen(command).read()
 
-##########################################################################
-
     def setDefaultStudy(self, study=None, study_name=None):
-        ''' sets a new study as the default study. Will check that the study id is valid '''
+        '''sets a new study as the default study. Will check that the study
+        id is valid'''
         study = self._getStudyId(study, study_name)
         self.study = study
         self.profiles = self.getGeneticProfiles()
         self.cases = self.getCaseLists()
 
         all_case_list = [x['case_list_id']
-                         for x in self.cases if x['case_list_name'] == "All Tumours"]
+                         for x in self.cases
+                         if x['case_list_name'] == "All Tumours"]
 
         if len(all_case_list) == 1:
             self.setDefaultCaseList(all_case_list)
 
-##########################################################################
-
     def setDefaultCaseList(self, case_set_id, study=None, study_name=None):
-        ''' set the default case list. If study is not specified the default study will be used.
-        The study will be used to check that the case_set exists '''
+        '''set the default case list. If study is not specified the default
+        study will be used.
+
+        The study will be used to check that the case_set exists.
+        '''
 
         study = self._getStudyId(study, study_name)
         case_list = self._getCaseListId(case_set_id, study=study)
@@ -597,8 +641,6 @@ class CBioPortal():
             self.setDefaultStudy(study)
 
         self.case_list = case_list
-
-##########################################################################
 
     def _getCaseListId(self, case_set_id=None, study=None, strict=True):
         ''' checking is only done if study is specified or a default is set '''
@@ -661,24 +703,34 @@ class CBioPortal():
                 raise ValueError("no valid genetic_profile_ids found")
 
             return genetic_profile_id
-##########################################################################
 
-    def getPercentAltered(self, gene_list, study=None, study_name=None, case_set_id=None, genetic_profile_id=None, threshold=2):
-        '''Get the percent of cases that have one or more of the specified alterations for each gene
+    def getPercentAltered(self, gene_list, study=None, study_name=None,
+                          case_set_id=None, genetic_profile_id=None,
+                          threshold=2):
+        '''Get the percent of cases that have one or more of the specified
+        alterations for each gene
 
         Query Format
         ------------
 
         study = [cancer_study_id] The study to use.
-        study_name = [cancer_study_name] The name of the study to use. If neither this nor
-                     study are specified, then the default is used.
-        case_set_id = [case_set_id] The case list to use. If not specified, the default case list is
-                      used. 
-        gene_list = [one or more genes, specified as HUGO Gene Symobls or ENtrez Gene IDs] (require)
-        genetic_profile_id = [one or more genetic profile IDs] If none specified all genetic profiles
-        for the specified study are used..
-        threhold = [z_score_threshold] the numeric threshold at which a mrna expression z-score is 
-        said to be significant.
+
+        study_name = [cancer_study_name] The name of the study to
+                     use. If neither this nor study are specified,
+                     then the default is used.
+
+        case_set_id = [case_set_id] The case list to use. If not
+                      specified, the default case list is used.
+
+        gene_list = [one or more genes, specified as HUGO Gene Symobls
+        or ENtrez Gene IDs] (require)
+
+        genetic_profile_id = [one or more genetic profile IDs] If none
+        specified all genetic profiles for the specified study are
+        used..
+
+        threhold = [z_score_threshold] the numeric threshold at which
+        a mrna expression z-score is said to be significant.
 
         Response Format
         ---------------
@@ -686,11 +738,14 @@ class CBioPortal():
         A list of dictionaries with the following entries
         gene_id: The Entrez Gene ID
         common: The Hugo Gene Symbol
-        altered_in: The percent of cases in which the gene is altered 
+        altered_in: The percent of cases in which the gene is altered
 
-        One implementation note is that a guess must be made as to wether a returned profile
-        value represents a alteration or not. Currently guesses are only made for copy number
-        variation, mrna expression and mutionation'''
+        One implementation note is that a guess must be made as to
+        wether a returned profile value represents a alteration or
+        not. Currently guesses are only made for copy number
+        variation, mrna expression and mutionation
+
+        '''
 
         study = self._getStudyId(study, study_name)
         case_set_id = self._getCaseListId(case_set_id, study)
@@ -700,7 +755,8 @@ class CBioPortal():
         if study and study == self.study:
             profiles = self.profiles
             case_list = [x['case_ids']
-                         for x in self.cases if x['case_list_id'] == case_set_id][0]
+                         for x in self.cases
+                         if x['case_list_id'] == case_set_id][0]
 
         else:
             profiles = self.getGeneticProfiles(study)
@@ -715,7 +771,8 @@ class CBioPortal():
         for profile in genetic_profile_id:
 
             data.append(self.getProfileData(
-                gene_list=gene_list, case_set_id=case_set_id, genetic_profile_id=[profile]))
+                gene_list=gene_list, case_set_id=case_set_id,
+                genetic_profile_id=[profile]))
             warnings.extend(self.last_warnings)
 
         # data[profile][gene][case]
@@ -725,15 +782,17 @@ class CBioPortal():
             geneProfile = [x[gene] for x in data]
 
             for case in (set(geneProfile[0]) - set(["gene_id", "common"])):
-                
                 if len([geneProfile[x][case] for x in range(len(geneProfile))
-                        if self._guessAlteration(geneProfile[x][case], genetic_profile_id[x], profiles)]) > 0:
+                        if self._guessAlteration(
+                            geneProfile[x][case],
+                            genetic_profile_id[x], profiles)]) > 0:
 
                     cases_altered += 1
 
-            return_table.append(dict({'gene_id': geneProfile[0]['GENE_ID'],
-                                      'common': geneProfile[0]['COMMON'],
-                                      'altered_in': cases_altered * 100 / len(case_list)}))
+            return_table.append(
+                dict({'gene_id': geneProfile[0]['GENE_ID'],
+                      'common': geneProfile[0]['COMMON'],
+                      'altered_in': cases_altered * 100 / len(case_list)}))
 
         self.last_warnings = warnings
         return return_table
@@ -764,9 +823,12 @@ class CBioPortal():
         cases_altered = 0.0
         for gene in gene_list:
             data.append(self.getProfileData(
-                gene_list=[gene], case_set_id=case_set_id, genetic_profile_id=genetic_profile_id))
-            # catch special case where only a single genetic_profile_id is passed in, so the query is single
-            # gene and single profile and returns genes as columns format.
+                gene_list=[gene], case_set_id=case_set_id,
+                genetic_profile_id=genetic_profile_id))
+            # catch special case where only a single
+            # genetic_profile_id is passed in, so the query is single
+            # gene and single profile and returns genes as columns
+            # format.
             if len(genetic_profile_id) == 1 and len(data[0]) == 1:
                 data[0][0]['GENETIC_PROFILE_ID'] = genetic_profile_id[0]
 
@@ -789,12 +851,12 @@ class CBioPortal():
 
         return cases_altered * 100 / len(case_list)
 
-##########################################################################
-
-    def _guessAlteration(self, value, genetic_profile_id, genetic_profiles, threshold=2):
+    def _guessAlteration(self, value, genetic_profile_id, genetic_profiles,
+                         threshold=2):
 
         alteration_type = [x['genetic_alteration_type']
-                           for x in genetic_profiles if x['genetic_profile_id'] == genetic_profile_id][0]
+                           for x in genetic_profiles
+                           if x['genetic_profile_id'] == genetic_profile_id][0]
 
         # print alteration_type
         if alteration_type == "COPY_NUMBER_ALTERATION":
@@ -826,8 +888,8 @@ class CBioPortal():
         elif alteration_type == "METHYLATION":
             return False
 
-        elif alteration_type == "MUTATION" or alteration_type == "MUTATION_EXTENDED":
-            # print "hello"
+        elif (alteration_type == "MUTATION" or
+              alteration_type == "MUTATION_EXTENDED"):
             if value == "NaN":
                 return False
             else:
@@ -866,7 +928,8 @@ def tableToString(intable):
 def main(argv=None):
 
     parser = E.OptionParser(
-        version="%prog version: $Id: CBioPortal.py 2888 2012-06-07 15:52:00Z ians $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
     parser.add_option("-o", "--output_file", type="string", default=None,
                       help="[Optional] Filename to output results to. [default=STDOUT]")
@@ -934,26 +997,31 @@ def main(argv=None):
 
     if "getProfileData" in args:
         results.append(
-            portal.getProfileData(gene_list=gene_list, genetic_profile_id=profile_id))
+            portal.getProfileData(gene_list=gene_list,
+                                  genetic_profile_id=profile_id))
 
     if "getMutationData" in args:
         results.append(
-            portal.getMutationData(gene_list=gene_list, genetic_profile_id=profile_id))
+            portal.getMutationData(gene_list=gene_list,
+                                   genetic_profile_id=profile_id))
 
     if "getClinicalData" in args:
         results.append(portal.getClinicalData())
 
     if "getProteinArrayInfo" in args:
         results.append(portal.getProteinArrayInfo(
-            gene_list=gene_list, protein_array_type=options.protein_array_type))
+            gene_list=gene_list,
+            protein_array_type=options.protein_array_type))
 
     if "getProteinArrayData" in args:
         results.append(portal.getProteinArrayData(
-            protein_array_id=options.protein_array_id, array_info=options.array_info))
+            protein_array_id=options.protein_array_id,
+            array_info=options.array_info))
 
     if "getPercentAltered" in args:
         results.append(portal.getPercentAltered(
-            gene_list=gene_list, genetic_profile_id=profile_id, threshold=options.threshold))
+            gene_list=gene_list, genetic_profile_id=profile_id,
+            threshold=options.threshold))
 
     if "getLink" in args:
         results.append(

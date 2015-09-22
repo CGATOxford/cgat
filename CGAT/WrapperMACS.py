@@ -40,7 +40,6 @@ API
 import collections
 
 import math
-import CGAT.IOTools as IOTools
 import CGAT.CSV as CSV
 
 MacsPeak = collections.namedtuple(

@@ -1,5 +1,5 @@
 
 .. automodule:: liftover
 
-.. program-output:: python ../scripts/liftover.py --no-usage --help
+.. program-output:: python ../scripts/liftover.py --help
 

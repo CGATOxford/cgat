@@ -31,20 +31,11 @@ Command line options
 '''
 import sys
 import os
-import string
-import re
-import time
-import optparse
-
-
-import scipy
-import numpy
-import CGAT.MatlabTools as MatlabTools
-import CGAT.Experiment as E
-from array import array
-import math
 import numpy
 import pylab
+import CGAT.MatlabTools as MatlabTools
+import CGAT.Experiment as E
+
 
 param_grid_size_x = 6
 

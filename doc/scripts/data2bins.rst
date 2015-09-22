@@ -1,5 +1,5 @@
 
 .. automodule:: data2bins
 
-.. program-output:: python ../scripts/data2bins.py --no-usage --help
+.. program-output:: python ../scripts/data2bins.py --help
 

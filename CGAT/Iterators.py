@@ -1,31 +1,27 @@
 """
-Iterators.py - general purpose iterators.
-==========================================
+Iterators.py - Iterator functions
+=================================
 
-:Author: Unknown
-:Release: $Id$
-:Date: |today|
-:Tags: Python
+A collection of general purpose iterators.
 
-A collection of useful, general purpose iterators.
-
-This code was downloaded from an unknown source.
 """
 
 import random
-
-# ------------------------------------------------------------
 
 
 def sample(iterable, sample_size=None):
     """sample # copies from iterator without replacement.
 
-    Stores a temporay copy of the items in iterable. The function
-    has thus a possibly high memory footprint and long pre-processing
-    time to yield the first element.
+    Stores a temporary copy of the items in iterable. The function has
+    thus a possibly high memory footprint and long pre-processing time
+    to yield the first element.
 
     If sample_size is not given, the iterator returns elements in
-    random order ( see random.shuffle() )
+    random order (see random.shuffle())
+
+    .. note::
+        This snippet was downloaded from an unknown source.
+
     """
 
     saved = []
@@ -56,6 +52,10 @@ def group_by_distance(iterable, distance=1):
     Traceback (most recent call last):
     ...
     ValueError: iterable is not sorted: 2 < 3
+
+    .. note:: 
+        This snippet was downloaded from an unknown source.
+
     """
     i = iter(iterable)
     end = None

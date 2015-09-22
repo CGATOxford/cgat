@@ -1,6 +1,5 @@
-'''
-bam2UniquePairs.py - filter/report uniquely mapped read pairs from a (bwa!) bam-file
-====================================================================================
+'''bam2UniquePairs.py - filter/report uniquely mapped read pairs from a (bwa!) bam-file
+======================================================================================
 
 :Author: Steve Sansom
 :Release: $Id$
@@ -10,11 +9,13 @@ bam2UniquePairs.py - filter/report uniquely mapped read pairs from a (bwa!) bam-
 Purpose
 -------
 
-Utitily script to report and/or filter out "uniquely mapped" properly paired reads
+Utility script to report and/or filter out "uniquely mapped" properly
+paired reads
 
-Reports: 
-1. The percentage of properly mapped read pairs with at least
-   one uniquely mapped (XT=U) read 
+Reports:
+
+1. The percentage of properly mapped read pairs with at least one
+   uniquely mapped (XT=U) read
 
 2. The percentage of properly mapped read pairs with at least one best
    mapped (X0-1) read
@@ -34,13 +35,8 @@ TODO: cache and emit reads rather than iterating over the samfile twice...
 
 '''
 
-import os
 import sys
-import re
-import optparse
-import collections
 import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
 import pysam
 
 

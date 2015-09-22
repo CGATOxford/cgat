@@ -31,15 +31,9 @@ Command line options
 
 '''
 import sys
-import string
-import re
-import optparse
-import collections
-
 import CGAT.Experiment as E
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
-import bx.intervals.io
 import bx.intervals.intersection
 import numpy
 

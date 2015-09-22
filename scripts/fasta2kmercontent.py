@@ -93,13 +93,10 @@ Command line options
 
 '''
 
-import os
 import sys
 import re
-import optparse
 import CGAT.FastaIterator as FastaIterator
 import itertools
-import collections
 import CGAT.Experiment as E
 
 

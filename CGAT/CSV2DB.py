@@ -62,6 +62,7 @@ import types
 
 from CGAT import Experiment as E
 from CGAT import CSV as CSV
+from CGAT import IOTools as IOTools
 import sqlite3
 
 
@@ -150,7 +151,7 @@ def createTable(dbhandle,
 
     # create table by guessing column types from data type.
     if rows:
-        map_column2type, ignored, max_values = CSV.GetMapColumn2Type(
+        map_column2type, ignored, max_values = CSV.getMapColumn2Type(
             rows,
             ignore_empty=ignore_empty,
             get_max_values=True)
@@ -385,7 +386,7 @@ def run(infile, options, report_step=10000):
                 "undefined columns in input file at row: %s" % row)
 
         try:
-            rows.append(CSV.ConvertDictionary(row, map=options.map))
+            rows.append(IOTools.convertDictionary(row, map=options.map))
         except TypeError, msg:
             E.warn(
                 "incomplete line? Type error in conversion: "
@@ -451,7 +452,7 @@ def run(infile, options, report_step=10000):
                            null=options.null,
                            string_value=options.string_value)
         for data in reader:
-            yield quoteRow(CSV.ConvertDictionary(data, map=options.map),
+            yield quoteRow(IOTools.convertDictionary(data, map=options.map),
                            take,
                            map_column2type,
                            options.missing_values,

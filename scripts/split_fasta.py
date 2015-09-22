@@ -32,10 +32,8 @@ Command line options
 
 '''
 import sys
-import string
 import re
 import os
-import optparse
 import CGAT.FastaIterator as FastaIterator
 import CGAT.IOTools as IOTools
 import CGAT.Experiment as E

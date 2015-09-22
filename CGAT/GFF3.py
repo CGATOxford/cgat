@@ -1,16 +1,22 @@
-'''
-Classes, functions and iterators for working with GFF3 files
-------------------------------------------------------------
+"""
+GFF3 - Classes, functions and iterators for working with GFF3 files
+-------------------------------------------------------------------
 
-Mostly inherits from GTF.
+This module mostly inherits from the :mod:`GTF` and replaces selected
+functionality to allow working with :term:`GFF3` formatted files.
 
-'''
+"""
 
 from CGAT import GTF as GTF
 import itertools
 
 
 class Entry(GTF.Entry):
+    """representation of a :term:`GFF3` formatted entry.
+
+    This class inherits from :class:`GTF.Entry`, but changes
+    the parsing to reflect GFF3.
+    """
 
     def parseInfo(self, attributes, line=None):
         ''' Parse the attributes line of an entry,
