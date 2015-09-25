@@ -132,6 +132,45 @@ def db_execute(cc, statements):
         cc.execute(statement)
 
 
+def connect(dbhandle, attach=None):
+    """attempt to connect to database.
+
+    If `dbhandle` is an existing connection to a database,
+    it will be returned unchanged. Otherwise, this method
+    will attempt to establish a connection.
+
+    Arguments
+    ---------
+    dbhandle : object or string
+        A database handle or a connection string.
+
+    Returns
+    -------
+    dbhandle : object
+        A DB-API2 conforming database handle
+    """
+    if type(dbhandle) is str:
+        try:
+            import sqlite3
+        except ImportError:
+            raise ValueError(
+                "If an sqlite database location is passed"
+                " directly the sqlite3 module must be installed")
+
+        dbhandle = sqlite3.connect(dbhandle)
+
+    cc = dbhandle.cursor()
+
+    if attach is not None:
+        if type(attach) is str:
+            db_execute(cc, attach)
+        elif isinstance(attach, (tuple, list)):
+            for attach_statement in attach:
+                db_execute(cc, attach_statement)
+
+    return dbhandle
+
+
 def execute(queries, dbhandle=None, attach=False):
     '''Execute a statement or a  list of statements (sequentially)'''
 
@@ -165,11 +204,11 @@ def fetch_with_names(query,
 
     '''
 
-    cc = dbhandle.cursor()
-    if attach:
-        db_execute(cc, attach)
+    dbhandle = connect(dbhandle, attach=attach)
 
+    cc = dbhandle.cursor()
     sqlresult = cc.execute(query).fetchall()
+
     data = []
     # http://stackoverflow.com/questions/4147707/
     # python-mysqldb-sqlite-result-as-dictionary
@@ -188,26 +227,9 @@ def fetch_DataFrame(query,
                     attach=False):
     '''Fetch query results and returns them as a pandas dataframe'''
 
-    if type(dbhandle) is str:
-        try:
-            import sqlite3
-        except ImportError:
-            raise ValueError("If an sqlite database location is passed" \
-                             " directly the sqlite3 module must be installed")
-            
-        con = sqlite3.connect(dbhandle)
-        cc = con.cursor()
+    dbhandle = connect(dbhandle, attach=attach)
 
-    else:
-        cc = dbhandle.cursor()
-
-    if attach:
-        if type(attach) is str:
-            db_execute(cc, attach)
-        elif isinstance(attach, (tuple, list)):
-            for attach_statement in attach:
-                db_execute(cc, attach_statement)
-
+    cc = dbhandle.cursor()
     sqlresult = cc.execute(query).fetchall()
     cc.close()
 
@@ -234,22 +256,10 @@ def write_DataFrame(dataframe,
 
     '''
 
-    if type(dbhandle) is str:
-        try:
-            import sqlite3
-        except ImportError:
-            raise ValueError("If an sqlite database location is passed" \
-                             " directly the sqlite3 module must be installed")
-            
-        dbcon = sqlite3.connect(dbhandle)
+    dbhandle = connect(dbhandle)
 
-    else:
-        dbcon = dbhandle
-
-
-    
     dataframe.to_sql(tablename,
-                     con=dbcon,
+                     con=dbhandle,
                      flavor='sqlite',
                      if_exists=if_exists)
 
@@ -260,7 +270,7 @@ def write_DataFrame(dataframe,
 
     if index:
 
-        cc = dbcon.cursor()
+        cc = dbhandle.cursor()
 
         if type(index) is str:
             istat = indexStat(tablename, index)
