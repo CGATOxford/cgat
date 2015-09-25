@@ -188,7 +188,18 @@ def fetch_DataFrame(query,
                     attach=False):
     '''Fetch query results and returns them as a pandas dataframe'''
 
-    cc = dbhandle.cursor()
+    if type(dbhandle) is str:
+        try:
+            import sqlite3
+        except ImportError:
+            raise ValueError("If an sqlite database location is passed" \
+                             " directly the sqlite3 module must be installed")
+            
+        con = sqlite3.connect(dbhandle)
+        cc = con.cursor()
+
+    else:
+        cc = dbhandle.cursor()
 
     if attach:
         if type(attach) is str:
@@ -223,8 +234,22 @@ def write_DataFrame(dataframe,
 
     '''
 
+    if type(dbhandle) is str:
+        try:
+            import sqlite3
+        except ImportError:
+            raise ValueError("If an sqlite database location is passed" \
+                             " directly the sqlite3 module must be installed")
+            
+        dbcon = sqlite3.connect(dbhandle)
+
+    else:
+        dbcon = dbhandle
+
+
+    
     dataframe.to_sql(tablename,
-                     con=dbhandle,
+                     con=dbcon,
                      flavor='sqlite',
                      if_exists=if_exists)
 
@@ -235,7 +260,7 @@ def write_DataFrame(dataframe,
 
     if index:
 
-        cc = dbhandle.cursor()
+        cc = dbcon.cursor()
 
         if type(index) is str:
             istat = indexStat(tablename, index)
