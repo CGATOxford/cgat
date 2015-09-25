@@ -1,5 +1,4 @@
-'''
-diff_fasta.py - compare contents of two fasta files
+'''diff_fasta.py - compare contents of two fasta files
 ===================================================
 
 :Author: Andreas Heger
@@ -11,9 +10,8 @@ Purpose
 -------
 
 This script takes two sets of fasta sequences and matches the
-identifiers. It then compares the sequences with the same
-identifiers and, depending on the output options selected, 
-outputs
+identifiers. It then compares the sequences with the same identifiers
+and, depending on the output options selected, outputs
 
    * which sequences are missing
    * which sequences are identical
@@ -29,12 +27,10 @@ Options
    two sequences being compared
 
 -1, --pattern1
-   regular expression pattern to extract identifier from in 
-   sequence 1
+   regular expression pattern to extract identifier from in sequence 1
 
 -2, --pattern2
-   regular expression pattern to extract identifier from in
-   sequence 2
+   regular expression pattern to extract identifier from in sequence 2
 
 Depending on the option ``--output-section`` the following are output:
 
@@ -98,7 +94,7 @@ Command line options
 '''
 import sys
 import re
-import CGAT.Genomics as Genomics
+import CGAT.FastaIterator as FastaIterator
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
@@ -144,7 +140,8 @@ def main(argv=None):
         "[%default]")
 
     parser.add_option(
-        "-o", "--output-section", dest="output", type="choice", action="append",
+        "-o", "--output-section", dest="output", type="choice",
+        action="append",
         choices=("diff", "missed", "seqdiff"),
         help="what to output [%default]")
 
@@ -163,10 +160,15 @@ def main(argv=None):
             import alignlib_lite
         except ImportError:
             raise ImportError(
-                "option --correct-shift requires alignlib_lite.py_ but alignlib not found")
+                "option --correct-shift requires alignlib_lite.py_ "
+                "but alignlib not found")
 
-    seqs1 = Genomics.ReadPeptideSequences(IOTools.openFile(args[0], "r"))
-    seqs2 = Genomics.ReadPeptideSequences(IOTools.openFile(args[1], "r"))
+    seqs1 = dict([
+        (x.title, x.sequence) for x in FastaIterator.iterate(
+            IOTools.openFile(args[0], "r"))])
+    seqs2 = dict([
+        (x.title, x.sequence) for x in FastaIterator.iterate(
+            IOTools.openFile(args[1], "r"))])
 
     if not seqs1:
         raise ValueError("first file %s is empty." % (args[0]))

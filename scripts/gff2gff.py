@@ -488,7 +488,7 @@ def main(argv=None):
     contigs = None
     genome_fasta = None
     if options.input_filename_contigs:
-        contigs = Genomics.ReadContigSizes(
+        contigs = Genomics.readContigSizes(
             IOTools.openFile(options.input_filename_contigs, "r"))
 
     if options.genome_file:
