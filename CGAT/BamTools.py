@@ -33,8 +33,16 @@ def isPaired(bamfile, alignments=1000):
 
 
 def estimateInsertSizeDistribution(bamfile,
-                                   alignments=1000):
+                                   alignments=1000,
+                                   n=10):
     '''estimate insert size from first alignments in bam file.
+
+    The method works analogous to picard by restricting the estimates
+    to a core distribution. The core distribution is defined as all
+    values that lie within n-times the median absolute deviation of
+    the full data set.
+
+    Only mapped and proper pairs are considered in the computation.
 
     Returns
     -------
@@ -42,6 +50,7 @@ def estimateInsertSizeDistribution(bamfile,
        Mean of insert sizes.
     stddev : float
        Standard deviation of insert sizes.
+
     '''
 
     assert isPaired(bamfile), \
@@ -51,9 +60,27 @@ def estimateInsertSizeDistribution(bamfile,
     samfile = pysam.Samfile(bamfile)
     # only get positive to avoid double counting
     inserts = numpy.array(
-        [read.tlen for read in samfile.head(alignments)
-         if read.is_proper_pair and read.tlen > 0])
-    return numpy.mean(inserts), numpy.std(inserts)
+        [read.template_length for read in samfile.head(alignments)
+         if read.is_proper_pair
+         and not read.is_unmapped
+         and not read.mate_is_unmapped
+         and read.is_read1
+         and not read.is_duplicate
+         and read.template_length > 0])
+
+    # compute median absolute deviation
+    raw_median = numpy.median(inserts)
+    raw_median_dev = numpy.median(numpy.absolute(inserts - raw_median))
+
+    # set thresholds
+    threshold_min = raw_median - n * raw_median_dev
+    threshold_max = raw_median + n * raw_median_dev
+
+    # define core distribution
+    core = inserts[numpy.logical_and(inserts >= threshold_min,
+                                     inserts <= threshold_max)]
+
+    return numpy.mean(core), numpy.std(core)
 
 
 def estimateTagSize(bamfile,
