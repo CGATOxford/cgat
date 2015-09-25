@@ -185,3 +185,4 @@ def count(filename):
         return subprocess.check_output(statement, shell=True)
     except subprocess.CalledProcessError:
         return 0
+
