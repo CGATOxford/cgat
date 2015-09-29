@@ -65,7 +65,10 @@ def check_import(filename, outfile):
         return
 
     if os.path.exists(prefix + ".pyc"):
-        os.remove(prefix + ".pyc")
+        try:
+            os.remove(prefix + ".pyc")
+        except OSError:
+            pass
 
     # ignore script with pyximport for now, something does not work
     # which can lead to errors in downstream files. Issues for
