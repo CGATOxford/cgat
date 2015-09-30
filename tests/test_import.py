@@ -34,8 +34,6 @@ from nose.tools import ok_
 EXPRESSIONS = (
     ('tests', 'tests/*.py'),
     ('scripts', 'scripts/*.py'),
-    ('optic', 'scripts/optic/*.py'),
-    ('gpipe', 'scripts/gpipe/*.py'),
     ('CGAT', 'CGAT/*.py'),
     ('CGATPipelines', 'CGATPipelines/*.py'))
 
