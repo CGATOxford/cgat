@@ -189,7 +189,7 @@ class ExperimentalDesign(object):
        whether or not this sample should be included
        in the design
 
-    group
+    groups
        a label grouping several samples into a group
 
     pair
@@ -218,7 +218,7 @@ class ExperimentalDesign(object):
 
     table : pandas DataFrame
        dataframe object describing the design
-    group : list
+    groups : list
        list of groups in the design
     conditions : list
        group for each sample
