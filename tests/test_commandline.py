@@ -111,7 +111,10 @@ def loadScript(script_name):
     basename = os.path.basename(script_name)[:-3]
 
     if os.path.exists(prefix + ".pyc"):
-        os.remove(prefix + ".pyc")
+        try:
+            os.remove(prefix + ".pyc")
+        except OSError:
+            pass
 
     modulename = ".".join((re.sub("/", ".", dirname), basename))
     try:
