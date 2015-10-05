@@ -244,11 +244,11 @@ conda info -a
 # keep rpy2-2.4 for production scripts
 if [ "$CONDA_INSTALL_TYPE" == "cgat-scripts" ] ; then
 
-   conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE gcc=4.8.3 rpy2=2.4 --override-channels --channel https://conda.binstar.org/cgat --channel defaults --channel https://conda.binstar.org/r --yes
+   conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE gcc=4.8.3 rpy2=2.4 --override-channels --channel https://conda.anaconda.org/cgat --channel defaults --channel https://conda.anaconda.org/r --yes
 
 else
 
-   conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE=0.2 gcc=4.8.3 --override-channels --channel https://conda.binstar.org/cgat --channel defaults --channel https://conda.binstar.org/r --yes
+   conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE=0.2 gcc=4.8.3 --override-channels --channel https://conda.anaconda.org/cgat --channel defaults --channel https://conda.anaconda.org/r --yes
 
 fi
 
