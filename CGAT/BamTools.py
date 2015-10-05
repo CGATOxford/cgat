@@ -33,14 +33,29 @@ def isPaired(bamfile, alignments=1000):
 
 
 def estimateInsertSizeDistribution(bamfile,
-                                   alignments=1000,
-                                   n=10):
-    '''estimate insert size from first alignments in bam file.
+                                   alignments=10000,
+                                   n=10,
+                                   method="picard",
+                                   similarity_threshold=1.0,
+                                   max_chunks=1000):
+    '''estimate insert size from a subset of alignments in a bam file.
 
-    The method works analogous to picard by restricting the estimates
-    to a core distribution. The core distribution is defined as all
-    values that lie within n-times the median absolute deviation of
-    the full data set.
+    Several methods are implemented.
+
+    picard
+        The method works analogous to picard by restricting the estimates
+        to a core distribution. The core distribution is defined as all
+        values that lie within n-times the median absolute deviation of
+        the full data set.
+    convergence
+        The method works similar to ``picard``, but continues reading
+        `alignments` until the mean and standard deviation stabilize.
+        The values returned are the median mean and median standard
+        deviation encountered.
+
+    The method `convergence` is suited to RNA-seq data, as insert sizes
+    fluctuate siginificantly depending on the current region
+    being looked at.
 
     Only mapped and proper pairs are considered in the computation.
 
@@ -50,6 +65,15 @@ def estimateInsertSizeDistribution(bamfile,
        Mean of insert sizes.
     stddev : float
        Standard deviation of insert sizes.
+    npairs : int
+       Number of read pairs used for the estimation
+    method : string
+       Estimation method
+    similarity_threshold : float
+       Similarity threshold to apply.
+    max_chunks : int
+       Maximum number of chunks of size `alignments` to be used
+       in the convergence method.
 
     '''
 
@@ -58,29 +82,65 @@ def estimateInsertSizeDistribution(bamfile,
         'paired bam files'
 
     samfile = pysam.Samfile(bamfile)
-    # only get positive to avoid double counting
-    inserts = numpy.array(
-        [read.template_length for read in samfile.head(alignments)
-         if read.is_proper_pair
-         and not read.is_unmapped
-         and not read.mate_is_unmapped
-         and read.is_read1
-         and not read.is_duplicate
-         and read.template_length > 0])
 
-    # compute median absolute deviation
-    raw_median = numpy.median(inserts)
-    raw_median_dev = numpy.median(numpy.absolute(inserts - raw_median))
+    def get_core_distribution(inserts, n):
+        # compute median absolute deviation
+        raw_median = numpy.median(inserts)
+        raw_median_dev = numpy.median(numpy.absolute(inserts - raw_median))
 
-    # set thresholds
-    threshold_min = raw_median - n * raw_median_dev
-    threshold_max = raw_median + n * raw_median_dev
+        # set thresholds
+        threshold_min = max(0, raw_median - n * raw_median_dev)
+        threshold_max = raw_median + n * raw_median_dev
 
-    # define core distribution
-    core = inserts[numpy.logical_and(inserts >= threshold_min,
-                                     inserts <= threshold_max)]
+        # define core distribution
+        return inserts[numpy.logical_and(inserts >= threshold_min,
+                                         inserts <= threshold_max)]
 
-    return numpy.mean(core), numpy.std(core)
+    if method == "picard":
+
+        # only get first read in pair to avoid double counting
+        inserts = numpy.array(
+            [read.template_length for read in samfile.head(n=alignments)
+             if read.is_proper_pair
+             and not read.is_unmapped
+             and not read.mate_is_unmapped
+             and not read.is_read1
+             and not read.is_duplicate
+             and read.template_length > 0])
+        core = get_core_distribution(inserts, n)
+
+        return numpy.mean(core), numpy.std(core), len(inserts)
+
+    elif method == "convergence":
+
+        means, stds, counts = [], [], []
+        last_mean = 0
+        iteration = 0
+        while iteration < max_chunks:
+
+            inserts = numpy.array(
+                [read.template_length for read in samfile.head(
+                    n=alignments,
+                    multiple_iterators=False)
+                 if read.is_proper_pair
+                 and not read.is_unmapped
+                 and not read.mate_is_unmapped
+                 and not read.is_read1
+                 and not read.is_duplicate
+                 and read.template_length > 0])
+            core = get_core_distribution(inserts, n)
+            means.append(numpy.mean(core))
+            stds.append(numpy.std(core))
+            counts.append(len(inserts))
+            mean_core = get_core_distribution(numpy.array(means), 2)
+            mm = numpy.mean(mean_core)
+            if abs(mm - last_mean) < similarity_threshold:
+                break
+            last_mean = mm
+
+        return numpy.median(means), numpy.median(stds), sum(counts)
+    else:
+        raise ValueError("unknown method '%s'" % method)
 
 
 def estimateTagSize(bamfile,
