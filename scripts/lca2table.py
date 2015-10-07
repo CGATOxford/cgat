@@ -30,13 +30,9 @@ Command line options
 
 '''
 
-import os
 import sys
-import re
-import optparse
 import CGAT.LCA as LCA
 import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
 import collections
 
 

@@ -41,21 +41,14 @@ Command line options
 '''
 
 
-import os
 import sys
-import string
 import re
-import optparse
-import math
 import StringIO
-
-
 import numpy
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.MatlabTools as MatlabTools
 import CGAT.Stats as Stats
-import scipy
 
 
 def main(argv=None):

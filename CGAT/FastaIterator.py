@@ -20,15 +20,19 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-"""
-FastaIterator.py - iterate over fasta files
-===========================================
+"""FastaIterator.py - Iteration over fasta files
+================================================
 
-The difference to the biopython iterator is that this one 
-skips over comment lines starting with "#".
+This module provides a simple iterator of Fasta formatted files.  The
+difference to the biopython iterator is that the iterators in this
+module skip over comment lines starting with "#".
 
-Code
-----
+.. note::
+   Another way to access the information in :term:`fasta` formatted
+   files is through pysam_.
+
+Reference
+---------
 
 """
 import subprocess
@@ -36,6 +40,16 @@ import os
 
 
 class FastaRecord:
+    """a :term:`fasta` record.
+
+    Attributes
+    ----------
+    title: string
+       the title of the sequence
+
+    sequence: string
+       the sequence
+    """
 
     def __init__(self, title, sequence):
 
@@ -43,14 +57,42 @@ class FastaRecord:
         self.sequence = sequence
 
 
+class FastaIterator:
+    '''a iterator of :term:`fasta` formatted files.
+
+    Yields
+    ------
+    FastaRecord
+
+    '''
+
+    def __init__(self, f, *args, **kwargs):
+        self.iterator = iterate(f)
+
+    def __iter__(self):
+        return self
+
+    def next(self):
+        return self.iterator.next()
+
+
 def iterate(infile, comment="#"):
     '''iterate over fasta data in infile
 
     Lines before the first fasta record are
-    ignored (starting with '>') as well as
+    ignored (starting with ``>``) as well as
     lines starting with the comment character.
 
-    yields FastaRecord for each fasta file.
+    Parameters
+    ----------
+    infile : File
+        the input file
+    comment : char
+        comment character
+
+    Yields
+    ------
+    FastaRecord
     '''
 
     h = infile.readline()[:-1]
@@ -85,38 +127,51 @@ def iterate(infile, comment="#"):
     yield FastaRecord(h, ''.join(seq))
 
 
-class FastaIterator:
-
-    '''a iterator of :term:`fasta` formatted files.
-    '''
-
-    def __init__(self, f, *args, **kwargs):
-        self.mIterator = iterate(f)
-
-    def __iter__(self):
-        return self
-
-    def next(self):
-        return self.mIterator.next()
-
-# ------------------------------------------------------------
-
-
 def iterate_together(*args):
     """iterate synchronously over one or more fasta files.
 
     The iteration finishes once any of the files is exhausted.
 
-    yield output tuples of sequences."""
-    iterators = [FastaIterator(open(x, "r")) for x in args]
+    Arguments
+    ---------
+
+    :term:`fasta`-formatted files to be iterated upon
+
+    Yields
+    ------
+    tuple
+       a tuple of :class:`FastaRecord` corresponding to
+       the current record in each file.
+    """
+
+    iterators = [FastaIterator(x) for x in args]
 
     while 1:
         yield [x.next() for x in iterators]
 
 
-# ------------------------------------------------------------
 def count(filename):
-    '''count number of sequences in fasta file.'''
+    '''count number of sequences in fasta file.
+
+    This method uses the ``grep`` utility to count
+    lines starting with ``>``.
+
+    Arguments
+    ---------
+    filename : string
+        The filename
+
+    Raises
+    ------
+    OSError
+        If the file does not exist
+
+    Returns
+    -------
+    int
+        The number of sequences in the file.
+    '''
+
     if filename.endswith(".gz"):
         statement = "zcat %s | grep -c '>'" % filename
     else:
@@ -130,3 +185,4 @@ def count(filename):
         return subprocess.check_output(statement, shell=True)
     except subprocess.CalledProcessError:
         return 0
+

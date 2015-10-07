@@ -1,5 +1,4 @@
-'''
-bam_vs_gtf.py - compare bam file against gene set
+'''bam_vs_gtf.py - compare bam file against gene set
 =================================================
 
 :Author: Andreas Heger
@@ -83,16 +82,13 @@ for command line help.
 Command line options
 --------------------
 
-filename-exons / filename-gtf: a gtf formatted file containing the genomic coordinates of a set of non-overlapping exons, 
-such as from a reference genome annotation database (Ensembl, UCSC etc.).
+filename-exons / filename-gtf: a gtf formatted file containing the
+genomic coordinates of a set of non-overlapping exons, such as from a
+reference genome annotation database (Ensembl, UCSC etc.).
 
 '''
 
-import os
 import sys
-import re
-import optparse
-import collections
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import pysam
@@ -109,11 +105,14 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-e", "--exons-file", "--gtf-file", dest="filename_exons", type="string", metavar="gtf",
-                      help="gtf formatted file with non-overlapping exon locations (required). [%default]")
+    parser.add_option(
+        "-e", "--exons-file", "--gtf-file",
+        dest="filename_exons", type="string", metavar="gtf",
+        help="gtf formatted file with non-overlapping exon "
+        "locations (required). [%default]")
 
     parser.set_defaults(
         filename_exons=None,

@@ -33,12 +33,6 @@ Command line options
 '''
 import sys
 import re
-import string
-import os
-import getopt
-import time
-import optparse
-
 import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.FastaIterator as FastaIterator
@@ -46,10 +40,10 @@ import CGAT.FastaIterator as FastaIterator
 
 class FromFastaIterator:
 
-    def __init__(self, infile, alphabet="fastq", encoding="phred", default=None):
+    def __init__(self, infile, alphabet="fastq", encoding="phred",
+                 default=None):
         """default: set all quality scores to this default value."""
 
-        import FastaIterator
         self.mInputIterator = FastaIterator.FastaIterator(infile)
         self.mOutputIterator = self._iterate()
         self.mNOverFlow = 0

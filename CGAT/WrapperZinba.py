@@ -43,17 +43,12 @@ Code
 
 '''
 
-import os
-import sys
-import re
-import optparse
-import tempfile
-import shutil
-import subprocess
 import collections
 
 ZinbaPeak = collections.namedtuple(
-    "ZinbaPeak", "contig unrefined_start unrefined_end strand posterior summit height refined_start refined_end median fdr")
+    "ZinbaPeak",
+    "contig unrefined_start unrefined_end strand posterior "
+    "summit height refined_start refined_end median fdr")
 
 
 def iteratePeaks(infile):

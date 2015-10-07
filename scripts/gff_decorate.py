@@ -45,14 +45,6 @@ Command line options
 
 '''
 import sys
-import string
-import re
-import optparse
-import time
-import os
-import shutil
-import tempfile
-import math
 
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics

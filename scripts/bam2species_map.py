@@ -1,5 +1,4 @@
-'''
-bam2species_map.py
+'''bam2species_map.py
 =============================================
 
 :Author: Nick Ilott
@@ -29,25 +28,23 @@ for command line help.
 Documentation
 -------------
 
-This script would be used as a pre-step to using contigs2random_sample.py. It provides
-a mapping between contigs and species that are represented in those contigs i.e. in 
-a metagenomic simulation study the majority species for a contig will be returned with
-the contig.
+This script would be used as a pre-step to using
+contigs2random_sample.py. It provides a mapping between contigs and
+species that are represented in those contigs i.e. in a metagenomic
+simulation study the majority species for a contig will be returned
+with the contig.
 
 Command line options
 --------------------
 
 '''
 
-import os
 import sys
-import re
 import optparse
-
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
 import pysam
 import collections
+
+import CGAT.Experiment as E
 import CGAT.FastaIterator as FastaIterator
 
 

@@ -121,7 +121,6 @@ Command line options
 import os
 import sys
 import bx.bitset
-import bx.bitset_builders
 import collections
 import numpy
 

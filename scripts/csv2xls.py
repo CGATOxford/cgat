@@ -33,19 +33,10 @@ Command line options
 '''
 import os
 import sys
-import string
-import re
-import getopt
-import time
-import optparse
-import math
-import tempfile
-
-import CGAT.Experiment as E
 import csv
-import CGAT.CSV as CSV
-
 import openpyxl
+import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 
 
 def main(argv=None):
@@ -58,10 +49,12 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: csv2xls.py 2782 2009-09-10 11:40:29Z andreas $")
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    parser.add_option("-o", "--outfile=", dest="output_filename", type="string",
-                      help="write to output filename.")
+    parser.add_option(
+        "-o", "--outfile=", dest="output_filename", type="string",
+        help="write to output filename.")
 
     parser.set_defaults(
         output_filename=None,
@@ -73,10 +66,6 @@ def main(argv=None):
         raise ValueError("please specify an output filename.")
 
     w = openpyxl.Workbook(optimized_write=True)
-
-    # create styles
-    header_style = GetHeaderStyle()
-    data_style = GetDataStyle()
 
     for filename in args:
 
@@ -102,7 +91,7 @@ def main(argv=None):
         reader = csv.DictReader(lines, dialect=options.csv_dialect)
 
         for row in reader:
-            row = CSV.ConvertDictionary(row)
+            row = IOTools.convertDictionary(row)
 
             data = [row.get(headers[x], "") for x in range(len(headers))]
             ws.append(data)

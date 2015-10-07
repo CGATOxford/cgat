@@ -20,13 +20,14 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 """
-Tree.py - A derivation of the tree class from Biopython
-=======================================================
+Tree.py - A phylogenetic tree
+=============================
 
-:Author: 
-:Release: $Id$
-:Date: |today|
-:Tags: Python
+The :class:`Tree` is derived from the class from Bio.Nexus.Trees.Tree
+adding some additional functionality.
+
+Reference
+---------
 
 """
 import math
@@ -37,10 +38,7 @@ import Bio.Nexus.Trees
 
 
 def updateNexus(nexus):
-    """change trees in nexus object to trees from here.
-
-    This a quick patch until I have written a better routine to read the tree
-    directly from a file.
+    """change trees in a nexus object (see Biopython_) to :class:`Tree`.
     """
     for x in range(len(nexus.trees)):
         # remove the trailing ";"
@@ -60,26 +58,35 @@ def updateNexus(nexus):
                               data=t.dataclass,
                               max_support=t.max_support)
 
-# -------------------------------------------------------------------------
-# Empty function for tree traversal
-
 
 def Nop(x):
+    """empty function for tree traversal"""
     return True
 
 
-# -------------------------------------------------------------------------
 class Tree(Bio.Nexus.Trees.Tree):
+    """A phylogenetic tree.
+
+    This class represents a tree using a chain of nodes with on
+    predecessor (=ancestor) and multiple successors (=subclades).
+    """
 
     def __init__(self, *args, **kwargs):
         Bio.Nexus.Trees.Tree.__init__(self, *args, **kwargs)
 
     def __len__(self):
-        """returns the # of nodes in the tree."""
+        """returns the number of nodes in the tree."""
         return len(self.chain.keys())
 
     def root_at_node(self, node, distance=0):
-        """root tree at node. Distance gives distance of node to new root.
+        """root tree at node.
+
+        Arguments
+        ---------
+        node :
+            New root
+        distance : float
+            Distance of node to new root.
 
         This is a subset of the code taken from root_with_outgroup.
         """
@@ -91,8 +98,9 @@ class Tree(Bio.Nexus.Trees.Tree):
                     branch = self.unrooted.pop(i)
                     break
             else:
-                raise TreeError, 'Unable to connect nodes for rooting: nodes %d and %d are not connected' % (
-                    parent, child)
+                raise ValueError('Unable to connect nodes for rooting: '
+                                 'nodes %d and %d are not connected' %
+                                 (parent, child))
             self.link(parent, child)
             self.node(child).data.branchlength = branch[2]
             self.node(child).data.support = branch[3]
@@ -134,7 +142,7 @@ class Tree(Bio.Nexus.Trees.Tree):
                 root_branch = self.unrooted.pop(i)
                 break
         else:
-            raise TreeError, 'Unrooted and rooted Tree do not match'
+            raise ValueError('Unrooted and rooted Tree do not match')
 
         # now we destroy the old tree structure, but keep node data. Nodes will
         # be reconnected according to new outgroup
@@ -162,25 +170,44 @@ class Tree(Bio.Nexus.Trees.Tree):
         oldroot = [i for i in self.all_ids() if self.node(
             i).prev is None and i != self.root]
         if len(oldroot) > 1:
-            raise TreeError, 'Isolated nodes in tree description: %s' % ','.join(
-                oldroot)
+            raise ValueError('Isolated nodes in tree description: %s' %
+                             ','.join(oldroot))
         elif len(oldroot) == 1:
             self.kill(oldroot[0])
         return self.root
 
-    def to_string(self, support_as_branchlengths=False,
-                  branchlengths_only=False, plain=True,
+    def to_string(self,
+                  support_as_branchlengths=False,
+                  branchlengths_only=False,
+                  plain=True,
                   write_all_taxa=False,
                   branchlength_format="%1.5f",
                   support_format="%1.2f",
                   format="nexus"):
         """Return a paup compatible tree line.
 
-        to_string(self,support_as_branchlengths=False,branchlengths_only=False,plain=True)
+        Arguments
+        ---------
+        support_as_branchlengths : bool
+           If true, output bootstrap support value as branch lengths.
+        branchlengths_only : bool
+           Only output branchlengths, no support values
+        plain : bool
+           Output plain tree (no branch lengths/support values).
+        write_all_taxa : bool
+           If true, internal node names are output
+        branchlength_format : string
+           Format to use for branch lengths
+        support_format : string
+           Format to use for bootstrap support values
+        format : string
+           Either ``nexus`` on ``NHX``.
 
-        Added by AH
-           if write_all_taxa is set to true, internal node names are output as well
-           NHX format for bootstrap values and species names.
+        Returns
+        -------
+        tree : string
+            A PAUP compatible tree line.
+
         """
         # if there's a conflict in the arguments, we override plain=True
         if support_as_branchlengths or branchlengths_only:
@@ -204,7 +231,8 @@ class Tree(Bio.Nexus.Trees.Tree):
 
                 if not terminal:
                     info += ":B=%s" % (support_format % data.support)
-                return ':%s%s]' % (branchlength_format % data.branchlength, info)
+                return ':%s%s]' % (branchlength_format % data.branchlength,
+                                   info)
 
             if self.plain:  # plain tree only. That's easy.
                 return ''
@@ -221,10 +249,12 @@ class Tree(Bio.Nexus.Trees.Tree):
             else:
                 if format in ("nh", "nexus"):
                     if terminal:
-                        return ':%s' % (branchlength_format % data.branchlength)
+                        return ':%s' % (branchlength_format %
+                                        data.branchlength)
                     else:
                         # we have blen and suppport
-                        if data.branchlength is not None and data.support is not None:
+                        if data.branchlength is not None and \
+                           data.support is not None:
                             sup = support_format % data.support
                             bl = branchlength_format % data.branchlength
                         # we have only blen
@@ -241,23 +271,33 @@ class Tree(Bio.Nexus.Trees.Tree):
                         return "%s:%s" % (sup, bl)
 
         def newickize(node):
-            """Convert a node tree to a newick tree recursively."""
+            """convert a node tree to a newick tree recursively.
+            """
             if not self.node(node).succ:  # terminal
-                return self.node(node).data.taxon + make_info_string(self.node(node).data, terminal=True)
+                return self.node(node).data.taxon + \
+                    make_info_string(self.node(node).data, terminal=True)
             else:
-                return '(%s)%s' % (','.join(map(newickize, self.node(node).succ)), make_info_string(self.node(node).data))
-            return subtree
+                return '(%s)%s' % (','.join(map(newickize,
+                                                self.node(node).succ)),
+                                   make_info_string(self.node(node).data))
 
         def newickize_all_taxa(node):
             if not self.node(node).succ:    # terminal
-                return self.node(node).data.taxon + make_info_string(self.node(node).data, terminal=True)
+                return self.node(node).data.taxon + \
+                    make_info_string(self.node(node).data, terminal=True)
             else:
                 if self.node(node).data.taxon is not None:
                     # changed output: first taxon name, then branch length
-                    return '(%s)%s%s' % (','.join(map(newickize_all_taxa, self.node(node).succ)), self.node(node).data.taxon, make_info_string(self.node(node).data))
+                    return '(%s)%s%s' % (
+                        ','.join(map(newickize_all_taxa,
+                                     self.node(node).succ)),
+                        self.node(node).data.taxon,
+                        make_info_string(self.node(node).data))
                 else:
-                    return '(%s)%s' % (','.join(map(newickize_all_taxa, self.node(node).succ)), make_info_string(self.node(node).data))
-            return subtree
+                    return '(%s)%s' % (
+                        ','.join(map(newickize_all_taxa,
+                                     self.node(node).succ)),
+                        make_info_string(self.node(node).data))
 
         treeline = ''
         if format == "nexus":
@@ -281,7 +321,6 @@ class Tree(Bio.Nexus.Trees.Tree):
                                                self.node(self.root).succ))
         return treeline
 
-    # -------------------------------------------------------------------------
     def get_nodes(self, node_id):
         """Return a list of nodes downwards from a node (self, node_id).
 
@@ -290,19 +329,18 @@ class Tree(Bio.Nexus.Trees.Tree):
         if node_id is None:
             node_id = self.root
         if node_id not in self.chain:
-            raise TreeError('Unknown node_id: %d.' % node_id)
+            raise ValueError('Unknown node_id: %d.' % node_id)
         list = [node_id]
         for succ in self.chain[node_id].succ:
             list.extend(self.get_nodes(succ))
         return list
 
-    # -------------------------------------------------------------------------
     def get_leaves(self, node_id):
         """Return a list of leaf nodes downward from a node (self, node_id).
         """
-        return filter(lambda x: self.node(x).succ == [], self.get_nodes(node_id))
+        return filter(lambda x: self.node(x).succ == [],
+                      self.get_nodes(node_id))
 
-    # -------------------------------------------------------------------------
     def root_midpoint(self):
         """perform midpoint rooting of tree.
 
@@ -412,7 +450,6 @@ class Tree(Bio.Nexus.Trees.Tree):
         # reroot tree
         result = self.root_at_node(best_node, distance=distance)
 
-    # -------------------------------------------------------------------------
     def getNumLeaves(self):
         """return list with number of leaves beyond each node
         """
@@ -431,7 +468,6 @@ class Tree(Bio.Nexus.Trees.Tree):
         self.dfs(self.root, post_function=count)
         return counts
 
-    # -------------------------------------------------------------------------
     def root_balanced(self):
         """perform balanced rooting of tree.
 
@@ -460,9 +496,8 @@ class Tree(Bio.Nexus.Trees.Tree):
         self.unroot()
 
         # reroot tree
-        result = self.root_at_node(best_node)
+        self.root_at_node(best_node)
 
-    # -------------------------------------------------------------------------
     def dfs(self, node_id,
             pre_function=Nop,
             descend_condition=Nop,
@@ -478,21 +513,20 @@ class Tree(Bio.Nexus.Trees.Tree):
                 self.dfs(n, pre_function, descend_condition, post_function)
         post_function(node_id)
 
-    # -------------------------------------------------------------------------
     def writeToFile(self, outfile, with_branchlengths=True, format="nh"):
         """write a tree to a file."""
 
         if format == "nh":
-            outfile.write(">%s\n%s\n" % (self.name,
-                                         self.to_string(branchlengths_only=with_branchlengths,
-                                                        write_all_taxa=True,
-                                                        format="nh")))
+            outfile.write(">%s\n%s\n" % (
+                self.name,
+                self.to_string(branchlengths_only=with_branchlengths,
+                               write_all_taxa=True,
+                               format="nh")))
 
         elif format == "nhx":
             outfile.write(">%s\n%s\n" % (self.name,
                                          self.to_string(format="nhx")))
 
-    # -------------------------------------------------------------------------
     def truncate(self, node_id, taxon=None, keep_node=None):
         """truncate tree at node_id.
 
@@ -518,7 +552,6 @@ class Tree(Bio.Nexus.Trees.Tree):
         if taxon:
             self.node(node_id).data.taxon = taxon
 
-    # -------------------------------------------------------------------------
     def relabel(self, map_old2new, warn=False):
         """relabel taxa in tree using the provided mapping.
         """
@@ -532,7 +565,6 @@ class Tree(Bio.Nexus.Trees.Tree):
                 if warn:
                     raise KeyError("taxon %s not in map" % node.data.taxon)
 
-    # -------------------------------------------------------------------------
     def rescaleBranchLengths(self, value):
         """rescale branch length so that they sum up to value."""
 

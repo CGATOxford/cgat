@@ -1,3 +1,7 @@
+========
+Glossary
+========
+
 File formats
 =============
 
@@ -80,6 +84,9 @@ File formats
     maf
         maf
    
+    agp
+        `AGP format <https://www.ncbi.nlm.nih.gov/assembly/agp/AGP_Specification/>`_
+
     rdf
         `Resource description framework <http://en.wikipedia.org/wiki/Resource_Description_Framework>`_
 

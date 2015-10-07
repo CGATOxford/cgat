@@ -2,9 +2,6 @@
 # provide utility functions for parsing the output from
 # a metaphlan analysis
 #########################################################
-import sys
-import os
-import gzip
 import collections
 
 

@@ -28,6 +28,7 @@ are below, followed by a :ref:`quickstart` guide.
    CGATReference
    CGATMissionStatement
    developing
+   Reference.rst
    CGATRelease
 
 .. _quickstart:

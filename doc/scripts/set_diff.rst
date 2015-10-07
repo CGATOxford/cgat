@@ -1,5 +1,5 @@
 
 .. automodule:: set_diff
 
-.. program-output:: python ../scripts/set_diff.py --no-usage --help
+.. program-output:: python ../scripts/set_diff.py --help
 

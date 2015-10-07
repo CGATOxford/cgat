@@ -1,22 +1,31 @@
-"""
-TreeTools.py - tools for dealing with domain trees.
-====================================================
+##########################################################################
+#   Gene prediction pipeline
+#
+#   $Id: Tree.py 2784 2009-09-10 11:41:14Z andreas $
+#
+#   Copyright (C) 2004 Andreas Heger
+#
+#   This program is free software; you can redistribute it and/or
+#   modify it under the terms of the GNU General Public License
+#   as published by the Free Software Foundation; either version 2
+#   of the License, or (at your option) any later version.
+#
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program; if not, write to the Free Software
+#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+##########################################################################
+"""TreeTools.py - Tools for working with trees
+===========================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
-:Tags: Python
+This module contains functions to work with gene and/or species trees.
 
-A tree is a list of nodes:
-
-node 0 is the root
-
-A node is a list consisting of:
-
-[level, parent, left_child, right_child, [ranges]]
-
-The best way of course would have been to do this object
-oriented, but I thought that might be overkill.
+Reference
+---------
 
 """
 
@@ -26,178 +35,7 @@ import Bio.Nexus.Trees
 import string
 import re
 import StringIO
-from types import *
-from CGAT import Intervalls as Intervalls
 from CGAT import Tree as Tree
-
-
-def SetChildren(tree):
-    """sets children correctly."""
-
-    # set all children to zero
-    for node in range(len(tree)):
-
-        level, parent, left_child, right_child, ranges = tree[node]
-
-        tree[node][2] = 0
-        tree[node][3] = 0
-
-        if tree[parent][2]:
-            tree[parent][3] = node
-        else:
-            tree[parent][2] = node
-
-
-def CollapseTree(tree):
-    """remove all empty levels in the tree and renumber nodes
-    so that they are continuous.
-    """
-
-    SetChildren(tree)
-    map_old2new = {}
-
-    index = 1
-    new_tree = []
-
-    # write root
-    new_tree.append([0, 0, 0, 0, tree[0][4]])
-    map_old2new[0] = 0
-
-    # PrintTree(tree)
-
-    for old_node in range(1, len(tree)):
-        level, parent, left_child, right_child, ranges = tree[old_node]
-
-        # if only a single child of a parent, skip this node
-        # if ranges are empty: skip this node
-        if tree[parent][2] == 0 or tree[parent][3] == 0 or len(ranges) == 0:
-            map_old2new[old_node] = map_old2new[parent]
-            continue
-
-        map_old2new[old_node] = index
-
-        # add to new tree
-        new_tree.append(
-            [new_tree[map_old2new[parent]][0] + 1, map_old2new[parent], 0, 0, ranges])
-
-        index += 1
-
-        # PrintTree( new_tree )
-
-    # PrintTree( new_tree )
-    # print "#########"
-
-    return new_tree
-
-# --------------------------------------------------------
-
-
-def RemoveEmptyNodes(tree):
-    """remove all empty node from the tree and
-    renumber nodes, so that they are continuous.
-    """
-
-    map_old2new = {}
-
-    index = 0
-    new_tree = []
-
-    # write root
-    new_tree.append([0, 0, 0, 0, tree[0][4]])
-    map_old2new[0] = 0
-
-    for old_node in range(1, len(tree)):
-
-        level, parent, left_child, right_child, ranges = tree[old_node]
-
-        # if range is empty, do not save this child
-        if not ranges:
-            map_old2new[old_node] = map_old2new[parent]
-            continue
-
-        index += 1
-        map_old2new[old_node] = index
-
-        # add to new tree
-        new_tree.append(
-            [new_tree[map_old2new[parent]][0] + 1, map_old2new[parent], 0, 0, ranges])
-
-    return new_tree
-
-
-def PrintTree(tree):
-    """print tree."""
-    for node in range(0, len(tree)):
-        print "%i\t" % node + string.join(map(str, tree[node]), "\t")
-
-
-def RemoveSmallDomains(tree, min_segment=10):
-    """remove small ranges from the tree.
-
-    If a small range is encountered, it is attributed to
-    the other child.
-
-    Note: this breaks down, if both children are below
-    the minimum segment size!
-    """
-
-    PrintTree(tree)
-    print "#########"
-
-    # move segments between left and right children if they
-    # are small.
-    for node in range(1, len(tree)):
-
-        level, parent, left_child, right_child, ranges = tree[node]
-
-        new_ranges = []
-        for xfrom, xto in ranges:
-
-            if tree[parent][2] == node:
-                other_child = tree[parent][3]
-            else:
-                other_child = tree[parent][2]
-
-            if xto - xfrom + 1 >= min_segment:
-                new_ranges.append((xfrom, xto))
-            else:
-                tree[other_child][4].append((xfrom, xto))
-                # combine intervalls (now, otherwise the segments will be moved
-                # back and forth
-                tree[other_child][4] = Intervalls.CombineIntervallsDistance(
-                    tree[other_child][4], 1)
-
-            tree[node][4] = new_ranges
-
-    return RemoveEmptyNodes(tree)
-
-# --------------------------------------------------------
-
-
-def TruncateTree(tree, min_segment=10):
-    """truncate tree, if a segment is less than a certain size.
-    """
-
-    for node in range(1, len(tree)):
-
-        level, parent, left_child, right_child, ranges = tree[node]
-
-        if not ranges:
-            truncate = 1
-        else:
-            truncate = 0
-            for xfrom, xto in ranges:
-                if xto - xfrom <= min_segment:
-                    truncate = 1
-
-        if truncate:
-            tree[node][4] = []
-            if left_child:
-                tree[left_child][4] = []
-            if right_child:
-                tree[right_child][4] = []
-
-    return RemoveEmptyNodes(tree)
 
 
 def Newick2Nexus(infile):
@@ -210,16 +48,23 @@ def Newick2Nexus(infile):
     If the token [&&NHX is found in the tree, it is assumed to be
     output from njtree and support values are added. Support values are
     added in the format taxon:support:branchlength
+
+    Arguments
+    ---------
+    infile : object
+        Input data. Can be a file, a list of lines or a single line.
+
+    Returns
+    -------
+    nexus : Bio.Nexus.Nexus
+
     """
     lines = ["#NEXUS\nBegin trees;\n"]
 
-    # build one line per tree
-    if type(infile) == FileType:
-        tlines = infile.readlines()
-    elif type(infile) in (TupleType, ListType):
-        tlines = infile
+    if isinstance(infile, basestring):
+        tlines = [infile]
     else:
-        tlines = [infile, ]
+        tlines = [x for x in infile]
 
     f = []
     id = None
@@ -300,6 +145,22 @@ def Newick2Nexus(infile):
 def Nexus2Newick(nexus, with_branchlengths=True, with_names=False,
                  write_all_taxa=False):
     """convert nexus tree format to newick format.
+
+    Arguments
+    ---------
+    nexus : Bio.Nexus.Nexus
+         The trees to output
+    with_branch_lengths : bool
+         If True, output branchlengths.
+    with_names : bool
+         If True, add node names.
+    write_all_taxa : bool
+         Ouput taxa for internal nodes.
+
+    Returns
+    -------
+    output : string
+         Trees in Newick format.
     """
     lines = []
 
@@ -311,11 +172,7 @@ def Nexus2Newick(nexus, with_branchlengths=True, with_names=False,
                                  with_branch_lengths=with_branchlengths,
                                  write_all_taxa=write_all_taxa))
 
-    return string.join(lines, "\n")
-
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
+    return "\n".join(lines)
 
 
 def Tree2Newick(tree, with_branch_lengths=True, write_all_taxa=False):
@@ -324,52 +181,44 @@ def Tree2Newick(tree, with_branch_lengths=True, write_all_taxa=False):
                        write_all_taxa=write_all_taxa)
     return string.strip(s.split("=")[1])
 
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-
 
 def Newick2Tree(txt):
-    """convert tree to newick format."""
+    """convert tree to nexus format."""
     return Newick2Nexus(txt).trees[0]
-
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
 
 
 def WriteNexus(nexus, **kwargs):
-    """write nexus file format.
+    """write trees in nexus file format.
     """
     lines = ["#NEXUS\nBegin trees;\n"]
-    ntrees = 0
     for t in nexus.trees:
         lines.append("%s\n" % (t.to_string(**kwargs)))
     lines.append("\nEnd;\n")
     return "\n".join(lines)
 
-# --------------------------------------------------------
-
 
 def GetTaxa(tree):
-    """retrieve taxa in a tree."""
+    """retrieve all taxa of leaves in a tree."""
     return map(lambda x: tree.node(x).get_data().taxon, tree.get_terminals())
-
-# --------------------------------------------------------
 
 
 def GetTaxonomicNames(tree):
     """get list of taxa."""
-
     return GetTaxa(tree)
-
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
 
 
 def MapTaxa(tree, map_old2new, remove_unknown=False):
-    """map taxa in tree."""
+    """update taxa in tree to new taxa.
+
+    Arguments
+    ---------
+    tree : Tree
+        The tree to update.
+    map_old2new :dict
+        Dictionary mapping old taxa to new taxa.
+    remove_unknown : bool
+        If true, taxa not in `map_old2new` will be removed.
+    """
 
     unknown = []
     for n, node in tree.chain.items():
@@ -383,24 +232,29 @@ def MapTaxa(tree, map_old2new, remove_unknown=False):
         for taxon in unknown:
             tree.prune(taxon)
 
-# --------------------------------------------------------
-
 
 def Branchlength2Support(tree):
-    """Copy values stored in data.branchlength to data.support, and do not set branchlength to 0.0
+    """copy values stored as branchlength to into support
 
-    This is necessary when support has been stored as branchlength (e.g. paup), and has thus
-    been read in as branchlength. 
+    The branchlength property is not changed.
+
+    This step is necessary when support has been stored as branchlength
+    (e.g. paup), and has thus been read in as branchlength.
     """
 
     for n in tree.chain.keys():
         tree.node(n).data.support = tree.node(n).data.branchlength
 
-# -------------------------------------------------------------------------
-
 
 def Species2Genes(nexus, map_species2genes):
     """convert a species tree to a gene tree.
+
+    Arguments
+    ---------
+    nexus : Bio.Nexus.Nexus
+         The trees to work on
+    map_species2genes : dict
+         Dictionary mapping species names to gene names
     """
 
     for tree in nexus.trees:
@@ -413,11 +267,17 @@ def Species2Genes(nexus, map_species2genes):
                     tree.add(new_node, nx)
                     tree.node(nx).get_data().taxon = None
 
-# -------------------------------------------------------------------------
-
 
 def Genes2Species(nexus, map_gene2species):
     """convert a gene tree into a species tree.
+
+    Arguments
+    ---------
+    nexus : Bio.Nexus.Nexus
+         The trees to work on
+    map_gene2species : dict
+         Dictionary mapping gene names to species names
+
     """
 
     for tree in nexus.trees:
@@ -427,9 +287,25 @@ def Genes2Species(nexus, map_gene2species):
                 tree.node(nx).get_data().taxon = map_gene2species[t1]
 
 
-# -------------------------------------------------------------------------
 def BuildMapSpecies2Genes(genes, pattern_species="^([^|]+)[|]"):
-    """read genes from infile and build a map of species to genes.
+    """build a map of species to genes
+
+    This method assumes that gene names contain the species name and
+    it can be extracted via a regular expression.
+
+    Arguments
+    ---------
+    genes : list
+         List of genes
+    pattern_species : string
+         Regular expression to extract species name from gene name.
+
+    Returns
+    -------
+    map_species2genes : dict
+         Mapping between species to one or more genes
+    map_gene2species : dict
+         Mapping between a gene to the species
     """
     rx = re.compile(pattern_species)
     map_species2genes = {}
@@ -442,8 +318,6 @@ def BuildMapSpecies2Genes(genes, pattern_species="^([^|]+)[|]"):
         map_gene2species[gene] = species
 
     return map_species2genes, map_gene2species
-
-# -------------------------------------------------------------------------
 
 
 def GetMonophyleticPairs(tree):
@@ -467,11 +341,26 @@ def GetMonophyleticPairs(tree):
 
     return pairs
 
-# -------------------------------------------------------------------------
-
 
 def GetTaxaForSpecies(tree, species, pattern_species="^([^|]+)[|]"):
-    """get all taxa of a given species."""
+    """get all taxa of a given species.
+
+    This method assumes that node labels contain the species name and
+    it can be extracted via a regular expression.
+
+    Arguments
+    ---------
+    genes : list
+         List of genes
+    pattern_species : string
+         Regular expression to extract species name from gene name.
+
+    Returns
+    -------
+    taxa : list
+         List of taxa from this species.
+
+    """
     rx = re.compile(pattern_species)
 
     taxa = []
@@ -481,19 +370,33 @@ def GetTaxaForSpecies(tree, species, pattern_species="^([^|]+)[|]"):
             taxa.append(l)
 
     return taxa
-# -------------------------------------------------------------------------
 
 
 def IsMonophyleticForSpecies(tree,
                              species,
                              pattern_species="^([^|]+)[|]"):
-    """check if a tree is monophyletic for a species."""
+    """check if a tree is monophyletic for a species.
+
+    This method assumes that node labels contain the species name and
+    it can be extracted via a regular expression.
+
+    Arguments
+    ---------
+    tree : :class:`Tree`
+         Tree to analyse
+    species : string
+         Species to check
+    pattern_species : string
+         Regular expression to extract species name from gene name.
+
+    Returns
+    -------
+    bool
+    """
 
     taxa = GetTaxaForSpecies(tree, species, pattern_species)
     tree.root_with_outgroup(taxa)
     return tree.is_monophyletic(taxa) != -1
-
-# -------------------------------------------------------------------------
 
 
 def IsMonophyleticForTaxa(tree,
@@ -501,7 +404,19 @@ def IsMonophyleticForTaxa(tree,
                           support=None):
     """check if a tree is monophyletic for a list of taxa.
 
-    If support is given, minimum support is checked.
+    Arguments
+    ---------
+    tree : :class:`Tree`
+         Tree to analyse
+    taxa : list
+         List of taxa
+    support : float
+         Minimum bootstrap support
+
+    Returns
+    -------
+    bool
+
     """
     tree.root_with_outgroup(taxa)
 
@@ -513,22 +428,16 @@ def IsMonophyleticForTaxa(tree,
     else:
         return tree.is_monophyletic(taxa) != -1
 
-# -------------------------------------------------------------------------
-
 
 def GetLeaves(tree, node):
-    """get leaves in tree below node.
+    """Return leaves in tree below node.
     """
     tree.root_with_outgroup((node,))
     return tree.get_taxa(node)
 
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-
 
 def IsSingleSpecies(tree, node, pattern_species="^([^|]+)[|]"):
-    """check if list of taxa below node contains the same species."""
+    """True if taxa below node contain the same species."""
     rx = re.compile(pattern_species)
 
     species = {}
@@ -538,12 +447,10 @@ def IsSingleSpecies(tree, node, pattern_species="^([^|]+)[|]"):
 
     return len(species) == 1
 
-# -------------------------------------------------------------------------
-
 
 def CountDuplications(tree, species,
                       pattern_species="^([^|]+)[|]"):
-    """count the number duplications for a given species.
+    """Count the number duplications for a given species.
 
     Do not check for monophyly versus species.
     """
@@ -557,13 +464,10 @@ def CountDuplications(tree, species,
             tree.root_with_outgroup((taxa[x], taxa[y]))
             is_monophyletic = tree.is_monophyletic((taxa[x], taxa[y])) != -1
             result.append(
-                (taxa[x], taxa[y], is_single_species, is_monophyletic, tree.distance(ids[x], ids[y])))
+                (taxa[x], taxa[y], is_single_species,
+                 is_monophyletic, tree.distance(ids[x], ids[y])))
 
     return result
-
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
 
 
 def Transcript2GeneTree(tree,
@@ -606,8 +510,8 @@ def Transcript2GeneTree(tree,
             print ids[x], ids[y], taxa[x], taxa[y]
 
 
-def MapTaxa(tree, mapping):
-    """map taxon names in all trees."""
+def MapTerminalTaxa(tree, mapping):
+    """map taxa in leaves in all trees."""
 
     for nx in tree.get_terminals():
         t1 = tree.node(nx).get_data().taxon
@@ -968,9 +872,9 @@ def PruneTerminal(tree, taxon):
 
     id = tree.search_taxon(taxon)
     if id is None:
-        raise TreeError('Taxon not found: %s' % taxon)
+        raise ValueError('Taxon not found: %s' % taxon)
     elif id not in tree.get_terminals():
-        raise TreeError('Not a terminal taxon: %s' % taxon)
+        raise ValueError('Not a terminal taxon: %s' % taxon)
     else:
         prev = tree.unlink(id)
         tree.kill(id)
@@ -1104,7 +1008,9 @@ class NodeType:
         self.mGeneNode = node2
 
     def __str__(self):
-        return "\t".join((self.mType, str(self.mSpeciesNode), str(self.mGeneNode)))
+        return "\t".join((self.mType,
+                          str(self.mSpeciesNode),
+                          str(self.mGeneNode)))
 
 
 class NodeTypeSpeciation(NodeType):
@@ -1119,7 +1025,8 @@ class NodeTypeSpeciation(NodeType):
 class NodeTypeSpeciationDeletion(NodeType):
 
     mType = "SpeciationDeletion"
-    mDescription = "Speciation event, but in one sub-branch, deletions occured."
+    mDescription = "Speciation event, but in one sub-branch, "
+    "deletions occured."
 
     def __init__(self, *args, **kwargs):
         NodeType.__init__(self, *args, **kwargs)
@@ -1194,8 +1101,6 @@ class NodeTypeLeaf(NodeType):
 
     def __init__(self, *args, **kwargs):
         NodeType.__init__(self, *args, **kwargs)
-
-# -------------------------------------------------------------------------
 
 
 def ReconciliateByRio(gene_tree, species_tree,
@@ -1495,9 +1400,6 @@ def CountDuplications(gene_tree, species_tree, node_types,
                     print "\t" * 5 + ",".join(gene_tree.get_taxa(s))
 
 
-# ------------------------------------------------------------------------
-# ------------------------------------------------------------------------
-# ------------------------------------------------------------------------
 def GetParentNodeWhereTrue(node_id, tree, stop_function):
     """walk up in gene tree and stop where stop_function is true.
 
@@ -1519,10 +1421,6 @@ def GetParentNodeWhereTrue(node_id, tree, stop_function):
         node = tree.node(node_id)
 
     return node_id, distance
-
-# ------------------------------------------------------------------------
-# ------------------------------------------------------------------------
-# ------------------------------------------------------------------------
 
 
 def GetChildNodesWhereTrue(node_id, tree, stop_function):

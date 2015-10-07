@@ -3,7 +3,7 @@ Reference
 =========
 
 This section describes the layout of the code repository and contains
-a reference to the complete contents of the pipeline collection.
+the API reference to the complete contents of the code collection.
 
 Repository layout
 =================
@@ -28,12 +28,13 @@ The repository contains the following directories:
 :file:`galaxy`
     scripts to hook the code collection into galaxy_.     
 
-Contents
-========
+API
+===
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    scripts.rst
    modules.rst
    glossary.rst   
+   DependencyGraph.rst

@@ -37,18 +37,11 @@ Command line options
 '''
 
 import sys
-import re
-import string
-import optparse
-import time
-import os
-import tempfile
-import shutil
-
 import CGAT.Intervals as Intervals
 import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
 import CGAT.Blat as Blat
+import CGAT.GTF as GTF
 import CGAT.IndexedFasta as IndexedFasta
 
 
@@ -435,7 +428,6 @@ def main(argv=None):
     if options.filename_filter_sbjct:
 
         try:
-            import bx.intervals.io
             import bx.intervals.intersection
         except ImportError:
             raise "filtering for intervals requires the bx tools."

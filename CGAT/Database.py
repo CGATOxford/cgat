@@ -20,275 +20,49 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-'''
-Database.py - 
-======================================================
+'''Database.py - Database utility functions
+===========================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
-:Tags: Python
+This module contains convenience functions to work with a relational
+database.
 
-Code
-----
+
+Reference
+---------
 
 '''
-import os
-import sys
 import time
-import string
-import traceback
 import re
-import MySQLdb
-import _mysql           # necessary for exception handling
-
-WARNINGS = 1                    # print out warnings?
+from pandas import DataFrame
 
 
-class Database:
-    dbhandle = None
-
-    socket = None
-    host = None
-    user = None
-    passwd = None
-    port = None
-    dbname = None
-
-    # perform retries if you lost connection
-    # by getting a new connection.
-    mRetryLostConnection = 1
-
-    mRetryTimeIntervall = 60
-
-    def __init__(self):
-        pass
-
-    def Connect(self, options):
-
-        try:
-            if options.database_port:
-                self.dbhandle = MySQLdb.connect(
-                    host=options.database_host,
-                    user=options.database_username,
-                    passwd=options.database_password,
-                    db=options.database_name,
-                    port=options.database_port)
-            else:
-                self.dbhandle = MySQLdb.connect(
-                    host=options.database_host,
-                    user=options.database_username,
-                    passwd=options.database_password,
-                    db=options.database_name,
-                    unix_socket=options.database_socket)
-            return self.dbhandle
-        except _mysql.OperationalError, detail:
-            print "------------------------"
-            print "MySQL raised error %s: %s!" % detail.args
-            traceback.print_stack()
-            print "------------------------"
-            return 0
-
-    def Close(self):
-        """close connection. No further activity possible.
-        """
-        self.dbhandle.close()
-
-    def Execute(self, statement):
-        """execute a mysql statement and return a cursor object.
-
-        Die, if there is an error.
-        """
-        try:
-            c = self.dbhandle.cursor()
-            c.execute(statement)
-        except _mysql.ProgrammingError, detail:
-
-            print """# mysql raised programming error %s: %s!
-# %s""" % (detail.args[0], detail.args[1], statement)
-            traceback.print_stack(file=sys.stdout)
-            sys.exit(1)
-
-        except _mysql.OperationalError, detail:
-            print """# mysql raised operational error %s: %s!
-# %s""" % (detail.args[0], detail.args[1], statement)
-            traceback.print_stack(file=sys.stdout)
-
-            if detail.args[0] == "2013" and self.mRetryLostConnection:
-
-                while 1:
-
-                    sys.stderr.write("retrying to establish connection\n")
-                    sys.stderr.flush()
-
-                    time.sleep(self.mRetryTimeIntervall)
-                    if self.Connect(host=self.host,
-                                    user=self.user,
-                                    passwd=self.passwd,
-                                    dbname=self.dbname,
-                                    port=self.port,
-                                    socket=self.socket):
-                        break
-
-                # carefull: infinite loop!
-                return self.Execute(statement)
-
-            sys.exit(1)
-
-        except _mysql.Warning, detail:
-            if WARNINGS:
-                print "------------------------"
-                print "MySQL raised a warning: %s!" % detail.args
-                traceback.print_stack(file=sys.stdout)
-                print "Offending statement:"
-                print statement
-                print "------------------------"
-
-        # check, whether query was interrupted:
-        errno = self.dbhandle.errno()
-        if errno != 0:
-            print """mysql error %i: %s!
-%s""" % (errno, self.dbhandle.error(), statement)
-            traceback.print_stack(file=sys.stdout)
-            sys.exit(1)
-
-        return c
-
-    def QuoteString(self, text):
-        return _mysql.escape_string(text)
-
-    def GetDate(self):			# return date in format yyyy-mm-dd
-        return time.strftime("%Y-%m-%d", time.localtime(time.time()))
-
-    def Create(self):
-        if len(self.socket) == 0:
-            # use standard socket under unix
-            self.socket = "/tmp/mysql.sock"
-
-        try:
-            self.dbhandle = MySQLdb.connect(host=self.host,
-                                            user=self.user,
-                                            passwd=self.passwd,
-                                            unix_socket=self.socket)
-        except _mysql.OperationalError, detail:
-            print "MySQL raised error %s: %s!" % detail.args
-            return 0
-
-        c = self.dbhandle.cursor()
-
-        try:
-            c.execute('CREATE DATABASE %s' % self.dbname)
-            return 1
-        except _mysql.OperationalError, detail:
-            print "MySQL raised error %s: %s!" % detail.args
-            return 0
-
-    def Get_Tables(self, database=None):
-
-        if database:
-            statement = "SHOW TABLES FROM " + database
-        else:
-            statement = "SHOW TABLES"
-
-        return map(lambda x: x[0], self.Execute(statement).fetchall())
-
-    def DropTable(self, table_name):
-        """drop table.
-        """
-        return self.Execute("DROP TABLE IF EXISTS %s" % table_name)
-
-    def Exists(self, table_name):
-        """returns 1, if a table with name name exists."""
-        # How can I locate an element in a list without iterating through it
-        # myself? The code below looks ugly (exceptions, but this is the Python
-        # style?).
-
-        r = string.split(table_name, ".")
-        if len(r) > 1:
-            database = r[0]
-            table = r[1]
-        else:
-            database = None
-            table = r[0]
-
-        tables = self.Get_Tables(database)
-        try:
-            tables.index(table)
-            return 1
-        except (ValueError):
-            return 0
-
-    #-------------------------------------------------------------------------
-    def GetDatabase(self):
-        """return current database name."""
-        return self.dbname
-
-    #-------------------------------------------------------------------------
-    def UseDatabase(self, db_name):
-        """switch database."""
-        self.dbname = db_name
-        return self.Execute("USE %s " % db_name)
-
-    #-------------------------------------------------------------------------
-    def GetUser(self):
-        return self.user
-    #-------------------------------------------------------------------------
-
-    def GetHost(self):
-        return self.host
-    #-------------------------------------------------------------------------
-
-    def GetPort(self):
-        return self.port
-    #-------------------------------------------------------------------------
-
-    def GetPassword(self):
-        return self.passwd
-
-    def SelectIntoOutfile(self, statement, filename):
-        """Redirect SELECT-statement INTO outfile on local disc. As this
-        is not directly possible via mysqld, mysql -e > outfile is used.
-
-        Note: password is not given here, it has to be set in .my.cnf,
-        as otherwise it is visible via ps to all.
-
-        options for mysql:
-        -N: skip column headers
-        """
-
-        if os.system("mysql -N -h%s -u%s -P%i -e '%s' > %s" % (
-                self.host, self.user,
-                self.port,
-                statement,
-                filename)):
-            print "--> error causing statement: %s" % statement
-
-    def LoadFile(self, filename, statement):
-        """load a file using statement.
-        """
-
-        os.chmod(filename, 0664)
-        self.Execute(statement % filename)
-
-        return
+def executewait(dbhandle, statement, error=Exception, regex_error="locked",
+                retries=-1, wait=5):
+    '''repeatedly execute an SQL statement until it succeeds.
 
 
-def executewait(dbhandle, statement, error=None, retries=-1, wait=5):
-    '''execute an sql ``statement``.
+    Arguments
+    ---------
+    dbhandle : object
+        A DB-API conform database handle.
+    statement : string
+        SQL statement to execute.
+    error : string
+        Exception to catch and examine for error messages.
+    regex_error : string
+        Any error message matching `regex_error` will be ignored,
+        otherwise the procedure exists.
+    retries : int
+        Number of retries. If set to negative number, retry indefinitely.
+        If set to 0, there will be only one attempt.
+    wait : int
+        Number of seconds to way between retries.
 
-    If ``error`` is given, it is scanned for locking issues.
+    Returns
+    -------
+    A cursor object
 
-    Retry ``retries`` times if set to a positive number.
-    A retry of ``0`` indicates no retry, a negative number retries
-    infinitely.
-
-    The process waits ``wait`` seconds between each retry.
-
-    Returns a cursor object.
     '''
-    if error is None:
-        error = Exception
-
     cc = dbhandle.cursor()
 
     while 1:
@@ -307,14 +81,15 @@ def executewait(dbhandle, statement, error=None, retries=-1, wait=5):
 
 
 def getColumnNames(dbhandle, table):
-    '''get column names of a table from a database.'''
+    """return column names of a table from a database.
+    """
 
     cc = executewait(dbhandle, "SELECT * FROM %s LIMIT 1" % table)
     return tuple([x[0] for x in cc.description])
 
 
 def getTables(dbhandle):
-
+    """get list of tables in an sqlite database"""
     cc = executewait(
         dbhandle, """select name from sqlite_master where type='table'""")
     return tuple([x[0] for x in cc])
@@ -345,3 +120,166 @@ def toTSV(dbhandle, outfile, statement, remove_none=True):
 
     outfile.write("\n".join(
         ["\t".join(map(f, x)) for x in cc]))
+
+
+def db_execute(cc, statements):
+    '''excute a statement or statements against a cursor'''
+
+    if type(statements) not in (list, tuple):
+        statements = [statements]
+
+    for statement in statements:
+        cc.execute(statement)
+
+
+def connect(dbhandle, attach=None):
+    """attempt to connect to database.
+
+    If `dbhandle` is an existing connection to a database,
+    it will be returned unchanged. Otherwise, this method
+    will attempt to establish a connection.
+
+    Arguments
+    ---------
+    dbhandle : object or string
+        A database handle or a connection string.
+
+    Returns
+    -------
+    dbhandle : object
+        A DB-API2 conforming database handle
+    """
+    if type(dbhandle) is str:
+        try:
+            import sqlite3
+        except ImportError:
+            raise ValueError(
+                "If an sqlite database location is passed"
+                " directly the sqlite3 module must be installed")
+
+        dbhandle = sqlite3.connect(dbhandle)
+
+    cc = dbhandle.cursor()
+
+    if attach is not None:
+        if type(attach) is str:
+            db_execute(cc, attach)
+        elif isinstance(attach, (tuple, list)):
+            for attach_statement in attach:
+                db_execute(cc, attach_statement)
+
+    return dbhandle
+
+
+def execute(queries, dbhandle=None, attach=False):
+    '''Execute a statement or a  list of statements (sequentially)'''
+
+    cc = dbhandle.cursor()
+
+    if attach:
+        db_execute(cc, attach)
+
+    db_execute(cc, queries)
+    cc.close()
+
+
+def fetch(query, dbhandle=None, attach=False):
+    '''Fetch all query results and return'''
+
+    cc = dbhandle.cursor()
+
+    if attach:
+        db_execute(cc, attach)
+
+    sqlresult = cc.execute(query).fetchall()
+    cc.close()
+    return sqlresult
+
+
+def fetch_with_names(query,
+                     dbhandle=None,
+                     attach=False):
+    '''Fetch query results and returns them as an array of row arrays, in
+       which the first entry is an array of the field names
+
+    '''
+
+    dbhandle = connect(dbhandle, attach=attach)
+
+    cc = dbhandle.cursor()
+    sqlresult = cc.execute(query).fetchall()
+
+    data = []
+    # http://stackoverflow.com/questions/4147707/
+    # python-mysqldb-sqlite-result-as-dictionary
+    field_names = [d[0] for d in cc.description]
+    data.append([name for name in field_names])
+    for record in sqlresult:
+        line = [field for field in record]
+        data.append(line)
+
+    cc.close()
+    return data
+
+
+def fetch_DataFrame(query,
+                    dbhandle=None,
+                    attach=False):
+    '''Fetch query results and returns them as a pandas dataframe'''
+
+    dbhandle = connect(dbhandle, attach=attach)
+
+    cc = dbhandle.cursor()
+    sqlresult = cc.execute(query).fetchall()
+    cc.close()
+
+    # see http://pandas.pydata.org/pandas-docs/dev/generated/
+    # pandas.DataFrame.from_records.html#pandas.DataFrame.from_records
+    # this method is design to handle sql_records with proper type
+    # conversion
+
+    field_names = [d[0] for d in cc.description]
+    pandas_DataFrame = DataFrame.from_records(
+        sqlresult,
+        columns=field_names)
+    return pandas_DataFrame
+
+
+def write_DataFrame(dataframe,
+                    tablename,
+                    dbhandle=None,
+                    index=False,
+                    if_exists='replace'):
+    '''write a pandas dataframe to an sqlite db, index on given columns
+       index columns given as a string or list eg. "gene_id" or
+       ["gene_id", "start"]
+
+    '''
+
+    dbhandle = connect(dbhandle)
+
+    dataframe.to_sql(tablename,
+                     con=dbhandle,
+                     flavor='sqlite',
+                     if_exists=if_exists)
+
+    def indexStat(tablename, column):
+        istat = ('create index %(tablename)s_%(column)s '
+                 'on %(tablename)s(%(column)s)') % locals()
+        return istat
+
+    if index:
+
+        cc = dbhandle.cursor()
+
+        if type(index) is str:
+            istat = indexStat(tablename, index)
+            print istat
+            db_execute(cc, istat)
+        elif isinstance(index, (tuple, list)):
+            for column in index:
+                istat = indexStat(tablename, column)
+                db_execute(cc, istat)
+
+        cc.close()
+

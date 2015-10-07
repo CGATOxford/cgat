@@ -20,17 +20,45 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-'''
-IndexedGenome.py - Wrappers for several interval indices
-=========================================================
+'''IndexedGenome.py - Random access to interval lists
+==================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
-:Tags: Python
+This module provides a consistent front-end to various interval containers.
 
-Code
-----
+Two implementations are available:
+
+NCL
+   Nested containment lists as described in
+   http://bioinformatics.oxfordjournals.org/content/23/11/1386.short. The
+   implemenation was taken from `pygr
+   <http://code.google.com/p/pygr>`_.
+
+quicksect
+   Quicksect algorithm used in Galaxy, see `here
+   <https://github.com/brentp/quicksect>`_.  This requires python.bx
+   to be installed. The benefit of quicksect is that it allows also
+   quick retrieval of intervals that are closest before or after an query.
+
+The principal clas is :class:`IndexedGenome` which uses NCL and stores
+a value associated with each interval. :class:`Quicksect` is equivalent
+to :class:`IndexedGenome` but uses quicksect. The :class:`Simple` is a
+light-weight version of :class:`IndexedGenome` that does not store a
+value and thus preserves space.
+
+The basic usage is::
+
+   from IndexedGenome import IndexedGenome
+   index = IndexedGenome()
+   for contig, start, end, value in intervals:
+      index.add(contig, start, end, value)
+
+   print index.contains("chr1", 1000, 2000)
+   print index.get("chr1", 10000, 20000)
+
+The index is built in memory.
+
+Reference
+---------
 
 '''
 from CGAT import NCL as ncl

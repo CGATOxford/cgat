@@ -30,25 +30,26 @@ Sorting gene sets
 +++++++++++++++++
 
 ``sort``
+
    Sorts entries in gtf file by one or more fields
 
-      +-----------------+---------------------------------------+
-      | option          | order in which fields are sorted      |
-      +-----------------|---------------------------------------+
-      | gene            | gene_id, contig, start                |
-      +-----------------+---------------------------------------+
-      | gene+transcript | gene_id, transcript_id, contig, start |
-      +-----------------+---------------------------------------+
-      | contig+gene     | contig, gene_id, transcript_id, start |
-      +-----------------+---------------------------------------+
-      | transcript      | transcript_id, contig, start          |
-      +-----------------+---------------------------------------+
-      | position        | contig, start                         |
-      +-----------------+---------------------------------------+
-      | position+gene   | contig( gene_id, start )              |
-      +-----------------+---------------------------------------+
-      | gene+position   | gene_id, contig, start                |
-      +-----------------+---------------------------------------+
+   +-----------------+---------------------------------------+
+   | option          | order in which fields are sorted      |
+   +-----------------|---------------------------------------+
+   | gene            | gene_id, contig, start                |
+   +-----------------+---------------------------------------+
+   | gene+transcript | gene_id, transcript_id, contig, start |
+   +-----------------+---------------------------------------+
+   | contig+gene     | contig, gene_id, transcript_id, start |
+   +-----------------+---------------------------------------+
+   | transcript      | transcript_id, contig, start          |
+   +-----------------+---------------------------------------+
+   | position        | contig, start                         |
+   +-----------------+---------------------------------------+
+   | position+gene   | contig( gene_id, start )              |
+   +-----------------+---------------------------------------+
+   | gene+position   | gene_id, contig, start                |
+   +-----------------+---------------------------------------+
 
    N.B. position+gene sorts by gene_id, start, then subsequently sorts
    flattened gene lists by contig, start
@@ -251,7 +252,7 @@ The following example sorts the input gene set by gene
 ``method=intersect-transcripts`` that outputs genomic the genomic
 regions within a gene that is covered by all transcripts in a gene.
 Finally, the resultant transcripts are renamed with the pattern
-"MERGED_%i".
+"MERGED_%i"::
 
     cgat gtf2gtf
             --method=sort
@@ -996,7 +997,7 @@ def main(argv=None):
 
             if options.filename_filter:
 
-                ids, nerrors = IOTools.ReadList(
+                ids = IOTools.readList(
                     IOTools.openFile(options.filename_filter, "r"))
                 E.info("read %i ids" % len(ids))
 

@@ -1,5 +1,4 @@
-'''
-gff2plot.py - plot genomic data
+'''gff2plot.py - plot genomic data
 ===============================
 
 :Author: Andreas Heger
@@ -18,8 +17,8 @@ Usage
 The data is given in gff files denoting windows. The score field
 in the gff file denotes the value of a window.
 
-Multiple tracks can be displayed in the same plot or in several 
-plots underneath each other.
+Multiple tracks can be displayed in the same plot or in several plots
+underneath each other.
 
 Data can be displayed as a histogram with various styles or
 as a heat-map.
@@ -43,7 +42,7 @@ Here is an example of a track file::
 
     [variable-ds]
     filename=variable_ds_median_score.gff
-    style=matrix                                                                                                                                                                                                               
+    style=matrix
 
     [median<intronic>]
     filename=regions_intronic_median_score.gff
@@ -100,19 +99,11 @@ Command line options
 
 '''
 import sys
-import re
-import string
 import os
-import getopt
-import time
-import optparse
-import types
-
 import ConfigParser
 import matplotlib
 import pylab
 import matplotlib.ticker
-import scipy.stats
 import numpy
 
 import CGAT.Experiment as E

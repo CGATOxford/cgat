@@ -61,21 +61,11 @@ WrapperIDR.r in the scripts directory.
 
 import os
 import sys
-import re
-import optparse
-import tempfile
-import shutil
-import subprocess
-import collections
 
 from CGAT import Experiment as E
-from CGAT import IOTools as IOTools
 
 # for zinba
 from rpy2.robjects import r as R
-import rpy2.robjects as ro
-import rpy2.robjects.vectors as rovectors
-from rpy2.rinterface import RRuntimeError
 
 
 def runIDR(options, peakfile1, peakfile2):

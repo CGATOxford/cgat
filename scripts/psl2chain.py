@@ -35,11 +35,7 @@ Command line options
 
 """
 
-import os
 import sys
-import re
-import optparse
-
 import CGAT.Experiment as E
 import CGAT.Blat as Blat
 

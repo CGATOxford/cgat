@@ -21,15 +21,11 @@
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
 '''
-Sra.py - methods for dealing with short read archive files
+Sra.py - Methods for dealing with short read archive files
 ==========================================================
 
-:Author: Tom Smith
-:Release: $Id$
-:Date: |today|
-:Tags: Python
-
-Utility functions for dealing with short read archive files
+Utility functions for dealing with :term:`SRA` formatted files from
+the Short Read Archive.
 
 Requirements:
 * fastq-dump >= 2.1.7
@@ -50,12 +46,21 @@ import CGAT.IOTools as IOTools
 def peek(sra, outdir=None):
     """return the full file names for all files which will be extracted
 
-    Parameters:
+    Parameters
+    ----------
 
     outdir : path
         perform extraction in outdir. If outdir is None, the extraction
         will take place in a temporary directory, which will be deleted
         afterwards.
+
+    Returns
+    -------
+    files : list
+        A list of fastq formatted files that are contained in the archive.
+    format : string
+        The quality score format in the :term:`fastq` formatted files.
+
     """
     
     if outdir is None:
@@ -105,6 +110,7 @@ def peek(sra, outdir=None):
 
 
 def extract(sra, outdir):
+    """return statement for extracting the SRA file in `outdir`."""
 
     statement = """fastq-dump --split-files --gzip --outdir
                  %(outdir)s %(sra)s""" % locals()

@@ -20,21 +20,41 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-'''
-IndexedFasta.py - fast random access in fasta files
+'''IndexedFasta.py - fast random access in fasta files
 ===================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
-:Tags: Python
+This module provides fast random access to :term:`fasta` formatted
+files that have been previously indexed. The indexing can be done
+either through the samtools faidx tool (accessible through pysam_) or
+using the in-house methods implemented in this module.
 
-Usage
------
+The main class is :class:`IndexedFasta`. This is a factory function
+that provides transparent access to both samtools or CGAT indexed
+fasta files.  The basic usage to retrieve the sequence spanning the
+region chr12:10,000-10,100 is::
 
+   from IndexedFasta import IndexedFasta
+   fasta = IndexedFasta("hg19")
+   fasta.getSequence("chr12", "+", 10000, 10100)
 
-Code
-----
+To index a file, use the :mod:`scripts/index_fasta` command line utility or the
+:func:`createDatabase` function::
+
+   > python index_fasta.py hg19 chr*.fa
+
+This module has some useful utility functions:
+
+:func:`splitFasta`
+   split a :term:`fasta` formatted file into smaller pieces.
+
+:func:`parseCoordinates`
+   parse a coordinate string in various formats
+
+but otherwise the module contains a multitude of additional functions that are
+only of internal use.
+
+Reference
+----------
 
 '''
 import os
@@ -84,8 +104,9 @@ class Uncompressor:
             fragments.append(self.mUnMangler(s))
         u = "".join(fragments)
 
-        assert len(
-            u) >= end - start, "fragment smaller than requested size: %i > %i-%i=%i" % (len(u), end, start, end - start)
+        assert len(u) >= end - start, \
+            "fragment smaller than requested size: %i > %i-%i=%i" %\
+            (len(u), end, start, end - start)
 
         return u[r:r + end - start]
 
@@ -1245,7 +1266,22 @@ def splitFasta(infile, chunk_size, dir="/tmp", pattern=None):
 
 
 def parseCoordinates(s):
-    '''parse a coordinate string.'''
+    '''parse a coordinate string.
+
+    The coordinate string can be various formats, such as
+    ``chr1:+:10:1000``, ``chr1:10..1000``.
+
+    Returns
+    -------
+    contig : string
+        The chromosome/contig.
+    strand : char
+        Strand. If not present, set to "+".
+    start : int
+        Start of interval
+    end : int
+        End of interval. If not present, set to start + 1.
+    '''
 
     if ":" in s:
         d = s.strip().split(":")

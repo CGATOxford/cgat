@@ -20,8 +20,7 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-'''
-gi2parents.py
+'''gi2parents.py
 =============================================
 
 :Author: Nick Ilott
@@ -32,8 +31,9 @@ gi2parents.py
 Purpose
 -------
 
-This script takes a list of gi accession numbers - have to be sub-species specific - from the NCBI and 
-outputs a list of parent taxa - phylum, class, order, family, genus, species.
+This script takes a list of gi accession numbers - have to be
+sub-species specific - from the NCBI and outputs a list of parent taxa
+- phylum, class, order, family, genus, species.
 
 Requires ncbi.map file downloaded from the MEGAN website:
 http://www-ab2.informatik.uni-tuebingen.de/megan/taxonomy/ncbi.zip
@@ -56,13 +56,10 @@ Code
 
 '''
 
-import os
 import sys
-import re
 import optparse
 import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
-import gzip
 
 
 def main(argv=None):

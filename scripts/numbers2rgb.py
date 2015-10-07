@@ -29,12 +29,7 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import optparse
-import time
 import random
 
 import CGAT.Experiment as E

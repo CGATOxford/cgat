@@ -160,10 +160,28 @@ Command line options
 '''
 import sys
 import collections
-import CGAT.Database as Database
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
-from CGAT.GO import *
+import MySQLdb
+import CGAT.GO as GO
+
+
+def connectToEnsembl(options):
+    if options.database_port:
+        dbhandle = MySQLdb.connect(
+            host=options.database_host,
+            user=options.database_username,
+            passwd=options.database_password,
+            db=options.database_name,
+            port=options.database_port)
+    else:
+        dbhandle = MySQLdb.connect(
+            host=options.database_host,
+            user=options.database_username,
+            passwd=options.database_password,
+            db=options.database_name,
+            unix_socket=options.database_socket)
+    return dbhandle
 
 
 def main(argv=None):
@@ -171,8 +189,6 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id$",
         usage=globals()["__doc__"])
-
-    dbhandle = Database.Database()
 
     parser.add_option(
         "-s", "--species", dest="species", type="string",
@@ -318,7 +334,7 @@ def main(argv=None):
     (options, args) = E.Start(parser, add_database_options=True)
 
     if options.go2goslim:
-        convertGo2Goslim(options)
+        GO.convertGo2Goslim(options)
         E.Stop()
         sys.exit(0)
 
@@ -335,12 +351,12 @@ def main(argv=None):
 
         E.info("dumping GO categories to %s" % (options.filename_dump))
 
-        dbhandle.Connect(options)
+        dbhandle = connectToEnsembl(options)
 
         outfile = IOTools.openFile(options.filename_dump, "w", create_dir=True)
-        DumpGOFromDatabase(outfile,
-                           dbhandle,
-                           options)
+        GO.DumpGOFromDatabase(outfile,
+                              dbhandle,
+                              options)
         outfile.close()
         E.Stop()
         sys.exit(0)
@@ -351,7 +367,7 @@ def main(argv=None):
         E.info("reading association of categories and genes from %s" %
                (options.filename_input))
         infile = IOTools.openFile(options.filename_input)
-        gene2gos, go2infos = ReadGene2GOFromFile(infile)
+        gene2gos, go2infos = GO.ReadGene2GOFromFile(infile)
         infile.close()
 
     if options.filename_gene2name:
@@ -373,23 +389,25 @@ def main(argv=None):
         E.info("reading ontology from %s" % (options.filename_ontology))
 
         infile = IOTools.openFile(options.filename_ontology)
-        ontology = readOntology(infile)
+        ontology = GO.readOntology(infile)
         infile.close()
 
         def _g():
-            return collections.defaultdict(GOInfo)
+            return collections.defaultdict(GO.GOInfo)
         go2infos = collections.defaultdict(_g)
 
         # substitute go2infos
         for go in ontology.values():
-            go2infos[go.mNameSpace][go.mId] = GOInfo(go.mId,
-                                                     go_type=go.mNameSpace,
-                                                     description=go.mName)
+            go2infos[go.mNameSpace][go.mId] = GO.GOInfo(
+                go.mId,
+                go_type=go.mNameSpace,
+                description=go.mName)
 
     #############################################################
     # get foreground gene list
-    input_foreground, genelists = ReadGeneLists(options.filename_genes,
-                                                gene_pattern=options.gene_pattern)
+    input_foreground, genelists = GO.ReadGeneLists(
+        options.filename_genes,
+        gene_pattern=options.gene_pattern)
 
     E.info("read %i genes for forground in %i gene lists" %
            (len(input_foreground), len(genelists)))
@@ -400,8 +418,9 @@ def main(argv=None):
 
         # nick - bug fix: background is the first tuple element from
         # ReadGeneLists
-        input_background = ReadGeneLists(options.filename_background,
-                                         gene_pattern=options.gene_pattern)[0]
+        input_background = GO.ReadGeneLists(
+            options.filename_background,
+            gene_pattern=options.gene_pattern)[0]
         E.info("read %i genes for background" % len(input_background))
     else:
         input_background = None
@@ -452,7 +471,7 @@ def main(argv=None):
             E.info("reading data from database ...")
 
             dbhandle.Connect(options)
-            gene2go, go2info = ReadGene2GOFromDatabase(
+            gene2go, go2info = GO.ReadGene2GOFromDatabase(
                 dbhandle,
                 test_ontology,
                 options.database, options.species)
@@ -464,7 +483,7 @@ def main(argv=None):
                 "could not find information for terms - "
                 "could be mismatch between ontologies")
 
-        ngenes, ncategories, nmaps, counts_per_category = CountGO(gene2go)
+        ngenes, ncategories, nmaps, counts_per_category = GO.CountGO(gene2go)
         E.info("assignments found: %i genes mapped to %i categories "
                "(%i maps)" %
                (ngenes, ncategories, nmaps))
@@ -475,9 +494,10 @@ def main(argv=None):
                  if y < options.minimum_counts])
             E.info("removing %i categories with less than %i genes" %
                    (len(to_remove), options.minimum_counts))
-            removeCategories(gene2go, to_remove)
+            GO.removeCategories(gene2go, to_remove)
 
-            ngenes, ncategories, nmaps, counts_per_category = CountGO(gene2go)
+            ngenes, ncategories, nmaps, counts_per_category = \
+                GO.CountGO(gene2go)
             E.info("assignments after filtering: %i genes mapped "
                    "to %i categories (%i maps)" % (
                        ngenes, ncategories, nmaps))
@@ -525,7 +545,7 @@ def main(argv=None):
             #############################################################
             # read GO slims and map GO categories to GO slim categories
             if options.filename_slims:
-                go_slims = GetGOSlims(
+                go_slims = GO.GetGOSlims(
                     IOTools.openFile(options.filename_slims, "r"))
 
                 if options.loglevel >= 1:
@@ -553,11 +573,11 @@ def main(argv=None):
                     if outfile != options.stdout:
                         outfile.close()
 
-                gene2go = MapGO2Slims(gene2go, go_slims, ontology=ontology)
+                gene2go = GO.MapGO2Slims(gene2go, go_slims, ontology=ontology)
 
                 if options.loglevel >= 1:
-                    ngenes, ncategories, nmaps, counts_per_category = CountGO(
-                        gene2go)
+                    ngenes, ncategories, nmaps, counts_per_category = \
+                        GO.CountGO(gene2go)
                     options.stdlog.write(
                         "# after go slim filtering: %i genes mapped to "
                         "%i categories (%i maps)\n" % (
@@ -598,19 +618,19 @@ def main(argv=None):
                 sys.exit(0)
 
             #############################################################
-            outfile = getFileName(options,
-                                  go=test_ontology,
-                                  section='foreground',
-                                  set=genelist_name)
+            outfile = GO.getFileName(options,
+                                     go=test_ontology,
+                                     section='foreground',
+                                     set=genelist_name)
 
             outfile.write("gene_id\n%s\n" % ("\n".join(sorted(foreground))))
             if options.output_filename_pattern:
                 outfile.close()
 
-            outfile = getFileName(options,
-                                  go=test_ontology,
-                                  section='background',
-                                  set=genelist_name)
+            outfile = GO.getFileName(options,
+                                     go=test_ontology,
+                                     section='background',
+                                     set=genelist_name)
 
             # Jethro bug fix - see section 'build background' for assignment
             outfile.write("gene_id\n%s\n" % ("\n".join(sorted(background))))
@@ -619,7 +639,7 @@ def main(argv=None):
 
             #############################################################
             # do the analysis
-            go_results = AnalyseGO(gene2go, foreground, background)
+            go_results = GO.AnalyseGO(gene2go, foreground, background)
 
             if len(go_results.mSampleGenes) == 0:
                 E.warn("%s: no genes with GO categories - analysis aborted" %
@@ -631,13 +651,13 @@ def main(argv=None):
             #############################################################
             # calculate fdr for each hypothesis
             if options.fdr:
-                fdrs, samples, method = computeFDRs(go_results,
-                                                    foreground,
-                                                    background,
-                                                    options,
-                                                    test_ontology,
-                                                    gene2go,
-                                                    go2info)
+                fdrs, samples, method = GO.computeFDRs(go_results,
+                                                       foreground,
+                                                       background,
+                                                       options,
+                                                       test_ontology,
+                                                       gene2go,
+                                                       go2info)
                 for x, v in enumerate(pairs):
                     v[1].mQValue = fdrs[v[0]][0]
             else:
@@ -656,12 +676,12 @@ def main(argv=None):
             #############################################################
             #############################################################
             # output the full result
-            outfile = getFileName(options,
-                                  go=test_ontology,
-                                  section='overall',
-                                  set=genelist_name)
+            outfile = GO.getFileName(options,
+                                     go=test_ontology,
+                                     section='overall',
+                                     set=genelist_name)
 
-            outputResults(
+            GO.outputResults(
                 outfile, pairs, go2info, options, fdrs=fdrs, samples=samples)
 
             if options.output_filename_pattern:
@@ -671,7 +691,7 @@ def main(argv=None):
             #############################################################
             #############################################################
             # filter significant results and output
-            filtered_pairs = selectSignificantResults(pairs, fdrs, options)
+            filtered_pairs = GO.selectSignificantResults(pairs, fdrs, options)
 
             nselected = len(filtered_pairs)
             nselected_up = len([x for x in filtered_pairs if x[1].mRatio > 1])
@@ -680,17 +700,17 @@ def main(argv=None):
 
             assert nselected_up + nselected_down == nselected
 
-            outfile = getFileName(options,
-                                  go=test_ontology,
-                                  section='results',
-                                  set=genelist_name)
+            outfile = GO.getFileName(options,
+                                     go=test_ontology,
+                                     section='results',
+                                     set=genelist_name)
 
-            outputResults(outfile,
-                          filtered_pairs,
-                          go2info,
-                          options,
-                          fdrs=fdrs,
-                          samples=samples)
+            GO.outputResults(outfile,
+                             filtered_pairs,
+                             go2info,
+                             options,
+                             fdrs=fdrs,
+                             samples=samples)
 
             if options.output_filename_pattern:
                 outfile.close()
@@ -707,12 +727,13 @@ def main(argv=None):
             #############################################################
             #############################################################
             # output parameters
-            ngenes, ncategories, nmaps, counts_per_category = CountGO(gene2go)
+            ngenes, ncategories, nmaps, counts_per_category = \
+                GO.CountGO(gene2go)
 
-            outfile = getFileName(options,
-                                  go=test_ontology,
-                                  section='parameters',
-                                  set=genelist_name)
+            outfile = GO.getFileName(options,
+                                     go=test_ontology,
+                                     section='parameters',
+                                     set=genelist_name)
 
             nbackground = len(background)
             if nbackground == 0:
@@ -786,17 +807,17 @@ def main(argv=None):
             #############################################################
             #############################################################
             # output the fg patterns
-            outfile = getFileName(options,
-                                  go=test_ontology,
-                                  section='withgenes',
-                                  set=genelist_name)
+            outfile = GO.getFileName(options,
+                                     go=test_ontology,
+                                     section='withgenes',
+                                     set=genelist_name)
 
-            outputResults(outfile, pairs, go2info, options,
-                          fdrs=fdrs,
-                          samples=samples,
-                          gene2go=gene2go,
-                          foreground=foreground,
-                          gene2name=gene2name)
+            GO.outputResults(outfile, pairs, go2info, options,
+                             fdrs=fdrs,
+                             samples=samples,
+                             gene2go=gene2go,
+                             foreground=foreground,
+                             gene2name=gene2name)
 
             if options.output_filename_pattern:
                 outfile.close()
@@ -806,27 +827,27 @@ def main(argv=None):
             ###################################################################
             # output various summary files
             # significant results
-            outputMultipleGeneListResults(all_significant_results,
-                                          all_genelists_with_results,
-                                          test_ontology,
-                                          go2info,
-                                          options,
-                                          section='significant')
+            GO.outputMultipleGeneListResults(all_significant_results,
+                                             all_genelists_with_results,
+                                             test_ontology,
+                                             go2info,
+                                             options,
+                                             section='significant')
 
             # all results
-            outputMultipleGeneListResults(all_results,
-                                          all_genelists_with_results,
-                                          test_ontology,
-                                          go2info,
-                                          options,
-                                          section='all')
+            GO.outputMultipleGeneListResults(all_results,
+                                             all_genelists_with_results,
+                                             test_ontology,
+                                             go2info,
+                                             options,
+                                             section='all')
 
             if options.compute_pairwise:
-                pairwiseGOEnrichment(all_results,
-                                     all_genelists_with_results,
-                                     test_ontology,
-                                     go2info,
-                                     options)
+                GO.pairwiseGOEnrichment(all_results,
+                                        all_genelists_with_results,
+                                        test_ontology,
+                                        go2info,
+                                        options)
 
     outfile_summary = options.stdout
     outfile_summary.write("".join(summary))
