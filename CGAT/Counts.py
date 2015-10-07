@@ -308,7 +308,6 @@ class Counts(object):
 
             df = pandas2ri.ri2py(transform(r_counts))
 
-
         # losing rownames for some reason during the conversion?!
         df.index = self.table.index
 

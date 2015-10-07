@@ -13,40 +13,53 @@ Simulate illumina sequence reads from a fasta file. The number of
 reads per entry is randomly selected from the range given. The primary
 use case is expected to be the generation of simulation RNA-Seq reads
 
-Available edit operations are:
 
-paired
+Options
+-------
+
+--output-paired-end
    generate paired-end reads (defaults to single end)
 
-min-reads-per-entry
+--reads-per-entry-min
    the minimum number of reads to simulate for each fasta entry
 
-max-reads-per-entry
+-reads-per-entry-max
    the maximum number of reads to simulate for each fasta entry
 
-phred
+--sequence-error-phred
    the sequencing error rate (phred scale)
 
-format
+--output-read-length
+   the length of the outputted reads
+
+--output-counts
+   filename for counts per fasta entry
+
+--output-quality-format
    the format of the sequence qualities (+33 = Sanger)
 
-insert-mean
+--insert-length-mean
    the mean insert length
 
-insert-sd
+--insert-length-sd
    the standard deviation for the insert length
 
 If generating paired end reads, the second outfile must be specified with:
 
-fastq-out2
+--output-fastq2
 
 
 Usage
 -----
 
+Recommend sending logging to separate outfile to keep fastq outfile
+clean of comments (see example below)
+
 Example::
 
-   cat transcripts.fa | python fasta2fastq.py > simulation_reads.fastq
+   cat transcripts.fa | python fasta2fastq.py
+   --output-counts=simulation_counts.tsv -L simulation.log
+   > simulation_reads.fastq
 
 Type::
 
@@ -92,7 +105,8 @@ def reverseComp(seq):
     comp = {"G": "C",
             "C": "G",
             "A": "T",
-            "T": "A"}
+            "T": "A",
+            "N": "N"}
 
     return "".join([comp[base] for base in seq[::-1]])
 
@@ -147,38 +161,38 @@ def main(argv=None):
                             usage=globals()["__doc__"])
 
     parser.add_option(
-        "--format", dest="q_format", type="int",
+        "--output-quality-format", dest="q_format", type="int",
         help="sequence quality format, e.g 33 = +33/Sanger"
         "[default=%default].")
 
     parser.add_option(
-        "--paired", dest="paired", action="store_true",
+        "--output-paired-end", dest="paired", action="store_true",
         help="generate paired end reads [default = %default].")
 
     parser.add_option(
-        "--insert-mean", dest="insert_mean", type="float",
+        "--insert-length-mean", dest="insert_mean", type="float",
         help="mean insert length [default = %default].")
 
     parser.add_option(
-        "--insert-sd", dest="insert_sd", type="float",
+        "--insert-length-sd", dest="insert_sd", type="float",
         help="insert length standard deviation [default = %default].")
 
     parser.add_option(
-        "--min-reads-per-entry", dest="min_reads_per_entry", type="int",
+        "--reads-per-entry-min", dest="min_reads_per_entry", type="int",
         help="minimum number of reads/read pairs per fasta entry "
         "[default = %default].")
 
     parser.add_option(
-        "--max-reads-per-entry", dest="max_reads_per_entry", type="int",
+        "--reads-per-entry-max", dest="max_reads_per_entry", type="int",
         help="maximum number of reads/read pairs per fasta entry "
         "[default = %default].")
 
     parser.add_option(
-        "--read-length", dest="read_length", type="int",
+        "--output-read-length", dest="read_length", type="int",
         help="read length [default = %default].")
 
     parser.add_option(
-        "--phred", dest="phred", type="int",
+        "--sequence-error-phred", dest="phred", type="int",
         help="phred quality score [default = %default].")
 
     parser.add_option(
@@ -186,7 +200,7 @@ def main(argv=None):
         help="name for counts outfile [default=%default].")
 
     parser.add_option(
-        "--output-fastq2-out", dest="fastq2_out", type="string",
+        "--output-fastq2", dest="fastq2_out", type="string",
         help="filename for second fastq outfile [default=%default].")
 
     parser.set_defaults(
@@ -206,7 +220,7 @@ def main(argv=None):
 
     if options.paired:
         assert options.fastq2_out, ("must specify a second fastq outfile for "
-                                    "paired end (--output-fastq2-out)")
+                                    "paired end (--output-fastq2)")
         outf2 = IOTools.openFile(options.fastq2_out, "w")
 
     # the sequence quality string will always be the same so define here
@@ -241,7 +255,11 @@ def main(argv=None):
             not_skipped += 1
 
         entry.sequence = entry.sequence.upper()
+
         entry_id = entry.title.split()[0]
+
+        if "N" in entry.sequence:
+            E.warn("fasta entry %s contains unknown bases ('N')" % entry_id)
 
         count = random.randint(options.min_reads_per_entry,
                                options.max_reads_per_entry + 1)
