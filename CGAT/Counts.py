@@ -464,9 +464,9 @@ class Counts(object):
 
           PCs_df = merge(PCs_df, design)
 
-          PCs_df$id_1 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 1)
-          PCs_df$id_2 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 2)
-          PCs_df$id_3 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 3)
+          PCs_df$id_1 = sapply(strsplit(PCs_df$sample, "\\\."), "[", 1)
+          PCs_df$id_2 = sapply(strsplit(PCs_df$sample, "\\\."), "[", 2)
+          PCs_df$id_3 = sapply(strsplit(PCs_df$sample, "\\\."), "[", 3)
 
           p_pca = ggplot(PCs_df, aes(x=%(x_axis)s, y=%(y_axis)s)) +
           geom_point(aes(shape=as.factor(%(shape)s),
