@@ -354,7 +354,7 @@ def gene_to_blocks(gene):
     for i in range(len(exons)-1):
         entry.start = exons[i]
         entry.end = exons[i+1]
-        entry.attributes["exon_number"] = i + 1
+        entry.attributes["exon_id"] = str(i + 1)
         yield entry
 
 
