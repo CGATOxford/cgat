@@ -127,8 +127,7 @@ def generateRead(entry, read_length=50, error_rate=40, paired=False,
             r2_start = (r1_start + read_length +
                         int(np.random.normal(insert_mean, insert_sd)))
 
-            if ((r2_start <= len(entry) - read_length) and
-                (r2_start >= r1_start)):
+            if (r2_start <= (len(entry) - read_length) and r2_start >= r1_start):
 
                 position = "OK"
 
