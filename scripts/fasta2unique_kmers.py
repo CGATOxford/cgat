@@ -101,8 +101,6 @@ class KmerCounter(object):
 
         for kmer in kmers:
 
-            kmer = seq[i:i+k_length]
-
             if self.kmer2entry[kmer] == 1:
                 unique_kmers += 1
             else:
@@ -186,8 +184,6 @@ def main(argv=None):
         unique, non_unique = k.countUniqueKmers(
             entry.sequence.upper(), options.kmer)
 
-        print unique
-        print non_unique
         fraction = np.divide(float(unique), (unique + non_unique))
 
         options.stdout.write("%s\n" % "\t".join(
