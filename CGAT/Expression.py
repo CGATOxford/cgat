@@ -1392,8 +1392,8 @@ class DEResult_Sleuth(DEResult):
         df_dict["control_name"] = ("NA",)*n_rows
         df_dict["test_id"] = self.sleuthResults['target_id']
         df_dict["contrast"] = self.contrast
-        df_dict["control_mean"] = np.exp(self.sleuthResults['mean_obs'])
-        df_dict["treatment_mean"] = np.exp(self.sleuthResults['mean_obs'])
+        df_dict["control_mean"] = self.sleuthResults['mean_obs']
+        df_dict["treatment_mean"] = self.sleuthResults['mean_obs']
         df_dict["control_std"] = (0,)*n_rows
         df_dict["treatment_std"] = (0,)*n_rows
         df_dict["p_value"] = self.sleuthResults['pval']
