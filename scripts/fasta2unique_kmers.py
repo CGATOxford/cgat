@@ -10,7 +10,7 @@ fasta2unique_kmers.py
 Purpose
 -------
 
-This script takes an input :term:`fasta` file from stdin and computes
+This script takes an input :term:`fasta` file and computes
 a the number of unique and non-unique k-mers per fasta entry. The
 output is a tab delimited file:
 
