@@ -256,12 +256,14 @@ class Counts(object):
             tmp_counts.table = np.log(tmp_counts.table + pseudocount)
             return tmp_counts
 
-    def transform(self, method="vst", inplace=True):
+    def transform(self, method="vst", design=None, inplace=True, blind=True):
         '''
         perform transformation on counts table
         current methods are:
          - deseq2 variance stabalising transformation
-         - deseq rlog transformation
+        - deseq rlog transformation
+
+        Need to supply a design table if not using "blind"
         '''
 
         assert method in ["vst", "rlog"], ("method must be one of"
@@ -272,25 +274,50 @@ class Counts(object):
 
         t_function = method2function[method]
 
-        transform = R('''
-        function(df){
-
-        suppressMessages(library('DESeq2'))
-
-        design = data.frame(row.names = colnames(df),
-                            condition = seq(1, length(colnames(df))))
-
-        dds <- suppressMessages(DESeqDataSetFromMatrix(
-                 countData= df, colData = design, design = ~condition))
-
-        transformed <- suppressMessages(%(t_function)s(dds))
-        transformed_df <- as.data.frame(assay(transformed))
-
-        return(transformed_df)
-        }''' % locals())
-
         r_counts = pandas2ri.py2ri(self.table)
-        df = pandas2ri.ri2py(transform(r_counts))
+
+        if not blind:
+            assert design, ("if not using blind must supply a design table "
+                            "(a CGAT.Expression.ExperimentalDesign object")
+
+            transform = R('''
+            function(df, design){
+
+            suppressMessages(library('DESeq2'))
+
+            dds <- suppressMessages(DESeqDataSetFromMatrix(
+                     countData= df, colData = design, design = ~condition))
+
+            transformed <- suppressMessages(%(t_function)s(dds, blind=FALSE))
+            transformed_df <- as.data.frame(assay(transformed))
+
+            return(transformed_df)
+            }''' % locals())
+
+            r_design = pandas2ri.py2ri(design.table)
+            df = pandas2ri.ri2py(transform(r_counts))
+
+        else:
+
+            transform = R('''
+            function(df){
+
+            suppressMessages(library('DESeq2'))
+
+            design = data.frame(row.names = colnames(df),
+                                condition = seq(1, length(colnames(df))))
+
+            dds <- suppressMessages(DESeqDataSetFromMatrix(
+                     countData= df, colData = design, design = ~condition))
+
+            transformed <- suppressMessages(%(t_function)s(dds, blind=TRUE))
+            transformed_df <- as.data.frame(assay(transformed))
+
+            return(transformed_df)
+            }''' % locals())
+
+            df = pandas2ri.ri2py(transform(r_counts))
+
         # losing rownames for some reason during the conversion?!
         df.index = self.table.index
 
@@ -446,9 +473,9 @@ class Counts(object):
 
           PCs_df = merge(PCs_df, design)
 
-          PCs_df$id_1 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 1)
-          PCs_df$id_2 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 2)
-          PCs_df$id_3 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 3)
+          PCs_df$id_1 = sapply(strsplit(PCs_df$sample, "\\\."), "[", 1)
+          PCs_df$id_2 = sapply(strsplit(PCs_df$sample, "\\\."), "[", 2)
+          PCs_df$id_3 = sapply(strsplit(PCs_df$sample, "\\\."), "[", 3)
 
           p_pca = ggplot(PCs_df, aes(x=%(x_axis)s, y=%(y_axis)s)) +
           geom_point(aes(shape=as.factor(%(shape)s),

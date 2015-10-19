@@ -354,7 +354,7 @@ def gene_to_blocks(gene):
     for i in range(len(exons)-1):
         entry.start = exons[i]
         entry.end = exons[i+1]
-        entry.attributes["exon_number"] = i + 1
+        entry.attributes["exon_id"] = str(i + 1)
         yield entry
 
 
@@ -1227,6 +1227,8 @@ def main(argv=None):
                 if options.duplicate_feature in ["both", "gene"]:
                     if gtf.gene_id in dup_gene:
                         gene_dict[gtf.gene_id] = gene_dict[gtf.gene_id] + 1
+                        # TS. patch until pysam.ctabixproxies.pyx bugfixed
+                        gtf.attributes = gtf.attributes.strip()
                         gtf.setAttribute('gene_id',
                                          gtf.gene_id + "." +
                                          str(gene_dict[gtf.gene_id]))
@@ -1235,6 +1237,8 @@ def main(argv=None):
                     if gtf.transcript_id in dup_transcript:
                         transcript_dict[gtf.transcript_id] = \
                             transcript_dict[gtf.transcript_id] + 1
+                        # TS. patch until pysam.ctabixproxies.pyx bugfixed
+                        gtf.attributes = gtf.attributes.strip()
                         gtf.setAttribute('transcript_id',
                                          gtf.transcript_id + "." +
                                          str(transcript_dict[gtf.transcript_id]))
