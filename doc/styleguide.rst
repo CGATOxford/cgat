@@ -71,6 +71,14 @@ For documenting CGAT code, we follow the conventions for documenting
 python code:
 
    * `Python Developer's guide <http://docs.python.org/devguide/documenting.html>`_
+   
+For writing doc-strings, we use the numpy guide:
+
+   * `A guide to Numpy/scipy documentation
+     <https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt>`_
+
+See `here <http://sphinxcontrib-napoleon.readthedocs.org/en/latest/example_numpy.html>`_
+for an example.
 
 In terms of writing scripts, we follow the following conventions:
 
