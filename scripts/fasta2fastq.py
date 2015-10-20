@@ -67,8 +67,23 @@ Type::
 
 for command line help.
 
-Command line options
----------------------
+
+Important note for generating reads for simulations
+---------------------------------------------------
+Currently, the output is non-random, e.g it's in the order of the
+fasta input. If you want the fastq to be random pipe the output to
+sort -R like so:
+
+   cat transcripts.fa | python fasta2fastq.py
+   --output-counts=simulation_counts.tsv -L simulation.log |
+   paste - - - - |sort -R | sed 's/\t/\n/g' > simulation_reads_random.fastq
+
+If you're outputting paired end fastqs, you can use the following
+command to randomise the order by keep the fastq entris paired:
+
+    paste <(zcat %(fastq1_ordered)s) <(zcat %(fastq2_ordered)s) |
+    paste - - - - | sort -R | awk -F'\t' '{OFS="\n"; print $1,$3,$5,$7 >
+    "%(fastq1_random)s"; print $2,$4,$6,$8 > "%(fastq2_random)s"}'
 
 '''
 import sys
@@ -265,7 +280,7 @@ def main(argv=None):
 
         counts_out.write("%s\n" % "\t".join(map(str, (entry_id, count))))
 
-        for i in range(0, count + 1):
+        for i in range(0, count):
 
             read = generateRead(entry=entry.sequence,
                                 read_length=options.read_length,
