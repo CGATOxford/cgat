@@ -251,7 +251,7 @@ def main(argv=None):
                     "second pair (--output-filename-pattern)")
 
             outfile1 = options.stdout
-            outfile2 = IOTools.openFile(options.outfile_filename_pattern, "w")
+            outfile2 = IOTools.openFile(options.output_filename_pattern, "w")
 
             for record1, record2 in itertools.izip(
                     Fastq.iterate(options.stdin),
