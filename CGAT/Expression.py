@@ -938,13 +938,10 @@ class DEExperiment_DESeq(DEExperiment):
         function(counts, groups, dispersion_method, fit_type, sharing_mode){
 
         # create new counts data object for deseq
-        cds <- newCountDataSet( counts, groups)
+        cds <- newCountDataSet(counts, groups)
 
         # estimate size factors
         cds <- estimateSizeFactors(cds)
-        print(sharing_mode)
-        print(dispersion_method)
-        print(fit_type)
         # estimate dispersion
         cds <- estimateDispersions(cds, method=dispersion_method,
                fitType=fit_type, sharingMode=sharing_mode)
@@ -1964,12 +1961,20 @@ def filterTagData(filter_min_counts_per_row=1,
     return observations, samples
 
 
-def groupTagData(ref_group=None):
+def groupTagData(ref_group=None, ref_regex=None):
     '''compute groups and pairs from tag data table.'''
+
+    if ref_regex is not None and ref_group is None:
+        groups = R('''levels(groups)''')
+        for g in groups:
+            rx = re.compile(ref_regex)
+            if rx.search(g):
+                ref_group = g
 
     # Relevel the groups so that the reference comes first
     if ref_group is not None:
-        R('''groups <- relevel(groups, ref = "%s")''' % ref_group)
+        E.info("reference group (control) is '%s'" % ref_group)
+        R('''groups <- relevel(groups, ref="%s")''' % ref_group)
 
     groups = R('''levels(groups)''')
     pairs = R('''levels(pairs)''')
@@ -2104,7 +2109,8 @@ def runEdgeR(outfile,
              fdr=0.1,
              prefix="",
              dispersion=None,
-             ref_group=None
+             ref_group=None,
+             ref_regex=None,
              ):
     '''run EdgeR on countsTable.
 
@@ -2127,12 +2133,10 @@ def runEdgeR(outfile,
     # load library
     R('''suppressMessages(library('edgeR'))''')
 
-    groups, pairs, has_replicates, has_pairs = groupTagData(ref_group)
+    groups, pairs, has_replicates, has_pairs = groupTagData(ref_group,
+                                                            ref_regex)
 
     # output heatmap plot
-    print "outfile_prefix:"
-    print outfile_prefix
-    print '%(outfile_prefix)sheatmap.png' % locals()
     R.png('%(outfile_prefix)sheatmap.png' % locals())
     plotCorrelationHeatmap()
     R['dev.off']()
@@ -2603,6 +2607,7 @@ def runDESeq(outfile,
              dispersion_method="pooled",
              sharing_mode="maximum",
              ref_group=None,
+             ref_regex=None,
              ):
     '''run DESeq on countsTable.
 
@@ -2623,7 +2628,8 @@ def runDESeq(outfile,
     R('''suppressMessages(library('gplots'))''')
     R('''suppressMessages(library('RColorBrewer'))''')
 
-    groups, pairs, has_replicates, has_pairs = groupTagData(ref_group)
+    groups, pairs, has_replicates, has_pairs = groupTagData(ref_group,
+                                                            ref_regex)
 
     # Run DESeq
     # Create Count data object
@@ -3147,6 +3153,7 @@ def plotDETagStats(infile, outfile_prefix,
 def runMockAnalysis(outfile,
                     outfile_prefix,
                     ref_group=None,
+                    ref_regex=None,
                     pseudo_counts=0):
     '''run a mock analysis on a count table.
 
@@ -3154,7 +3161,8 @@ def runMockAnalysis(outfile,
     perform any test.
     '''
 
-    groups, pairs, has_replicates, has_pairs = groupTagData(ref_group)
+    groups, pairs, has_replicates, has_pairs = groupTagData(ref_group,
+                                                            ref_regex)
 
     all_results = []
     for combination in itertools.combinations(groups, 2):
@@ -3353,14 +3361,16 @@ def dumpTagData(filename_tags, filename_design, outfile):
 
 def runTTest(outfile,
              outfile_prefix,
-             fdr,
-             ref_group=None):
+             fdr=0.1,
+             ref_group=None,
+             ref_regex=None):
     '''apply a ttest on the data.
 
     For the T-test it is best to use FPKM values as
     this method does not perform any library normalization.
     '''
-    groups, pairs, has_replicates, has_pairs = groupTagData(ref_group)
+    groups, pairs, has_replicates, has_pairs = groupTagData(ref_group,
+                                                            ref_regex)
 
     results = []
     for combination in itertools.combinations(groups, 2):
