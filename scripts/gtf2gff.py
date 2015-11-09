@@ -208,7 +208,7 @@ basal region of the closest gene, but at most to --radius. In the case
 of overlapping genes, the extension is towards the next
 non-overlapping gene.
 
-This is the "basal plus extension" rule in GERAT. Commonly used are
+This is the "basal plus extension" rule in GREAT. Commonly used are
 5+1 with 1 Mb extension.  To achieve this, use for example::
 
    cgat gtf2gff \
