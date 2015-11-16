@@ -384,7 +384,7 @@ def main(argv=None):
                 def buildReadDictionary(filename):
                     if not os.path.exists(filename):
                         raise OSError("file not found: %s" % filename)
-                    fastqfile = pysam.Fastqfile(filename)
+                    fastqfile = pysam.FastxFile(filename)
                     fastq2sequence = {}
                     for x in fastqfile:
                         if x.name in fastq2sequence:
