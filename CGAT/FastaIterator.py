@@ -49,12 +49,24 @@ class FastaRecord:
 
     sequence: string
        the sequence
+
+    split : str
+       the number of bases per line for writing out
     """
 
-    def __init__(self, title, sequence):
+    def __init__(self, title, sequence, split=60):
 
         self.title = title
         self.sequence = sequence
+        self.split = split
+
+    def __str__(self):
+        ''' str method for writing out'''
+
+        seq = [self.sequence[i:i+self.split]
+               for i in range(0, len(self.sequence), self.split)]
+
+        return ">%s\n%s" % (self.title, "\n".join(seq))
 
 
 class FastaIterator:
@@ -76,7 +88,7 @@ class FastaIterator:
         return self.iterator.next()
 
 
-def iterate(infile, comment="#"):
+def iterate(infile, comment="#", split=60):
     '''iterate over fasta data in infile
 
     Lines before the first fasta record are
@@ -89,6 +101,8 @@ def iterate(infile, comment="#"):
         the input file
     comment : char
         comment character
+    split : str
+        the number of bases before line split when writing out
 
     Yields
     ------
@@ -116,7 +130,7 @@ def iterate(infile, comment="#"):
             continue
 
         if line.startswith('>'):
-            yield FastaRecord(h, ''.join(seq))
+            yield FastaRecord(h, ''.join(seq), split)
 
             h = line[1:-1]
             seq = []
@@ -124,7 +138,7 @@ def iterate(infile, comment="#"):
 
         seq.append(line[:-1])
 
-    yield FastaRecord(h, ''.join(seq))
+    yield FastaRecord(h, ''.join(seq), split)
 
 
 def iterate_together(*args):
@@ -185,4 +199,3 @@ def count(filename):
         return subprocess.check_output(statement, shell=True)
     except subprocess.CalledProcessError:
         return 0
-
