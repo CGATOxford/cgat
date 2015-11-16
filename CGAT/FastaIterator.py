@@ -50,21 +50,24 @@ class FastaRecord:
     sequence: string
        the sequence
 
-    split : str
-       the number of bases per line for writing out
+    fold : int
+       the number of bases per line when writing out
     """
 
-    def __init__(self, title, sequence, split=60):
+    def __init__(self, title, sequence, fold=False):
 
         self.title = title
         self.sequence = sequence
-        self.split = split
+        self.fold = fold
 
     def __str__(self):
         ''' str method for writing out'''
 
-        seq = [self.sequence[i:i+self.split]
-               for i in range(0, len(self.sequence), self.split)]
+        if self.fold:
+            seq = [self.sequence[i:i+self.fold]
+                   for i in range(0, len(self.sequence), self.fold)]
+        else:
+            seq = self.sequence
 
         return ">%s\n%s" % (self.title, "\n".join(seq))
 
@@ -88,7 +91,7 @@ class FastaIterator:
         return self.iterator.next()
 
 
-def iterate(infile, comment="#", split=60):
+def iterate(infile, comment="#", fold=60):
     '''iterate over fasta data in infile
 
     Lines before the first fasta record are
@@ -101,7 +104,7 @@ def iterate(infile, comment="#", split=60):
         the input file
     comment : char
         comment character
-    split : str
+    fold : int
         the number of bases before line split when writing out
 
     Yields
@@ -130,7 +133,7 @@ def iterate(infile, comment="#", split=60):
             continue
 
         if line.startswith('>'):
-            yield FastaRecord(h, ''.join(seq), split)
+            yield FastaRecord(h, ''.join(seq), fold)
 
             h = line[1:-1]
             seq = []
@@ -138,7 +141,7 @@ def iterate(infile, comment="#", split=60):
 
         seq.append(line[:-1])
 
-    yield FastaRecord(h, ''.join(seq), split)
+    yield FastaRecord(h, ''.join(seq), fold)
 
 
 def iterate_together(*args):
