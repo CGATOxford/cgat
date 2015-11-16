@@ -13,6 +13,14 @@ Simulate illumina sequence reads from a fasta file. The number of
 reads per entry is randomly selected from the range given. The primary
 use case is expected to be the generation of simulation RNA-Seq reads
 
+For RNA-Seq simulations, the premrna-fraction option allows the user to specify
+what fraction of the transcripts originate from pre-mRNA. The user must also
+supply a second fasta in the same order for the pre-mRNA
+(--infile-premrna-fasta). The simulation assumes all pre-mRNA are full length
+which is not likely to be the case for real RNA-Seq.
+Note: This may lead to many more reads which align to the mRNA than the
+apparent ground truth count. It is therefore best to keep the pre-mRNA fraction
+low (recommend 0.01).
 
 Options
 -------
@@ -296,6 +304,12 @@ def main(argv=None):
             entry = f_entry[0]
             pre_entry = f_entry[1]
 
+            # to derive probability that read comes from the a pre-mRNA
+            # or mRNA, we need to take the lengths into account
+            mrna_length = len(entry.sequence)
+            pre_mrna_length = len(pre_entry.sequence)
+            pre_prob = (float(pre_mrna_length)/mrna_length *
+                        options.premrna_fraction)
         else:
             entry = f_entry[0]
 
@@ -314,24 +328,22 @@ def main(argv=None):
         count = random.randint(options.min_reads_per_entry,
                                options.max_reads_per_entry + 1)
 
-        counts_out.write("%s\n" % "\t".join(map(str, (entry_id, count))))
-
         if "N" in entry.sequence:
             E.warn("fasta entry %s contains unknown bases ('N')" % entry_id)
 
         for i in range(0, count):
 
             if options.premrna_fraction:
-                pre_mrna = np.random.choice(
-                    [0, 1],
-                    p=[1-float(options.premrna_fraction),
-                       float(options.premrna_fraction)])
+
+                pre_mrna = np.random.choice([0, 1], p=[1-pre_prob, pre_prob])
                 if pre_mrna:
                     sequence = pre_entry.sequence.upper()
                     c['pre_mrna'] += 1
+                    count -= 1
                 else:
                     sequence = entry.sequence.upper()
                     c['mrna'] += 1
+
             else:
                 sequence = entry.sequence.upper()
                 c['mrna'] += 1
@@ -358,6 +370,8 @@ def main(argv=None):
                 h = "@%s_%i/1" % (entry_id, i)
 
                 options.stdout.write("\n".join((h, read, "+", qual)) + "\n")
+
+        counts_out.write("%s\n" % "\t".join(map(str, (entry_id, count))))
 
     if options.paired:
         outf2.close()
