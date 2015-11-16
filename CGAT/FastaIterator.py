@@ -91,7 +91,7 @@ class FastaIterator:
         return self.iterator.next()
 
 
-def iterate(infile, comment="#", fold=60):
+def iterate(infile, comment="#", fold=False):
     '''iterate over fasta data in infile
 
     Lines before the first fasta record are
