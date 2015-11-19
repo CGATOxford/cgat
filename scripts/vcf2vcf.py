@@ -87,11 +87,14 @@ def main(argv=sys.argv):
         "[default=%default]")
 
     parser.set_defaults(
-        methods=None,
+        methods=[],
         sort_order="alphabetical",
     )
 
     (options, args) = E.Start(parser, add_pipe_options=True)
+
+    if not options.methods:
+        raise ValueError("no method specified")
 
     infile = VCF.VCFFile(options.stdin)
 

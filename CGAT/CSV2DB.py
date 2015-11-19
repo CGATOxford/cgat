@@ -147,7 +147,8 @@ def createTable(dbhandle,
                 rows=None,
                 headers=None,
                 first_column=None,
-                existing_tables=set()):
+                existing_tables=set(),
+                append=False):
 
     # create table by guessing column types from data type.
     if rows:
@@ -219,61 +220,62 @@ def createTable(dbhandle,
             hh = "_" + hh
         columns.append("%s %s" % (hh, t))
 
-    # delete old table if it exists
-    while 1:
-        try:
-            cc = dbhandle.cursor()
-            # mysql: removed '' around table name
-            statement = "DROP TABLE IF EXISTS %s" % tablename
-            E.debug(statement)
-            cc.execute(statement)
-            dbhandle.commit()
-            cc.close()
-            E.info("existing table %s deleted" % tablename)
-        except sqlite3.OperationalError, msg:
-            E.warn(msg)
-            time.sleep(5)
-            continue
-        except error, msg:
-            E.warn("could not delete existing table %s: %s" %
-                   (tablename, str(msg)))
-            dbhandle.rollback()
-            if not retry:
-                raise error(msg)
-            elif tablename in existing_tables:
-                # table exists, but drop did not work (e.g. database lock)
+    if not options.append:
+        # delete old table if it exists
+        while 1:
+            try:
+                cc = dbhandle.cursor()
+                # mysql: removed '' around table name
+                statement = "DROP TABLE IF EXISTS %s" % tablename
+                E.debug(statement)
+                cc.execute(statement)
+                dbhandle.commit()
+                cc.close()
+                E.info("existing table %s deleted" % tablename)
+            except sqlite3.OperationalError, msg:
+                E.warn(msg)
                 time.sleep(5)
                 continue
-            else:
-                # table might not have existed
-                break
-        break
+            except error, msg:
+                E.warn("could not delete existing table %s: %s" %
+                       (tablename, str(msg)))
+                dbhandle.rollback()
+                if not retry:
+                    raise error(msg)
+                elif tablename in existing_tables:
+                    # table exists, but drop did not work (e.g. database lock)
+                    time.sleep(5)
+                    continue
+                else:
+                    # table might not have existed
+                    break
+            break
 
-    # create new table
-    statement = "CREATE TABLE %s ( %s );" % (
-        tablename, ", ".join(columns))
+        # create new table
+        statement = "CREATE TABLE %s ( %s );" % (
+            tablename, ", ".join(columns))
 
-    E.debug("table create:\n# %s" % (statement))
+        E.debug("table create:\n# %s" % (statement))
 
-    while 1:
-        try:
-            cc = dbhandle.cursor()
-            cc.execute(statement)
-            cc.close()
-            dbhandle.commit()
-        except error, msg:
-            E.warn("table creation failed: msg=%s, statement=\n  %s" %
-                   (msg, statement))
-            # TODO: check for database locked msg
-            if not retry:
-                raise error(msg)
-            if not re.search("locked", str(msg)):
-                raise error("%s: %s" % (msg, statement))
-            time.sleep(5)
-            continue
-        break
+        while 1:
+            try:
+                cc = dbhandle.cursor()
+                cc.execute(statement)
+                cc.close()
+                dbhandle.commit()
+            except error, msg:
+                E.warn("table creation failed: msg=%s, statement=\n  %s" %
+                       (msg, statement))
+                # TODO: check for database locked msg
+                if not retry:
+                    raise error(msg)
+                if not re.search("locked", str(msg)):
+                    raise error("%s: %s" % (msg, statement))
+                time.sleep(5)
+                continue
+            break
 
-    E.info("table %s created successfully." % tablename)
+        E.info("table %s created successfully." % tablename)
 
     return take, map_column2type, ignored
 
@@ -422,7 +424,8 @@ def run(infile, options, report_step=10000):
                     ignore_duplicates=options.ignore_duplicates,
                     indices=options.indices,
                     first_column=options.first_column,
-                    existing_tables=existing_tables)
+                    existing_tables=existing_tables,
+                    append=options.append)
                 E.info("empty table created")
             return
         else:
@@ -443,7 +446,8 @@ def run(infile, options, report_step=10000):
             ignore_duplicates=options.ignore_duplicates,
             indices=options.indices,
             first_column=options.first_column,
-            existing_tables=existing_tables)
+            existing_tables=existing_tables,
+            append=options.append)
 
     def row_iter(rows, reader):
         for row in rows:
@@ -673,6 +677,10 @@ def buildParser():
                       action="store_true",
                       help="input is zipped.")
 
+    parser.add_option("--append", dest="append",
+                      action="store_true",
+                      help="append to existing table [default=%default].")
+
     parser.add_option(
         "--utf8", dest="utf", action="store_true",
         help="standard in is encoded as UTF8 rather than local default"
@@ -702,6 +710,7 @@ def buildParser():
         allow_empty=False,
         retry=False,
         utf=False,
+        append=False,
     )
 
     return parser

@@ -88,7 +88,7 @@ def count(AlignmentFile samfile,
     cdef int f
 
     # detailed counting
-    cdef FastqProxy fq
+    cdef PersistentFastqProxy fq
     cdef int64_t index, fastq_nreads
     cdef CountsType * fastq_counts
     cdef CountsType * fastq_count
@@ -107,7 +107,7 @@ def count(AlignmentFile samfile,
         # 2. custom hash implementation: worth the effort?
         # 3. Sorted list and binary search: too slow for many lookups
         reads = {}
-        fastqfile = Fastqfile(filename_fastq)
+        fastqfile = FastxFile(filename_fastq)
         fastq_nreads = 0
         for fq in fastqfile:
             if fastq_nreads == 0:

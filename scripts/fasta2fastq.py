@@ -13,6 +13,14 @@ Simulate illumina sequence reads from a fasta file. The number of
 reads per entry is randomly selected from the range given. The primary
 use case is expected to be the generation of simulation RNA-Seq reads
 
+For RNA-Seq simulations, the premrna-fraction option allows the user to specify
+what fraction of the transcripts originate from pre-mRNA. The user must also
+supply a second fasta in the same order for the pre-mRNA
+(--infile-premrna-fasta). The simulation assumes all pre-mRNA are full length
+which is not likely to be the case for real RNA-Seq.
+Note: This may lead to many more reads which align to the mRNA than the
+apparent ground truth count. It is therefore best to keep the pre-mRNA fraction
+low (recommend 0.01).
 
 Options
 -------
@@ -23,7 +31,7 @@ Options
 --reads-per-entry-min
    the minimum number of reads to simulate for each fasta entry
 
--reads-per-entry-max
+--reads-per-entry-max
    the maximum number of reads to simulate for each fasta entry
 
 --sequence-error-phred
@@ -43,6 +51,11 @@ Options
 
 --insert-length-sd
    the standard deviation for the insert length
+
+--premrna-fraction
+   the fraction of reads to simulate from pre-mRNA. Default is 0.
+   If set, must provide a pre-mRNA fasta file with:
+      --infile-premrna-fasta
 
 If generating paired end reads, the second outfile must be specified with:
 
@@ -89,6 +102,7 @@ command to randomise the order by keep the fastq entris paired:
 import sys
 import random
 import numpy as np
+import collections
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
@@ -166,6 +180,12 @@ def generateRead(entry, read_length=50, error_rate=40, paired=False,
 
 # ------------------------------------------------------------
 
+def getTitle(entry):
+    ''' return the title for an entry'''
+    return entry.title.split()[0]
+
+# ------------------------------------------------------------
+
 
 def main(argv=None):
     if argv is None:
@@ -217,6 +237,15 @@ def main(argv=None):
         "--output-fastq2", dest="fastq2_out", type="string",
         help="filename for second fastq outfile [default=%default].")
 
+    parser.add_option(
+        "--premrna-fraction", dest="premrna_fraction", type="string",
+        help="the fraction of reads to simulate from pre-mRNA"
+        "[default= % default].")
+
+    parser.add_option(
+        "--infile-premrna-fasta", dest="premrna_fasta", type="string",
+        help="filename for pre-mRNA fasta[default=%default].")
+
     parser.set_defaults(
         q_format=33,
         paired=False,
@@ -227,7 +256,9 @@ def main(argv=None):
         read_length=50,
         fastq2_out=None,
         output_counts=None,
-        phred=30
+        phred=30,
+        premrna_fraction=0,
+        premrna_fasta=None
     )
 
     (options, args) = E.Start(parser)
@@ -237,11 +268,19 @@ def main(argv=None):
                                     "paired end (--output-fastq2)")
         outf2 = IOTools.openFile(options.fastq2_out, "w")
 
+    if options.premrna_fraction:
+        assert options.premrna_fasta, ("must specfify the location of the"
+                                       "fasta file for the pre-mRNA")
+
     # the sequence quality string will always be the same so define here
     sequence_quality = chr(options.q_format + options.phred)
     qual = "".join([sequence_quality] * options.read_length)
 
-    iterator = FastaIterator.FastaIterator(options.stdin)
+    if options.premrna_fraction:
+        iterator = FastaIterator.iterate_together(
+            options.stdin, IOTools.openFile(options.premrna_fasta))
+    else:
+        iterator = FastaIterator.FastaIterator(options.stdin)
 
     # set a cut off of twice the read/pair length for short entries
     if options.paired:
@@ -253,36 +292,63 @@ def main(argv=None):
     counts_out = IOTools.openFile(options.output_counts, "w")
     counts_out.write("%s\n" % "\t".join(("id", "read_count")))
 
-    skipped = 0
-    not_skipped = 0
+    c = collections.Counter()
 
-    for entry in iterator:
+    for f_entry in iterator:
+
+        if options.premrna_fraction:
+
+            assert getTitle(f_entry[0]) == getTitle(f_entry[1]), (
+                "entry ids do not match: %s != %s" % (
+                    f_entry[0].title, f_entry[1].title))
+            entry = f_entry[0]
+            pre_entry = f_entry[1]
+
+            # to derive probability that read comes from the a pre-mRNA
+            # or mRNA, we need to take the lengths into account
+            mrna_length = len(entry.sequence)
+            pre_mrna_length = len(pre_entry.sequence)
+            pre_prob = (float(pre_mrna_length)/mrna_length *
+                        options.premrna_fraction)
+        else:
+            entry = f_entry[0]
 
         # reject short fasta entries
         if len(entry.sequence) < minimum_entry_length:
             E.info("skipping short transcript: %s length=%i"
                    % (entry.title, len(entry.sequence)))
-            skipped += 1
+            c['skipped'] += 1
             continue
 
         else:
-            not_skipped += 1
+            c['not_skipped'] += 1
 
-        entry.sequence = entry.sequence.upper()
-
-        entry_id = entry.title.split()[0]
-
-        if "N" in entry.sequence:
-            E.warn("fasta entry %s contains unknown bases ('N')" % entry_id)
+        entry_id = getTitle(entry)
 
         count = random.randint(options.min_reads_per_entry,
                                options.max_reads_per_entry + 1)
 
-        counts_out.write("%s\n" % "\t".join(map(str, (entry_id, count))))
+        if "N" in entry.sequence:
+            E.warn("fasta entry %s contains unknown bases ('N')" % entry_id)
 
         for i in range(0, count):
 
-            read = generateRead(entry=entry.sequence,
+            if options.premrna_fraction:
+
+                pre_mrna = np.random.choice([0, 1], p=[1-pre_prob, pre_prob])
+                if pre_mrna:
+                    sequence = pre_entry.sequence.upper()
+                    c['pre_mrna'] += 1
+                    count -= 1
+                else:
+                    sequence = entry.sequence.upper()
+                    c['mrna'] += 1
+
+            else:
+                sequence = entry.sequence.upper()
+                c['mrna'] += 1
+
+            read = generateRead(entry=sequence,
                                 read_length=options.read_length,
                                 error_rate=options.phred,
                                 paired=options.paired,
@@ -305,13 +371,18 @@ def main(argv=None):
 
                 options.stdout.write("\n".join((h, read, "+", qual)) + "\n")
 
+        counts_out.write("%s\n" % "\t".join(map(str, (entry_id, count))))
+
     if options.paired:
         outf2.close()
 
     counts_out.close()
 
     E.info("Reads simulated for %i fasta entries, %i entries skipped"
-           % (not_skipped, skipped))
+           % (c['not_skipped'], c['skipped']))
+
+    E.info("Reads simulated from %i mRNA and %i pre-mRNA entries"
+           % (c['mrna'], c['pre_mrna']))
 
     E.Stop()
 

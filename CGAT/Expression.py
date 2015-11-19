@@ -1292,7 +1292,11 @@ class DEExperiment_Sleuth(DEExperiment):
         sample_id = design_df$sample
         kal_dirs <- sapply(sample_id,
                            function(id) file.path('%(base_dir)s', id))
-        so <- sleuth_prep(kal_dirs, design_df, %(model)s)
+
+        design_df <- dplyr::select(design_df, sample = sample, group)
+        design_df <- dplyr::mutate(design_df, path = kal_dirs)
+
+        so <- sleuth_prep(design_df, %(model)s)
         so <- sleuth_fit(so)
         return(so)
         }''' % locals())
@@ -1335,7 +1339,7 @@ class DEExperiment_Sleuth(DEExperiment):
 
         suppressMessages(library('sleuth'))
 
-        so <- sleuth_test(so, which_beta = '%(contrast)s')
+        so <- sleuth_wt(so, which_beta = '%(contrast)s')
 
         p_ma = plot_ma(so, '%(contrast)s')
         ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_ma.png",
