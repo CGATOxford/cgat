@@ -224,14 +224,7 @@ def main(argv=None):
     parser.add_option("-r", "--reference-group", dest="ref_group",
                       type="string",
                       help="Group to use as reference to compute "
-                      "fold changes against [default=%default]")
-
-    parser.add_option(
-        "--reference-regex", dest="ref_regex",
-        type="string",
-        help="regular expression denoting samples to be considered "
-        "as the control. This affects the ordering of columns of the result "
-        "table. default=%default")
+                      "fold changes against [default=$default]")
 
     parser.add_option("--filter-min-counts-per-row",
                       dest="filter_min_counts_per_row",
@@ -259,6 +252,10 @@ def main(argv=None):
                       type="string",
                       help=("contrasts for post-hoc testing writen"
                             " variable:control:treatment,..."))
+    parser.add_option("--deseq2-plot",
+                      dest="plot",
+                      type="int",
+                      help=("draw plots during deseq2 analysis"))
 
     parser.set_defaults(
         input_filename_tags=None,
@@ -272,7 +269,6 @@ def main(argv=None):
         deseq_sharing_mode="maximum",
         edger_dispersion=0.4,
         ref_group=None,
-        ref_regex="control|WT|wildtype|sal|saline|vector",
         save_r_environment=None,
         filter_min_counts_per_row=1,
         filter_min_counts_per_sample=10,
@@ -284,6 +280,7 @@ def main(argv=None):
         spike_foldchange_bin_width=0.5,
         spike_max_counts_per_bin=50,
         model=None,
+        plot=1
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -334,6 +331,7 @@ def main(argv=None):
                 ref_group=options.ref_group,
                 model=options.model,
                 contrasts=options.contrasts,
+                plot=options.plot
             )
 
         elif options.method == "deseq":
@@ -345,7 +343,6 @@ def main(argv=None):
                 fit_type=options.deseq_fit_type,
                 sharing_mode=options.deseq_sharing_mode,
                 ref_group=options.ref_group,
-                ref_regex=options.ref_regex,
             )
 
         elif options.method == "edger":
@@ -354,15 +351,13 @@ def main(argv=None):
                 outfile_prefix=options.output_filename_pattern,
                 fdr=options.fdr,
                 ref_group=options.ref_group,
-                dispersion=options.edger_dispersion,
-                ref_regex=options.ref_regex)
+                dispersion=options.edger_dispersion)
 
         elif options.method == "mock":
             Expression.runMockAnalysis(
                 outfile=options.output_filename,
                 outfile_prefix=options.output_filename_pattern,
                 ref_group=options.ref_group,
-                ref_regex=options.ref_regex,
                 pseudo_counts=options.pseudo_counts,
             )
 
@@ -413,8 +408,6 @@ def main(argv=None):
             Expression.runTTest(
                 outfile=options.output_filename,
                 outfile_prefix=options.output_filename_pattern,
-                ref_group=options.ref_group,
-                ref_regex=options.ref_regex,
                 fdr=options.fdr)
 
     except rpy2.rinterface.RRuntimeError:
