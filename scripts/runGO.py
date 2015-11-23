@@ -101,12 +101,12 @@ In this case, enrichment is computed for multiple datasets at once. Make sure
 to add the ``%(set)s`` place holder to ``--filename-output-pattern``.
 
 If no background is given, all genes that have GO assignments will constitute
-the background. 
+the background.
 
 Statistics
 ++++++++++
 
-Enrichment is computed using the hypergeometric test. 
+Enrichment is computed using the hypergeometric test.
 
 .. todo::
     * apply filtering
