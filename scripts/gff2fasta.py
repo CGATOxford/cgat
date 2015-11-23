@@ -113,6 +113,8 @@ Options
 ``--fold-at``
   Fold the fasta sequence every n bases
 
+``--naming-attribute``
+  Use this attribute to name the fasta entries
 
 Command line options
 --------------------
@@ -203,6 +205,11 @@ def main(argv=None):
         "--fold-at", dest="fold_at", type="int",
         help="fold sequence every n bases[%default].")
 
+    parser.add_option(
+        "--fasta-name-attribute", dest="naming_attribute", type="string",
+        help="use attribute to name fasta entry. Currently only compatable"
+        " with gff format [%default].")
+
     parser.set_defaults(
         is_gtf=False,
         genome_file=None,
@@ -216,7 +223,8 @@ def main(argv=None):
         extend_by=100,
         extend_with=None,
         masker=None,
-        fold_at=None
+        fold_at=None,
+        naming_attribute=False
     )
 
     (options, args) = E.Start(parser)
@@ -286,7 +294,12 @@ def main(argv=None):
         if options.is_gtf:
             name = chunk[0].transcript_id
         else:
-            name = str(chunk[0].attributes)
+            if options.naming_attribute:
+                attr_dict = {x.split("=")[0]: x.split("=")[1]
+                             for x in chunk[0].attributes.split(";")}
+                name = attr_dict[options.naming_attribute]
+            else:
+                name = str(chunk[0].attributes)
 
         lcontig = contigs[contig]
         positive = Genomics.IsPositiveStrand(strand)
