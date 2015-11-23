@@ -617,7 +617,7 @@ class Counts(object):
         * width_c_bins = width of bins for change values
         * max_c_bins = maximum bin for change values
         * tracks_map = dictionary mapping groups to tracks
-        * difference = "relative" or "logfold"
+        * difference = "relative", "logfold" or "abs_logfold"
         * s_max = maximum number of spikes per bin
         * i = number of iterations. More iterations = more filled bins
         '''
@@ -801,10 +801,17 @@ def means2idxarrays(g1, g2, i_bins, c_bins, difference):
         # g1 and g2 always the same length
         change = [g2[x] - g1[x] for x in range(0, len(g1))]
         initial = g1
+
     elif difference == "logfold":
         change = [np.log2((g2[x]+1.0) / (g1[x]+1.0))
                   for x in range(0, len(g1))]
         initial = [np.log2(g1[x]+1.0) for x in range(0, len(g1))]
+
+    elif difference == "abs_logfold":
+        change = [abs(np.log2((g2[x]+1.0) / (g1[x]+1.0)))
+                  for x in range(0, len(g1))]
+        initial = [max(np.log2(g1[x]+1.0), np.log2(g2[x]+1.0))
+                   for x in range(0, len(g1))]
 
     # return arrays of len(change) with the index position in c_bins
     # corresponding to the bin in which the value of change falls

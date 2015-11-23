@@ -3,7 +3,7 @@
 
 :Author: Tom Smith
 :Release: $Id$
-:Date: |today|
+--:Date: |today|
 :Tags: Python
 
 Purpose
@@ -45,7 +45,7 @@ spike-ins by cluster
 
     zcat counts.tsv.gz | cgat counts2counts
     --design-tsv-file=design.tsv --method="spike" --spike-type="row"
-    --spike-maximum=100 --spike-change-bin-width=1
+    --spike-maximum=100
     --spike-initial-bin-width=10 --spike-change-bin-max=10
     --spike-initial-bin-max=10 --spike-cluster-minimum-size=1
     --spike-cluster-maximum-size=10 --spike-cluster-maximum-width=1
@@ -148,8 +148,17 @@ The generation of spike-ins is extensively parameterised:
 
 --difference-method=[logfold / relative]
 
-    Difference will be calculated as "logfold" (log2(group2/group1))
-    or "relative" (group2 - group1).
+    Difference will be calculated as one of:
+    "logfold" - log2(mean group2/ mean group1)
+    "abs_logfold"  - abs(log2(mean group2/ mean group1))
+    "relative" - (mean group2 - mean group1)
+
+    Note: Difference method also affects how initial values are calculated:
+   
+        Initial values will be calculated as:
+        "logfold" - log2(mean group1)
+        "abs_logfold"  - max(mean group1, mean group2)
+        "relative" - (mean group1)
 
 --spike-change-bin-min=[int]
 --spike-change-bin-max=[int]
@@ -265,7 +274,8 @@ def main(argv=None):
                       [default=%default].")
 
     parser.add_option("--spike-difference-method", dest="difference",
-                      type="choice", choices=("relative", "logfold"),
+                      type="choice",
+                      choices=("relative", "logfold", "abs_logfold"),
                       help="method to use for calculating difference\
                       [default=%default].")
 
