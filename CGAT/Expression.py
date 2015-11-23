@@ -1119,10 +1119,14 @@ class DEExperiment_DESeq2(DEExperiment):
               res$control = contrast
               res$treatment = contrast}
 
-            return(res)}''' % locals())
+            res['test_id'] = rownames(res)
+
+            return(res)
+
+            }''' % locals())
 
             results = pandas2ri.ri2py(performDifferentialTesting(r_dds))
-            results['test_id'] = results.index
+
 
         # DEtype == "GLM"
         else:
@@ -1152,8 +1156,8 @@ class DEExperiment_DESeq2(DEExperiment):
             n = 0
             print design.table.columns
             for contrast in contrasts:
-                assert contrast in design.table.columns, "contrast not found in\
-                design factors columns"
+                assert contrast in design.table.columns, (
+                    "contrast not found in design factors columns")
                 model = [x for x in model_terms if x != contrast]
                 model = "~" + "+".join(model)
 
