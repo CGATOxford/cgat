@@ -251,7 +251,7 @@ def main(argv=None):
                     "second pair (--output-filename-pattern)")
 
             outfile1 = options.stdout
-            outfile2 = IOTools.openFile(options.outfile_filename_pattern, "w")
+            outfile2 = IOTools.openFile(options.output_filename_pattern, "w")
 
             for record1, record2 in itertools.izip(
                     Fastq.iterate(options.stdin),
@@ -261,12 +261,13 @@ def main(argv=None):
                     c.output += 1
                     outfile1.write("%s\n" % record1)
                     outfile2.write("%s\n" % record2)
-
-        for record in Fastq.iterate(options.stdin):
-            c.input += 1
-            if random.random() <= sample_threshold:
-                c.output += 1
-                options.stdout.write("%s\n" % record)
+        
+        else:
+            for record in Fastq.iterate(options.stdin):
+                c.input += 1
+                if random.random() <= sample_threshold:
+                    c.output += 1
+                    options.stdout.write("%s\n" % record)
 
     elif options.method == "apply":
         ids = set(IOTools.readList(IOTools.openFile(options.apply)))
