@@ -150,7 +150,8 @@ def test_cmdline():
     '''
     # start script in order to build the command line parser
     global ORIGINAL_START
-    ORIGINAL_START = E.Start
+    if ORIGINAL_START is None:
+        ORIGINAL_START = E.Start
 
     # read the first two columns
     map_option2action = IOTools.readMap(
