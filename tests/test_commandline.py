@@ -32,6 +32,7 @@ import importlib
 import yaml
 import re
 import sys
+import copy
 
 from nose.tools import ok_
 import CGAT.Experiment as E
@@ -95,10 +96,9 @@ def filterFiles(files):
 def LocalStart(parser, *args, **kwargs):
     '''stub for E.Start - set return_parser argument to true'''
     global PARSER
-    PARSER = ORIGINAL_START(parser,
-                            return_parser=True,
-                            **kwargs
-                            )
+    d = copy.copy(kwargs)
+    d.update({'return_parser': True})
+    PARSER = ORIGINAL_START(parser, **d)
     raise DummyError()
 
 
