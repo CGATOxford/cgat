@@ -942,9 +942,7 @@ class DEExperiment_DESeq(DEExperiment):
 
         # estimate size factors
         cds <- estimateSizeFactors(cds)
-        print(sharing_mode)
-        print(dispersion_method)
-        print(fit_type)
+
         # estimate dispersion
         cds <- estimateDispersions(cds, method=dispersion_method,
                fitType=fit_type, sharingMode=sharing_mode)
@@ -1023,6 +1021,8 @@ class DEExperiment_DESeq2(DEExperiment):
             outfile_prefix=None,
             fdr=0.1):
 
+        counts.table = counts.table[design.table.index]
+
         # create r objects
         r_counts = pandas2ri.py2ri(counts.table)
         r_groups = ro.StrVector(design.conditions)
@@ -1079,6 +1079,8 @@ class DEExperiment_DESeq2(DEExperiment):
                 return(design)}''')
 
             r_design = buildDesign(r_counts, r_groups)
+            print r_design
+            print r_groups
 
             buildCountDataSet = R('''
             function(counts, design){
@@ -1093,6 +1095,7 @@ class DEExperiment_DESeq2(DEExperiment):
                      design = ~condition))
 
             return(dds)
+
             }''' % locals())
 
             r_dds = buildCountDataSet(r_counts, r_design)
@@ -1107,6 +1110,7 @@ class DEExperiment_DESeq2(DEExperiment):
 
             res = suppressMessages(results(dds, addMLE=TRUE))
             res = as.data.frame(res)
+            c = counts(dds, normalized = TRUE)
 
             contrast = "condition"
             res$contrast = contrast
@@ -1127,7 +1131,6 @@ class DEExperiment_DESeq2(DEExperiment):
 
             results = pandas2ri.ri2py(performDifferentialTesting(r_dds))
 
-
         # DEtype == "GLM"
         else:
             r_design = pandas2ri.py2ri(design.table)
@@ -1140,7 +1143,7 @@ class DEExperiment_DESeq2(DEExperiment):
             }
 
             full_model <- formula("%(model)s")
-            print(design)
+
             dds <- suppressMessages(DESeqDataSetFromMatrix(
                      countData= counts,
                      colData = design,
@@ -1154,7 +1157,7 @@ class DEExperiment_DESeq2(DEExperiment):
             results = pandas.DataFrame()
 
             n = 0
-            print design.table.columns
+
             for contrast in contrasts:
                 assert contrast in design.table.columns, (
                     "contrast not found in design factors columns")
@@ -2138,9 +2141,6 @@ def runEdgeR(outfile,
     groups, pairs, has_replicates, has_pairs = groupTagData(ref_group)
 
     # output heatmap plot
-    print "outfile_prefix:"
-    print outfile_prefix
-    print '%(outfile_prefix)sheatmap.png' % locals()
     R.png('%(outfile_prefix)sheatmap.png' % locals())
     plotCorrelationHeatmap()
     R['dev.off']()
@@ -3764,7 +3764,7 @@ def runEdgeRPandas(counts,
         nrows = len(counts.index)
         n = 0
         for g1, g2 in itertools.combinations(groups, 2):
-            print g1, g2
+
             keep_a = [x == g1 for x in conds]
             counts_a = counts.iloc[:, keep_a]
             keep_b = [x == g2 for x in conds]
@@ -3799,7 +3799,7 @@ def runEdgeRPandas(counts,
         pairs_in_groups_df = pandas.DataFrame()
         for pair in set(pairs):
             for g1, g2 in itertools.combinations(groups, 2):
-                print pair, g1, g2
+
                 key = "pair-%s-%s-vs-%s" % (pair, g1, g2)
                 legend.append(key)
                 keep_a = [x == pair and y == g1 for x, y in zip(pairs, conds)]
