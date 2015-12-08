@@ -154,7 +154,7 @@ The generation of spike-ins is extensively parameterised:
     "relative" - (mean group2 - mean group1)
 
     Note: Difference method also affects how initial values are calculated:
-   
+
         Initial values will be calculated as:
         "logfold" - log2(mean group1)
         "abs_logfold"  - max(mean group1, mean group2)
@@ -185,6 +185,7 @@ The generation of spike-ins is extensively parameterised:
     example, with methylation data, one may wish to shuffle columns
     containing the percentage methylation (0-100) and retain additional
     columns containing the counts of methylated/unmethylated
+
 
 '''
 
@@ -366,7 +367,7 @@ def main(argv=None):
         width_sbin=1,
         shuffle_suffix=None,
         keep_suffix=None,
-        normalization_method="deseq-size-factors",
+        normalization_method="deseq-size-factors"
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -552,7 +553,7 @@ def main(argv=None):
             max_ibin=options.max_ibin,
             min_sbin=options.min_sbin,
             width_sbin=options.width_sbin,
-            max_sbin=options.max_sbin,)
+            max_sbin=options.max_sbin)
 
     E.Stop()
 

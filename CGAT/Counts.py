@@ -717,7 +717,7 @@ class Counts(object):
 
         if spike_type == "row":
             index = True
-            #keep_columns = ["spike"]
+            # keep_columns = ["spike"]
             keep_columns = None
 
         elif spike_type == "cluster":
@@ -763,7 +763,7 @@ class Counts(object):
                                         ("spike-in", initial, change, n)))]
                     row.extend(self.table.ix[pair[0], tracks_map[groups[0]]])
                     row.extend(self.table.ix[pair[1], tracks_map[groups[1]]])
-                    sys.stdout.write("%s\n" % "\t".join(map(str, row)))                    
+                    sys.stdout.write("%s\n" % "\t".join(map(str, row)))
                     n += 1
 
         elif spike_type == "cluster":
