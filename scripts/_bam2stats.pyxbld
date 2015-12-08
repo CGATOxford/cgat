@@ -8,13 +8,8 @@ def make_ext(modname, pyxfilename):
     import glob
     pysam_dirname = os.path.dirname(pysam.__file__)
     if sys.platform != 'darwin':
-        extra_link_args = [os.path.join(pysam_dirname, x) for x in (
-        'libchtslib.so',
-        'TabProxies.so',
-        'cfaidx.so',
-        'csamfile.so',
-        'cvcf.so',
-        'ctabix.so')]
+        extra_link_args = [os.path.join(pysam_dirname, x) for x in 
+		pysam.get_libraries()]			       
     else:
         extra_link_args = []
     return Extension(name=modname,

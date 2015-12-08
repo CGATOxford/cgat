@@ -246,13 +246,8 @@ if IS_OSX:
     # within OS X
     extra_link_args = []
 else:
-    extra_link_args = [os.path.join(pysam_dirname, x) for x in (
-        'libchtslib.so',
-        'TabProxies.so',
-        'cfaidx.so',
-        'csamfile.so',
-        'cvcf.so',
-        'ctabix.so')]
+    extra_link_args = [os.path.join(pysam_dirname, x) for x in 
+                       pysam.get_libraries()]
 
 for pyx_file in pyx_files:
     script_name = os.path.basename(pyx_file)
