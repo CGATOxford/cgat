@@ -731,7 +731,8 @@ class Counts(object):
             self.table.to_csv(sys.stdout, index=index, header=True, sep="\t",
                               dtype={'position': int})
         else:
-            sys.stdout.write("%s\n" % "\t".join(map(str, header)))
+            sys.stdout.write("%s\t%s\n" % (
+                "spike", "\t".join(map(str, header))))
 
         def getInitialChangeSize(key, width_ibin, min_ibin, width_cbin,
                                  min_cbin, width_s_bin, min_s_bin):
