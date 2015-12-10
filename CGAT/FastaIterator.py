@@ -67,7 +67,7 @@ class FastaRecord:
             seq = [self.sequence[i:i+self.fold]
                    for i in range(0, len(self.sequence), self.fold)]
         else:
-            seq = self.sequence
+            seq = (self.sequence,)
 
         return ">%s\n%s" % (self.title, "\n".join(seq))
 
