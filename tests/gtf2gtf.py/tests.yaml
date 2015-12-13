@@ -51,13 +51,13 @@ merge_transcripts:
     stdin: hg19.small.sort_gene.gtf.gz
     outputs: [stdout]
     references: [hg19.small.sort_gene_merge_transcripts.gtf.gz]
-    options: --method=merge-transcripts
+    options: --method=merge-transcripts --without-utr
 
 merge_transcripts_with_utr:
     stdin: hg19.small.sort_gene.gtf.gz
     outputs: [stdout]
     references: [hg19.small.sort_gene_merge_transcripts_with_utr.gtf.gz]
-    options: --method=merge-transcripts --with-utr
+    options: --method=merge-transcripts --mark-utr
 
 #disabled - works in CGAT, but not in travis - sort order related
 #merge_genes:
@@ -76,13 +76,13 @@ intersect_transcripts:
     stdin: hg19.small.sort_gene.gtf.gz
     outputs: [stdout]
     references: [hg19.small.sort_gene_intersect_transcripts.gtf.gz]
-    options: --method=intersect-transcripts
+    options: --method=intersect-transcripts --without-utr
 
 intersect_transcripts_with_utr:
     stdin: hg19.small.sort_gene.gtf.gz
     outputs: [stdout]
     references: [hg19.small.sort_gene_intersect_transcripts_with_utr.gtf.gz]
-    options: --method=intersect-transcripts --with-utr
+    options: --method=intersect-transcripts
 
 merge_introns:
     stdin: hg19.small.sort_gene.gtf.gz

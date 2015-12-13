@@ -47,6 +47,7 @@ import numpy.ma as ma
 import copy
 import random
 import sys
+import sklearn.preprocessing as preprocessing
 
 # activate pandas/rpy conversion
 pandas2ri.activate()
@@ -280,13 +281,14 @@ class Counts(object):
             assert design, ("if not using blind must supply a design table "
                             "(a CGAT.Expression.ExperimentalDesign object")
 
+            # currently this only accepts "~group" design
             transform = R('''
             function(df, design){
 
             suppressMessages(library('DESeq2'))
 
             dds <- suppressMessages(DESeqDataSetFromMatrix(
-                     countData= df, colData = design, design = ~condition))
+                     countData= df, colData = design, design = ~group))
 
             transformed <- suppressMessages(%(t_function)s(dds, blind=FALSE))
             transformed_df <- as.data.frame(assay(transformed))
@@ -295,7 +297,7 @@ class Counts(object):
             }''' % locals())
 
             r_design = pandas2ri.py2ri(design.table)
-            df = pandas2ri.ri2py(transform(r_counts))
+            df = pandas2ri.ri2py(transform(r_counts, r_design))
 
         else:
 
@@ -305,10 +307,10 @@ class Counts(object):
             suppressMessages(library('DESeq2'))
 
             design = data.frame(row.names = colnames(df),
-                                condition = seq(1, length(colnames(df))))
+                                group = seq(1, length(colnames(df))))
 
             dds <- suppressMessages(DESeqDataSetFromMatrix(
-                     countData= df, colData = design, design = ~condition))
+                     countData= df, colData = design, design = ~group))
 
             transformed <- suppressMessages(%(t_function)s(dds, blind=TRUE))
             transformed_df <- as.data.frame(assay(transformed))
@@ -400,6 +402,24 @@ class Counts(object):
         mean_sd_rlog_df = counts2meanSdPlot(rlog)
 
         plotTransformations(mean_sd_log_df, mean_sd_rlog_df, mean_sd_vst_df)
+
+    def zNormalise(self, inplace=True):
+        ''' normalise each row to zero mean and unit variance
+        (z-score) '''
+
+        samples = self.table.columns
+        genes = self.table.index
+
+        z_df = pd.DataFrame(preprocessing.scale(
+            self.table, axis=1, with_mean=True, with_std=True, copy=False))
+
+        z_df.index = genes
+        z_df.columns = samples
+
+        if inplace:
+            self.table = z_df
+        else:
+            return Counts(z_df)
 
     def plotDendogram(self, plot_filename=None,
                       distance_method="euclidean",

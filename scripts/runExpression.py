@@ -252,6 +252,10 @@ def main(argv=None):
                       type="string",
                       help=("contrasts for post-hoc testing writen"
                             " variable:control:treatment,..."))
+    parser.add_option("--deseq2-plot",
+                      dest="plot",
+                      type="int",
+                      help=("draw plots during deseq2 analysis"))
 
     parser.set_defaults(
         input_filename_tags=None,
@@ -276,6 +280,7 @@ def main(argv=None):
         spike_foldchange_bin_width=0.5,
         spike_max_counts_per_bin=50,
         model=None,
+        plot=1
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -326,6 +331,7 @@ def main(argv=None):
                 ref_group=options.ref_group,
                 model=options.model,
                 contrasts=options.contrasts,
+                plot=options.plot
             )
 
         elif options.method == "deseq":
