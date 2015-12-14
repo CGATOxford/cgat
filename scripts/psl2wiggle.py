@@ -35,10 +35,6 @@ Command line options
 '''
 
 import sys
-import re
-import string
-import optparse
-import time
 import os
 import itertools
 import tempfile
@@ -46,7 +42,6 @@ import subprocess
 import shutil
 
 import CGAT.Experiment as E
-import CGAT.Stats as Stats
 import CGAT.Blat as Blat
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IOTools as IOTools

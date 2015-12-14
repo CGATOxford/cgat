@@ -128,7 +128,6 @@ import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Intervals as Intervals
 import collections
 import numpy
-import bx.intervals.io
 import bx.intervals.intersection
 
 
@@ -489,7 +488,7 @@ def main(argv=None):
     contigs = None
     genome_fasta = None
     if options.input_filename_contigs:
-        contigs = Genomics.ReadContigSizes(
+        contigs = Genomics.readContigSizes(
             IOTools.openFile(options.input_filename_contigs, "r"))
 
     if options.genome_file:

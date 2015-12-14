@@ -11,7 +11,7 @@ Purpose
 -------
 
 .. todo::
-   
+
    describe purpose of the script.
 
 Usage
@@ -32,15 +32,10 @@ Command line options
 
 '''
 import sys
-import re
-import string
-import os
-import getopt
-import time
-import optparse
 
 import CGAT.Experiment as E
 from scipy.stats import *
+
 
 USAGE = """simulate_function.py [options] [infile] < stdin
 
@@ -63,7 +58,8 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: simulate_function.py 2782 2009-09-10 11:40:29Z andreas $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
     parser.add_option("-x", "--xrange", dest="xrange", type="string",
                       help="xrange.")

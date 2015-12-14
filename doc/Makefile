@@ -14,6 +14,8 @@ ALLSPHINXOPTS   = -d _build/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 DIR_PUBLISH=/ifs/public/cgat/documentation
 URL_SUB="s/\/ifs\/devel\/cgat\/doc/http:\/\/www.cgat.org\/downloads\/public\/cgat\/documentation/"                                                                                  
 
+COMPUTE_COVERAGE?=
+
 .PHONY: help clean html dirhtml pickle json htmlhelp qthelp latex changes linkcheck doctest
 
 help:
@@ -44,9 +46,14 @@ _static/toolmap.svg:
 	-mkdir _static
 	neato -Tsvg toolmap.dot > $@
 
+_static/dependency_graph.svg: ../dependency_graph/cgat_raw.svg
+	@echo adding dependency graph
+	cp $< $@
+
 # remove the pyc file - otherwise errors when importing pipeline and other scripts
-html: _static/toolmap.svg
+html: _static/toolmap.svg _static/dependency_graph.svg
 	rm -f ../{CGAT,CGATPipelines,scripts}/*.pyc
+	if [ ! -z "$(COMPUTE_COVERAGE)" ] ; then $(MAKE) coverage; fi
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) _build/html
 	@echo
 	@echo "Build finished. The HTML pages are in _build/html."
@@ -54,6 +61,7 @@ html: _static/toolmap.svg
 coverage:
 	rm -f ../{CGAT,CGATPipelines,scripts}/*.pyc
 	$(SPHINXBUILD) -b coverage $(ALLSPHINXOPTS) _build/coverage
+	rename .txt .rst _build/coverage/*.txt
 	@echo
 	@echo "Build finished. The coverage pages are in _build/coverage."
 

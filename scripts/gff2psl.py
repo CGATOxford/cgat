@@ -42,17 +42,9 @@ Command line options
 '''
 
 import sys
-import re
-import string
-import optparse
-import time
-import os
-import glob
-
 import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Blat as Blat
-import CGAT.Genomics as Genomics
 import CGAT.GTF as GTF
 import alignlib_lite
 import CGAT.Intervals as Intervals

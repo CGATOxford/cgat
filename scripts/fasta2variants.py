@@ -1,5 +1,4 @@
-'''
-fasta2variants.py - create sequence variants from a set of sequences
+'''fasta2variants.py - create sequence variants from a set of sequences
 ====================================================================
 
 :Author: Andreas Heger
@@ -10,9 +9,9 @@ fasta2variants.py - create sequence variants from a set of sequences
 Purpose
 -------
 
-This script reads a collection of sequences in :term:`fasta` format and
-outputs a table of possible variants. It outputs for each position in
-a protein sequence the number of variants.
+This script reads a collection of sequences in :term:`fasta` format
+and outputs a table of possible variants. It outputs for each position
+in a protein sequence the number of variants.
 
 If the input sequences are nucleotide coding (CDS) sequences, for each
 variant a weight is output indicating the number of times that variant
@@ -43,19 +42,11 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import tempfile
-import subprocess
-import optparse
-import math
 import collections
 
 import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
-import CGAT.IOTools as IOTools
 import CGAT.FastaIterator as FastaIterator
 
 # ------------------------------------------------------------------------
@@ -63,7 +54,7 @@ import CGAT.FastaIterator as FastaIterator
 
 def main(argv=None):
 
-    parser = E.OptionParser(version="%prog version: $Id: analyze_codonbias_shannon.py 2864 2010-03-03 10:18:16Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
     parser.add_option("-c", "--is-cds", dest="is_cds", action="store_true",

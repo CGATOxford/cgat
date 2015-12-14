@@ -54,9 +54,28 @@ spike-ins by cluster
 normalize
 +++++++++
 
+The method ``normalize`` normalizes counts between experiments to
+make them comparable.
+
    zcat counts.tsv.gz | cgat counts2counts.py --method="normalize"
    --normalization-method=deseq-size-factors
    | gzip > normalized.tsv.gz
+
+Normalization methods available are:
+
+deseq-size-factors
+    Use normalization implemented in DEseq
+total-column
+    Divide counts by column total.
+total-row
+    Divide counts by the value in a row called ``total`` and remove
+    that row.
+total-count
+    Normalise all values in a column by the ratio of the per-column
+    sum of counts and the average column count across all rows.
+
+Normalized counts in ``total-column`` and ``total-row`` are multiplied
+by 10e6.
 
 Input
 -----
@@ -164,17 +183,10 @@ import sys
 import os
 import pandas as pd
 import numpy as np
-
-try:
-    import CGAT.Experiment as E
-    import CGAT.Counts as Counts
-    import CGAT.Expression as Expression
-    import CGAT.IOTools as IOTools
-except ImportError:
-    import Experiment as E
-    import Expression
-    import Counts
-    import IOTools
+import CGAT.Experiment as E
+import CGAT.Counts as Counts
+import CGAT.Expression as Expression
+import CGAT.IOTools as IOTools
 
 
 def main(argv=None):
@@ -309,7 +321,10 @@ def main(argv=None):
 
     parser.add_option("--normalization-method",
                       dest="normalization_method", type="choice",
-                      choices=("deseq-size-factors", "million-counts"),
+                      choices=("deseq-size-factors",
+                               "total-count",
+                               "total-column",
+                               "total-row"),
                       help="normalization method to apply [%default]")
 
     parser.add_option("-t", "--tags-tsv-file", dest="input_filename_tags",
@@ -353,7 +368,7 @@ def main(argv=None):
         # looks for column names which exactly match the design
         # "tracks" need to write function in Counts.py to handle
         # counts table and design table + suffix
-        counts = pd.read_csv(sys.stdin, sep="\t",  comment="#")
+        counts = pd.read_csv(options.stdin, sep="\t",  comment="#")
         inf = IOTools.openFile(options.input_filename_design)
         design = pd.read_csv(inf, sep="\t", index_col=0)
         inf.close()
@@ -374,7 +389,7 @@ def main(argv=None):
 
         if options.input_filename_tags == "-":
             counts = Counts.Counts(pd.io.parsers.read_csv(
-                sys.stdin, sep="\t", index_col=index, comment="#"))
+                options.stdin, sep="\t", index_col=index, comment="#"))
         else:
             counts = Counts.Counts(
                 IOTools.openFile(options.input_filename_tags, "r"),
@@ -430,7 +445,8 @@ def main(argv=None):
 
     elif options.method == "normalize":
 
-        counts.normalise(method=options.normalization_method)
+        counts.normalise(method=options.normalization_method,
+                         row_title="total")
 
         # write out
         counts.table.to_csv(options.stdout, sep="\t", header=True)

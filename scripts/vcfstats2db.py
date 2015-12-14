@@ -33,16 +33,7 @@ Command line options
 '''
 import os
 import sys
-import string
-import re
-import time
-import optparse
-import tempfile
-import subprocess
-import types
 import CGAT.Experiment as E
-import csv
-import CGAT.CSV as CSV
 import CGAT.IOTools as IOTools
 
 

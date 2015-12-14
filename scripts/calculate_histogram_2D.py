@@ -1,5 +1,4 @@
-'''
-calculate_histogram_2D.py - calculate 2D histogram
+'''calculate_histogram_2D.py - calculate 2D histogram
 ==================================================
 
 :Author: Andreas Heger
@@ -10,9 +9,9 @@ calculate_histogram_2D.py - calculate 2D histogram
 Purpose
 -------
 
-This script computes a 2D histogram. The data is a tab-separated
-with ``x``, ``y`` in the first two columns. The columns can be
-changed by the ``-1`` and ``-2`` options.
+This script computes a 2D histogram. The data is a tab-separated with
+``x``, ``y`` in the first two columns. The columns can be changed by
+the ``-1`` and ``-2`` options.
 
 Usage
 -----
@@ -32,12 +31,7 @@ Command line options
 
 '''
 import sys
-import re
 import string
-import os
-import getopt
-import time
-import optparse
 
 import CGAT.Experiment as E
 import CGAT.Histogram2D as Histogram2D

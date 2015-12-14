@@ -1,5 +1,5 @@
 
 .. automodule:: csv_rename
 
-.. program-output:: python ../scripts/csv_rename.py --no-usage --help
+.. program-output:: python ../scripts/csv_rename.py --help
 

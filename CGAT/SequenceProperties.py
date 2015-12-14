@@ -20,22 +20,44 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-'''
-SequenceProperties.py - compute properties of sequences
-=======================================================
+"""SequenceProperties.py - Computing metrics of nucleotide sequences
+=================================================================
 
-Classes for extracting and reporting sequence properties on
-nucleotide sequences.
+This module provides methods for extracting and reporting sequence
+properties of nucleotide sequences such as the composition, length,
+etc.
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
-:Tags: Python
+The classes provide the algorithms to provide the property. They will
+store the latest result for output. Thus, processing is a two-step
+procedure::
 
-Code
-----
+   from SequenceProperties import SequencePropertiesLength
+   from SequenceProperties import SequencePropertiesNA
 
-'''
+   counters = [SequencePropertiesLength(), SequencePropertiesNA()]
+
+   # output column headers
+   headers = sum(c.getHeaders() for c in counters]
+   print "\t".join(headers)
+
+   for sequence in sequences:
+      # load sequence in each counter
+      for c in counters:
+          c.loadSequence(sequence)
+      # output results
+      print "\t".join(map(str, counters))
+
+This design is useful to compute multiple properties while iterating
+only once over an input file and output a single, multi-column table.
+
+.. note::
+    While useful and in working order, the design of the classes is
+    cumbersome.
+
+Reference
+---------
+
+"""
 from __future__ import division
 import string
 import re
@@ -52,8 +74,11 @@ import Bio.Alphabet.IUPAC
 
 
 class SequenceProperties(object):
+    """Base class.
 
-    mPseudoCounts = 0
+    This class is the base class for SequenceProperty objects. Derived
+    classes need to overload most of its methods.
+    """
 
     def __init__(self):
 
@@ -85,17 +110,18 @@ class SequenceProperties(object):
     def getHeaders(self):
         return []
 
-###########################################################################
-
 
 class SequencePropertiesSequence(SequenceProperties):
+    """Add properties: the actual sequence.
 
-    '''Add full sequence '''
-    # sequence = ""
+    sequence
+       The sequence
+
+    This class outputs the actual sequence supplied.
+    """
 
     def __init__(self):
         SequenceProperties.__init__(self)
-        # self.mSequence = ""
 
     def addProperties(self, other):
         """add properties."""
@@ -117,12 +143,16 @@ class SequencePropertiesSequence(SequenceProperties):
         headers = SequenceProperties.getHeaders(self)
         return headers + ["sequence"]
 
-###########################################################################
-
 
 class SequencePropertiesHid(SequenceProperties):
+    """Add properties: a hash of sequence
 
-    '''Add hash of sequence'''
+    hid
+        Hash identifier of a sequence
+
+    The hash is computed using the md5 algorithm and the resulting
+    byte sequence is then translated into printable characters.
+    """
 
     def __init__(self):
         SequenceProperties.__init__(self)
@@ -156,13 +186,17 @@ class SequencePropertiesHid(SequenceProperties):
         headers = SequenceProperties.getHeaders(self)
         return headers + ["hid", ]
 
-###########################################################################
-
 
 class SequencePropertiesLength(SequenceProperties):
+    """Add properties: sequence length and number of codons
 
-    '''Add sequence length and number of codons (0 for amino-acid sequence)'''
-    mPseudoCounts = 0
+    length
+        Sequence length
+    ncodons
+        Length in codons
+
+    The number of codons is 0 for an amino-acid sequence.
+    """
 
     def __init__(self):
         SequenceProperties.__init__(self)
@@ -195,12 +229,18 @@ class SequencePropertiesLength(SequenceProperties):
         headers = SequenceProperties.getHeaders(self)
         return headers + ["length", "ncodons"]
 
-###########################################################################
-
 
 class SequencePropertiesNA(SequenceProperties):
+    """Add properties: nucleotide composition
 
-    '''Nucleotide frequency counts'''
+    nUnk
+        Number of unknown residues
+    nA, nC, nG, nT, nGC, nAT
+        Nucleotide counts
+    pA, pC, pG, pT, pGC, pAT
+        Nucleotide frequencies
+
+    """
 
     def __init__(self, reference_usage=[]):
         SequenceProperties.__init__(self)
@@ -243,7 +283,7 @@ class SequencePropertiesNA(SequenceProperties):
         fields = SequenceProperties.getFields(self)
         # Counts
         fields.append("%i" % self.mCountsOthers)
-        
+
         t = 0
         for x in self.mAlphabet:
             fields.append("%i" % self.mCountsNA[x])
@@ -284,12 +324,15 @@ class SequencePropertiesNA(SequenceProperties):
 
         return headers
 
-###########################################################################
-
 
 class SequencePropertiesDN(SequenceProperties):
+    """Add Properties : dinucleotide counts
 
-    '''returns dinucleotide counts'''
+    nAA, nAC, ...
+        Dinucleotide counts
+    mCountsOthers
+        Unknown dinucleotides
+    """
 
     def __init__(self, reference_usage=[]):
 
@@ -335,12 +378,21 @@ class SequencePropertiesDN(SequenceProperties):
         headers.append("mCountsOthers")
         return headers
 
-#######################################################################
-
 
 class SequencePropertiesCpg(SequencePropertiesNA, SequencePropertiesDN):
+    """Add Properties : CpG density and observed / expected.
 
-    '''compute CpG density and observed / expected.'''
+    CpG_count
+        Number of CpG in sequence
+    CpG_density
+        CpG density, number of CpG divided by 2 * sequence length
+    CpG_ObsExp
+        Ratio of observed to expected number of CpG. The latter is
+        calculated as the product of nC * nG. The ratio is normalized
+        by the sequence length.  Set to 0 if no ``C`` or ``G`` in
+        sequence.
+
+    """
 
     def __init__(self, reference_usage=[]):
 
@@ -385,15 +437,19 @@ class SequencePropertiesCpg(SequencePropertiesNA, SequencePropertiesDN):
         headers.append("CpG_ObsExp")
         return headers
 
-#######################################################################
-
 
 class SequencePropertiesGaps(SequenceProperties):
+    """Add Properties : number of gaps in a sequence
 
-    '''counter for genomic sequences.
+    Gaps are identified by unknown characters (``[XN]``)
 
-    Counts gap characters and gap regions
-    '''
+    ngaps
+         Number of gap characters in sequnce
+    nseq_regions
+         Number of ungapped regions
+    ngap_regions
+         Number of gapped regions
+    """
 
     gap_chars = 'xXnN'
 
@@ -421,8 +477,6 @@ class SequencePropertiesGaps(SequenceProperties):
         """load sequence properties from a sequence."""
         SequenceProperties.loadSequence(self, sequence, seqtype)
 
-        totals = {'A': 0, 'C': 0, 'G': 0, 'T': 0, 'X': 0, 'N': 0}
-
         gap_chars = self.gap_chars
         ngaps = 0
         was_gap = not (sequence[0] in gap_chars)
@@ -431,7 +485,6 @@ class SequencePropertiesGaps(SequenceProperties):
         nseq_regions = 0
 
         x = 0
-        xx = len(sequence)
         for x, c in enumerate(sequence):
 
             is_gap = c in gap_chars
@@ -455,12 +508,34 @@ class SequencePropertiesGaps(SequenceProperties):
         self.nseq_regions += other.nseq_regions
         self.ngap_regions += other.ngap_regions
 
-###########################################################################
-
 
 class SequencePropertiesDegeneracy (SequencePropertiesLength):
+    """Add properties : codon degeneracy
 
-    """count degeneracy.
+    nstops
+        Number of stop codons
+    nsites1d
+        Number of non-degenerate sites
+    nsites2d, nsites3d, nsites4d
+        Number 2-fold, 3-fold, 4-fold degenerate sites
+    ngc
+        Number of positions containing either G or C
+    ngc3
+        Number of 3rd codon position containing G or C
+    ngc3
+        Number of non-degenerate 3rd codon position containing G or C
+    n2gc3, n3gc3, n4gc3
+        Number of 2-fold, 3-fold, 4-fold degenerate 3rd codon positions
+        containing G or C
+    pgc
+        Percentage of positions containing either G or C
+    pgc3
+        Percentage of 3rd codon position containing G or C
+    pgc3
+        Percentage of non-degenerate 3rd codon position containing G or C
+    p2gc3, p3gc3, p4gc3
+        Percentage of 2-fold, 3-fold, 4-fold degenerate 3rd codon positions
+        containing G or C
 
     The degeneracies for amino acids are::
 
@@ -473,8 +548,9 @@ class SequencePropertiesDegeneracy (SequencePropertiesLength):
           as two or four-fold degenerate codons. This is encoded
           in the file Genomics.py.
 
-    Note that the number degenerate sites is computed across all codon
-    positions.
+    The number of degenerate sites is computed across all
+    codon positions.
+
     """
 
     def __init__(self):
@@ -685,15 +761,20 @@ class SequencePropertiesDegeneracy (SequencePropertiesLength):
                           "p4dgc3",
                           ]
 
-###########################################################################
-
 
 class SequencePropertiesAA(SequenceProperties):
+    """Add Properties : amino acid composition of nucleotide sequence.
 
-    '''Composition of amino-acies in translated nucleotide sequence
-    (frame 1 only)'''
+    The codons in the nucleotide sequence are translated into amino
+    acids before counting. The nucleotide sequence must be a multiple
+    of 3.
 
-    mPseudoCounts = 0
+    nA, nC, nD, ...
+        Amino acid counts.
+    pA, pC, pD, ...
+        Amino acid frequencies.
+
+    """
 
     def __init__(self, reference_usage=[]):
 
@@ -705,8 +786,6 @@ class SequencePropertiesAA(SequenceProperties):
         self.mCountsAA = {}
         for x in Bio.Alphabet.IUPAC.extended_protein.letters:
             self.mCountsAA[x] = 0
-
-        self.mEntropy = 0
 
     def addProperties(self, other):
         SequenceProperties.addProperties(self, other)
@@ -754,14 +833,15 @@ class SequencePropertiesAA(SequenceProperties):
             headers.append("p%s" % x)
         return headers
 
-#######################################################################
-
 
 class SequencePropertiesAminoAcids(SequenceProperties):
+    """Add Properties : amino acid composition
 
-    '''Composition of amino acid sequences.'''
-
-    mPseudoCounts = 0
+    nA, nC, nD, ...
+        Amino acid counts.
+    pA, pC, pD, ...
+        Amino acid frequencies.
+    """
 
     def __init__(self, reference_usage=[]):
 
@@ -826,12 +906,15 @@ class SequencePropertiesAminoAcids(SequenceProperties):
 
         return fields
 
-###########################################################################
-
 
 class SequencePropertiesCodons(SequencePropertiesLength):
+    """Add Properties : codon frequencies
 
-    mPseudoCounts = 0
+    nAAA, nAAC, ...
+         Codon counts
+    pAAA, pAAC, ...
+         Codon frequencies
+    """
 
     def __init__(self):
 
@@ -895,13 +978,21 @@ class SequencePropertiesCodons(SequencePropertiesLength):
 
         return fields
 
-###########################################################################
-
 
 class SequencePropertiesCodonUsage(SequencePropertiesCodons):
+    """Add properties : Codon usage
 
-    mPseudoCounts = 0
+    The codon frequency is the ratio of the number of times a
+    particular codon is used for a particular amino acid, didived the
+    number of times that particular amino acid appears in the
+    sequence. A ratio of 1.0 means that this particular codon is
+    always used to encode its amino acid, while a frequency of 0.5
+    means it is used 50% of the times.
 
+    rAAA, rAAC, ...
+        Codon frequencies.
+
+    """
     def __init__(self):
 
         SequencePropertiesCodons.__init__(self)
@@ -946,14 +1037,14 @@ class SequencePropertiesCodonUsage(SequencePropertiesCodons):
 
         return fields
 
-###########################################################################
-
 
 class SequencePropertiesCodonTranslator(SequencePropertiesCodonUsage):
+    """Add properties : codon sequence is translated into frequencies.
 
-    """This class outputs the sequence with codons replaced by their frequencies.
+    tsequence
+        comma separated list of codon frequencies. The frequencies are
+        in percentages.
     """
-    mPseudoCounts = 0
 
     def __init__(self):
 
@@ -981,6 +1072,7 @@ class SequencePropertiesCodonTranslator(SequencePropertiesCodonUsage):
 
         fields = SequenceProperties.getFields(self)
 
+        data = []
         for x in xrange(0, len(self.mSequence), 3):
             codon = self.mSequence[x:x + 3]
             if codon in self.mCodonFrequencies:
@@ -988,22 +1080,54 @@ class SequencePropertiesCodonTranslator(SequencePropertiesCodonUsage):
             else:
                 v = 0.0
 
-            fields.append("%i" % (v * 100))
+            data.append("%i" % (v * 100))
+
+        fields.append(",".join(data))
 
         return fields
 
-###########################################################################
-
 
 class SequencePropertiesBias(SequencePropertiesCodons):
+    """Add properties : bias measures of codon sequence.
 
-    mPseudoCounts = 0
+    This class outputs metrics showing how biased the codon usage in a
+    particular sequence is compared to a reference codon usage.  The
+    reference codon usage is given as a dictionary of codon
+    frequencies and multiple dictionaries can be given to compute the
+    bias against multiple codon usages.
 
-    def __init__(self, reference_usage=[]):
+    entropy
+        Entropy of the sequence.
+    ml0, ml1, ...
+        Message length of sequence compared to reference codon
+        usages.
+    relml0, relml1, ...
+        Relative message length of sequence compared to reference codon
+        usages. The relative message length is the message lenght divided
+        by the number of codons.
+    relentropy0, relentropy1, ...
+        Relative entropy of sequence compared to reference codon usages.
+        Also called conditional entropy or encoding cost.
+    kl0, kl1, ...
+        Kullback-Leibler Divergence (relative entropy) of sequence compared
+        to reference codon usages.
+
+    Arguments
+    ---------
+
+    reference_usage : list
+        A list of codon frequency tables. The bias will be computed
+        against each.
+    pseudocounts : int
+        Pseudo-counts to add
+    """
+
+    def __init__(self, reference_usage=[], pseudocounts=0):
 
         SequencePropertiesCodons.__init__(self)
         self.mReferenceUsage = reference_usage
         self.mEntropy = 0
+        self.mPseudoCounts = pseudocounts
 
     def updateProperties(self):
 
@@ -1075,11 +1199,23 @@ class SequencePropertiesBias(SequencePropertiesCodons):
             headers.append("kl%i" % x)
         return headers
 
-###########################################################################
-
 
 class SequencePropertiesCounts(SequenceProperties):
+    """Add Properties : Residue counts against arbirtrary alphabet
 
+    nUnk
+        Number of unknown residues
+    nA, nB, ...
+        Character counts
+    pA, pB, ...
+        Character frequencies
+
+    Arguments
+    ---------
+    alphabet : string
+        List of characters in alphabet
+
+    """
     def __init__(self, alphabet):
 
         SequenceProperties.__init__(self)
@@ -1138,17 +1274,26 @@ class SequencePropertiesCounts(SequenceProperties):
         headers.extend(["p%s" % x for x in self.mAlphabet])
         return headers
 
-###########################################################################
-
 
 class SequencePropertiesEntropy(SequencePropertiesCounts):
+    """Add properties : Entropy of a sequence
 
-    mPseudoCounts = 0
+    entropy
+        Entropy of the sequence
 
-    def __init__(self, alphabet):
+    Arguments
+    ---------
+    alphabet : string
+        List of characters in alphabet
+    pseudocounts : int
+        Pseudo-counts to add
+
+    """
+
+    def __init__(self, alphabet, pseudocounts=0):
 
         SequencePropertiesCounts.__init__(self, alphabet=alphabet)
-
+        self.mPseudoCounts = pseudocounts
         self.mEntropy = None
 
     def addProperties(self, other):

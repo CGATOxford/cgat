@@ -1,77 +1,98 @@
 .. _modules:
 
+=======
 Modules
 =======
 
-Contents:
+This section documents the modules used in CGAT scripts.
+
+CGAT generic toolboxes
+======================
+
+These are the modules that every script or module should use.
+
+.. toctree::
+   :maxdepth: 1
+
+   modules/Experiment.rst
+   modules/IOTools.rst
 
 Genomics
---------
+========
+
+File formats
+------------
+
+Modules for parsing and working for data in specific formats.
+
+.. toctree::
+   :maxdepth: 1
+
+   modules/AGP.rst
+   modules/BamTools.rst
+   modules/Bed.rst
+   modules/Biomart.rst
+   modules/Blat.rst    
+   modules/CBioPortal.rst 
+   modules/FastaIterator.rst
+   modules/Fastq.rst 
+   modules/GFF3.rst
+   modules/GTF.rst
+   modules/IndexedFasta.rst
+   modules/IndexedGenome.rst
+   modules/Maq.rst
+   modules/Sra.rst
+   modules/VCF.rst
+
+Algorithms
+----------
 
 .. toctree::
    :maxdepth: 1
 
    modules/AString.rst 
-   modules/Blat.rst    
-   modules/FastaIterator.rst
-   modules/IndexedFasta.rst
+   modules/Counts.rst
+   modules/Expression.rst 
+   modules/GO.rst
+   modules/Genomics.rst
    modules/Intervals.rst
    modules/Mali.rst
-   modules/MaliIO.rst
-   modules/Masker.rst
+   modules/Motifs.rst
    modules/SequencePairProperties.rst
    modules/SequenceProperties.rst
-   modules/GTF.rst
-   modules/Bed.rst
-   modules/GO.rst
-   modules/GenomicIO.rst
-   modules/Genomics.rst
-   modules/Maq.rst
-   modules/Wiggle.rst
-   modules/AGP.rst
-   modules/Regions.rst
-   modules/Synteny.rst
-   modules/AlignedPairs.rst
-   modules/ProfileLibrary.rst
-   modules/ProfileLibraryCompass.rst
+   modules/Variants.rst
 
-Phylogeny
----------
+
+Wrappers
+--------
+
+These modules wrap tools and provide routines for parsing their
+output.
 
 .. toctree::
    :maxdepth: 1
 
-   modules/Tree.rst
-   modules/TreeTools.rst
-   modules/RateEstimation.rst
-   modules/PamMatrices.rst
-
-
-Parsers and wrappers
---------------------
-
-.. toctree::
-   :maxdepth: 1
-
-   modules/WrapperAdaptiveCAI.rst
-   modules/WrapperBaseML.rst
-   modules/WrapperBl2Seq.rst
-   modules/WrapperBlastZ.rst
-   modules/WrapperClustal.rst
    modules/WrapperCodeML.rst
-   modules/WrapperDBA.rst
-   modules/WrapperDialign.rst
-   modules/WrapperENC.rst
-   modules/WrapperExonerate.rst
-   modules/WrapperGblocks.rst
-   modules/WrapperNJTree.rst
-   modules/WrapperSlr.rst
-   modules/WrapperHmmer.rst
    modules/WrapperMuscle.rst
-   modules/WrapperPhylip.rst
+   modules/Bioprospector.rst
+   modules/WrapperIDR.rst
+   modules/WrapperMACS.rst
+   modules/WrapperZinba.rst
+   modules/MAST.rst
+   modules/Glam2.rst 
+   modules/Glam2Scan.rst
+   modules/Tophat.rst
+   modules/IGV.rst
+   modules/LCA.rst
+   modules/Metaphlan.rst
+   modules/Diamond.rst
+   modules/Masker.rst
+
+Data processing
+===============
 
 Math and Stats
----------------
+--------------
 
 .. toctree::
    :maxdepth: 1
@@ -83,32 +104,6 @@ Math and Stats
    modules/MatlabTools.rst
    modules/MatrixTools.rst
 
-Gpipe and OPTIC
----------------
-
-.. toctree::
-   :maxdepth: 1
-
-   modules/Exons.rst
-   modules/Orthologs.rst
-   modules/Prediction.rst
-   modules/PredictionFile.rst
-   modules/PredictionParser.rst
-   modules/Predictor.rst
-   modules/BlastAlignments.rst 
-
-CGAT infrastructure
--------------------
-
-Below is a list of modules that are involved in maintainig the
-CGAT infrastructure such as logging, dependency tracking, etc.
-
-.. toctree::
-   :maxdepth: 1
-
-   modules/Experiment.rst
-   modules/Requirements.rst
-
 Toolboxes
 ----------
 
@@ -118,43 +113,36 @@ Toolboxes for generic problems.
    :maxdepth: 1
 
    modules/CSV.rst
-   modules/IOTools.rst
    modules/Iterators.rst
    modules/Database.rst
-   modules/ExternalList.rst
-   modules/ProgressBar.rst
+   modules/SetTools.rst
+   modules/Tree.rst
+   modules/TreeTools.rst
 
-Plotting
---------
 
-   modules/GDLDraw.rst
+CGAT infrastructure
+===================
+
+Below is a list of modules that are involved in maintainig the
+CGAT infrastructure such as logging, dependency tracking, etc.
+
+.. toctree::
+   :maxdepth: 1
+
+   modules/Requirements.rst
+   modules/Style.rst
+   modules/Logfile.rst
+   modules/CSV2DB.rst 
 
 Other
 -----
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    modules/RLE.rst
-   modules/SVGDuplicationsWheel.rst
-   modules/SVGTree.rst
    modules/SVGdraw.rst
-   modules/SetTools.rst
-   modules/Sockets.rst
-   modules/GraphTools.rst
-   modules/Cluster.rst
-
-Obsolete
---------
-
-.. toctree::
-   :maxdepth: 2
-
-   modules/Intervalls.rst
-   modules/IntervallsWeighted.rst
-   modules/SaryFasta.rst
-   modules/Fasta.rst
-   modules/SuffixArray.rst
+   modules/RateEstimation.rst
 
 Unsorted
 ---------
@@ -163,28 +151,4 @@ Modules not sorted into categories.
 
 .. toctree::
    :maxdepth: 2
-
-   modules/Bioprospector.rst
-   modules/BlatTest.rst 
-   modules/CBioPortal.rst 
-   modules/CSV2DB.rst 
-   modules/Expression.rst 
-   modules/Fastq.rst 
-   modules/GDLDraw.rst 
-   modules/Glam2.rst 
-   modules/Glam2Scan.rst
-   modules/IGV.rst
-   modules/IndexedGenome.rst
-   modules/Logfile.rst
-   modules/MAST.rst
-   modules/Motifs.rst
-   modules/Tophat.rst
-   modules/VCF.rst
-   modules/Variants.rst
-   modules/WrapperIDR.rst
-   modules/WrapperMACS.rst
-   modules/WrapperMEDIPS.rst
-   modules/WrapperSPP.rst
-   modules/WrapperZinba.rst
-
 

@@ -70,10 +70,7 @@ Command line options
 
 """
 
-import os
 import sys
-import re
-import optparse
 import collections
 
 import CGAT.IOTools as IOTools

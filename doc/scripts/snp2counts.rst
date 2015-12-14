@@ -1,5 +1,5 @@
 
 .. automodule:: snp2counts
 
-.. program-output:: python ../scripts/snp2counts.py --no-usage --help
+.. program-output:: python ../scripts/snp2counts.py --help
 

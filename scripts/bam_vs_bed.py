@@ -18,7 +18,7 @@ It counts the number of alignments overlapping in the first input
 file and that overlap each feature in the second file. Annotations in the
 :term:`bed` file can be overlapping - they are counted independently.
 
-This scripts requires bedtools to be installed.
+This scripts requires bedtools_ to be installed.
 
 Options
 -------
@@ -99,7 +99,13 @@ def main(argv=None):
         "-s", "--sort-bed", dest="sort_bed",
         action="store_true",
         help="sort the bed file by chromosomal location before "
-        "processing. By default the file is assumed to be sorted "
+        "processing. "
+        "[%default]")
+
+    parser.add_option(
+        "--assume-sorted", dest="sort_bed",
+        action="store_false",
+        help="assume that the bed-file is sorted by chromosomal location. "
         "[%default]")
 
     parser.add_option(
@@ -114,7 +120,7 @@ def main(argv=None):
         min_overlap=0.5,
         filename_bam=None,
         filename_bed=None,
-        sort_bed=False,
+        sort_bed=True,
         split_intervals=False,
     )
 
@@ -221,7 +227,8 @@ def main(argv=None):
     -sorted -bed -wo -f %(min_overlap)f""" % locals()
 
     E.info("starting counting process: %s" % statement)
-    proc = E.run(statement, return_popen=True,
+    proc = E.run(statement,
+                 return_popen=True,
                  stdout=subprocess.PIPE)
 
     E.info("counting")

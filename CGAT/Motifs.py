@@ -33,14 +33,9 @@ Code
 ----
 
 '''
-import re
 import collections
-import math
-
-from CGAT import Experiment as E
 from CGAT import Genomics as Genomics
 from CGAT import FastaIterator as FastaIterator
-import numpy
 
 
 def countMotifs(infile, motifs):

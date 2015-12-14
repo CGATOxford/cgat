@@ -28,8 +28,8 @@ Genomics.py - Tools for working with genomic data
 :Date: |today|
 :Tags: Python
 
-Code
-----
+Reference
+---------
 
 """
 
@@ -59,20 +59,37 @@ global_translator = string.maketrans("ACGTacgt", "TGCAtgca")
 
 
 def complement(s):
-    """return reverse complement a sequence."""
+    """reverse complement a sequence.
+
+    >>> complement("ACATACATACTA")
+    'TAGTATGTATGT'
+
+    Returns
+    -------
+    string
+    """
     return string.translate(s[:], global_translator)[::-1]
 
 
 def GetHID(sequence):
-    """returns a hash identifier for a sequence.
+    """returns a hash value for a sequence.
+
+    The hash value is computed using md5 and converted
+    into printable characters.
+
+    >>> GetHID("ACATACATACTA")
+    'trcPGx9VNT36XMlG0XvUBQ'
+
+    Returns
+    -------
+        A hash value
     """
 
     # do the encryption
     h = hashlib.md5(sequence).digest()
-    # map to printable letters: hid has length 22, so the padded '=' are
-    # truncated. You have to add them, if you ever want to decode,
-    # but who would do such a thing :=)
 
+    # map to printable letters: hid has length 22, so the padded '='
+    # are truncated.
     r = base64.encodestring(h)[0:22]
 
     # finally substitute some characters:
@@ -87,7 +104,18 @@ def GetHID(sequence):
 
 
 def String2Location(s):
-    """convert a string to location information."""
+    """convert a string to location information.
+
+    >>> String2Location("chr1:12:15")
+    ('chr1', '+', 12, 15)
+
+    Returns
+    -------
+    contig : string
+    strand : string
+    start : int
+    end : int
+    """
 
     data = re.split("[:]+", s)
     if len(data) == 3:
@@ -98,287 +126,18 @@ def String2Location(s):
         raise ValueError("unknown format %s" % (s))
 
 
-def GetFastaId(fasta_record):
-    """Get Fasta Id from a fasta record."""
-    title_atoms = string.split(fasta_record.title)
-    return title_atoms[0]
+def readContigSizes(infile):
+    """read sizes of contigs from file.
 
+    Arguments
+    ---------
+    infile : string
+        Filename of :term:`tsv` separated file.
 
-def IndexExists(filename):
-    """check if a certain file has been indexed."""
-    return os.path.exists(filename + ".idx")
+    Returns
+    -------
+    dict
 
-
-def IndexFastaFile(filename):
-    Bio.Fasta.index_file(filename, filename + ".idx", GetFastaId)
-
-
-def ParseFasta2HashFromIndex(filename, filter=None):
-    """parse fasta file via index."""
-
-    parser = Bio.Fasta.SequenceParser(Bio.Alphabet.IUPAC.ambiguous_dna)
-
-    # if files and indices have moved, opening the index can be problem,
-    # because file names are relative to the current working directory.
-    # If an absolute file path is given, change first into that directory.
-    start_dir = os.getcwd()
-    d = os.path.dirname(filename)
-    if d:
-        os.chdir(d)
-    index = Bio.Fasta.Dictionary(filename + ".idx", parser)
-
-    parsed = {}
-
-    for id in filter.keys():
-        try:
-            seq_record = index[id]
-        except ZeroDivisionError:
-            print "# warning: not found %s" % id
-            continue
-        except KeyError:
-            print "# warning: not found %s" % id
-            continue
-        parsed[id] = seq_record.seq.tostring()
-
-    os.chdir(start_dir)
-
-    return parsed
-
-
-def ParseFasta2Hash(infile, filter=None, regex_identifier=None):
-    """read fasta formatted sequences file and build a hash.
-
-    Keys are all characters before the first whitespace in the
-    description line.
-
-    Previously, if the key contained a ":", everything before the ":"
-    was removed.  This is not true any more.
-
-    Use array for higher space efficiency.
-
-    If regex_identifier is given, this is used to extract the identifier
-    from the fasta description line.
-
-    """
-    parsed = {}
-    key = None
-    p = AString.AString()
-    if regex_identifier:
-        rx = regex_identifier
-    else:
-        rx = re.compile("^(\S+)")
-
-    for line in infile:
-        if line[0] == "#":
-            continue
-        if not line:
-            continue
-
-        if line[0] == ">":
-            if key:
-                if not filter or key in filter:
-                    parsed[key] = p
-
-            key = rx.search(line[1:-1]).groups()[0]
-            p = AString.AString()
-            continue
-
-        p.extend(AString.AString(re.sub("\s", "", line[:-1])))
-
-    if not filter or key in filter:
-        if key:
-            parsed[key] = p
-
-    return parsed
-
-
-def oldParseFasta2Hash(infile, filter=None):
-    """read fasta formatted sequences file and build a hash.
-
-    Keys are all characters before the first whitespace in the
-    description line.  If the key contains a :, everything before the
-    : is removed
-
-    Use array for higher space efficiency.
-
-    """
-    parsed = {}
-    key = None
-    fragments = []
-    for line in infile:
-        if line[0] == "#":
-            continue
-        if not line:
-            continue
-
-        if line[0] == ">":
-            if key:
-                if not filter or key in filter:
-                    parsed[key] = AString.AString(
-                        re.sub("\s", "", string.join(fragments, "")))
-
-            key = re.match(">(\S+)", line[:-1]).groups()[0]
-            x = string.find(key, ":")
-            if x != -1:
-                key = key[x + 1:]
-            fragments = []
-            continue
-
-        fragments.append(line[:-1])
-
-    if not filter or key in filter:
-        parsed[key] = AString.AString(
-            re.sub("\s", "", string.join(fragments, "")))
-
-    return parsed
-
-
-def WriteGenomicSequences(outfile, forward_sequences, wrap=0):
-    """read genomic sequences from a fasta file and return forward
-    and backward sequence.
-    """
-
-    for key, sequence in forward_sequences.items():
-        outfile.write(">%s\n" % key)
-        if wrap:
-            for x in range(0, len(sequence), wrap):
-                outfile.write("%s\n" % sequence[x:x + wrap])
-        else:
-            outfile.write("%s\n" % sequence[:])
-
-
-def ReadGenomicSequences(infile,
-                         do_reverse=True,
-                         filter=None,
-                         mask=None,
-                         as_array=False):
-    """read genomic sequences from a fasta file and return forward
-    and backward sequence.
-    """
-
-    # read complete genomic sequence
-    forward_sequences = ParseFasta2Hash(infile, filter)
-
-    if mask:
-        for k in forward_sequences.keys():
-            forward_sequences[k] = AString.AString(
-                string.translate(forward_sequences[k][:],
-                                 string.maketrans("acgtn", "NNNNN")))
-
-    if do_reverse:
-        reverse_sequences = {}
-        for k, s in forward_sequences.items():
-            reverse_sequences[k] = AString.AString(complement(s[:]))
-
-    if not as_array:
-        for k in forward_sequences.keys():
-            forward_sequences[k] = forward_sequences[k][:]
-            if do_reverse:
-                reverse_sequences[k] = reverse_sequences[k][:]
-
-    if do_reverse:
-        return forward_sequences, reverse_sequences
-    else:
-        return forward_sequences
-
-
-def GetGenomicSequence(sbjct_token, sbjct_strand,
-                       sbjct_from, sbjct_to,
-                       genome_file,
-                       filter=None,
-                       use_index=True,
-                       loglevel=2):
-    """get genomic fragment."""
-
-    global global_last_filename_genome
-    global global_forward_sequences
-    global global_last_sbjct_token
-
-    if "%s" in genome_file:
-        filename_genome = genome_file % sbjct_token
-    else:
-        filename_genome = genome_file
-
-    is_new_file = global_last_filename_genome != filename_genome
-    is_new_token = global_last_sbjct_token != sbjct_token
-    is_index = use_index and IndexExists(filename_genome)
-
-    # read new data, if new file is required
-    if is_new_file:
-
-        if is_index:
-            if loglevel >= 1:
-                print "# acquiring %s via index for file %s" %\
-                    (sbjct_token, filename_genome)
-                sys.stdout.flush()
-
-                global_forward_sequences = ParseFasta2HashFromIndex(
-                    filename_genome, {sbjct_token: 1})
-
-        else:
-            if loglevel >= 1:
-                print "# reading genome from %s" % filename_genome
-                sys.stdout.flush()
-
-            try:
-                global_forward_sequences = ReadGenomicSequences(
-                    open(filename_genome, "r"),
-                    do_reverse=0,
-                    as_array=True,
-                    filter=filter)
-            except IOError:
-                raise "# ERROR: genome %s not found" % filename_genome
-
-    # read new sbjct_token from via index, if needed
-    elif is_new_token:
-
-        if is_index:
-            if loglevel >= 1:
-                print "# acquiring %s via index for file %s" %\
-                    (sbjct_token, filename_genome)
-                sys.stdout.flush()
-
-            global_forward_sequences = ParseFasta2HashFromIndex(
-                filename_genome, {sbjct_token: 1})
-
-    if sbjct_token not in global_forward_sequences:
-        raise IndexError("%s not found in %s" %
-                         (sbjct_token, filename_genome))
-
-    global_last_filename_genome = filename_genome
-    global_last_sbjct_token = sbjct_token
-
-    if sbjct_strand == "+":
-        if sbjct_from and sbjct_to:
-            return global_forward_sequences[sbjct_token][sbjct_from:sbjct_to]
-        else:
-            return global_forward_sequences[sbjct_token]
-    else:
-        if sbjct_from and sbjct_to:
-            l = len(global_forward_sequences[sbjct_token])
-            s = global_forward_sequences[sbjct_token][
-                l - sbjct_to:l - sbjct_from]
-            return complement(s)
-        else:
-            return complement(global_forward_sequences[sbjct_token])
-
-
-def ReadPeptideSequences(infile, filter=None, as_array=False,
-                         regex_identifier=None):
-    """read peptide sequence from fasta infile.
-    """
-
-    sequences = ParseFasta2Hash(
-        infile, filter, regex_identifier=regex_identifier)
-
-    if not as_array:
-        for k in sequences.keys():
-            sequences[k] = sequences[k][:]
-    return sequences
-
-
-def ReadContigSizes(infile):
-    """read sizes of congits from file.
     """
     sizes = {}
     for line in infile:
@@ -390,136 +149,29 @@ def ReadContigSizes(infile):
     return sizes
 
 
-def ReadLocationsGFF(infile):
-    """read locations from a file in GFF format
+def forceForwardCoordinates(start, end, strand, length):
+    """return forward coordinates.
+
+    If strand is negative, the coordinates in a and b
+    will be converted. If they are on the positive
+    strand, they will be returned as is.
+
+    Arguments
+    ---------
+    start : int
+        Start coordinate
+    end : int
+        End coordinate
+    strand : string
+        Strand of interval. The values of "-", "0", "-1" indicate
+        a negative strand.
+    length : int
+        Length of chromosome.
     """
-
-    class Location:
-
-        def __init__(self):
-            pass
-
-        def __str__(self):
-            return string.join(map(str, (self.mQueryToken,
-                                         self.mSbjctGenomeFrom,
-                                         self.mSbjctGenomeTo,
-                                         self.mSbjctStrand,
-                                         self.mSbjctToken)), "\t")
-
-    locations = {}
-    for line in infile:
-        if line[0] == "#":
-            continue
-        l = Location()
-        l.mQueryToken, l.mSbjctGenomeFrom, l.mSbjctGenomeTo, l.mSbjctStrand, l.mSbjctToken = line[
-            :-1].split("\t")
-        l.mSbjctGenomeFrom, l.mSbjctGenomeTo = map(
-            int, (l.mSbjctGenomeFrom, l.mSbjctGenomeTo))
-        locations[l.mQueryToken] = l
-
-    return locations
-
-
-def ReadGo(infile):
-    """read go assignments from file as output by Caleb's script
-    """
-
-    class Go:
-
-        def __init__(self):
-            pass
-
-        def __str__(self):
-            return string.join(map(str, (self.mGoid, self.mDescription, self.mEvidence)), "\t")
-
-    go = {}
-    for line in infile:
-        if line[0] == "#":
-            continue
-        g = Go()
-        id, g.mGoid, g.mDescription, g.mEvidence = line[:-1].split(" : ")
-        if id not in go:
-            go[id] = []
-        go[id].append(g)
-
-    return go
-
-
-def ReadClusters(infile):
-    """read clustering information from cd-hit file.
-    """
-
-    rep = None
-    map_rep2mem = {}
-    map_mem2rep = {}
-    mems = None
-    for line in infile:
-        if line[:8] == ">Cluster":
-            if rep:
-                for mem in mems:
-                    map_mem2rep[mem] = rep
-                map_rep2mem[rep] = mems
-            mems = []
-            rep = None
-            continue
-
-        try:
-            (n, length, id, level) = re.search(
-                "(\d)\s+(\d+)aa,\s+>([\S\s]+)\s+(.*)", line[:-1]).groups()
-            id = re.split("\s", id)[0]
-            if id[-3:] == "...":
-                id = id[:-3]
-        except AttributeError:
-            raise "parsing error in line: %s" % line[:-1]
-
-        if level == "*":
-            rep = id
-        else:
-            mems.append(id)
-
-    if rep:
-        for mem in mems:
-            map_mem2rep[mem] = rep
-        map_rep2mem[rep] = mems
-
-    return map_rep2mem, map_mem2rep
-
-
-def ToForwardCoordinates(a, b, strand, length):
-    """return a and b in forward coordinates."""
     if strand in ("-", "0", "-1", 0):
-        return length - b, length - a
+        return length - end, length - start
     else:
-        return a, b
-
-
-def ReadMap(infile):
-    """read clustering information from a map file.
-
-    The file maps transcripts to representative transcripts.
-    rep is not a member of itself.
-    """
-
-    rep = None
-    map_rep2mem = {}
-    map_mem2rep = {}
-    mems = None
-    for line in infile:
-
-        if line[0] == "#":
-            continue
-        rep, mem = line[:-1].split("\t")[:2]
-
-        if rep == mem:
-            continue
-
-        if rep not in map_rep2mem:
-            map_rep2mem[rep] = []
-
-        map_rep2mem[rep].append(mem)
-        map_mem2rep[mem] = rep
-
-    return map_rep2mem, map_mem2rep
+        return start, end
 
 
 def CountGeneFeatures(first_position,
@@ -527,20 +179,43 @@ def CountGeneFeatures(first_position,
                       genomic_sequence=None,
                       border_stop_codon=0,
                       stop_codons=("TAG", "TAA", "TGA")):
-    """calculate number of genomic features in a peptide to genome alignment.
+    """calculate number of genomic features in a peptide to genome
+    alignment.
 
-    border_stop_codon should be divisible by three and is the number of codons
-    that are ignored at the edes of matches regions.
+    Note that codons can be split, for example::
 
-    returns (nintrons, nframeshifts, ngaps, nsplit, nstopcodons,
-    disruptions)
+        S 0 2 5 0 2 I 0 17541 3 0 2 S 1 2 5 0 2 I 0 27979 3 0 2 S 1 2
 
-    disruptions is a list of disruptions in the prediction. Each
-    disruption is a tuple of ( "stop|frameshift", position in protein,
-    position in cds, position on genomic sequence).
+    Arguments
+    ---------
+    first_position : int
+         Start of alignment on genome.
+    alignment : string
+         Alignment in :term:`CIGAR` format, for example from exonerate_.
+    genomic_sequence : string
+         Genomic sequence for alignment
+    border_stop_codon : int
+         Number of codons that are ignored at the edges of match
+         regions.  border_stop_codon should be divisible by three.
+    stop_codons : list
+         List of stop codons
 
-    Note that codons can be split, for example:
-    S 0 2 5 0 2 I 0 17541 3 0 2 S 1 2 5 0 2 I 0 27979 3 0 2 S 1 2
+    Returns
+    -------
+    nintrons : int
+        Number of introns
+    nframeshifts : int
+        Number of frameshifts in aligment.
+    ngaps : int
+        Number of gaps in aligment.
+    nsplit : int
+        Number of codons split by introns in alignment.
+    nstopcodons : int
+        Number of stop codons in alignment.
+    disruptions : list
+       List of disruptions in the prediction. Each
+       disruption is a tuple of ( "stop|frameshift", position in protein,
+       position in cds, position on genomic sequence).
 
     """
 
@@ -564,11 +239,13 @@ def CountGeneFeatures(first_position,
 
         if state in ("G", "M", "P"):
 
-            # reset split codon. Do a sanity check, but ignore first split codon
-            # in the case of exon alignments
+            # reset split codon. Do a sanity check, but ignore first
+            # split codon in the case of exon alignments
             if len(partial_codon) % 3 != 0 and not first_state:
-                raise ValueError("split codon was not multiple of three: partial_codon=%s, alignment=%s" %
-                                 (partial_codon, alignment))
+                raise ValueError(
+                    "split codon was not multiple of three: "
+                    "partial_codon=%s, alignment=%s" %
+                    (partial_codon, alignment))
                 # print alignment
                 # pass
 
@@ -623,7 +300,8 @@ def CountGeneFeatures(first_position,
                 partial_codon.append(
                     (current_pos_cds + x, current_pos_genome + x))
 
-            if border_stop_codon < 3 and genomic_sequence and len(partial_codon) % 3 == 0:
+            if border_stop_codon < 3 and genomic_sequence and \
+               len(partial_codon) % 3 == 0:
 
                 for x in range(0, len(partial_codon), 3):
                     codon = "".join(genomic_sequence[c[1]]
@@ -645,7 +323,7 @@ def CountGeneFeatures(first_position,
 
 
 def Alignment2String(alignment):
-    """convert an alignment to an alignment string.
+    """convert a tuple alignment to an alignment string.
     """
     return string.join(map(
         lambda x: string.join(map(str, x), " "),
@@ -653,7 +331,7 @@ def Alignment2String(alignment):
 
 
 def String2Alignment(source):
-    """convert an alignment string to an alignment.
+    """convert an alignment string to a tuple alignment.
     """
 
     d = string.split(source, " ")
@@ -668,6 +346,7 @@ def String2Alignment(source):
 
 
 def GetAlignmentLength(alignment):
+    """return Alignment length"""
 
     q, s = 0, 0
     for state, l_query, l_sbjct in alignment:
@@ -677,11 +356,29 @@ def GetAlignmentLength(alignment):
     return q, s
 
 
-def Alignment2ExonBoundaries(alignment, query_from=0,
-                             sbjct_from=0, add_stop_codon=1):
-    """convert a Peptide2DNA alignment to exon boundaries.
+def Alignment2ExonBoundaries(alignment,
+                             query_from=0,
+                             sbjct_from=0,
+                             add_stop_codon=1):
+    """extract exon coordinates from a peptide2genome alignment.
 
-    frame is frame of start of exon.
+    Arguments
+    ---------
+    aligment : list
+        List of tuples of the alignment in CIGAR format.
+    query_from : int
+        Start position of alignment on peptide sequence.
+    sbjct_from : int
+        Start position of alignment on nucleotide sequence.
+    add_stop_codon : int
+        Add final stop codon to exon boundaries.
+
+    Returns
+    -------
+    exons : list
+        A list of exons. Each exon is a tuple of (query_from,
+        query_pos, frame, sbjct_from, sbjct_pos, ali)
+
     """
 
     exons = []
@@ -764,8 +461,29 @@ def Alignment2ExonBoundaries(alignment, query_from=0,
 
 
 def RemoveFrameShiftsFromAlignment(row_ali, col_ali, gap_char="-"):
-    """remove frame shifts in alignment. These are all gaps that
-    are 1, 2, 4, or 5 residues long."""
+    """remove frame shifts in an alignment.
+
+    Frameshifts are gaps are 1, 2, 4, or 5 residues long.
+
+    >>> RemoveFrameShiftsFromAlignment("ABC-EFG", "AB-DEFG")
+    ('ABEFG', 'ABEFG')
+
+    Arguments
+    ---------
+    row_ali : string
+        Alignment string of row.
+    col_ali : string
+        Alignment string of column.
+    gap_char : string
+        Gap character to identify aligments.
+
+    Returns
+    -------
+    new_row_ali : string
+        New alignment string for row
+    new_col_ali : string
+        New aligment string for column
+    """
 
     match_string = "[^%s]%s+[^%s]" %\
         (gap_char, gap_char, gap_char)
@@ -777,28 +495,44 @@ def RemoveFrameShiftsFromAlignment(row_ali, col_ali, gap_char="-"):
     for x in re.finditer(match_string, col_ali):
         positions.append((x.start() + 1, x.end() - 1))
 
+    positions.sort()
     # cut and paste new alignment
-    new_row_ali = ""
-    new_col_ali = ""
+    new_row_ali = []
+    new_col_ali = []
     a = 0
     for first, last in positions:
         if (last - first) % 3:
-            new_row_ali += row_ali[a:first]
-            new_col_ali += col_ali[a:first]
+            new_row_ali.append(row_ali[a:first])
+            new_col_ali.append(col_ali[a:first])
             a = last
 
-    new_row_ali += row_ali[a:]
-    new_col_ali += col_ali[a:]
+    new_row_ali.append(row_ali[a:])
+    new_col_ali.append(col_ali[a:])
 
-    return new_row_ali, new_col_ali
+    return "".join(new_row_ali), "".join(new_col_ali)
 
 
 def IsStopCodon(codon, stop_codons=("TAG", "TAA", "TGA")):
+    """return True if codon is a known stop codon.
+    """
     return codon in stop_codons
 
 
 def MaskStopCodons(sequence, stop_codons=("TAG", "TAA", "TGA")):
     """mask stop codons in a sequence.
+
+    Stop codons are masked with ``NNN``.
+
+    Arguments
+    ---------
+    sequence : string
+        Nucleotide sequence to mask.
+    stop_codons : string
+        List of known stop codons.
+
+    Returns
+    -------
+    masked_sequence : string
     """
     codons = []
 
@@ -811,8 +545,25 @@ def MaskStopCodons(sequence, stop_codons=("TAG", "TAA", "TGA")):
 
 
 def Alignment2DNA(alignment, query_from=0, sbjct_from=0):
-    """convert a Peptide2DNA alignment to a DNA against DNA
+    """convert a peptide2genome alignment to a nucleotide2nucleotide
     alignment.
+
+    Instead of peptide coordinates, the alignment will be
+    in codon coordinates.
+
+    Arguments
+    ---------
+    aligment : list
+        List of tuples of the alignment in CIGAR format.
+    query_from : int
+        Start position of alignment on peptide sequence.
+    sbjct_from : int
+        Start position of alignment on nucleotide sequence.
+
+    Returns
+    -------
+    alignment : object
+       The alignment as an alignlib.AlignmentVector object.
     """
 
     map_query2sbjct = alignlib_lite.py_makeAlignmentVector()
@@ -848,10 +599,10 @@ def Alignment2DNA(alignment, query_from=0, sbjct_from=0):
             l_query = l_sbjct
 
         if l_query > 0 and l_sbjct > 0:
-            alignlib_lite.py_addDiagonal2Alignment(map_query2sbjct,
-                                                   query_pos, query_pos +
-                                                   l_query,
-                                                   sbjct_pos - query_pos)
+            alignlib_lite.addDiagonal2Alignment(map_query2sbjct,
+                                                query_pos, query_pos +
+                                                l_query,
+                                                sbjct_pos - query_pos)
 
         query_pos += l_query
         sbjct_pos += l_sbjct

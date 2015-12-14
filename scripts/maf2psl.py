@@ -26,11 +26,7 @@ Command line options
 
 """
 
-import os
 import sys
-import re
-import optparse
-
 import CGAT.Experiment as E
 from bx.align import maf
 from bx.align.tools import get_components_for_species

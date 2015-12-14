@@ -1,5 +1,4 @@
-'''
-data2roc.py - compute ROC data
+'''data2roc.py - compute ROC data
 ==============================
 
 :Author: Andreas Heger
@@ -10,15 +9,14 @@ data2roc.py - compute ROC data
 Purpose
 -------
 
-This script calculates a roc curve (true positive rate versus 
-false positive rate)
+This script calculates a roc curve (true positive rate versus false
+positive rate)
 
-Input is from stdin, first field is +/- or 1/0 for a true
-or false positive, respectively. The input needs to be
-sorted appropriately. 
+Input is from stdin, first field is +/- or 1/0 for a true or false
+positive, respectively. The input needs to be sorted appropriately.
 
-If the option ``--false-negative`` is set, the input is +/- or 1/0 for a 
-true positive or false negative, respectively.
+If the option ``--false-negative`` is set, the input is +/- or 1/0 for
+a true positive or false negative, respectively.
 
 Output on stdout is a tab-separated table with the following
 columns:
@@ -49,10 +47,7 @@ Command line options
 '''
 
 import string
-import re
-import getopt
 import sys
-import optparse
 
 import CGAT.Experiment as E
 

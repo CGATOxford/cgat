@@ -16,21 +16,18 @@ TEMPLATE_SCRIPT='''
 TEMPLATE_MODULE='''
 .. automodule:: %(prefix)s
    :members:
-   :inherited-members:
    :show-inheritance:
 '''
 
 TEMPLATE_PIPELINE='''
 .. automodule:: %(prefix)s
    :members:
-   :inherited-members:
    :show-inheritance:
 '''
 
 TEMPLATE_PIPELINEMODULE='''
 .. automodule:: %(prefix)s
    :members:
-   :inherited-members:
    :show-inheritance:
 '''
 

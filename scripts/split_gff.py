@@ -67,7 +67,6 @@ Command line options
 '''
 
 import sys
-import re
 import os
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools

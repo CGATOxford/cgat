@@ -40,22 +40,13 @@ Command line options
 
 '''
 import sys
-import string
 import re
-import optparse
-import time
-import os
-import shutil
-import tempfile
-import math
 import itertools
-import glob
 import collections
 
 import CGAT.Experiment as E
 import CGAT.Bed as Bed
 import CGAT.IndexedFasta as IndexedFasta
-import CGAT.IOTools as IOTools
 
 
 def main(argv=None):

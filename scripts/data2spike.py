@@ -65,7 +65,6 @@ column for the dataframe.
 
 """
 
-import itertools
 import copy
 import random
 import sys

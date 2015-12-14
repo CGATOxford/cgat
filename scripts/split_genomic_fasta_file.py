@@ -31,11 +31,9 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
 import string
 import re
-import optparse
 
 import CGAT.Experiment as E
 

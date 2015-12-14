@@ -19,16 +19,11 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-"""
-AGP.py - working with AGP files 
+"""AGP.py - working with AGP files 
 =====================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
-:Tags: Python
-
-to assemble contigs to scaffolds.
+This module contains a parser for reading from :term:`agp` formatted
+files.
 
 Code
 ----
@@ -36,10 +31,7 @@ Code
 """
 
 
-class ObjectPosition:
-
-    def __init__(self):
-        pass
+class ObjectPosition(object):
 
     def map(self, start, end):
         if self.mOrientation:
@@ -48,30 +40,30 @@ class ObjectPosition:
             return end + self.start, start + self.start
 
 
-class ComponentPosition:
+class AGP(object):
+    """Parser for AGP formatted files."""
 
-    def __init__(self):
-        pass
-
-
-class AGP:
-
-    # ------------------------------------------------------------
     def readFromFile(self, infile):
         """read an agp file.
 
-        Example line:
+        Example line::
 
-        scaffold_1      1       1199    1       W       contig_13       1       1199    +
+           scaffold_1      1       1199    1       W       contig_13       1       1199    +
 
-        converts coordinates to zero-based coordinates using open/closed notation.
+        This method converts coordinates to zero-based coordinates
+        using open/closed notation.
+
         In AGP nomenclature
         (http://www.ncbi.nlm.nih.gov/genome/guide/Assembly/AGP_Specification.html)
-        objects (obj) like scaffolds are assembled from components (com) like contigs.
+        objects (obj) like scaffolds are assembled from components
+        (com) like contigs.
 
-        Component types are:
-        W: WGS sequence
-        N: gap of specified length
+        Component types are
+        W
+           WGS sequence
+        N
+           gap of specified length.
+
         """
 
         self.mMapComponent2Object = {}
@@ -106,10 +98,18 @@ class AGP:
             self.mMapComponent2Object[com_id] = object
 
     def mapLocation(self, id, start, end):
-        """map a genomic location."""
+        """map a genomic location.
+
+        Raises
+        ------
+
+        KeyError
+           If `id` is not present.
+
+        """
 
         if id not in self.mMapComponent2Object:
-            raise KeyError, "id %s is not known" % (id)
+            raise KeyError("id %s is not known" % (id))
 
         pos = self.mMapComponent2Object[id]
         return (pos.mId, ) + pos.map(start, end)

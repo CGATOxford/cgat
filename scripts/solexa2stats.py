@@ -1,5 +1,4 @@
-'''
-solexa2stats.py - compute stats from solexa export files
+'''solexa2stats.py - compute stats from solexa export files
 ========================================================
 
 :Author: Andreas Heger
@@ -10,11 +9,16 @@ solexa2stats.py - compute stats from solexa export files
 Purpose
 -------
 
-This script returns the genomic insert size distances between mate-paired reads mapping to the same chromosome.  Hence, these values could in theory be negative if the fragment was so short that sequenced ends overlap.  It assumes it is piped an Illumina .export file::
+This script returns the genomic insert size distances between
+mate-paired reads mapping to the same chromosome.  Hence, these values
+could in theory be negative if the fragment was so short that
+sequenced ends overlap.  It assumes it is piped an Illumina .export
+file::
 
    zcat whatever.export.gz | $RMAAPATH/map/return_insert_sizes > file.for.further.manipulation
 
-The export file is assumed to be organized with mate pairs next to each other as follows:
+The export file is assumed to be organized with mate pairs next to
+each other as follows:
 
 #. Read 1234/1
 #. Read 1234/2
@@ -47,10 +51,7 @@ Command line options
 
 '''
 
-import os
 import sys
-import re
-import optparse
 import collections
 
 import CGAT.Experiment as E

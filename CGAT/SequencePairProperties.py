@@ -20,22 +20,22 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-'''
-SequencePairProperties.py -
-======================================================
+"""SequencePairProperties.py - Computing metrics for aligned sequences
+======================================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
-:Tags: Python
+This module provides methods for extracting and reporting sequence
+properties of aligned nucleotide sequences such as percent identity,
+substitution rate, etc. Usage is the same as
+:mod:`SequencePairProperties`.
 
-Code
-----
 
-'''
+Reference
+---------
+
+"""
 import numpy
-from CGAT import WrapperCodeML as WrapperCodeML
 from CGAT import Mali as Mali
+from CGAT import WrapperCodeML as WrapperCodeML
 
 
 class SequencePairProperties:
@@ -275,8 +275,12 @@ class SequencePairPropertiesCountsCodons(SequencePairPropertiesCountsNa):
 
 
 class SequencePairPropertiesPID(SequencePairPropertiesDistance):
+    """Percent identity.
 
-    """the first characters are ACGT."""
+    The percent identity is the ratio of the number of identical
+    residues divided by the number of aligned residues.
+
+    """
     mGapChars = ("-", "."),
 
     def __init__(self, *args, **kwargs):
@@ -285,7 +289,7 @@ class SequencePairPropertiesPID(SequencePairPropertiesDistance):
 
     def loadPair(self, seq1, seq2):
 
-        nidentical, naligned, nunaligned = 0, 0, 0
+        nidentical, naligned = 0, 0
         for c1, c2 in zip(seq1.upper(), seq2.upper()):
             if c1 in self.mGapChars or c2 in self.mGapChars:
                 continue

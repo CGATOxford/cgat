@@ -24,31 +24,29 @@
 VCF.py - Tools for working with VCF files
 =========================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
-:Tags: Python
+The parser for VCF files is very simplistic.
+
+.. note::
+   Another way to access the information in :term:`vcf` formatted
+   files is through pysam_.
 
 The Variant Call Format (:term:`vcf`) is described
-here:
+at http://www.1000genomes.org/wiki/doku.php?id=1000_genomes:analysis:vcf4.0
 
-http://www.1000genomes.org/wiki/doku.php?id=1000_genomes:analysis:vcf4.0
-
-
-Code
-----
+Reference
+---------
 
 '''
 import sys
-import gzip
 
 
 class VCFEntry:
-
+    """A VCF Entry"""
     def __init__(self, data, samples):
 
         assert len(data) == len(samples) + 9
-        self.contig, self.pos, self.id, self.ref, self.alt, self.qual, self.filter, self.info, self.format = \
+        self.contig, self.pos, self.id, self.ref, self.alt, self.qual, \
+            self.filter, self.info, self.format = \
             data[:9]
 
         self.genotypes = dict(zip(samples, data[9:]))
@@ -62,7 +60,7 @@ class VCFEntry:
 
 
 class VCFFile:
-
+    """A VCF File"""
     def __init__(self, infile):
 
         self.infile = infile

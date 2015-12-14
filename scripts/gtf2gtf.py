@@ -1,4 +1,3 @@
-
 '''gtf2gtf.py - manipulate transcript models
 ============================================
 
@@ -30,25 +29,26 @@ Sorting gene sets
 +++++++++++++++++
 
 ``sort``
+
    Sorts entries in gtf file by one or more fields
 
-      +-----------------+---------------------------------------+
-      | option          | order in which fields are sorted      |
-      +-----------------|---------------------------------------+
-      | gene            | gene_id, contig, start                |
-      +-----------------+---------------------------------------+
-      | gene+transcript | gene_id, transcript_id, contig, start |
-      +-----------------+---------------------------------------+
-      | contig+gene     | contig, gene_id, transcript_id, start |
-      +-----------------+---------------------------------------+
-      | transcript      | transcript_id, contig, start          |
-      +-----------------+---------------------------------------+
-      | position        | contig, start                         |
-      +-----------------+---------------------------------------+
-      | position+gene   | contig( gene_id, start )              |
-      +-----------------+---------------------------------------+
-      | gene+position   | gene_id, contig, start                |
-      +-----------------+---------------------------------------+
+   +-----------------+---------------------------------------+
+   | option          | order in which fields are sorted      |
+   +-----------------|---------------------------------------+
+   | gene            | gene_id, contig, start                |
+   +-----------------+---------------------------------------+
+   | gene+transcript | gene_id, transcript_id, contig, start |
+   +-----------------+---------------------------------------+
+   | contig+gene     | contig, gene_id, transcript_id, start |
+   +-----------------+---------------------------------------+
+   | transcript      | transcript_id, contig, start          |
+   +-----------------+---------------------------------------+
+   | position        | contig, start                         |
+   +-----------------+---------------------------------------+
+   | position+gene   | contig( gene_id, start )              |
+   +-----------------+---------------------------------------+
+   | gene+position   | gene_id, contig, start                |
+   +-----------------+---------------------------------------+
 
    N.B. position+gene sorts by gene_id, start, then subsequently sorts
    flattened gene lists by contig, start
@@ -85,12 +85,12 @@ appear consecutively within the file. This can be achevied using
     overlapping, or even identical feature can be output if they belong to
     different transcripts.
 
-``merge-exons``
-    Merges overlapping exons for all transcripts of a gene, outputting the
-    merged exons. Can be used in conjunction with ``merge-exons-distance``
-    to set the minimum distance that may appear between two exons before
-    they are merged.If ``--with-utr`` is set, the output interval will also
-    contain UTR. Input needs to sorted by gene.
+``merge-exons`` 
+    Merges overlapping exons for all transcripts of a gene, outputting
+    the merged exons. Can be used in conjunction with
+    ``merge-exons-distance`` to set the minimum distance that may
+    appear between two exons before they are merged.If
+    ``--mark-utr`` is set, the UTR regions will be output separately.
 
 ``merge-transcripts``
     Merges all transcripts of a gene. Outputs contains a single interval that
@@ -116,11 +116,9 @@ appear consecutively within the file. This can be achevied using
     intersect. This method only uses ``exon`` or ``CDS`` features.
 
 ``merge-introns``
-    Merges the region spanned by introns for all transcripts of a
-    gene.  Outputs a single interval that spans the region between the
-    start and end of the first and last intron, respectively. Single
-    exons genes will not be output. The input needs to be sorted by
-    gene
+    Outputs a single interval that spans the region between the start
+    of the first intron and the end of last intron. Single exons genes
+    will not be output. The input needs to be sorted by gene
 
 ``exons2introns``
     Merges overlapping introns for all transcripts of a gene,
@@ -251,7 +249,7 @@ The following example sorts the input gene set by gene
 ``method=intersect-transcripts`` that outputs genomic the genomic
 regions within a gene that is covered by all transcripts in a gene.
 Finally, the resultant transcripts are renamed with the pattern
-"MERGED_%i".
+"MERGED_%i"::
 
     cgat gtf2gtf
             --method=sort
@@ -353,7 +351,7 @@ def gene_to_blocks(gene):
     for i in range(len(exons)-1):
         entry.start = exons[i]
         entry.end = exons[i+1]
-        entry.attributes["exon_number"] = i + 1
+        entry.attributes["exon_id"] = str(i + 1)
         yield entry
 
 
@@ -388,11 +386,20 @@ def main(argv=None):
                                "gene+position"),
                       help="sort input data [%default].")
 
-    parser.add_option("-u", "--with-utr",
-                      dest="with_utr",
+    parser.add_option("--mark-utr",
+                      dest="mark_utr",
                       action="store_true",
-                      help="include utr in merged transcripts "
+                      help="mark utr for method --merge-exons. "
                       "[%default].")
+
+    parser.add_option(
+        "--without-utr",
+        dest="with_utr",
+        action="store_false",
+        help="exclude UTR in methods --merge-exons, merge-transcripts "
+        "and intersect-transripts. Setting this option will remove "
+        "non-coding transcripts. "
+        "[%default].")
 
     parser.add_option(
         "--filter-method", dest="filter_method",
@@ -525,7 +532,8 @@ def main(argv=None):
         sample_size=0,
         min_exons_length=0,
         ignore_strand=False,
-        with_utr=False,
+        mark_utr=False,
+        with_utr=True,
         invert_filter=False,
         duplicate_feature=None,
         strict=True,
@@ -996,7 +1004,7 @@ def main(argv=None):
 
             if options.filename_filter:
 
-                ids, nerrors = IOTools.ReadList(
+                ids = IOTools.readList(
                     IOTools.openFile(options.filename_filter, "r"))
                 E.info("read %i ids" % len(ids))
 
@@ -1226,6 +1234,8 @@ def main(argv=None):
                 if options.duplicate_feature in ["both", "gene"]:
                     if gtf.gene_id in dup_gene:
                         gene_dict[gtf.gene_id] = gene_dict[gtf.gene_id] + 1
+                        # TS. patch until pysam.ctabixproxies.pyx bugfixed
+                        gtf.attributes = gtf.attributes.strip()
                         gtf.setAttribute('gene_id',
                                          gtf.gene_id + "." +
                                          str(gene_dict[gtf.gene_id]))
@@ -1234,18 +1244,21 @@ def main(argv=None):
                     if gtf.transcript_id in dup_transcript:
                         transcript_dict[gtf.transcript_id] = \
                             transcript_dict[gtf.transcript_id] + 1
-                        gtf.setAttribute('transcript_id',
-                                         gtf.transcript_id + "." +
-                                         str(transcript_dict[gtf.transcript_id]))
+                        # TS. patch until pysam.ctabixproxies.pyx bugfixed
+                        gtf.attributes = gtf.attributes.strip()
+                        gtf.setAttribute(
+                            'transcript_id',
+                            gtf.transcript_id + "." +
+                            str(transcript_dict[gtf.transcript_id]))
 
             options.stdout.write("%s\n" % gtf)
 
-    elif options.method in ("merge-exons", "merge-introns",
+    elif options.method in ("merge-exons",
+                            "merge-introns",
                             "merge-transcripts"):
         for gffs in GTF.flat_gene_iterator(
                 GTF.iterator(options.stdin),
                 strict=options.strict):
-
             ninput += 1
 
             cds_ranges = GTF.asRanges(gffs, "CDS")
@@ -1265,8 +1278,9 @@ def main(argv=None):
                         gffs[0].gene_id, str(contigs)))
 
             strand = Genomics.convertStrand(gffs[0].strand)
+            utr_ranges = []
 
-            if cds_ranges and options.with_utr:
+            if cds_ranges and options.mark_utr:
                 cds_start, cds_end = cds_ranges[0][0], cds_ranges[-1][1]
                 midpoint = (cds_end - cds_start) / 2 + cds_start
 
@@ -1286,14 +1300,6 @@ def main(argv=None):
                             else:
                                 feature = "UTR5"
                         utr_ranges.append((feature, start, end))
-                output_feature = "CDS"
-                output_ranges = cds_ranges
-            else:
-                output_feature = "exon"
-                output_ranges = exon_ranges
-                utr_ranges = []
-
-            result = []
 
             try:
                 biotypes = [x["gene_biotype"] for x in gffs]
@@ -1301,16 +1307,9 @@ def main(argv=None):
             except (KeyError, AttributeError):
                 biotype = None
 
-            if options.method == "merge-exons":
-                # need to combine per feature - skip
-                # utr_ranges = Intervals.combineAtDistance(
-                # utr_ranges,
-                # options.merge_exons_distance)
-
-                output_ranges = Intervals.combineAtDistance(
-                    output_ranges, options.merge_exons_distance)
-
-                for feature, start, end in utr_ranges:
+            def output_ranges(ranges, gffs, biotype=None):
+                result = []
+                for feature, start, end in ranges:
                     entry = GTF.Entry()
                     entry.copy(gffs[0])
                     entry.clearAttributes()
@@ -1318,50 +1317,53 @@ def main(argv=None):
                     entry.transcript_id = "merged"
                     if biotype:
                         entry.addAttribute("gene_biotype", biotype)
-                    entry.start = start
+                        entry.start = start
                     entry.end = end
                     result.append(entry)
+                return result
 
-                for start, end in output_ranges:
+            result = []
 
-                    entry = GTF.Entry()
-                    entry.copy(gffs[0])
-                    entry.clearAttributes()
-                    entry.transcript_id = "merged"
-                    if biotype:
-                        entry.addAttribute("gene_biotype", biotype)
-                    entry.feature = output_feature
-                    entry.start = start
-                    entry.end = end
-                    result.append(entry)
+            if options.method == "merge-exons":
+
+                if options.with_utr:
+                    if options.mark_utr:
+                        result.extend(output_ranges(utr_ranges, gffs, biotype))
+                        r = [("CDS", x, y) for x, y in
+                             Intervals.combineAtDistance(
+                                 cds_ranges, options.merge_exons_distance)]
+                    else:
+                        r = [("exon", x, y) for x, y in
+                             Intervals.combineAtDistance(
+                                 exon_ranges, options.merge_exons_distance)]
+                else:
+                    r = [("CDS", x, y) for x, y in
+                         Intervals.combineAtDistance(
+                             cds_ranges, options.merge_exons_distance)]
 
             elif options.method == "merge-transcripts":
 
-                entry = GTF.Entry()
-                entry.copy(gffs[0])
-                entry.clearAttributes()
-                entry.transcript_id = entry.gene_id
-                if biotype:
-                    entry.addAttribute("gene_biotype", biotype)
-                entry.start = output_ranges[0][0]
-                entry.end = output_ranges[-1][1]
-                result.append(entry)
-
-            elif options.method == "merge-introns":
-
-                if len(output_ranges) >= 2:
-                    entry = GTF.Entry()
-                    entry.copy(gffs[0])
-                    entry.clearAttributes()
-                    entry.transcript_id = entry.gene_id
-                    if biotype:
-                        entry.addAttribute("gene_biotype", biotype)
-                    entry.start = output_ranges[0][1]
-                    entry.end = output_ranges[-1][0]
-                    result.append(entry)
+                if options.with_utr:
+                    r = [("exon", exon_ranges[0][0],
+                          exon_ranges[-1][1])]
+                elif cds_ranges:
+                    r = [("exon", cds_ranges[0][0],
+                          cds_ranges[-1][1])]
                 else:
                     ndiscarded += 1
                     continue
+
+            elif options.method == "merge-introns":
+
+                if len(exon_ranges) >= 2:
+                    r = [("exon",
+                          exon_ranges[0][1],
+                          exon_ranges[-1][0])]
+                else:
+                    ndiscarded += 1
+                    continue
+
+            result.extend(output_ranges(r, gffs, biotype))
 
             result.sort(key=lambda x: x.start)
 

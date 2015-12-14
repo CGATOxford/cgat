@@ -1,5 +1,5 @@
 
 .. automodule:: calculate_histogram_2D
 
-.. program-output:: python ../scripts/calculate_histogram_2D.py --no-usage --help
+.. program-output:: python ../scripts/calculate_histogram_2D.py --help
 

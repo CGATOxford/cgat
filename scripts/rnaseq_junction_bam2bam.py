@@ -1,5 +1,4 @@
-'''
-rnaseq_junction_bams2bam.py - convert mappings against junctions to genomic coordinates
+'''rnaseq_junction_bams2bam.py - convert mappings against junctions to genomic coordinates
 ========================================================================================
 
 :Author: Andreas Heger
@@ -14,7 +13,7 @@ This script takes as input a BAM file resulting from reads mapped against
 a junction database and outputs a :term:`bam` formatted file in genomic
 coordinates.
 
-The contigs should be of the format 
+The contigs should be of the format
 <chromosome>|<start>|<exon-end>-<exon-start>|<end>|<splice>|<strand>.
 
 <start> - 0-based coordinate of first base
@@ -28,9 +27,9 @@ and coordinates are all on the forward strand.
 For example ``chr1|1244933|1244982-1245060|1245110|GTAG|fwd`` translates to the
 intron ``chr1:1244983-1245060`` in python coordinates.
 
-The input bam-file is supposed to be sorted by read. Only the best matches
-are output for each read, were best is defined both in terms of number 
-of mismatches and number of colour mismatches.
+The input bam-file is supposed to be sorted by read. Only the best
+matches are output for each read, were best is defined both in terms
+of number of mismatches and number of colour mismatches.
 
 Usage
 -----
@@ -50,15 +49,10 @@ Command line options
 
 '''
 
-import os
 import sys
-import re
-import optparse
-import time
 import itertools
 
 import CGAT.Experiment as E
-import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
 import pysam
 
