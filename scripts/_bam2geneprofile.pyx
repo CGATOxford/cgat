@@ -621,7 +621,7 @@ class IntervalsCounter:
                 cc = c
 
             try:
-                agg += cc
+                agg += cc.astype(agg.dtype)
             except ValueError:
                 self.nskipped += 1
 

@@ -47,6 +47,7 @@ import numpy.ma as ma
 import copy
 import random
 import sys
+import sklearn.preprocessing as preprocessing
 
 # activate pandas/rpy conversion
 pandas2ri.activate()
@@ -86,7 +87,7 @@ class Counts(object):
         assert self.table.shape, "counts table is empty"
 
     def clone(self):
-        return copy.copy(self)
+        return copy.deepcopy(self)
 
     def restrict(self, design):
         ''' remove samples not in design '''
@@ -256,12 +257,14 @@ class Counts(object):
             tmp_counts.table = np.log(tmp_counts.table + pseudocount)
             return tmp_counts
 
-    def transform(self, method="vst", inplace=True):
+    def transform(self, method="vst", design=None, inplace=True, blind=True):
         '''
         perform transformation on counts table
         current methods are:
          - deseq2 variance stabalising transformation
-         - deseq rlog transformation
+        - deseq rlog transformation
+
+        Need to supply a design table if not using "blind"
         '''
 
         assert method in ["vst", "rlog"], ("method must be one of"
@@ -272,25 +275,51 @@ class Counts(object):
 
         t_function = method2function[method]
 
-        transform = R('''
-        function(df){
-
-        suppressMessages(library('DESeq2'))
-
-        design = data.frame(row.names = colnames(df),
-                            condition = seq(1, length(colnames(df))))
-
-        dds <- suppressMessages(DESeqDataSetFromMatrix(
-                 countData= df, colData = design, design = ~condition))
-
-        transformed <- suppressMessages(%(t_function)s(dds))
-        transformed_df <- as.data.frame(assay(transformed))
-
-        return(transformed_df)
-        }''' % locals())
-
         r_counts = pandas2ri.py2ri(self.table)
-        df = pandas2ri.ri2py(transform(r_counts))
+
+        if not blind:
+            assert design, ("if not using blind must supply a design table "
+                            "(a CGAT.Expression.ExperimentalDesign object")
+
+            # currently this only accepts "~group" design
+            transform = R('''
+            function(df, design){
+
+            suppressMessages(library('DESeq2'))
+
+            dds <- suppressMessages(DESeqDataSetFromMatrix(
+                     countData= df, colData = design, design = ~group))
+
+            transformed <- suppressMessages(%(t_function)s(dds, blind=FALSE))
+            transformed_df <- as.data.frame(assay(transformed))
+
+            return(transformed_df)
+            }''' % locals())
+
+            r_design = pandas2ri.py2ri(design.table)
+            df = pandas2ri.ri2py(transform(r_counts, r_design))
+
+        else:
+
+            transform = R('''
+            function(df){
+
+            suppressMessages(library('DESeq2'))
+
+            design = data.frame(row.names = colnames(df),
+                                group = seq(1, length(colnames(df))))
+
+            dds <- suppressMessages(DESeqDataSetFromMatrix(
+                     countData= df, colData = design, design = ~group))
+
+            transformed <- suppressMessages(%(t_function)s(dds, blind=TRUE))
+            transformed_df <- as.data.frame(assay(transformed))
+
+            return(transformed_df)
+            }''' % locals())
+
+            df = pandas2ri.ri2py(transform(r_counts))
+
         # losing rownames for some reason during the conversion?!
         df.index = self.table.index
 
@@ -374,6 +403,24 @@ class Counts(object):
 
         plotTransformations(mean_sd_log_df, mean_sd_rlog_df, mean_sd_vst_df)
 
+    def zNormalise(self, inplace=True):
+        ''' normalise each row to zero mean and unit variance
+        (z-score) '''
+
+        samples = self.table.columns
+        genes = self.table.index
+
+        z_df = pd.DataFrame(preprocessing.scale(
+            self.table, axis=1, with_mean=True, with_std=True, copy=False))
+
+        z_df.index = genes
+        z_df.columns = samples
+
+        if inplace:
+            self.table = z_df
+        else:
+            return Counts(z_df)
+
     def plotDendogram(self, plot_filename=None,
                       distance_method="euclidean",
                       clustering_method="ward.D2"):
@@ -446,9 +493,9 @@ class Counts(object):
 
           PCs_df = merge(PCs_df, design)
 
-          PCs_df$id_1 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 1)
-          PCs_df$id_2 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 2)
-          PCs_df$id_3 = sapply(strsplit(rownames(PCs_df), "\\\."), "[", 3)
+          PCs_df$id_1 = sapply(strsplit(PCs_df$sample, "\\\."), "[", 1)
+          PCs_df$id_2 = sapply(strsplit(PCs_df$sample, "\\\."), "[", 2)
+          PCs_df$id_3 = sapply(strsplit(PCs_df$sample, "\\\."), "[", 3)
 
           p_pca = ggplot(PCs_df, aes(x=%(x_axis)s, y=%(y_axis)s)) +
           geom_point(aes(shape=as.factor(%(shape)s),
@@ -570,7 +617,7 @@ class Counts(object):
         * width_c_bins = width of bins for change values
         * max_c_bins = maximum bin for change values
         * tracks_map = dictionary mapping groups to tracks
-        * difference = "relative" or "logfold"
+        * difference = "relative", "logfold" or "abs_logfold"
         * s_max = maximum number of spikes per bin
         * i = number of iterations. More iterations = more filled bins
         '''
@@ -637,7 +684,8 @@ class Counts(object):
                      output_method, spike_type,
                      min_cbin, width_cbin, max_cbin,
                      min_ibin, width_ibin, max_ibin,
-                     min_sbin=1, width_sbin=1, max_sbin=1):
+                     min_sbin=1, width_sbin=1, max_sbin=1,
+                     append=False):
         ''' method to output spike-ins generated by shuffling rows
         (counts.shuffleRows) or clusters of rows (counts.shuffleCluster)
 
@@ -657,7 +705,7 @@ class Counts(object):
         * output_method = "append" or "seperate"
         '''
 
-        def makeHeader(groups, keep_columns=None):
+        def makeHeader(tracks_map, groups, keep_columns=None):
             if keep_columns:
                 header = keep_columns
             else:
@@ -669,20 +717,22 @@ class Counts(object):
 
         if spike_type == "row":
             index = True
-            keep_columns = ["spike"]
+            # keep_columns = ["spike"]
+            keep_columns = None
 
         elif spike_type == "cluster":
             index = False
             keep_columns = ["contig", "position"]
 
-        header = makeHeader(groups, keep_columns=keep_columns)
+        header = makeHeader(tracks_map, groups, keep_columns=keep_columns)
 
         if output_method == "append":
             self.table = self.table.ix[:, header]
             self.table.to_csv(sys.stdout, index=index, header=True, sep="\t",
                               dtype={'position': int})
         else:
-            sys.stdout.write("%s\n" % "\t".join(map(str, header)))
+            sys.stdout.write("%s\t%s\n" % (
+                "spike", "\t".join(map(str, header))))
 
         def getInitialChangeSize(key, width_ibin, min_ibin, width_cbin,
                                  min_cbin, width_s_bin, min_s_bin):
@@ -703,7 +753,9 @@ class Counts(object):
             return initial, change
 
         n = 0
+
         if spike_type == "row":
+
             for key in indices:
                 for pair in indices[key]:
                     initial, change = getInitialChange(
@@ -726,6 +778,7 @@ class Counts(object):
                     cluster_id = "_".join(
                         map(str, ("spike-in", initial, change,
                                   size, c1rs-c1s, n)))
+
                     temp_cluster_df = self.table.ix[c1s:c1e, keep_cols]
                     temp_cluster_df['contig'] = cluster_id
                     temp_cluster_swap = self.table.ix[
@@ -738,6 +791,7 @@ class Counts(object):
                                            header=False, sep="\t",
                                            dtype={'position': int})
                     n += 1
+
 
 ########################################################################
 # these functions for spike-in should be re-written to work with the ###
@@ -754,10 +808,17 @@ def means2idxarrays(g1, g2, i_bins, c_bins, difference):
         # g1 and g2 always the same length
         change = [g2[x] - g1[x] for x in range(0, len(g1))]
         initial = g1
+
     elif difference == "logfold":
         change = [np.log2((g2[x]+1.0) / (g1[x]+1.0))
                   for x in range(0, len(g1))]
         initial = [np.log2(g1[x]+1.0) for x in range(0, len(g1))]
+
+    elif difference == "abs_logfold":
+        change = [abs(np.log2((g2[x]+1.0) / (g1[x]+1.0)))
+                  for x in range(0, len(g1))]
+        initial = [max(np.log2(g1[x]+1.0), np.log2(g2[x]+1.0))
+                   for x in range(0, len(g1))]
 
     # return arrays of len(change) with the index position in c_bins
     # corresponding to the bin in which the value of change falls

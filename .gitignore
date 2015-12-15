@@ -17,7 +17,7 @@ _*.pyxbldc
 CGAT/Components/Components.cpp
 CGAT/NCL/cnestedlist.c
 CGAT/Nubiscan/cnubiscan.c
-
+CGAT/Timeseries/cmetrics.c
 
 # Packages
 *.egg

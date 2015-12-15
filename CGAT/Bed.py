@@ -109,6 +109,8 @@ class Bed(object):
                      'blockSizes': 7,
                      'blockStarts': 8}
 
+    default_value = "."
+
     def __init__(self):
         self.contig = None
         self.start = 0
@@ -120,8 +122,15 @@ class Bed(object):
         return "\t".join((self.contig, str(self.start),
                           str(self.end)) + tuple(map(str, self.fields)))
 
-    def fromGTF(self, gff, name=None):
-        """fill fields from gtf formatted entry.
+    def copy(self):
+        '''Returns a new bed object that is a copy of this one'''
+
+        new_entry = Bed()
+        new_entry.__dict__ = self.__dict__.copy()
+        return new_entry
+
+    def fromGTF(self, gff, is_gtf=False, name=None):
+        """fill fields from gtf formatted entry
 
         Arguments
         ---------
@@ -133,6 +142,7 @@ class Bed(object):
            by this attribute of the `gff` object such as ``gene_id`` or
            ``transcript_id``.
         """
+
         self.contig, self.start, self.end = gff.contig, gff.start, gff.end
         try:
             self.fields = [getattr(gff, name),
@@ -217,8 +227,20 @@ class Bed(object):
         return self.fields[self.map_key2field[key]]
 
     def __setitem__(self, key, value):
-        self.fields[self.map_key2field[key]] = value
+        try:
+            position = self.map_key2field[key]
+        except IndexError:
+            raise IndexError("Unknown key: %s" % s)
 
+        try:
+            self.fields[position] = value
+        except IndexError:
+
+            self.fields.extend([self.default_value]
+                               * (position - len(self.fields) + 1))
+
+            self.fields[position] = value
+            
     def __getattr__(self, key):
         try:
             return self.fields[self.map_key2field[key]]
