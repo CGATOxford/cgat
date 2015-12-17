@@ -1905,3 +1905,63 @@ def printPrettyAlignment(seq1, *args):
     print "".join(seqrow)
     for x in range(2 * nother):
         print "".join(otherrows[x])
+
+
+def ReadPeptideSequences(infile, filter=None, as_array=False,
+                         regex_identifier=None):
+    """read peptide sequence from fasta infile.
+    """
+
+    sequences = ParseFasta2Hash(
+        infile, filter, regex_identifier=regex_identifier)
+
+    if not as_array:
+        for k in sequences.keys():
+            sequences[k] = sequences[k][:]
+    return sequences
+
+def ParseFasta2Hash(infile, filter=None, regex_identifier=None):
+    """read fasta formatted sequences file and build a hash.
+
+    Keys are all characters before the first whitespace in the
+    description line.
+
+    Previously, if the key contained a ":", everything before the ":"
+    was removed.  This is not true any more.
+
+    Use array for higher space efficiency.
+
+    If regex_identifier is given, this is used to extract the identifier
+    from the fasta description line.
+
+    """
+    parsed = {}
+    key = None
+    p = AString.AString()
+    if regex_identifier:
+        rx = regex_identifier
+    else:
+        rx = re.compile("^(\S+)")
+
+    for line in infile:
+        if line[0] == "#":
+            continue
+        if not line:
+            continue
+
+        if line[0] == ">":
+            if key:
+                if not filter or key in filter:
+                    parsed[key] = p
+
+            key = rx.search(line[1:-1]).groups()[0]
+            p = AString.AString()
+            continue
+
+        p.extend(AString.AString(re.sub("\s", "", line[:-1])))
+
+    if not filter or key in filter:
+        if key:
+            parsed[key] = p
+
+    return parsed
