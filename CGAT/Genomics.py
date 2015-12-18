@@ -1301,18 +1301,23 @@ def Exons2Alignment(exons):
                     phase = 0
                     this_from += missing
 
-                # raise ValueError ("expecting a split codon, but small exon %i-%i can not accomodate phase %i in exons %s " % (this_from, this_to, phase, str(exons)))
+                # raise ValueError ("expecting a split codon,
+                # but small exon %i-%i can not accomodate phase
+                # %i in exons %s " % (this_from, this_to, phase, str(exons)))
 
         l = this_to - this_from
 
         if l < 0:
-            # note: sometimes the last exon just contains a split codon and the stop codon.
+            # note: sometimes the last exon just contains
+            # a split codon and the stop codon.
             # Thus: do not raise an error if it is the last exon
             if nexon == len(exons):
                 break
             else:
                 pass
-                # raise ValueError ("error: negative length for aligned residues at exon %i-%i in exons %s" % (this_from, this_to, str(exons)))
+                # raise ValueError ("error: negative length
+                # for aligned residues at exon %i-%i in exons
+                # %s" % (this_from, this_to, str(exons)))
 
         phase = l % 3
 
@@ -1410,7 +1415,8 @@ def GetDegenerateSites(seq1, seq2,
 
             if GeneticCodeAA[c1] == GeneticCodeAA[c2]:
 
-                if Degeneracy[c1][position] == degeneracy and Degeneracy[c2][position] == degeneracy:
+                if Degeneracy[c1][position] == degeneracy \
+                   and Degeneracy[c2][position] == degeneracy:
                     new_seq1.append(c1[position - 1])
                     new_seq2.append(c2[position - 1])
 
@@ -1919,6 +1925,7 @@ def ReadPeptideSequences(infile, filter=None, as_array=False,
         for k in sequences.keys():
             sequences[k] = sequences[k][:]
     return sequences
+
 
 def ParseFasta2Hash(infile, filter=None, regex_identifier=None):
     """read fasta formatted sequences file and build a hash.
