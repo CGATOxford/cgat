@@ -66,7 +66,7 @@ appear consecutively within the file. This can be achevied using
 
 
 ``genes-to-unique-chunks```
-    Divide the complete length of a gene up into chunks that represent 
+    Divide the complete length of a gene up into chunks that represent
     ranges of bases that are all present in the same set of transcripts.
     E.g. for two overlapping exons an entry will be output representing
     the overlap and a seperate entry each for the sequences only present
@@ -85,7 +85,7 @@ appear consecutively within the file. This can be achevied using
     overlapping, or even identical feature can be output if they belong to
     different transcripts.
 
-``merge-exons`` 
+``merge-exons``
     Merges overlapping exons for all transcripts of a gene, outputting
     the merged exons. Can be used in conjunction with
     ``merge-exons-distance`` to set the minimum distance that may
@@ -570,7 +570,7 @@ def main(argv=None):
 
             ninput += 1
 
-            if "gene_biotype" not in gff:
+            if "gene_biotype" not in gff.attributes:
                 gff.setAttribute("gene_biotype", gff.source)
 
             options.stdout.write("%s\n" % str(gff))
