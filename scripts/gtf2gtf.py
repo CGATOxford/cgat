@@ -489,6 +489,10 @@ def main(argv=None):
         "that are next to each other in the sort order "
         "[%default]")
 
+    parser.add_option("--use-gene-id", dest="use_geneid", action="store_true",
+                      help="when merging transcripts, exons or introns, use "
+                      "the parent gene_id as the transcript id.")
+
     parser.add_option("-m", "--method", dest="method", type="choice",
                       action="append",
                       choices=(
@@ -538,6 +542,7 @@ def main(argv=None):
         duplicate_feature=None,
         strict=True,
         method=None,
+        use_geneid=False,
     )
 
     (options, args) = E.Start(parser, argv=argv)
@@ -1307,14 +1312,18 @@ def main(argv=None):
             except (KeyError, AttributeError):
                 biotype = None
 
-            def output_ranges(ranges, gffs, biotype=None):
+            def output_ranges(ranges, gffs, biotype=None,
+                              use_geneid=False):
                 result = []
                 for feature, start, end in ranges:
                     entry = GTF.Entry()
                     entry.copy(gffs[0])
                     entry.clearAttributes()
                     entry.feature = feature
-                    entry.transcript_id = "merged"
+                    if use_geneid:
+                        entry.transcript_id = entry.gene_id
+                    else:
+                        entry.transcript_id = "merged"
                     if biotype:
                         entry.addAttribute("gene_biotype", biotype)
                         entry.start = start
@@ -1328,7 +1337,8 @@ def main(argv=None):
 
                 if options.with_utr:
                     if options.mark_utr:
-                        result.extend(output_ranges(utr_ranges, gffs, biotype))
+                        result.extend(output_ranges(utr_ranges, gffs, biotype,
+                                                    options.use_geneid))
                         r = [("CDS", x, y) for x, y in
                              Intervals.combineAtDistance(
                                  cds_ranges, options.merge_exons_distance)]
@@ -1363,7 +1373,7 @@ def main(argv=None):
                     ndiscarded += 1
                     continue
 
-            result.extend(output_ranges(r, gffs, biotype))
+            result.extend(output_ranges(r, gffs, biotype, options.use_geneid))
 
             result.sort(key=lambda x: x.start)
 
