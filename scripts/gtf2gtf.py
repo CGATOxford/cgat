@@ -240,6 +240,10 @@ Options for altering fields within :term:`gtf`.
     Rename duplicate gene_ids and transcript_ids by addition of
     numerical suffix
 
+``set-source-to-transcript_biotype``
+    Sets the source attribute to the ``transcript_biotype``
+    attribute. Will only set if ``transcript_biotype`` attribute is
+    present in the current record.
 
 Usage
 -----
@@ -515,6 +519,7 @@ def main(argv=None):
                           "set-protein-to-transcript",
                           "set-score-to-distance",
                           "set-gene_biotype-to-source",
+                          "set-source-to-transcript_biotype",
                           "sort",
                           "transcript2genes",
                           "unset-genes"),
@@ -572,6 +577,22 @@ def main(argv=None):
 
             if "gene_biotype" not in gff:
                 gff.setAttribute("gene_biotype", gff.source)
+
+            options.stdout.write("%s\n" % str(gff))
+
+            noutput += 1
+            nfeatures += 1
+
+    elif options.method == "set-source-to-transcript_biotype":
+
+        for gff in GTF.iterator(options.stdin):
+
+            ninput += 1
+
+            try:
+                gff.source = gff.transcript_biotype
+            except AttributeError:
+                pass
 
             options.stdout.write("%s\n" % str(gff))
 
