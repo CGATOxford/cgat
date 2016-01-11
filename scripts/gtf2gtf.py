@@ -66,7 +66,7 @@ appear consecutively within the file. This can be achevied using
 
 
 ``genes-to-unique-chunks```
-    Divide the complete length of a gene up into chunks that represent 
+    Divide the complete length of a gene up into chunks that represent
     ranges of bases that are all present in the same set of transcripts.
     E.g. for two overlapping exons an entry will be output representing
     the overlap and a seperate entry each for the sequences only present
@@ -85,7 +85,7 @@ appear consecutively within the file. This can be achevied using
     overlapping, or even identical feature can be output if they belong to
     different transcripts.
 
-``merge-exons`` 
+``merge-exons``
     Merges overlapping exons for all transcripts of a gene, outputting
     the merged exons. Can be used in conjunction with
     ``merge-exons-distance`` to set the minimum distance that may
@@ -493,6 +493,10 @@ def main(argv=None):
         "that are next to each other in the sort order "
         "[%default]")
 
+    parser.add_option("--use-gene-id", dest="use_geneid", action="store_true",
+                      help="when merging transcripts, exons or introns, use "
+                      "the parent gene_id as the transcript id.")
+
     parser.add_option("-m", "--method", dest="method", type="choice",
                       action="append",
                       choices=(
@@ -543,6 +547,7 @@ def main(argv=None):
         duplicate_feature=None,
         strict=True,
         method=None,
+        use_geneid=False,
     )
 
     (options, args) = E.Start(parser, argv=argv)
@@ -575,7 +580,7 @@ def main(argv=None):
 
             ninput += 1
 
-            if "gene_biotype" not in gff:
+            if "gene_biotype" not in gff.attributes:
                 gff.setAttribute("gene_biotype", gff.source)
 
             options.stdout.write("%s\n" % str(gff))
@@ -1328,14 +1333,18 @@ def main(argv=None):
             except (KeyError, AttributeError):
                 biotype = None
 
-            def output_ranges(ranges, gffs, biotype=None):
+            def output_ranges(ranges, gffs, biotype=None,
+                              use_geneid=False):
                 result = []
                 for feature, start, end in ranges:
                     entry = GTF.Entry()
                     entry.copy(gffs[0])
                     entry.clearAttributes()
                     entry.feature = feature
-                    entry.transcript_id = "merged"
+                    if use_geneid:
+                        entry.transcript_id = entry.gene_id
+                    else:
+                        entry.transcript_id = "merged"
                     if biotype:
                         entry.addAttribute("gene_biotype", biotype)
                         entry.start = start
@@ -1349,7 +1358,8 @@ def main(argv=None):
 
                 if options.with_utr:
                     if options.mark_utr:
-                        result.extend(output_ranges(utr_ranges, gffs, biotype))
+                        result.extend(output_ranges(utr_ranges, gffs, biotype,
+                                                    options.use_geneid))
                         r = [("CDS", x, y) for x, y in
                              Intervals.combineAtDistance(
                                  cds_ranges, options.merge_exons_distance)]
@@ -1384,7 +1394,7 @@ def main(argv=None):
                     ndiscarded += 1
                     continue
 
-            result.extend(output_ranges(r, gffs, biotype))
+            result.extend(output_ranges(r, gffs, biotype, options.use_geneid))
 
             result.sort(key=lambda x: x.start)
 
