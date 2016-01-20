@@ -91,7 +91,7 @@ import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import FloatVector
-import os 
+import os
 
 try:
     import CGAT.Experiment as E
@@ -1155,7 +1155,7 @@ class DEExperiment_DESeq2(DEExperiment):
 
             return(dds)
             }''' % locals())
- 
+
             r_dds = buildCountDataSet(r_counts, r_design, r_model)
             results = pandas.DataFrame()
 
@@ -1211,7 +1211,7 @@ class DEExperiment_DESeq2(DEExperiment):
                 }''' % locals())
 
                 tmp_results = pandas2ri.ri2py(performDifferentialTesting(r_dds))
-                #tmp_results['test_id'] = tmp_results.index
+                # tmp_results['test_id'] = tmp_results.index
 
                 # need to set index to sequence of ints to avoid duplications
                 n2 = n+tmp_results.shape[0]
@@ -1314,7 +1314,7 @@ class DEExperiment_Sleuth(DEExperiment):
         # make variates string to ensure all model terms are in the
         # design dataframe for sleuth
         model_terms = [x for x in re.split("[\+~ ]+", model)[1:]
-                               if x != "0"]
+                       if x != "0"]
         variates = "c(%s)" % ",".join(model_terms)
 
         createSleuthObject = R('''
@@ -1413,7 +1413,7 @@ class DEResult_Sleuth(DEResult):
         some way to generate output in line with expected final
         results table in getResults method.
         '''
-        
+
         self.contrast = contrast
         self.lrt = lrt
         self.so = so
@@ -1434,7 +1434,7 @@ class DEResult_Sleuth(DEResult):
             results_table <- sleuth_results(so, test = '%(contrast)s')
             return(results_table)
             }''' % locals())
-            
+
         self.sleuthResults = pandas2ri.ri2py(extractSleuthResults(self.so))
 
     def getResults(self, fdr):
@@ -1525,7 +1525,7 @@ def writeExpressionResults(outfile, result):
 
     if outf != sys.stdout:
         outf.close()
-    
+
 
 class WelchsTTest(object):
 
