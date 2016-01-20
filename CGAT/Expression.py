@@ -306,7 +306,7 @@ class ExperimentalDesign(object):
 
             # check all model terms exist
             missing = set(model_terms).difference(
-                set(self.factors.columns.tolist()))
+                set(self.table.columns.tolist()))
 
             if len(missing) > 0:
                 raise ValueError("following terms in the model are missing"
@@ -1080,8 +1080,6 @@ class DEExperiment_DESeq2(DEExperiment):
                 return(design)}''')
 
             r_design = buildDesign(r_counts, r_groups)
-            print r_design
-            print r_groups
 
             buildCountDataSet = R('''
             function(counts, design){
@@ -1110,7 +1108,12 @@ class DEExperiment_DESeq2(DEExperiment):
             dev.off()
 
             res = suppressMessages(results(dds, addMLE=TRUE))
+            png(paste0(c("%(outfile_prefix)s", "MA.png"), collapse="_"))
+            plotMA(res, alpha=%(fdr)s)
+            dev.off()
+
             res = as.data.frame(res)
+
             c = counts(dds, normalized = TRUE)
 
             contrast = "condition"
@@ -1152,16 +1155,15 @@ class DEExperiment_DESeq2(DEExperiment):
 
             return(dds)
             }''' % locals())
-
+ 
             r_dds = buildCountDataSet(r_counts, r_design, r_model)
-
             results = pandas.DataFrame()
 
             n = 0
 
             for contrast in contrasts:
                 assert contrast in design.table.columns, (
-                    "contrast not found in design factors columns")
+                    "contrast: %s not found in design factors columns" % contrast)
                 model = [x for x in model_terms if x != contrast]
                 model = "~" + "+".join(model)
 
@@ -1169,7 +1171,9 @@ class DEExperiment_DESeq2(DEExperiment):
                 function(dds){
 
                 ddsLRT <- suppressMessages(
-                DESeq(dds, reduced=formula(%(model)s), betaPrior=TRUE))
+                DESeq(dds, test="LRT", reduced=formula(%(model)s),
+                      betaPrior=TRUE))
+                #DESeq(dds, betaPrior=TRUE))
 
                 png("%(outfile_prefix)s_dispersion.png")
                 plotDispEsts(ddsLRT)
@@ -1202,11 +1206,12 @@ class DEExperiment_DESeq2(DEExperiment):
                   res$control = "%(contrast)s"
                   res$treatment = "%(contrast)s"}
 
+                res['test_id'] = rownames(res)
                 return(res)
                 }''' % locals())
 
                 tmp_results = pandas2ri.ri2py(performDifferentialTesting(r_dds))
-                tmp_results['test_id'] = tmp_results.index
+                #tmp_results['test_id'] = tmp_results.index
 
                 # need to set index to sequence of ints to avoid duplications
                 n2 = n+tmp_results.shape[0]
@@ -1273,17 +1278,26 @@ class DEExperiment_Sleuth(DEExperiment):
     The run method expects all kallisto abundance.h5 files to be under
     a single directory with a subdirectory for each sample
 
+    Note: LRT does not generate fold change estimates (see DEResult_Sleuth)
+
     '''
 
     def run(self,
-            base_dir,
             design,
+            base_dir,
             model=None,
             contrast=None,
             outfile_prefix=None,
             counts=None,
             tpm=None,
-            fdr=0.1):
+            fdr=0.1,
+            lrt=False,
+            reduced_model=None):
+
+        if lrt:
+            E.info("Note: LRT will not generate fold changes")
+            assert reduced_model is not None, ("need to provide a reduced "
+                                               "model to use LRT")
 
         # Design table needs a "sample" column
         design.table['sample'] = design.table.index
@@ -1297,17 +1311,24 @@ class DEExperiment_Sleuth(DEExperiment):
         # load sleuth
         R('''suppressMessages(library('sleuth'))''')
 
+        # make variates string to ensure all model terms are in the
+        # design dataframe for sleuth
+        model_terms = [x for x in re.split("[\+~ ]+", model)[1:]
+                               if x != "0"]
+        variates = "c(%s)" % ",".join(model_terms)
+
         createSleuthObject = R('''
         function(design_df){
         sample_id = design_df$sample
         kal_dirs <- sapply(sample_id,
                            function(id) file.path('%(base_dir)s', id))
 
-        design_df <- dplyr::select(design_df, sample = sample, group)
+        design_df <- dplyr::select(design_df, sample = sample,
+                                   %(variates)s)
         design_df <- dplyr::mutate(design_df, path = kal_dirs)
 
-        so <- sleuth_prep(design_df, %(model)s)
-        so <- sleuth_fit(so)
+        so <- suppressMessages(sleuth_prep(design_df, %(model)s))
+        so <- suppressMessages(sleuth_fit(so))
         return(so)
         }''' % locals())
 
@@ -1344,55 +1365,81 @@ class DEExperiment_Sleuth(DEExperiment):
 
             makeTPMTable(so)
 
-        differentialTesting = R('''
-        function(so){
+        if lrt:
+            differentialTesting = R('''
+            function(so){
+            so <- suppressMessages(sleuth_fit(so, formula = %(reduced_model)s,
+                                   fit_name = "reduced"))
+            so <- suppressMessages(sleuth_lrt(so, "reduced", "full"))
 
-        suppressMessages(library('sleuth'))
+            return(so)
+            } ''' % locals())
 
-        so <- sleuth_wt(so, which_beta = '%(contrast)s')
+        else:
+            differentialTesting = R('''
+            function(so){
+            so <- sleuth_wt(so, which_beta = '%(contrast)s')
 
-        p_ma = plot_ma(so, '%(contrast)s')
-        ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_ma.png",
+            p_ma = plot_ma(so, '%(contrast)s')
+            ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_ma.png",
+                width=15, height=15, units="cm")
+
+            p_vars = plot_vars(so, '%(contrast)s')
+            ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_vars.png",
+                width=15, height=15, units="cm")
+
+            p_mean_var = plot_mean_var(so)
+            ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_mean_var.png",
             width=15, height=15, units="cm")
 
-        p_vars = plot_vars(so, '%(contrast)s')
-        ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_vars.png",
-            width=15, height=15, units="cm")
-
-        p_mean_var = plot_mean_var(so)
-        ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_mean_var.png",
-            width=15, height=15, units="cm")
-
-        return(so)
-        } ''' % locals())
+            return(so)
+            } ''' % locals())
 
         results = differentialTesting(so)
 
-        final_result = DEResult_Sleuth(so=results, contrast=contrast)
+        final_result = DEResult_Sleuth(so=results, contrast=contrast, lrt=lrt)
 
         return final_result
 
 
 class DEResult_Sleuth(DEResult):
 
-    def __init__(self, so=None, contrast=None):
+    def __init__(self, so=None, contrast=None, lrt=False):
         ''' extract the test results from the so table using the
         sleuth_results R function. retain the so object for plotting
-        purposes'''
+        purposes
 
-        extractSleuthResults = R('''
-        library(sleuth)
-        function(so){
-        results_table <- sleuth_results(so, '%(contrast)s')
-        return(results_table)
-        }''' % locals())
-
+        TS: LRT does not generate fold change estimates. Need to find
+        some way to generate output in line with expected final
+        results table in getResults method.
+        '''
+        
         self.contrast = contrast
+        self.lrt = lrt
         self.so = so
+
+        R('''suppressMessages(library(sleuth))''')
+
+        if self.lrt:
+            extractSleuthResults = R('''
+            function(so){
+            results_table <- sleuth_results(so, test = 'reduced:full',
+                                            test_type = 'lrt')
+            return(results_table)
+            }''' % locals())
+
+        else:
+            extractSleuthResults = R('''
+            function(so){
+            results_table <- sleuth_results(so, test = '%(contrast)s')
+            return(results_table)
+            }''' % locals())
+            
         self.sleuthResults = pandas2ri.ri2py(extractSleuthResults(self.so))
 
     def getResults(self, fdr):
-        ''' post-process test results table into generic results output '''
+        ''' post-process test results table into generic results output
+        expression and fold changes from Sleuth are natural logs'''
 
         E.info("Generating output - results table")
 
@@ -1404,21 +1451,19 @@ class DEResult_Sleuth(DEResult):
         df_dict["control_name"] = ("NA",)*n_rows
         df_dict["test_id"] = self.sleuthResults['target_id']
         df_dict["contrast"] = self.contrast
-        df_dict["control_mean"] = self.sleuthResults['mean_obs']
-        df_dict["treatment_mean"] = self.sleuthResults['mean_obs']
+        df_dict["control_mean"] = [math.exp(float(x)) for
+                                   x in self.sleuthResults['mean_obs']]
+        df_dict["treatment_mean"] = df_dict["control_mean"]
         df_dict["control_std"] = (0,)*n_rows
         df_dict["treatment_std"] = (0,)*n_rows
         df_dict["p_value"] = self.sleuthResults['pval']
         df_dict["p_value_adj"] = adjustPvalues(self.sleuthResults['pval'])
         df_dict["significant"] = pvaluesToSignficant(df_dict["p_value_adj"],
                                                      fdr)
-        df_dict["l2fold"] = self.sleuthResults['b']
-        df_dict["transformed_l2fold"] = self.sleuthResults['b']
-
-        # TS: check what happens when no fold change is available
-        # TS: may need an if/else in list comprehension. Raise E.warn too?
-        df_dict["fold"] = [math.pow(2, float(x)) for
+        df_dict["fold"] = [math.exp(float(x)) for
                            x in self.sleuthResults['b']]
+        df_dict["l2fold"] = [math.log(float(x), 2) for x in df_dict['fold']]
+        df_dict["transformed_l2fold"] = df_dict["l2fold"]
 
         # set all status values to "OK"
         # TS: again, may need an if/else to check...
