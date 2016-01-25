@@ -161,9 +161,6 @@ def main(argv=None):
                       help="input file with experimental design "
                       "[default=%default].")
 
-    parser.add_option("-o", "--outfile", dest="output_filename", type="string",
-                      help="output filename [default=%default].")
-
     parser.add_option("-m", "--method", dest="method", type="choice",
                       choices=("edger", "deseq2", "mock"),
                       help="differential expression method to apply "
@@ -325,6 +322,7 @@ def main(argv=None):
         experiment = Expression.DEExperiment_DESeq2()
         results = experiment.run(counts,
                                  design,
+                                 model=options.model,
                                  contrasts=options.contrasts,
                                  outfile_prefix=outfile_prefix,
                                  fdr=options.fdr)
