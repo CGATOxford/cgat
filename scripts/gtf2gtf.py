@@ -1289,7 +1289,6 @@ def main(argv=None):
 
             cds_ranges = GTF.asRanges(gffs, "CDS")
             exon_ranges = GTF.asRanges(gffs, "exon")
-
             # sanity checks
             strands = set([x.strand for x in gffs])
             contigs = set([x.contig for x in gffs])
@@ -1347,7 +1346,7 @@ def main(argv=None):
                         entry.transcript_id = "merged"
                     if biotype:
                         entry.addAttribute("gene_biotype", biotype)
-                        entry.start = start
+                    entry.start = start
                     entry.end = end
                     result.append(entry)
                 return result
@@ -1355,7 +1354,6 @@ def main(argv=None):
             result = []
 
             if options.method == "merge-exons":
-
                 if options.with_utr:
                     if options.mark_utr:
                         result.extend(output_ranges(utr_ranges, gffs, biotype,
