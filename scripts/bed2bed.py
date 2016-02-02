@@ -98,6 +98,14 @@ shifted off the end of contigs. Thus if a shift will shift the start
 of end of the contig, the interval is only moved as much as is
 possible without doing this.
 
+set_length
+++++++++++
+Extends or clips intervals appropriately to a specific length.  If the
+extension would push the interval off the end of contig it is truncated
+at that position.  Ergo it may result in intervals that are not ALL
+the same length.  If the interval length is uneven then it will
+prioritise extending at the 5' end.
+
 Other options
 +++++++++++++
 
@@ -244,18 +252,17 @@ def merge(iterator,
                 continue
 
         if resolve_blocks:
-            
             # keep track of number of intervals in each entry
             for bed in to_join:
                 bed["score"] = 1
-  
+
             merged = True
             while merged:
-                
+
                 joined = []
                 not_joined = []
                 merged = False
-                
+
                 while len(to_join) > 0:
                     bed1, to_join = to_join[0], to_join[1:]
                     intervals1 = bed1.toIntervals()
@@ -276,12 +283,12 @@ def merge(iterator,
 
                 to_join = joined
                 joined = []
-                
+
             to_join = sorted(to_join, key=lambda x: int(x.start))
-            
+
             # keep only those with the created from the merge of the minimum
             # number of intervals
-            
+
             for bed in to_join:
 
                 if bed["score"] < min_intervals:
@@ -291,7 +298,7 @@ def merge(iterator,
                 yield bed
                 c.output += 1
         else:
-                        
+
             if len(to_join) < min_intervals:
                 c.skipped_min_intervals += 1
                 continue
@@ -455,16 +462,100 @@ def extendInterval(iterator, contigs, distance):
            (ninput, noutput, nskipped))
 
 
+# MM: new method - extend/clip intervals to specific size
+def setIntervalSize(iterator, contigs, size):
+    '''
+    Either pad or clip each interval to a desired length.
+    Interval padding and clipping is symmetric (5prime has
+    priority if the extension overshoots by 1)
+
+    Arguments
+    ---------
+    iterator: Bed.iterator
+      iterator of invervals over the bed file
+
+    contigs: dict
+      dictionary containing contig sizes
+
+    size: int
+      size to set intervals to
+
+    Returns
+    -------
+    bed: Bed.entry
+    '''
+
+    ninput, noutput, nskipped = 0, 0, 0
+    for bed in iterator:
+        ninput += 1
+
+        if bed.contig not in contigs:
+            nskipped_contig += 1
+            continue
+        if bed.start < 0 or bed.end < 0:
+            nskipped_range += 1
+            continue
+        if bed.end > contigs[bed.contig]:
+            nskipped_range += 1
+            continue
+
+        # clip intervals
+        if bed.end - bed.start > size:
+            middle = (bed.start + bed.end)/2
+
+            # check modulo, if 1 then add extra
+            # to start
+            if middle % 2:
+                newstart = middle - (size/2) + 1
+                newend = middle + (size/2)
+            else:
+                newstart = middle - (size/2)
+                newend = middle + (size/2) - 1
+
+        elif bed.end - bed.start < size:
+            # pad intervals
+            middle = (bed.start + bed.end)/2
+            # check modulo, if 1 then add extra
+            # to start
+            if middle % 2:
+                newstart = middle - (size/2) - 1
+                newend = middle + (size/2)
+            else:
+                newstart = middle - (size/2)
+                newend = middle + (size/2)
+
+        elif bed.end - bed.start == size:
+            newstart = bed.start
+            newend = bed.end
+
+        if newstart < 0:
+            newstart = 0
+
+        if newend > contigs[bed.contig]:
+            newend = contigs[bed.contig]
+
+        bed.start = newstart
+        bed.end = newend
+
+        noutput += 1
+        yield bed
+
+    E.info("ninput = %i, noutput=%i, nskipped=%i" %
+           (ninput, noutput, nskipped))
+
+
 def main(argv=sys.argv):
 
     parser = E.OptionParser(version="%prog version: $Id: bed2bed.py 2861 2010-02-23 17:36:32Z andreas $",
                             usage=globals()["__doc__"])
 
     # IMS: new method: extend intervals by set amount
+    # MM: new method - set interval to size X
     parser.add_option("-m", "--method", dest="methods", type="choice",
                       action="append",
                       choices=("merge", "filter-genome", "bins",
-                               "block", "sanitize-genome", "shift", "extend"),
+                               "block", "sanitize-genome", "shift", "extend",
+                               "set_length"),
                       help="method to apply [default=%default]")
 
     parser.add_option("--num-bins", dest="num_bins", type="int",
@@ -516,6 +607,10 @@ def main(argv=sys.argv):
         "--offset", dest="offset",  type="int",
         help="offset for shifting intervals [default=%default]")
 
+    parser.add_option(
+        "--interval-length", dest="interval_len", type="int",
+        help="interval length to set all intervals to [default=%default]")
+
     parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
                       help="filename with genome.")
 
@@ -535,7 +630,8 @@ def main(argv=sys.argv):
                         test=None,
                         extend_distance=1000,
                         remove_inconsistent_names=False,
-                        resolve_blocks=False)
+                        resolve_blocks=False,
+                        interval_len=500)
 
     (options, args) = E.Start(parser, add_pipe_options=True)
 
@@ -600,6 +696,10 @@ def main(argv=sys.argv):
             if not contigs:
                 raise ValueError("please supply genome file")
             processor = extendInterval(processor, contigs, options.offset)
+        elif method == "set_length":
+            if not contigs:
+                raise ValueError("please supply genome file")
+            processor = setIntervalSize(processor, contigs, options.interval_len)
 
     noutput = 0
     for bed in processor:
