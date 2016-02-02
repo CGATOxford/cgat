@@ -505,21 +505,33 @@ def setIntervalSize(iterator, contigs, size):
 
             # check modulo, if 1 then add extra
             # to start
-            if middle % 2:
-                newstart = middle - (size/2) + 1
+            if middle % 2 and size % 2:
+                newstart = middle - (size/2) - 1
                 newend = middle + (size/2)
+            elif middle % 2 and not size % 2:
+                newstart = middle - (size/2)
+                newend = middle + (size/2)
+            elif not middle % 2 and size % 2:
+                newstart = middle - (size/2) - 1
+                newend = middle + (size/2)                
             else:
                 newstart = middle - (size/2)
-                newend = middle + (size/2) - 1
+                newend = middle + (size/2)               
 
         elif bed.end - bed.start < size:
             # pad intervals
             middle = (bed.start + bed.end)/2
             # check modulo, if 1 then add extra
             # to start
-            if middle % 2:
+            if middle % 2 and size % 2:
                 newstart = middle - (size/2) - 1
                 newend = middle + (size/2)
+            elif middle % 2 and not size % 2:
+                newstart = middle - (size/2)
+                newend = middle + (size/2)                
+            elif not middle % 2 and size % 2:
+                newstart = middle - (size/2) - 1
+                newend = middle + (size/2)                
             else:
                 newstart = middle - (size/2)
                 newend = middle + (size/2)
