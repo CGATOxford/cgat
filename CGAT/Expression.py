@@ -2963,7 +2963,6 @@ def runDESeq(outfile,
 
         # plot heatmap of differentially expressed genes
         # plot gene heatmap for all genes - order by average expression
-        padj_column = list(res.colnames).index('padj')
         select = R('''select = res['padj'] < %f''' % fdr)
 
         if R('''sum(select)''')[0] > 0:
