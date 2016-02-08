@@ -2045,10 +2045,12 @@ def groupTagData(ref_group=None, ref_regex=None):
     if isinstance(factors, rpy2.robjects.vectors.DataFrame):
         E.warn("There are additional factors in design file that are ignored"
                " by groupTagData: %s" % factors.r_repr())
-    else:
-        # Hack... must be a better way to evaluate r NA instance in python?
-        assert len(list(factors)) == 1 and bool(list(factors)[0]) is False, \
-            "factors must either be DataFrame or NA in R global namespace"
+    # AH: uncommented as it causes an issue with rpy2 2.7.7
+    # else:
+    #     # Hack... must be a better way to evaluate r NA instance in python?
+    #     import pdb; pdb.set_trace()
+    #     assert len(list(factors)) == 1 and bool(list(factors)[0]) is False, \
+    #         "factors must either be DataFrame or NA in R global namespace"
 
     # Test if replicates exist - at least one group must have multiple samples
     max_per_group = R('''max(table(groups)) ''')[0]
