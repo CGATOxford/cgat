@@ -672,10 +672,16 @@ def Start(parser=None,
            use cluster
        ``--cluster-priority``
            cluster priority to request
+       ``--cluster-queue-manager``
+           cluster queue manager to use
        ``--cluster-queue``
            cluster queue to use
        ``--cluster-num-jobs``
            number of jobs to submit to the cluster at the same time
+       ``--cluster-memory-resource``
+           name of the cluster memory resource (SGE specific option)
+       ``--cluster-memory-default``
+           default amount of memory allocated per job.
        ``--cluster-options``
            additional options to the cluster for each job.
 
@@ -793,9 +799,18 @@ def Start(parser=None,
         group.add_option("--cluster-priority", dest="cluster_priority",
                          type="int",
                          help="set job priority on cluster [%default].")
+        group.add_option("--cluster-queue-manager", dest="cluster_queue_manager",
+                         type="string",
+                         help="set cluster queue manager [%default].")
         group.add_option("--cluster-queue", dest="cluster_queue",
                          type="string",
                          help="set cluster queue [%default].")
+        group.add_option("--cluster-memory-resource", dest="cluster_memory_resource",
+                         type="string",
+                         help="set cluster memory resource [%default].")
+        group.add_option("--cluster-memory-default", dest="cluster_memory_default",
+                         type="string",
+                         help="set cluster memory default [%default].")
         group.add_option("--cluster-num-jobs", dest="cluster_num_jobs",
                          type="int",
                          help="number of jobs to submit to the queue execute "
@@ -811,7 +826,10 @@ def Start(parser=None,
                          "on to queuing system [%default].")
 
         parser.set_defaults(without_cluster=False,
+                            cluster_queue_manager=None,
                             cluster_queue=None,
+                            cluster_memory_resource=None,
+                            cluster_memory_default=None,
                             cluster_priority=None,
                             cluster_num_jobs=None,
                             cluster_parallel_environment=None,
