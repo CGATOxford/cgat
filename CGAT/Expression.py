@@ -2353,47 +2353,24 @@ def runEdgeR(outfile,
     results = []
     counts = E.Counter()
 
-    for interval, data, padj in zip(
-            R('''rownames(lrt$table)'''),
-            zip(*R('''lrt$table''')),
-            R('''padj''')):
-        d = rtype._make(data)
+    df = R('''lrt$table''')
+    df["padj"] = R('''padj''')
 
-        counts.input += 1
+    counts.significant = sum(df.padj <= fdr)
+    counts.insignificant = sum(df.padj < fdr)
+    counts.significant_over = sum((df.padj <= fdr) & (df.logFC > 0))
+    counts.significant_under = sum((df.padj <= fdr) & (df.logFC < 0))
+    counts.input = len(df)
+    counts.all_over = sum(df.logFC > 0)
+    counts.all_under = sum(df.logFC < 0)
+    counts.fail = sum(df.PValue.isnull())
+    counts.ok = counts.input - counts.fail
 
-        # set significant flag
-        if padj <= fdr:
-            signif = 1
-            counts.significant += 1
-            if d.lfold > 0:
-                counts.significant_over += 1
-            else:
-                counts.significant_under += 1
-        else:
-            signif = 0
-            counts.insignificant += 1
+    df["fold"] = df.logFC.pow(2.0)
+    df["significant"] = df.padj <= fdr
 
-        if d.lfold > 0:
-            counts.all_over += 1
-        else:
-            counts.all_under += 1
-
-        # is.na failed in rpy2 2.4.2
-        if d.pvalue != R('''NA'''):
-            status = "OK"
-        else:
-            status = "FAIL"
-
-        counts[status] += 1
-
-        try:
-            fold = math.pow(2.0, d.lfold)
-        except OverflowError:
-            E.warn("%s: fold change out of range: lfold=%f" %
-                   (interval, d.lfold))
-            # if out of range set to 0
-            fold = 0
-
+    # TODO: use pandas throughout
+    for interval, d in df.iterrows():
         # fold change is determined by the alphabetical order of the factors.
         # Is the following correct?
         results.append(GeneExpressionResult._make((
@@ -2404,13 +2381,13 @@ def runEdgeR(outfile,
             groups[0],
             d.logCPM,
             0,
-            d.pvalue,
-            padj,
-            d.lfold,
-            fold,
-            d.lfold,  # no transform of lfold
-            str(signif),
-            status)))
+            d.PValue,
+            d.padj,
+            d.logFC,
+            d.fold,
+            d.logFC,  # no transform of lfold
+            str(int(d.significant)),
+            "OK")))
 
     writeExpressionResults(outfile, results)
 
