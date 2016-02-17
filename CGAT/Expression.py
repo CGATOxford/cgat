@@ -2357,7 +2357,7 @@ def runEdgeR(outfile,
     df["padj"] = R('''padj''')
 
     counts.significant = sum(df.padj <= fdr)
-    counts.insignificant = sum(df.padj < fdr)
+    counts.insignificant = sum(df.padj > fdr)
     counts.significant_over = sum((df.padj <= fdr) & (df.logFC > 0))
     counts.significant_under = sum((df.padj <= fdr) & (df.logFC < 0))
     counts.input = len(df)
