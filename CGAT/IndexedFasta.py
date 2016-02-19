@@ -742,9 +742,6 @@ class CGATIndexedFasta:
         for key in self.mIndex.keys():
             _add(key, key)
        
-        E.debug("\n".join(" ".join((key, value)) for key, value in self.mSynonyms.iteritems()
-                          if "M" in key))
-
     def setTranslator(self, translator=None):
         """set the :class:`Translator` to use."""
         self.mTranslator = translator
