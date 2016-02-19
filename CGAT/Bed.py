@@ -230,7 +230,7 @@ class Bed(object):
         try:
             position = self.map_key2field[key]
         except IndexError:
-            raise IndexError("Unknown key: %s" % s)
+            raise IndexError("Unknown key: %s" % key)
 
         try:
             self.fields[position] = value
