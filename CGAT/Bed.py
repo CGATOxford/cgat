@@ -129,7 +129,6 @@ class Bed(object):
         new_entry.__dict__ = self.__dict__.copy()
         return new_entry
 
-
     def fromGTF(self, gff, is_gtf=False, name=None):
         """fill fields from gtf formatted entry
 
@@ -231,7 +230,7 @@ class Bed(object):
         try:
             position = self.map_key2field[key]
         except IndexError:
-            raise IndexError("Unknown key: %s" % s)
+            raise IndexError("Unknown key: %s" % key)
 
         try:
             self.fields[position] = value
@@ -242,7 +241,6 @@ class Bed(object):
 
             self.fields[position] = value
             
-
     def __getattr__(self, key):
         try:
             return self.fields[self.map_key2field[key]]
