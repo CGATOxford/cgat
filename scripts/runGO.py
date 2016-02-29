@@ -162,11 +162,19 @@ import sys
 import collections
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
-import MySQLdb
+try:
+    import MySQLdb
+    HAS_MYSQL = True
+except ImportError:
+    HAS_MYSQL = False
+
 import CGAT.GO as GO
 
 
 def connectToEnsembl(options):
+    if not HAS_MYSQL:
+        raise ValueError(
+            "can not connect to MySQL, no MySQLdb")
     if options.database_port:
         dbhandle = MySQLdb.connect(
             host=options.database_host,

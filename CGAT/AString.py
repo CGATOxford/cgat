@@ -49,7 +49,7 @@ class AString(array):
     """
 
     def __new__(cls, *args):
-        return array.__new__(cls, "c", *args)
+        return array.__new__(cls, "b", *args)
 
     def upper(self):
         """return upper case version."""
@@ -67,9 +67,7 @@ class AString(array):
         """set slice start:end from a string sub."""
         return array.__setslice__(self,
                                   start, end,
-                                  array("c", sub))
+                                  array("b", sub))
 
     def __str__(self):
         return self.tostring()
-
-

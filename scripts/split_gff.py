@@ -156,7 +156,7 @@ def main(argv=None):
 
     if options.method == "overlap":
 
-        last_contig, last_to = None, None
+        last_contig, last_to = None, 0
         chunk = []
         for gff in gffs:
             ninput += 1
