@@ -674,11 +674,11 @@ def main(argv=None):
             msgs.append("fdr=%s" % method)
 
             if options.sort_order == "fdr":
-                pairs.sort(lambda x, y: cmp(x[1].mQValue, y[1].mQValue))
+                pairs.sort(key=lambda x: x[1].mQValue)
             elif options.sort_order == "ratio":
-                pairs.sort(lambda x, y: cmp(x[1].mRatio, y[1].mRatio))
+                pairs.sort(key=lambda x: x[1].mRatio)
             elif options.sort_order == "pvalue":
-                pairs.sort(lambda x, y: cmp(x[1].mPValue, y[1].mPValue))
+                pairs.sort(key=lambda x: x[1].mPValue)
 
             #############################################################
             #############################################################

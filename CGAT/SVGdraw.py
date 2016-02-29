@@ -91,12 +91,6 @@ if use_dom_implementation != 0:
 # The prettyprint module is used for converting the xml document object to
 # a xml file
 
-assert sys.version_info[0] >= 2
-if sys.version_info[1] < 2:
-    True = 1
-    False = 0
-    file = open
-
 sys.setrecursionlimit = 50
 # The recursion limit is set conservative so mistakes like s=svg() s.addElement(s)
 # won't eat up too much processor time.

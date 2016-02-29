@@ -65,7 +65,6 @@ import re
 import struct
 import math
 import tarfile
-import dbm
 import random
 import zlib
 import gzip
@@ -74,6 +73,8 @@ import io
 from CGAT import Experiment as E
 from .AString import AString
 import pysam
+import future
+from future.moves import dbm
 
 
 class Uncompressor:
@@ -468,7 +469,10 @@ def createDatabase(db, iterator,
     lsequence = 0
     identifier_pos, sequence_pos = 0, 0
 
-    translation = string.maketrans("xX", "nN")
+    if sys.version_info.major >= 3:
+        translation = str.maketrans("xX", "nN")
+    else:
+        translation = string.maketrans("xX", "nN")
 
     fragments = []
     lfragment = 0
