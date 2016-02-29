@@ -2715,17 +2715,20 @@ def deseq2ParseResults(fdr, vsd=False):
 
     #  fill columns with values described above
     R('''res2['test_id'] = rownames(res)''')
+    R('''g = unique(groups)''')
+    R('''g1 = which(groups == g[1])''')
+    R('''g2 = which(groups == g[2])''')
     R('''res2['treatment_name'] = rep(unique(groups)[1], nrow(res2))''')
-    R('''res2['treatment_mean'] = rowMeans(normalcounts[,1:3])''')
-    R('''res2['treatment_std'] = apply(normalcounts[,1:3], 1, sd)''')
+    R('''res2['treatment_mean'] = rowMeans(normalcounts[, g1])''')
+    R('''res2['treatment_std'] = apply(normalcounts[, g1], 1, sd)''')
     R('''res2['control_name'] = rep(unique(groups)[2], nrow(res2))''')
-    R('''res2['control_mean'] = rowMeans(normalcounts[,4:6])''')
-    R('''res2['control_std'] = apply(normalcounts[,4:6], 1, sd)''')
+    R('''res2['control_mean'] = rowMeans(normalcounts[,g2])''')
+    R('''res2['control_std'] = apply(normalcounts[, g2], 1, sd)''')
     R('''res2['pvalue'] = res$pvalue''')
     R('''res2['qvalue'] = res$padj''')
     R('''res2['l2fold'] = res$log2FoldChange''')
     R('''res2['fold'] = res2$control_mean / res2$treatment_mean''')
-    R('''res2['signif'] = as.character(res2$qvalue <= fdr)''')
+    R('''res2['signif'] = as.integer(res2$qvalue <= fdr)''')
     R('''res2['status'] = ifelse(is.na(res2$pvalue), "FAIL", "OK")''')
 
     #  replace l2fold change and fold for expression levels of 0 in treatment
@@ -2739,7 +2742,7 @@ def deseq2ParseResults(fdr, vsd=False):
     #  occupy transformed l2fold with 0s
     R('''res2$transformed_l2fold = 0''')
 
-    D = pandas2ri.ri2py(R('res2'))
+    D = R('res2')
     D.index = D['test_id']
     D = D.drop('test_id', 1)
     return D
@@ -3090,7 +3093,7 @@ def runDESeq2(outfile,
     R('''rlogtab = rlogtab[, c(ncol(rlogtab), 1:ncol(rlogtab)-1)]''')
     R('''rlogtab = as.data.frame(rlogtab)''')
     R.data('rlogtab')
-    rlog_out = pandas2ri.ri2py(R('rlogtab'))
+    rlog_out = R('rlogtab')
     rlogoutf = outfile_prefix + "rlog.tsv"
 
     rlog_out.to_csv(rlogoutf, sep="\t", index=False)
@@ -3134,7 +3137,7 @@ def runDESeq2(outfile,
         R('''res_df$test_id = rownames(res_df)''')
         R('''res_df = res_df[, c(ncol(res_df), 1:ncol(res_df)-1)]''')
         R.data('res_df')
-        raw_out = pandas2ri.ri2py(R('res_df'))
+        raw_out = R('res_df')
 
         #  manipulate output into standard format
         df_out = deseq2ParseResults(fdr, vsd=False)
