@@ -29,10 +29,13 @@ import gzip
 import yaml
 import time
 import hashlib
+import sys
 
 import TestUtils
 
 from nose.tools import ok_
+
+IS_PY3 = sys.version_info.major
 
 SUBDIRS = ("gpipe", "optic")
 
@@ -165,15 +168,16 @@ def check_script(test_name, script, stdin,
                       (reference, tmpdir, statement)
 
             if not fail:
-                for a, b in zip(_read(output), _read(reference)):
-                    if a != b:
-                        fail = True
-                        msg = ("files %s and %s are not the same\n"
-                               "%s\nmd5: output=%s reference=%s") %\
-                            (output, reference, statement,
-                             compute_checksum(output),
-                             compute_checksum(reference))
-                        break
+                a = _read(output)
+                b = _read(reference)
+                if a != b:
+                    fail = True
+                    msg = ("files %s and %s are not the same\n"
+                           "%s\nmd5: output=%s reference=%s") %\
+                        (output, reference, statement,
+                         compute_checksum(output),
+                         compute_checksum(reference))
+                    break
 
     t2 = time.time()
     LOGFILE.write("%s\t%s\t%f\n" % (script,
@@ -292,11 +296,18 @@ def test_scripts():
 def _read(fn):
     if fn.endswith(".gz"):
         with gzip.open(fn) as inf:
-            for line in inf:
-                if not line.startswith("#"):
-                    yield line
+            data = inf.read()
     else:
-        with open(fn) as inf:
-            for line in inf:
-                if not line.startswith("#"):
-                    yield line
+        with open(fn, "rb") as inf:
+            data = inf.read()
+
+    if IS_PY3:
+        try:
+            data = data.decode("ascii")
+        except UnicodeDecodeError:
+            return data
+
+    data = [x for x in data.splitlines()
+            if not x.startswith("#")]
+
+    return data

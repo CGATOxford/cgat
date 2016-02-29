@@ -63,6 +63,7 @@ import subprocess
 import itertools
 import numpy
 import numpy.ma
+import sys
 
 
 def getFirstLine(filename, nlines=1):
@@ -252,9 +253,28 @@ def openFile(filename, mode="r", create_dir=False):
             os.makedirs(dirname)
 
     if ext.lower() in (".gz", ".z"):
-        return gzip.open(filename, mode)
+        if sys.version_info.major >= 3:
+            if mode == "r":
+                return gzip.open(filename, 'rt', encoding="ascii")
+            elif mode == "w":
+                return gzip.open(filename, 'wt', encoding="ascii")
+            else:
+                raise NotImplementedError(
+                    "mode '{}' not implemented".format(mode))
+        else:
+            return gzip.open(filename, mode)
     else:
         return open(filename, mode)
+
+
+def force_str(iterator, encoding="ascii"):
+    """iterate over lines in iterator and force to string"""
+    if sys.version_info.major >= 3:
+        for line in iterator:
+            yield line.decode(encoding)
+    else:
+        for line in iterator:
+            yield line
 
 
 def zapFile(filename):

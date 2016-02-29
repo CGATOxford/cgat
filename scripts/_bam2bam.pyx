@@ -24,7 +24,7 @@ cdef class SetNH:
             if self.stack:
                 return self.stack.pop(0)
             else:
-                key, x = self.iter.next()
+                key, x = next(self.iter)
                 self.stack = list(x)
                 nh = len(self.stack)
                 for read in self.stack:

@@ -235,18 +235,19 @@ def main(argv=None):
     counts_per_alignment = collections.defaultdict(int)
     take_columns = len(data._fields)
 
-    def iter(infile):
+    def iterate(infile):
         for line in infile:
             if not line.strip():
                 continue
             yield data._make(line[:-1].split()[:take_columns])
 
-    for read, overlaps in itertools.groupby(iter(proc.stdout), key=sort_key):
+    for read, overlaps in itertools.groupby(
+            iterate(IOTools.force_str(proc.stdout)), key=sort_key):
         annotations = [x.name2 for x in overlaps]
         for anno in annotations:
             counts_per_alignment[anno] += 1
 
-    for key, counts in counts_per_alignment.items():
+    for key, counts in sorted(counts_per_alignment.items()):
         options.stdout.write("%s\t%i\n" % (key, counts))
 
     # write footer and output benchmark information.
