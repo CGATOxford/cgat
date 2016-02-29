@@ -906,9 +906,14 @@ class CGATIndexedFasta:
 
         if str(strand) in ("-", "0", "-1"):
             p.reverse()
-            p = AString(string.translate(
-                p[:],
-                string.maketrans("ACGTacgt", "TGCAtgca")))
+            if sys.version_info.major >= 3:
+                p = AString(string.translate(
+                    p[:],
+                    str.maketrans("ACGTacgt", "TGCAtgca")).encode("ascii"))
+            else:
+                p = AString(string.translate(
+                    p[:],
+                    string.maketrans("ACGTacgt", "TGCAtgca")))
 
         if self.mTranslator:
             return self.mTranslator.translate(p)

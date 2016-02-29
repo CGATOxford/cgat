@@ -34,6 +34,11 @@ Reference
 from array import array
 
 
+import sys
+
+IS_PY3 = sys.version_info.major >= 3
+
+
 class AString(array):
     """implementation of a string as an array.
 
@@ -53,21 +58,34 @@ class AString(array):
 
     def upper(self):
         """return upper case version."""
-        return AString(self.tostring().upper())
+        if IS_PY3:
+            return AString(str(self).upper().encode('ascii'))
+        else:
+            return AString(str(self).upper())
 
     def lower(self):
         """return lower case version."""
-        return AString(self.tostring().lower())
+        if IS_PY3:
+            return AString(str(self).lower().encode('ascii'))
+        else:
+            return AString(str(self).lower())
 
-    def __getslice__(self, *args):
+    def __getitem__(self, *args):
         """return slice as a string."""
-        return array.__getslice__(self, *args).tostring()
 
-    def __setslice__(self, start, end, sub):
+        if IS_PY3:
+            return array.__getitem__(self, *args).tostring().decode("ascii")
+        else:
+            return array.__getitem__(self, *args).tostring()
+
+    def __setitem__(self, start, end, sub):
         """set slice start:end from a string sub."""
-        return array.__setslice__(self,
-                                  start, end,
-                                  array("b", sub))
+        return array.__setitem__(self,
+                                 start, end,
+                                 array("b", sub))
 
     def __str__(self):
-        return self.tostring()
+        if IS_PY3:
+            return self.tostring().decode("ascii")
+        else:
+            return self.tostring()
