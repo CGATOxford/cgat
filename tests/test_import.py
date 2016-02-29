@@ -81,13 +81,13 @@ def check_import(filename, outfile):
     try:
         imp.load_source(basename, filename)
 
-    except ImportError, msg:
+    except ImportError as msg:
         outfile.write("FAIL %s\n%s\n" % (basename, msg))
         outfile.flush()
         traceback.print_exc(file=outfile)
         ok_(False, '%s scripts/modules - ImportError: %s' %
             (basename, msg))
-    except Exception, msg:
+    except Exception as msg:
         outfile.write("FAIL %s\n%s\n" % (basename, msg))
         outfile.flush()
 

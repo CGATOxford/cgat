@@ -174,7 +174,7 @@ class SequencePairPropertiesCountsNa (SequencePairProperties):
         a substitution matrix for the given alphabet.
         """
         if len(seq1) != len(seq2):
-            raise "two sequences of unequal length submitted."
+            raise ValueError("two sequences of unequal length submitted")
 
         nchars = len(alphabet)
         matrix = numpy.zeros((nchars, nchars), numpy.int)

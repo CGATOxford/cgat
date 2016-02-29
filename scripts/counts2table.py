@@ -338,7 +338,7 @@ def main(argv=None):
     results.table.to_csv(sys.stdout, sep="\t", na_rep="NA", index=False)
 
     # write out summary tables for each comparison/contrast
-    for test_group in results.Summary.keys():
+    for test_group in list(results.Summary.keys()):
         outf = IOTools.openFile("_".join(
             [outfile_prefix, test_group, "summary.tsv"]), "w")
         outf.write("category\tcounts\n%s\n"

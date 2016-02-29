@@ -98,9 +98,9 @@ try:
     import CGAT.IOTools as IOTools
     import CGAT.Stats as Stats
 except ImportError:
-    import Experiment as E
-    import IOTools
-    import Stats
+    from . import Experiment as E
+    from . import IOTools
+    from . import Stats
 
 # activate pandas/rpy conversion
 pandas2ri.activate()
@@ -1215,7 +1215,7 @@ class DEExperiment_DESeq2(DEExperiment):
 
                 # need to set index to sequence of ints to avoid duplications
                 n2 = n+tmp_results.shape[0]
-                tmp_results.index = range(n, n2)
+                tmp_results.index = list(range(n, n2))
                 n = n2
 
                 results = results.append(tmp_results)
@@ -1544,7 +1544,7 @@ class WelchsTTest(object):
         results = []
 
         for probeset, treatment, control in zip(
-                probesets, zip(*treatments), zip(*controls)):
+                probesets, list(zip(*treatments)), list(zip(*controls))):
 
             nval1, nval2 = len(treatment), len(control)
             mean1, mean2 = numpy.mean(treatment), numpy.mean(control)
@@ -1776,8 +1776,8 @@ class SAM(object):
             raise ValueError("either supply ngenes or fdr")
 
         # collect (unadjusted) p-values and qvalues for all probesets
-        pvalues = dict(zip(probesets, R('''a@p.value''')))
-        qvalues = dict(zip(probesets, R('''a@q.value''')))
+        pvalues = dict(list(zip(probesets, R('''a@p.value'''))))
+        qvalues = dict(list(zip(probesets, R('''a@q.value'''))))
 
         if pattern:
             outfile = pattern % "sam.pdf"
@@ -1803,7 +1803,7 @@ class SAM(object):
                  in R('''summary@row.sig.genes''')])
             # E.debug( "significant genes=%s" % str(significant_genes))
 
-            r_result = zip(*_totable(summary.do_slot('mat.sig')))
+            r_result = list(zip(*_totable(summary.do_slot('mat.sig'))))
 
             if len(r_result) > 0:
 
@@ -1829,7 +1829,7 @@ class SAM(object):
 
         genes = []
         for probeset, treatment, control in zip(
-                probesets, zip(*treatments), zip(*controls)):
+                probesets, list(zip(*treatments)), list(zip(*controls))):
 
             mean1, mean2 = numpy.mean(treatment), numpy.mean(control)
 
@@ -2107,7 +2107,7 @@ def plotPairs():
         pch=".",
         labels=colnames(countsTable),
         log="xy")''')
-    except rpy2.rinterface.RRuntimeError, msg:
+    except rpy2.rinterface.RRuntimeError as msg:
         E.warn("can not plot pairwise scatter plot: %s" % msg)
 
 
@@ -2162,7 +2162,7 @@ def plotPCA(groups=True):
         #                "multiplot.R"))
         # R('''multiplot(p1, p2, p3, cols=2)''')
         R('''plot(p1)''')
-    except rpy2.rinterface.RRuntimeError, msg:
+    except rpy2.rinterface.RRuntimeError as msg:
         E.warn("could not plot in plotPCA(): %s" % msg)
 
 
@@ -2262,7 +2262,7 @@ def runEdgeR(outfile,
         try:
             R.ggsave('''%(outfile_prefix)sbalance_pairs.png''' % locals())
             R['dev.off']()
-        except rpy2.rinterface.RRuntimeError, msg:
+        except rpy2.rinterface.RRuntimeError as msg:
             E.warn("could not plot: %s" % msg)
 
     # build DGEList object
@@ -2287,7 +2287,7 @@ def runEdgeR(outfile,
     R.png('''%(outfile_prefix)smds.png''' % locals())
     try:
         R('''plotMDS( countsTable )''')
-    except rpy2.rinterface.RRuntimeError, msg:
+    except rpy2.rinterface.RRuntimeError as msg:
         E.warn("can not plot mds: %s" % msg)
     R['dev.off']()
 
@@ -2488,7 +2488,7 @@ def deseqPlotPCA(outfile, vsd, max_genes=500):
     as.integer(dim(vsd))[1])''' % locals())
     try:
         R('''plotPCA(vsd)''')
-    except rpy2.rinterface.RRuntimeError, msg:
+    except rpy2.rinterface.RRuntimeError as msg:
         E.warn("can not plot PCA: %s" % msg)
     R['dev.off']()
 
@@ -3282,7 +3282,7 @@ def plotDETagStats(infile, outfile_prefix,
 
         try:
             ggplot.ggsave(filename=outfile, plot=plot)
-        except Exception, msg:
+        except Exception as msg:
             E.warn("no plot for %s: %s" % (column, msg))
 
     def _bplot(table, outfile, column):
@@ -3294,7 +3294,7 @@ def plotDETagStats(infile, outfile_prefix,
 
         try:
             ggplot.ggsave(filename=outfile, plot=plot)
-        except ValueError, msg:
+        except ValueError as msg:
             # boxplot fails if all values are the same
             # see https://github.com/yhat/ggplot/issues/393
             E.warn(msg)
@@ -3506,7 +3506,7 @@ def outputTagSummary(filename_tags,
     R.svg(outfilename)
     try:
         R('''plotMDS(countsTable)''')
-    except rpy2.rinterface.RRuntimeError, msg:
+    except rpy2.rinterface.RRuntimeError as msg:
         E.warn("can not plot mds: %s" % msg)
     R['dev.off']()
 
@@ -3944,7 +3944,7 @@ def runEdgeRPandas(counts,
             counts_a = counts.iloc[:, keep_a]
             keep_b = [x == g2 for x in conds]
             counts_b = counts.iloc[:, keep_b]
-            index = range(n, n+nrows)
+            index = list(range(n, n+nrows))
             n += nrows
             a = counts_a.sum(axis=1)
             b = counts_b.sum(axis=1)
@@ -3952,7 +3952,7 @@ def runEdgeRPandas(counts,
             diff.sort()
             temp_df = pandas.DataFrame({"cumsum": np.cumsum(diff).tolist(),
                                         "comb": "_vs_".join([g1, g2]),
-                                        "id": range(0, nrows)},
+                                        "id": list(range(0, nrows))},
                                        index=index)
             pairs_df = pairs_df.append(temp_df)
         plot_pairs = R('''function(df, outfile){
@@ -3984,7 +3984,7 @@ def runEdgeRPandas(counts,
                 if sum(keep_a) > 0 and sum(keep_b) > 0:
                     counts_a = counts.iloc[:, keep_a]
                     counts_b = counts.iloc[:, keep_b]
-                    index = range(n, n+nrows)
+                    index = list(range(n, n+nrows))
                     n += nrows
                     a = counts_a.sum(axis=1)
                     b = counts_b.sum(axis=1)
@@ -3993,7 +3993,7 @@ def runEdgeRPandas(counts,
                     comparison = "pair-%s-%s-vs-%s" % (pair, g1, g2)
                     temp_df = pandas.DataFrame({"cumsum": np.cumsum(diff).tolist(),
                                                 "comb": comparison,
-                                                "id": range(0, nrows)},
+                                                "id": list(range(0, nrows))},
                                                index=index)
                     pairs_in_groups_df = pairs_in_groups_df.append(temp_df)
 
@@ -4046,7 +4046,7 @@ def runEdgeRPandas(counts,
         MDSplot = R('''function(counts){
         plotMDS(counts)}''')
         MDSplot(r_counts)
-    except rpy2.rinterface.RRuntimeError, msg:
+    except rpy2.rinterface.RRuntimeError as msg:
         E.warn("can not plot mds: %s" % msg)
     R['dev.off']()
 

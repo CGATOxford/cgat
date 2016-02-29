@@ -150,7 +150,7 @@ class Counter:
             self.mBases1, self.mBases2,
             self.mBasesOverlapping1, self.mBasesOverlapping2,
             self.mBasesUnique1, self.mBasesUnique2 ) ) ) + "\t" +\
-            "\t".join(map(lambda x: IOTools.prettyPercent(*x), (
+            "\t".join([IOTools.prettyPercent(*x) for x in (
                 (self.mGenesOverlapping1, self.mGenes1),
                 (self.mGenesOverlapping2, self.mGenes2),
                 (self.mGenesUnique1, self.mGenes1),
@@ -162,7 +162,7 @@ class Counter:
                 (self.mBasesOverlapping1, self.mBases1),
                 (self.mBasesOverlapping2, self.mBases2),
                 (self.mBasesUnique1, self.mBases1),
-                (self.mBasesUnique2, self.mBases2))))
+                (self.mBasesUnique2, self.mBases2))])
 
 
 class CounterGenes(Counter):
@@ -247,7 +247,7 @@ def main(argv=None):
     (options, args) = E.Start(parser)
 
     if len(args) != 2:
-        print USAGE
+        print(USAGE)
         raise ValueError("two arguments are required")
 
     if options.genes:

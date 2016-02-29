@@ -93,9 +93,9 @@ class counter_gff:
         self.counts_features = collections.defaultdict(int)
         self.counts_sources = collections.defaultdict(int)
 
-    def next(self):
+    def __next__(self):
 
-        entry = self.iter.next()
+        entry = next(self.iter)
 
         self.counts_contigs[entry.contig] += 1
         self.counts_features[entry.feature] += 1
@@ -130,10 +130,10 @@ class counter_exons:
         self.counts_transcript_ids = collections.defaultdict(int)
         self.counts_exons_per_transcript = collections.defaultdict(list)
 
-    def next(self):
+    def __next__(self):
 
         while 1:
-            entry = self.iter.next()
+            entry = next(self.iter)
             if entry.feature == "exon":
                 break
 
@@ -155,7 +155,7 @@ class counter_exons:
         transcript_lengths = []
         exon_sizes = []
 
-        for x in self.counts_exons_per_transcript.values():
+        for x in list(self.counts_exons_per_transcript.values()):
 
             x.sort()
             x = Intervals.combine(x)

@@ -122,5 +122,5 @@ def iterateMacs2Peaks(infile):
                  float(row['fold_enrichment']),
                  math.pow(10, -float(row['-log10(qvalue)'])),
                  row['name']))
-        except KeyError, msg:
+        except KeyError as msg:
             raise KeyError("%s: %s" % (msg, row))

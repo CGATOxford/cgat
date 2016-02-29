@@ -245,14 +245,14 @@ def selectMatches(query_id, matches, options, queries_fasta=None):
                     if len(new_matches) == 1:
                         return new_matches, None
 
-                return [], "not unique: %s" % (" ".join(map(lambda x: str(x.mMatchScore), matches)))
+                return [], "not unique: %s" % (" ".join([str(x.mMatchScore) for x in matches]))
 
     elif options.matching_mode == "unique":
         # only return matches if they are "unique", i.e. no other match
         if len(matches) == 1:
             new_matches.append(matches[0])
         else:
-            return [], "not unique: %s" % (" ".join(map(lambda x: str(x.mMatchScore), matches)))
+            return [], "not unique: %s" % (" ".join([str(x.mMatchScore) for x in matches]))
 
     matches = new_matches
 
@@ -430,14 +430,14 @@ def main(argv=None):
         try:
             import bx.intervals.intersection
         except ImportError:
-            raise "filtering for intervals requires the bx tools."
+            raise ValueError("filtering for intervals requires the bx tools")
 
         intervals = GTF.readGFFFromFileAsIntervals(
             open(options.filename_filter_sbjct, "r"))
 
         intersectors = {}
 
-        for contig, values in intervals.items():
+        for contig, values in list(intervals.items()):
             intersector = bx.intervals.intersection.Intersecter()
             for start, end in values:
                 intersector.add_interval(bx.intervals.Interval(start, end))
@@ -445,7 +445,7 @@ def main(argv=None):
 
         if options.loglevel >= 1:
             options.stdlog.write("# read %i intervals for %i contigs.\n" %
-                                 (sum([len(x) for x in intervals.values()]),
+                                 (sum([len(x) for x in list(intervals.values())]),
                                   len(intersectors)))
     else:
         intersectors = None
@@ -625,7 +625,7 @@ def main(argv=None):
 
         query_coverage = 100.0 * \
             (match.mQueryLength -
-             sum(map(lambda x: x[1] - x[0], rest))) / match.mQueryLength
+             sum([x[1] - x[0] for x in rest])) / match.mQueryLength
 
         if query_coverage >= 99.9:
             fully_matched.append(query_id)
@@ -697,7 +697,7 @@ def main(argv=None):
     while 1:
 
         try:
-            match = iterator.next()
+            match = next(iterator)
         except Blat.ParsingError:
             iterator = Blat.BlatIterator(infile)
             continue

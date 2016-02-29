@@ -345,7 +345,7 @@ def main(argv=None):
     for chunk in gffs:
 
         if options.read_twice:
-            second_gff_chunk = second_gff.next()
+            second_gff_chunk = next(second_gff)
         else:
             chunk = list(chunk)
             second_gff_chunk = chunk

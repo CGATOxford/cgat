@@ -90,14 +90,14 @@ def main(argv=None):
         try:
             data = query.src.split(".")
             qs, qcontig = data[0], ".".join(data[1:])
-        except ValueError, msg:
+        except ValueError as msg:
             raise ValueError(
                 "error: could not parse query %s: msg=%s" % (query.src, msg))
 
         try:
             data = target.src.split(".")
             ts, tcontig = data[0], ".".join(data[1:])
-        except ValueError, msg:
+        except ValueError as msg:
             raise ValueError(
                 "error: could not parse target %s: msg=%s" % (target.src, msg))
 

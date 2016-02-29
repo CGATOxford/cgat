@@ -71,7 +71,7 @@ def main(argv=None):
     (options, args) = E.Start(parser)
 
     if options.old_pattern is None or options.new_pattern is None:
-        raise "please specify both an old and a new pattern."
+        raise ValueError("please specify both an old and a new pattern")
 
     rx_old = re.compile(options.old_pattern)
 

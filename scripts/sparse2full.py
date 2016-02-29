@@ -33,6 +33,7 @@ Command line options
 import sys
 import string
 import CGAT.Experiment as E
+from functools import reduce
 
 
 def CountElements(matrix, default_value):
@@ -53,7 +54,7 @@ def Sparse2Matrix(outfile, matrix_id, lines, options,
                   in_map_token2col={}):
 
     # remove comments
-    lines = filter(lambda x: x[0] != "#" and len(x[:-1]) > 0, lines)
+    lines = [x for x in lines if x[0] != "#" and len(x[:-1]) > 0]
 
     if len(lines) == 0:
         raise IOError("no input")
@@ -86,8 +87,8 @@ def Sparse2Matrix(outfile, matrix_id, lines, options,
 
         # if either row/column names are not given:
         if not map_token2row or not map_token2col:
-            row_tokens = map(lambda x: string.split(x[:-1], "\t")[0], lines)
-            col_tokens = map(lambda x: string.split(x[:-1], "\t")[1], lines)
+            row_tokens = [string.split(x[:-1], "\t")[0] for x in lines]
+            col_tokens = [string.split(x[:-1], "\t")[1] for x in lines]
 
             if options.input_format == "row-col-weight-weight":
                 # merge row and col tokens
@@ -96,17 +97,17 @@ def Sparse2Matrix(outfile, matrix_id, lines, options,
 
             if options.is_numeric:
                 try:
-                    row_tokens = map(int, row_tokens)
+                    row_tokens = list(map(int, row_tokens))
                     row_converter = int
                 except ValueError:
-                    row_tokens = map(float, row_tokens)
+                    row_tokens = list(map(float, row_tokens))
                     row_converter = float
 
                 try:
-                    col_tokens = map(int, col_tokens)
+                    col_tokens = list(map(int, col_tokens))
                     col_converter = int
                 except ValueError:
-                    col_tokens = map(float, col_tokens)
+                    col_tokens = list(map(float, col_tokens))
                     col_converter = float
 
             row_tokens.sort()
@@ -122,7 +123,7 @@ def Sparse2Matrix(outfile, matrix_id, lines, options,
                         map_token2col[col_token] = len(map_token2col)
 
         if not options.asymmetric:
-            for col_token in map_token2col.keys():
+            for col_token in list(map_token2col.keys()):
                 if col_token not in map_token2row:
                     map_token2row[col_token] = len(map_token2row)
             map_token2col = map_token2row
@@ -181,9 +182,9 @@ def Sparse2Matrix(outfile, matrix_id, lines, options,
                 replicates[map_token2row[col_token]][
                     map_token2col[row_token]] += 1
 
-        col_tokens = map_token2col.items()
+        col_tokens = list(map_token2col.items())
         col_tokens.sort(lambda x, y: cmp(x[1], y[1]))
-        row_tokens = map_token2row.items()
+        row_tokens = list(map_token2row.items())
         row_tokens.sort(lambda x, y: cmp(x[1], y[1]))
 
         ndefault, nfound = CountElements(matrix, options.default)
@@ -214,18 +215,18 @@ def Sparse2Matrix(outfile, matrix_id, lines, options,
         elif options.output_format == "phylip":
 
             if len(row_tokens) != len(col_tokens):
-                raise ValueError, "phylip needs symmetric matrices."
+                raise ValueError("phylip needs symmetric matrices.")
 
             outfile.write("%i\n" % len(row_tokens))
 
             for row in range(len(matrix)):
                 outfile.write(
-                    "%-10s\t%s\n" % (row_tokens[row][0], " ".join(map(lambda x: "  %10s" % x, matrix[row]))))
+                    "%-10s\t%s\n" % (row_tokens[row][0], " ".join(["  %10s" % x for x in matrix[row]])))
 
         elif options.output_format == "phylip-replicates":
 
             if len(row_tokens) != len(col_tokens):
-                raise ValueError, "phylip needs symmetric matrices."
+                raise ValueError("phylip needs symmetric matrices.")
 
             outfile.write("%i\n" % len(row_tokens))
 
@@ -238,7 +239,7 @@ def Sparse2Matrix(outfile, matrix_id, lines, options,
                 outfile.write("\n")
     else:
         if not options.row_names or not options.col_names:
-            raise "Please specify row and column range."
+            raise ValueError("please specify row and column range")
 
         row_range = eval(options.row_names)
         col_range = eval(options.col_names)
@@ -376,8 +377,8 @@ def main(argv=None):
         options.stdout.write("row\tcol\tvalue\n")
 
         if options.row_names:
-            row_tokens = map(lambda x: string.split(
-                x[:-1], "\t")[0], open(options.row_names, "r").readlines())
+            row_tokens = [string.split(
+                x[:-1], "\t")[0] for x in open(options.row_names, "r").readlines()]
         else:
             row_tokens = None
 
@@ -394,12 +395,12 @@ def main(argv=None):
             if row == 1:
                 if not col_tokens:
                     if options.col_names:
-                        col_tokens = map(lambda x: string.split(
-                            x[:-1], "\t")[0], open(options.col_names, "r").readlines())
+                        col_tokens = [string.split(
+                            x[:-1], "\t")[0] for x in open(options.col_names, "r").readlines()]
                     else:
                         if not row_tokens:
                             del data[0]
-                        col_tokens = map(str, data)
+                        col_tokens = list(map(str, data))
                     continue
 
             if row_tokens:
@@ -422,9 +423,9 @@ def main(argv=None):
                 "## Map between matrices in input file and output matrices.\nnew\told\n")
 
         # convert a sparse matrix to a full matrix
-        lines = filter(lambda x: x[0] != "#", sys.stdin.readlines())
+        lines = [x for x in sys.stdin.readlines() if x[0] != "#"]
 
-        chunks = filter(lambda x: lines[x][0] == ">", range(len(lines)))
+        chunks = [x for x in range(len(lines)) if lines[x][0] == ">"]
 
         if not chunks:
             chunks = [-1]
@@ -433,14 +434,14 @@ def main(argv=None):
         chunks.append(len(lines))
 
         if options.loglevel >= 2:
-            print "# processing chunks:", chunks
+            print("# processing chunks:", chunks)
 
         map_token2row = {}
         map_token2col = {}
 
         if options.file_row_names:
-            row_tokens = map(lambda x: string.split(
-                x[:-1], "\t")[0], open(options.file_row_names, "r").readlines())
+            row_tokens = [string.split(
+                x[:-1], "\t")[0] for x in open(options.file_row_names, "r").readlines()]
             for row_token in row_tokens:
                 map_token2row[row_token] = len(map_token2row)
 
@@ -449,8 +450,8 @@ def main(argv=None):
                 map_token2row[x] = len(map_token2row)
 
         if options.file_col_names:
-            col_tokens = map(lambda x: string.split(
-                x[:-1], "\t")[0], open(options.file_col_names, "r").readlines())
+            col_tokens = [string.split(
+                x[:-1], "\t")[0] for x in open(options.file_col_names, "r").readlines()]
             for col_token in col_tokens:
                 map_token2col[col_token] = len(map_token2col)
 

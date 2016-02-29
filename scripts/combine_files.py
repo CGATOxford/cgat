@@ -117,7 +117,7 @@ def main(argv=None):
         map_regex2dest = IOTools.readMap(
             IOTools.openFile(options.filename_map))
         map_regex2dest = dict([(re.compile(x), y) for x, y in
-                               map_regex2dest.items()])
+                               list(map_regex2dest.items())])
 
     map_suffix2dest = {}
     for suffix in options.suffixes:
@@ -132,7 +132,7 @@ def main(argv=None):
     dest2src = collections.defaultdict(list)
     for filename in filenames:
         dests = []
-        for regex, dest in map_regex2dest.items():
+        for regex, dest in list(map_regex2dest.items()):
             if regex.search(filename):
                 dests.append(dest)
         if len(dests) == 0:
@@ -145,7 +145,7 @@ def main(argv=None):
         dest = dests[0]
         # implement suffix mapping, note that
         # suffixes can extend beyond an extension
-        for suffix, new_suffix in map_suffix2dest.items():
+        for suffix, new_suffix in list(map_suffix2dest.items()):
             if filename.endswith(suffix):
                 if suffix in map_suffix2dest:
                     dest = dest + map_suffix2dest[suffix]
@@ -153,7 +153,7 @@ def main(argv=None):
 
         dest2src[dest].append(filename)
 
-    for dest, srcs in sorted(dest2src.iteritems()):
+    for dest, srcs in sorted(dest2src.items()):
         E.info("merging: %s <- %s" % (dest, srcs))
         if options.dry_run:
             continue

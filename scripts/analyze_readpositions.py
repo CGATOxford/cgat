@@ -100,7 +100,7 @@ def main(argv=None):
 
         noutput += 1
         mincov = covered / length
-        values = map(float, data.split(";"))
+        values = list(map(float, data.split(";")))
         m = max(values)
         values = [x / m for x in values]
         coverage_5prime += values[0:1000]

@@ -30,8 +30,8 @@ Command line options
 
 import sys
 import re
-import urllib2
-import urllib
+import urllib.request, urllib.error, urllib.parse
+import urllib.request, urllib.parse, urllib.error
 import xml.etree.ElementTree as ET
 
 import CGAT.Experiment as E
@@ -63,13 +63,13 @@ def main(argv=None):
               'usehistory': 'y',
               }
 
-    params = urllib.urlencode(params)
+    params = urllib.parse.urlencode(params)
     query_filter = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi'
     query_retrieve = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi'
     query_fetch = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi'
     query_summary = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi'
 
-    data = urllib2.urlopen(query_filter, params)
+    data = urllib.request.urlopen(query_filter, params)
     etree = ET.parse(data)
     root = etree.getroot()
 
@@ -84,10 +84,10 @@ def main(argv=None):
               'db': 'pubmed',
               }
 
-    params = urllib.urlencode(params)
+    params = urllib.parse.urlencode(params)
     # necessary to preserve 1to1 links
     params += "&" + "&".join(["id=%s" % x for x in uids])
-    data = urllib2.urlopen(query_retrieve, params)
+    data = urllib.request.urlopen(query_retrieve, params)
 
     etree = ET.parse(data)
     root = etree.getroot()
@@ -104,8 +104,8 @@ def main(argv=None):
     params = {'db': 'gds',
               'id': ",".join(uids)}
 
-    params = urllib.urlencode(params)
-    data = urllib2.urlopen(query_fetch, params).read()
+    params = urllib.parse.urlencode(params)
+    data = urllib.request.urlopen(query_fetch, params).read()
 
     map_uid2accession = {}
     map_uid2description = {}
@@ -138,18 +138,18 @@ def main(argv=None):
 
     E.info("retrieving pubmed records")
     # output by pubmed id
-    for pmid in map_uid2pmid.values():
+    for pmid in list(map_uid2pmid.values()):
         if pmid is None:
             continue
-        print pmid
+        print(pmid)
         # retrieve record
 
         params = {'db': 'pubmed',
                   'id': pmid,
                   'retmode': 'xml'}
 
-        params = urllib.urlencode(params)
-        data = urllib2.urlopen(query_fetch, params)
+        params = urllib.parse.urlencode(params)
+        data = urllib.request.urlopen(query_fetch, params)
 
         etree = ET.parse(data)
         root = etree.getroot()

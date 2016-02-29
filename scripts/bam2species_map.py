@@ -72,7 +72,7 @@ def main(argv=None):
     contigs = {}
     for fasta in FastaIterator.iterate(options.stdin):
         contigs[fasta.title] = (1, len(fasta.sequence) - 1)
-    E.info("read %i contigs" % len(contigs.keys()))
+    E.info("read %i contigs" % len(list(contigs.keys())))
 
     # read in bamfile
     E.info("reading bam file")
@@ -80,7 +80,7 @@ def main(argv=None):
 
     E.info("iterating over contigs")
     c = 0
-    for contig, coords in contigs.iteritems():
+    for contig, coords in contigs.items():
         coords = list(coords)
 
         #################################
@@ -94,11 +94,11 @@ def main(argv=None):
             species_counts[species_id] += 1
 
         # at the moment ignore if there are no counts
-        if len(species_counts.values()) == 0:
+        if len(list(species_counts.values())) == 0:
             E.warn("no reads map to %s" % contig)
             continue
 
-        for species, count in species_counts.iteritems():
+        for species, count in species_counts.items():
             if species_counts[species] == max(species_counts.values()):
                 top_dog = species
                 c += 1

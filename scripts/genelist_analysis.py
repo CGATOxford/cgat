@@ -49,8 +49,8 @@ def computeFDR(all_results,
 
     # flatten all_results
     results = []
-    for key, data in all_results.iteritems():
-        results.extend(data.mResults.values())
+    for key, data in all_results.items():
+        results.extend(list(data.mResults.values()))
 
     observed_min_pvalues = [min(
         x.mProbabilityOverRepresentation,
@@ -99,9 +99,9 @@ def outputOntologyResults(all_results, go2infos, options):
 
     outfile.write("\t".join(headers) + "\n")
 
-    for testpair, data in all_results.iteritems():
+    for testpair, data in all_results.items():
         ontology, genelist = testpair
-        for key, result in data.mResults.iteritems():
+        for key, result in data.mResults.items():
             code = GO.GetCode(result)
 
             n = go2infos[ontology].get(key, GO.GOInfo())
@@ -128,7 +128,7 @@ def doOntologyAnalysis(gene_lists, options):
 
     # test all if none specified
     if not ontologies:
-        ontologies = gene2gos.keys()
+        ontologies = list(gene2gos.keys())
 
     all_results = {}
 
@@ -145,7 +145,7 @@ def doOntologyAnalysis(gene_lists, options):
                "to %i categories (%i maps)" %
                (ontology, ngenes, ncategories, nmaps))
 
-        for geneset, x in gene_lists.iteritems():
+        for geneset, x in gene_lists.items():
             foreground, background = x
 
             E.debug("working on %s - %s" % (ontology, geneset))
@@ -333,7 +333,7 @@ def main(argv=None):
             gene_pattern=options.gene_pattern)
 
         # use default background
-        gene_lists = dict([(x, (y, None)) for x, y in genes.iteritems()])
+        gene_lists = dict([(x, (y, None)) for x, y in genes.items()])
 
     if bg:
         E.info("gene list: %20s = %i genes" % ("default background", len(bg)))
@@ -344,12 +344,12 @@ def main(argv=None):
         raise ValueError("no gene lists input")
 
     # set the default background for those tests without explicit background
-    for key in gene_lists.keys():
+    for key in list(gene_lists.keys()):
         if gene_lists[key][1] is None:
             gene_lists[key] = (gene_lists[key][0], bg)
 
     # check for inconsistencies
-    for key, l in gene_lists.iteritems():
+    for key, l in gene_lists.items():
         foreground, background = l
 
         missing = set(foreground).difference(set(background))
@@ -365,7 +365,7 @@ def main(argv=None):
                        (key, len(missing), len(background)))
             background.extend(missing)
 
-    for key, l in gene_lists.iteritems():
+    for key, l in gene_lists.items():
         lfg = len(l[0])
         lbg = len(l[1])
 

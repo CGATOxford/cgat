@@ -108,6 +108,7 @@ import CGAT.Experiment as E
 import CGAT.CSV as CSV
 import CGAT.Stats as Stats
 import scipy
+from functools import reduce
 
 
 def getColumns(fields, columns="all"):
@@ -150,7 +151,7 @@ def readAndTransposeTable(infile, options):
             row = [key] + vals.split(options.separator)
             rows.append(row)
 
-    ncols = max(map(lambda x: len(x), rows))
+    ncols = max([len(x) for x in rows])
     nrows = len(rows)
 
     new_rows = [[""] * nrows for x in range(ncols)]
@@ -201,8 +202,8 @@ def readAndGroupTable(infile, options):
         # update headers
         new_fields = [fields[options.group_column]]
         for c in options.columns:
-            new_fields += list(map(lambda x: "%s_%s" %
-                                   (fields[c], x), Stats.DistributionalParameters().getHeaders()))
+            new_fields += list(["%s_%s" %
+                                   (fields[c], x) for x in Stats.DistributionalParameters().getHeaders()])
 
     # convert values to floats (except for group_column)
     # Delete rows with unconvertable values and not in options.columns
@@ -302,14 +303,14 @@ def readAndCollapseTable(infile, options, missing_value=""):
         if r not in added:
             values[r].append(missing_value)
 
-    sizes = set([len(x) for x in values.values()])
+    sizes = set([len(x) for x in list(values.values())])
     assert len(sizes) == 1, "unequal number of row_names"
     size = list(sizes)[0]
 
     options.stdout.write(
         "row\t%s\n" % ("\t".join(["column_%i" % x for x in range(size)])))
 
-    for key, row in values.items():
+    for key, row in list(values.items()):
         options.stdout.write("%s\t%s\n" % (key, "\t".join(row)))
 
 ##########################################################
@@ -353,10 +354,10 @@ def readAndJoinTable(infile, options):
     join_column = options.join_column - 1
     join_name = options.join_column_name - 1
 
-    join_rows = list(set(map(lambda x: x[join_column], table)))
+    join_rows = list(set([x[join_column] for x in table]))
     join_rows.sort()
 
-    join_names = list(set(map(lambda x: x[join_name], table)))
+    join_names = list(set([x[join_name] for x in table]))
     join_names.sort()
 
     join_columns = list(
@@ -610,8 +611,7 @@ def main(argv=None):
         options.columns = getColumns(fields, options.columns)
 
         if options.id_column:
-            id_columns = map(
-                lambda x: int(x) - 1, options.id_column.split(","))
+            id_columns = [int(x) - 1 for x in options.id_column.split(",")]
             id_header = "\t".join([fields[id_column]
                                    for id_column in id_columns])
             options.columns = [
@@ -640,7 +640,7 @@ def main(argv=None):
         fields, table = CSV.readTable(
             options.stdin, with_header=options.has_headers, as_rows=True)
         options.columns = getColumns(fields, options.columns)
-        table = zip(*table)
+        table = list(zip(*table))
 
         options.stdout.write("value\n")
 
@@ -675,7 +675,7 @@ def main(argv=None):
 
     elif "grep" in options.methods:
 
-        options.columns = map(lambda x: int(x) - 1, options.columns.split(","))
+        options.columns = [int(x) - 1 for x in options.columns.split(",")]
 
         patterns = []
 
@@ -700,7 +700,7 @@ def main(argv=None):
                     break
 
             if (not found and options.invert_match) or (found and not options.invert_match):
-                print line[:-1]
+                print(line[:-1])
     else:
 
         ######################################################################
@@ -738,7 +738,7 @@ def main(argv=None):
                 del options.parameters[0]
 
                 for c in options.columns:
-                    table[c] = map(lambda x: x / value, table[c])
+                    table[c] = [x / value for x in table[c]]
 
             elif method == "multiply-by-value":
 
@@ -746,13 +746,13 @@ def main(argv=None):
                 del options.parameters[0]
 
                 for c in options.columns:
-                    table[c] = map(lambda x: x * value, table[c])
+                    table[c] = [x * value for x in table[c]]
 
             elif method == "normalize-by-max":
 
                 for c in options.columns:
                     m = max(table[c])
-                    table[c] = map(lambda x: x / m, table[c])
+                    table[c] = [x / m for x in table[c]]
 
             elif method == "kullback-leibler":
                 options.stdout.write("category1\tcategory2\tkl1\tkl2\tmean\n")
@@ -784,9 +784,9 @@ def main(argv=None):
 
                 for c in options.columns:
                     tt = table[c]
-                    t = zip(tt, range(nrows))
+                    t = list(zip(tt, list(range(nrows))))
                     t.sort()
-                    for i, n in zip(map(lambda x: x[1], t), range(nrows)):
+                    for i, n in zip([x[1] for x in t], list(range(nrows))):
                         tt[i] = n
 
             elif method in ("lower-bound", "upper-bound"):
@@ -820,9 +820,9 @@ def main(argv=None):
                     str(min(pvalues))
 
                 # convert to str to avoid test for float downstream
-                qvalues = map(
+                qvalues = list(map(
                     str, Stats.adjustPValues(pvalues,
-                                             method=options.fdr_method))
+                                             method=options.fdr_method)))
 
                 if options.fdr_add_column is None:
                     x = 0

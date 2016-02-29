@@ -68,7 +68,7 @@ def executewait(dbhandle, statement, error=Exception, regex_error="locked",
     while 1:
         try:
             cc.execute(statement)
-        except error, msg:
+        except error as msg:
             if retries == 0:
                 raise
             if not re.search("locked", str(msg)):
@@ -274,7 +274,7 @@ def write_DataFrame(dataframe,
 
         if type(index) is str:
             istat = indexStat(tablename, index)
-            print istat
+            print(istat)
             db_execute(cc, istat)
         elif isinstance(index, (tuple, list)):
             for column in index:

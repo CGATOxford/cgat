@@ -77,7 +77,7 @@ def main(argv=None):
         e.Read(line)
 
         if not GTF.Overlap(last_e, e):
-            print str(last_e)
+            print(str(last_e))
             last_e = e
         else:
             last_e.start = min(last_e.start, e.start)
@@ -86,7 +86,7 @@ def main(argv=None):
                 last_e.mInfo += " ; " + e.mInfo
             continue
 
-    print str(last_e)
+    print(str(last_e))
 
     E.Stop()
 

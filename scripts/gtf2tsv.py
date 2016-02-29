@@ -230,7 +230,7 @@ def main(argv=None):
                 gtf.gene_id = data[map_header2column["gene_id"]]
                 gtf.transcript_id = data[map_header2column["transcript_id"]]
                 gtf.parseInfo(data[map_header2column["attributes"]], line)
-            except KeyError, msg:
+            except KeyError as msg:
                 raise KeyError("incomplete entry %s: %s: %s" %
                                (str(data), str(map_header2column), msg))
             # output gtf entry in gtf format
@@ -258,7 +258,7 @@ def main(argv=None):
             except AttributeError:
                 pass
 
-        for x, y in sorted(map_fr2to.iteritems()):
+        for x, y in sorted(map_fr2to.items()):
             options.stdout.write("%s\t%s\n" % (x, y))
     else:
         header = ("contig", "source", "feature", "start", "end", "score",
@@ -268,7 +268,7 @@ def main(argv=None):
         for gtf in GTF.iterator(options.stdin):
 
             attributes = []
-            for a in gtf.keys():
+            for a in list(gtf.keys()):
                 if a in ("gene_id", "transcript_id"):
                     continue
                 attributes.append('%s %s' % (a, GTF.quote(gtf[a])))

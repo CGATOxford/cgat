@@ -51,7 +51,7 @@ def sanitizeGenome(infile, outfile, contigs):
         if skip_contig:
             continue
 
-        start, val = map(int, line[:-1].split("\t"))
+        start, val = list(map(int, line[:-1].split("\t")))
 
         if start + span > contig_size:
             ntruncated_contig += 1

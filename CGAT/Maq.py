@@ -129,7 +129,7 @@ class Match:
          self.mMismatchQuality,
          self.mNMismatches0,
          self.mNMismatches1,
-         self.mLength) = map(int, (self.start,
+         self.mLength) = list(map(int, (self.start,
                                    self.mPairInsert,
                                    self.mPairFlag,
                                    self.mQuality,
@@ -139,7 +139,7 @@ class Match:
                                    self.mMismatchQuality,
                                    self.mNMismatches0,
                                    self.mNMismatches1,
-                                   self.mLength))
+                                   self.mLength)))
         # maq starts counting at 1
         self.start -= 1
 

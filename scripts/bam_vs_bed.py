@@ -246,7 +246,7 @@ def main(argv=None):
         for anno in annotations:
             counts_per_alignment[anno] += 1
 
-    for key, counts in counts_per_alignment.iteritems():
+    for key, counts in counts_per_alignment.items():
         options.stdout.write("%s\t%i\n" % (key, counts))
 
     # write footer and output benchmark information.

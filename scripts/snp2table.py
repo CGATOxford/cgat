@@ -702,7 +702,7 @@ class BaseAnnotatorCodon(BaseAnnotator):
             if self.mJunctions:
                 if contig in self.mJunctions:
                     j = self.mJunctions[contig]
-                    for x in xrange(start, end):
+                    for x in range(start, end):
                         if x in j:
                             # found a junction within codon
                             for junction_strand, next_start, frame in j[x]:

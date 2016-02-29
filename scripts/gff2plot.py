@@ -100,7 +100,7 @@ Command line options
 '''
 import sys
 import os
-import ConfigParser
+import configparser
 import matplotlib
 import pylab
 import matplotlib.ticker
@@ -119,12 +119,12 @@ def formatGenomicCoordinate(value, pos=None):
     value = int(value)
     format = "%%.%if%%s%s" % (int(decimals), suffix)
 
-    for exp in xrange(len(exps) - 1, -1, -1):
+    for exp in range(len(exps) - 1, -1, -1):
 
-        if value < 1000L ** (exp):
+        if value < 1000 ** (exp):
             continue
         else:
-            return format % (float(value) / 1000L ** (exp), exps[exp])
+            return format % (float(value) / 1000 ** (exp), exps[exp])
             break
     else:
         return str(value)
@@ -155,7 +155,7 @@ def normalizeValuesByWindows(data, window_size=None):
     """
 
     if not options.window_size:
-        window_size = min(map(lambda x: x[1] - x[0], data))
+        window_size = min([x[1] - x[0] for x in data])
 
     new_values = []
 
@@ -204,8 +204,8 @@ def addPlot(ax, track, contig, nplotted,
 
     # step function
     # datapoint is in window average
-    xvals = map(lambda x: (x[1] + x[0]) / 2.0, track.mData[contig])
-    yvals = map(lambda x: x[2], track.mData[contig])
+    xvals = [(x[1] + x[0]) / 2.0 for x in track.mData[contig]]
+    yvals = [x[2] for x in track.mData[contig]]
     l = len(xvals)
 
     if nsubplots:
@@ -252,7 +252,7 @@ def plotContig(contig, tracks, options, plot_legend=False,
 
     if extra_features and "figure" in extra_features:
         figure = pylab.figure(**enterParams(extra_features['figure'],
-                                            (("figsize", lambda x: map(int, x.split(","))),
+                                            (("figsize", lambda x: list(map(int, x.split(",")))),
                                              ("dpi", int),
                                              "facecolor",
                                              "edgecolor")))
@@ -262,7 +262,7 @@ def plotContig(contig, tracks, options, plot_legend=False,
     if plot_legend:
         if extra_features and "legend" in extra_features:
             legend = pylab.figure(**enterParams(extra_features['legend'],
-                                                (("figsize", lambda x: map(int, x.split(","))),
+                                                (("figsize", lambda x: list(map(int, x.split(",")))),
                                                  ("dpi", int),
                                                  "facecolor",
                                                  "edgecolor")))
@@ -286,8 +286,8 @@ def plotContig(contig, tracks, options, plot_legend=False,
 
     for track in tracks:
         if track.mData:
-            min_x = min(min_x, min(map(lambda x: (x[0]), track.mData[contig])))
-            max_x = max(max_x, max(map(lambda x: (x[1]), track.mData[contig])))
+            min_x = min(min_x, min([(x[0]) for x in track.mData[contig]]))
+            max_x = max(max_x, max([(x[1]) for x in track.mData[contig]]))
 
     # make sure that we use the same view for all axes
     axprops['xlim'] = (min_x, max_x)
@@ -316,14 +316,14 @@ def plotContig(contig, tracks, options, plot_legend=False,
             first = True
             for tt in track.mSubTracks:
                 if first:
-                    min_y = min(map(lambda x: x[2], tt.mData[contig]))
-                    max_y = max(map(lambda x: x[2], tt.mData[contig]))
+                    min_y = min([x[2] for x in tt.mData[contig]])
+                    max_y = max([x[2] for x in tt.mData[contig]])
                     first = False
                 else:
                     min_y = min(
-                        min_y, min(map(lambda x: x[2], tt.mData[contig])))
+                        min_y, min([x[2] for x in tt.mData[contig]]))
                     max_y = max(
-                        max_y, max(map(lambda x: x[2], tt.mData[contig])))
+                        max_y, max([x[2] for x in tt.mData[contig]]))
 
             nsubplotted = 0
             for tt in track.mSubTracks:
@@ -338,8 +338,8 @@ def plotContig(contig, tracks, options, plot_legend=False,
                     labels.append(tt.mTitle)
 
         else:
-            min_y = min(map(lambda x: x[2], track.mData[contig]))
-            max_y = max(map(lambda x: x[2], track.mData[contig]))
+            min_y = min([x[2] for x in track.mData[contig]])
+            max_y = max([x[2] for x in track.mData[contig]])
 
             if options.global_colours:
                 n_for_colour = nplotted
@@ -368,7 +368,7 @@ def plotContig(contig, tracks, options, plot_legend=False,
 
         # deal with extra_features
         if extra_features:
-            for key, config in extra_features.items():
+            for key, config in list(extra_features.items()):
                 if key == "vlines":
                     if contig not in config.mData:
                         continue
@@ -438,7 +438,7 @@ def layoutTracks(tracks):
     """layout tracks."""
 
     # combine subtracks - these are ordered by appearance
-    for track in tracks.values():
+    for track in list(tracks.values()):
         if track.mSubTracks:
             s = []
             for subtrack in track.mSubTracks:
@@ -447,7 +447,7 @@ def layoutTracks(tracks):
             track.mSubTracks = s
 
     # sort by priority and compute heights
-    total_width = sum(map(lambda x: x.height, tracks.values()))
+    total_width = sum([x.height for x in list(tracks.values())])
 
     # convert to list - this is the order in which the tracks will
     # be output
@@ -540,7 +540,7 @@ def main(argv=None):
 
     elif options.filename_config:
         # get track information from config file
-        config = ConfigParser.ConfigParser()
+        config = configparser.ConfigParser()
         config.read(os.path.expanduser(options.filename_config))
 
         # first extract special sections
@@ -573,7 +573,7 @@ def main(argv=None):
 
             elif config.has_option(section, "tracks"):
                 subtracks = config.get(section, "tracks")
-                subtracks = map(lambda x: x.strip(), subtracks.split(","))
+                subtracks = [x.strip() for x in subtracks.split(",")]
 
                 tracks[section] = Track(title=section,
                                         data=None,
@@ -584,9 +584,9 @@ def main(argv=None):
 
     # compile set of all contigs
     contigs = set()
-    for track in tracks.values():
+    for track in list(tracks.values()):
         if track.mData:
-            contigs = contigs.union(track.mData.keys())
+            contigs = contigs.union(list(track.mData.keys()))
 
     # re-arrange tracks and subtracks
     tracks = layoutTracks(tracks)

@@ -114,7 +114,7 @@ def main(argv=None):
     # iterate over the contigs and sample from the respective genome
     E.info("iterating over contigs")
     c_contigs_output = 0
-    for contig, length in contigs_lengths.iteritems():
+    for contig, length in contigs_lengths.items():
         if contig not in species_map:
             E.warn("contig %s not in species map file" % contig)
         else:
@@ -127,7 +127,7 @@ def main(argv=None):
             try:
                 end = start + length - 1
             except ValueError:
-                print "end of sampled contig extends beyond length of genome"
+                print("end of sampled contig extends beyond length of genome")
 
             sampled_seq = genomes_sequences[genome][start:end]
             options.stdout.write(

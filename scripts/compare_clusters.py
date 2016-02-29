@@ -72,7 +72,7 @@ def main(argv=None):
                               add_pipe_options=True)
 
     if len(args) != 2:
-        raise "please supply to filenames with the clusters."
+        raise ValueError("please supply to filenames with the clusters")
 
     map_id2cluster1, map_cluster2ids1 = IOTools.ReadMap(
         open(args[0]), both_directions=True)
@@ -81,13 +81,13 @@ def main(argv=None):
 
     graph = networkx.Graph()
 
-    for a in map_cluster2ids1.keys():
+    for a in list(map_cluster2ids1.keys()):
         graph.add_node((1, a))
-    for b in map_cluster2ids2.keys():
+    for b in list(map_cluster2ids2.keys()):
         graph.add_node((2, b))
 
     # build graph between clusters
-    for cluster1, ids1 in map_cluster2ids1.items():
+    for cluster1, ids1 in list(map_cluster2ids1.items()):
         for id1 in ids1:
             if id1 in map_id2cluster2:
                 graph.add_edge((1, cluster1), (2, map_id2cluster2[id1]))
@@ -141,7 +141,7 @@ def main(argv=None):
     #######################################################
     outfile = getFile("counts", options)
     outfile.write("n1\tn2\tcounts\tpcounts1\tpcounts2\n")
-    for cc, c in counts.items():
+    for cc, c in list(counts.items()):
         outfile.write("%i\t%i\t%i\t%s\t%s\n" % (cc[0], cc[1], c,
                                                 options.format % (
                                                     100.0 * float(c) / len(map_cluster2ids1)),

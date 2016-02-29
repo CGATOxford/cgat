@@ -74,7 +74,7 @@ def main(argv=None):
 
     # group by tool
     tools = collections.defaultdict(list)
-    for key, deps in dependencies.items():
+    for key, deps in list(dependencies.items()):
         for r in deps:
             tools[r.tool].append((r, key))
 

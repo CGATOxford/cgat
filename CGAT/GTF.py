@@ -433,7 +433,7 @@ def iterator_overlaps(gff_iterator, min_overlap=0):
     The input should be sorted by contig,start
     """
 
-    last = gff_iterator.next()
+    last = next(gff_iterator)
     matches = [last]
     end = last.end
     for this in gff_iterator:
@@ -497,10 +497,10 @@ def asRanges(gffs, feature=None):
     The returned intervals are sorted.
     """
 
-    if isinstance(feature, basestring):
-        gg = filter(lambda x: x.feature == feature, gffs)
+    if isinstance(feature, str):
+        gg = [x for x in gffs if x.feature == feature]
     elif feature:
-        gg = filter(lambda x: x.feature in feature, gffs)
+        gg = [x for x in gffs if x.feature in feature]
     else:
         gg = gffs[:]
 
@@ -750,7 +750,7 @@ def toDot(v):
 
 def quote(v):
     '''return a quoted attribute.'''
-    if type(v) in types.StringTypes:
+    if type(v) in (str,):
         return '"%s"' % v
     else:
         return str(v)
@@ -817,7 +817,7 @@ class Entry:
             raise ValueError("parsing error in line `%s`" % line)
 
         # note: frame might be .
-        (self.start, self.end) = map(int, (self.start, self.end))
+        (self.start, self.end) = list(map(int, (self.start, self.end)))
         self.start -= 1
 
         self.parseInfo(data[8], line)
@@ -839,12 +839,12 @@ class Entry:
         # The current heuristic is to split on a semicolon followed by a
         # space, which seems to be part of the specification, see
         # http://mblab.wustl.edu/GTF22.html
-        fields = map(lambda x: x.strip(), attributes.split("; ")[:-1])
+        fields = [x.strip() for x in attributes.split("; ")[:-1]]
         self.attributes = {}
 
         for f in fields:
 
-            d = map(lambda x: x.strip(), f.split(" "))
+            d = [x.strip() for x in f.split(" ")]
 
             n, v = d[0], " ".join(d[1:])
             if len(d) > 2:
@@ -877,7 +877,7 @@ class Entry:
 
     def getAttributeField(self, full=True):
         aa = []
-        for k, v in self.attributes.items():
+        for k, v in list(self.attributes.items()):
             if isinstance(v, str):
                 aa.append('%s "%s"' % (k, v))
             elif isinstance(v, list) or isinstance(v, tuple):

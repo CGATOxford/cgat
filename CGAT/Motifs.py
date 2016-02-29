@@ -47,7 +47,7 @@ def countMotifs(infile, motifs):
     positions = []
     while 1:
         try:
-            seq = it.next()
+            seq = next(it)
         except StopIteration:
             break
         if not seq:
@@ -105,7 +105,7 @@ iupacdict = {
     'X': 'ACGT',
     'N': 'ACGT'}
 
-regexdict = dict(((x[1], x[0]) for x in iupacdict.iteritems()))
+regexdict = dict(((x[1], x[0]) for x in iupacdict.items()))
 
 
 def iupac2regex(pattern):

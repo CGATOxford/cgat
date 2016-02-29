@@ -201,7 +201,7 @@ def main(argv=None):
                 a = reference_codons[x]
                 b = reference_codons[y]
                 d = 0
-                for codon, p in a.items():
+                for codon, p in list(a.items()):
                     if Genomics.IsStopCodon(codon):
                         continue
                     d += b[codon] * math.log(b[codon] / p)

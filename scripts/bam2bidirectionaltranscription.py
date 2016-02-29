@@ -222,7 +222,7 @@ def main(argv=None):
             if gtf.gene_id not in gtf_set:
                 continue
             start, end = gtf.start - 1, gtf.end
-            bins = np.histogram(range(start, end), bins=options.bin_number)[1]
+            bins = np.histogram(list(range(start, end)), bins=options.bin_number)[1]
             bin_as = []
             for x in range(len(bins)):
                 if x < len(bins) - 1:
@@ -267,8 +267,8 @@ def main(argv=None):
             profile[gtf.gene_id] = bin_as
 
         outf = open(options.outbase + "_profile.tsv", "w")
-        outf.write("\t".join(profile.keys()) + "\n")
-        for x in zip(*profile.values()):
+        outf.write("\t".join(list(profile.keys())) + "\n")
+        for x in zip(*list(profile.values())):
             outf.write("\t".join(map(str, list(x))) + "\n")
         outf.close()
 
@@ -288,7 +288,7 @@ def main(argv=None):
             if gtf.gene_id not in gtf_set:
                 continue
             start, end = gtf.start - 1, gtf.end
-            bins = np.histogram(range(start, end), bins=options.bin_number)[1]
+            bins = np.histogram(list(range(start, end)), bins=options.bin_number)[1]
             bin_as = []
             bin_s = []
             for x in range(len(bins)):
@@ -327,10 +327,10 @@ def main(argv=None):
             antisense[gtf.gene_id] = bin_as
 
         outf = open(options.outbase + "_shape.tsv", "w")
-        outf.write("\t".join(sense.keys()) + "\tstatus" + "\n")
-        for x in zip(*sense.values()):
+        outf.write("\t".join(list(sense.keys())) + "\tstatus" + "\n")
+        for x in zip(*list(sense.values())):
             outf.write("\t".join(map(str, list(x))) + "\tsense" + "\n")
-        for x in zip(*antisense.values()):
+        for x in zip(*list(antisense.values())):
             outf.write("\t".join(map(str, list(x))) + "\tantisense" + "\n")
         outf.close()
 

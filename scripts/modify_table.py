@@ -34,6 +34,7 @@ Command line options
 import sys
 import string
 import CGAT.Experiment as E
+from functools import reduce
 
 """read in data and append columns to a density histogram
 
@@ -82,21 +83,20 @@ def main(argv=None):
 
     (options, args) = E.Start(parser)
 
-    options.columns = map(lambda x: int(x) - 1, options.columns.split(","))
+    options.columns = [int(x) - 1 for x in options.columns.split(",")]
 
-    print E.GetHeader()
-    print E.GetParams()
+    print(E.GetHeader())
+    print(E.GetParams())
 
     vals = []
 
     # retrieve histogram
-    lines = filter(lambda x: x[0] != "#", sys.stdin.readlines())
+    lines = [x for x in sys.stdin.readlines() if x[0] != "#"]
 
     headers = lines[0][:-1].split("\t")
     del lines[0]
 
-    notcolumns = filter(
-        lambda x: x not in options.columns, range(len(headers)))
+    notcolumns = [x for x in range(len(headers)) if x not in options.columns]
 
     data = [[] for x in range(len(headers))]
 
@@ -108,7 +108,7 @@ def main(argv=None):
             data[c].append(d[c])
 
     if len(data) == 0:
-        raise "No data found."
+        raise ValueError("no data found")
 
     totals = [0] * len(headers)
 
@@ -130,13 +130,13 @@ def main(argv=None):
 
         for method in options.methods:
             if method == "normalize":
-                new_columns.append(map(lambda d: d / totals[c], data[c]))
+                new_columns.append([d / totals[c] for d in data[c]])
                 new_headers.append("normalized")
 
-    print string.join(new_headers, "\t")
+    print(string.join(new_headers, "\t"))
 
     for d in zip(*new_columns):
-        print string.join(map(str, d), "\t")
+        print(string.join(list(map(str, d)), "\t"))
 
     E.Stop()
 

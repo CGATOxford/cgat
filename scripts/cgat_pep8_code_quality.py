@@ -83,7 +83,7 @@ def main(argv=None):
     map_code2column = dict([(y, x + 3) for x, y in enumerate(labels.keys())])
 
     # build first row containing the column labels
-    results = [['code', 'n', 'total'] + labels.keys()]
+    results = [['code', 'n', 'total'] + list(labels.keys())]
 
     # build array with column totals
     column_totals = [0] * (len(map_code2column) + 3)
@@ -105,7 +105,7 @@ def main(argv=None):
     # add descriptions as last row
     results.append(['description',
                     'number of files checked',
-                    'total errors/warnings in set'] + labels.values())
+                    'total errors/warnings in set'] + list(labels.values()))
 
     # output transposed table
     outfile = sys.stdout

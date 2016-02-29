@@ -226,7 +226,7 @@ def getNumReads(bamfile):
             map(int, [x.split("\t")[2]
                       for x in lines if not x.startswith("#")]))
 
-    except IndexError, msg:
+    except IndexError as msg:
         raise IndexError(
             "can't get number of reads from bamfile, msg=%s, data=%s" %
             (msg, lines))

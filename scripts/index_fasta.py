@@ -306,11 +306,11 @@ def main(argv=None):
 
             if synonyms:
                 options.stdlog.write("# Applying the following synonyms:\n")
-                for k, v in synonyms.items():
+                for k, v in list(synonyms.items()):
                     options.stdlog.write("# %s=%s\n" % (k, ",".join(v)))
                 options.stdlog.flush()
         if len(args) < 2:
-            print globals()["__doc__"]
+            print(globals()["__doc__"])
             sys.exit(1)
 
         iterator = IndexedFasta.MultipleFastaIterator(

@@ -241,7 +241,7 @@ def mergeVariants(variants):
                 last_x = x
 
             E.warn("overlapping deletions merged in %i blocks as: %s" %
-                   (len(n), map(str, n)))
+                   (len(n), list(map(str, n))))
             merged_variants.extend(n[:-1])
             this = n[-1]
         else:
@@ -546,8 +546,8 @@ def buildOffsets(variants, phased=True, contig=None):
             offsets1.append((end - 1, offset1))
 
         if E.global_options.loglevel >= 8:
-            print "# variant=", start, end, reference, action, has_wildtype, variantseqs
-            print "# offsets:", offsets0[-1], offsets1[-1]
+            print("# variant=", start, end, reference, action, has_wildtype, variantseqs)
+            print("# offsets:", offsets0[-1], offsets1[-1])
         # add offsets - applies to the end of the variant
 
     return (kept_variants, removed_variants, (offsets0, offsets1))

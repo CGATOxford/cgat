@@ -113,7 +113,7 @@ def quoteRow(row, take,
             d[t] = null
         elif v in missing_values:
             d[t] = null
-        elif map_column2type[t] in (types.IntType, types.FloatType):
+        elif map_column2type[t] in (int, float):
             d[t] = str(row[t])
         else:
             d[t] = string_value % row[t]
@@ -159,11 +159,11 @@ def createTable(dbhandle,
         if ignored:
             E.info("ignored columns: %s" % str(ignored))
 
-        headers = map_column2type.keys()
+        headers = list(map_column2type.keys())
         headers.sort()
 
     elif headers:
-        map_column2type = dict(zip(headers, [None, ] * len(headers)))
+        map_column2type = dict(list(zip(headers, [None, ] * len(headers))))
         ignored = 0
 
     columns_to_ignore = set([x.lower() for x in ignore_columns])
@@ -232,11 +232,11 @@ def createTable(dbhandle,
                 dbhandle.commit()
                 cc.close()
                 E.info("existing table %s deleted" % tablename)
-            except sqlite3.OperationalError, msg:
+            except sqlite3.OperationalError as msg:
                 E.warn(msg)
                 time.sleep(5)
                 continue
-            except error, msg:
+            except error as msg:
                 E.warn("could not delete existing table %s: %s" %
                        (tablename, str(msg)))
                 dbhandle.rollback()
@@ -263,7 +263,7 @@ def createTable(dbhandle,
                 cc.execute(statement)
                 cc.close()
                 dbhandle.commit()
-            except error, msg:
+            except error as msg:
                 E.warn("table creation failed: msg=%s, statement=\n  %s" %
                        (msg, statement))
                 # TODO: check for database locked msg
@@ -329,8 +329,8 @@ def run(infile, options, report_step=10000):
         import sqlite3
         dbhandle = sqlite3.connect(options.database_name)
         try:
-            os.chmod(options.database_name, 0664)
-        except OSError, msg:
+            os.chmod(options.database_name, 0o664)
+        except OSError as msg:
             E.warn("could not change permissions of database: %s" % msg)
 
         # Avoid the following error:
@@ -375,7 +375,7 @@ def run(infile, options, report_step=10000):
 
     if options.replace_header:
         try:
-            reader.next()
+            next(reader)
         except StopIteration:
             pass
 
@@ -389,11 +389,11 @@ def run(infile, options, report_step=10000):
 
         try:
             rows.append(IOTools.convertDictionary(row, map=options.map))
-        except TypeError, msg:
+        except TypeError as msg:
             E.warn(
                 "incomplete line? Type error in conversion: "
                 "'%s' with data: %s" % (msg, str(row)))
-        except ValueError, msg:
+        except ValueError as msg:
             E.warn(
                 "incomplete line? Type error in conversion: "
                 "'%s' with data: %s" % (msg, str(row)))
@@ -535,7 +535,7 @@ def run(infile, options, report_step=10000):
         while 1:
             try:
                 dbhandle.executemany(statement, data)
-            except error, msg:
+            except error as msg:
                 E.warn("import failed: msg=%s, statement=\n  %s" %
                        (msg, statement))
                 # TODO: check for database locked msg
@@ -576,7 +576,7 @@ def run(infile, options, report_step=10000):
             cc = executewait(dbhandle, statement, error, options.retry)
             cc.close()
             E.info("added index on column %s" % (index))
-        except error, msg:
+        except error as msg:
             E.info("adding index on column %s failed: %s" % (index, msg))
 
     statement = "SELECT COUNT(*) FROM %s" % (options.tablename)

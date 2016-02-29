@@ -80,7 +80,7 @@ def main(argv=None):
     # Loop over input files and convert to soft clipped
     nwindows = 0
     ncontigs = 0
-    for contig, stop in contigs.iteritems():
+    for contig, stop in contigs.items():
         ncontigs += 1
         i = 0
         while (i < stop):

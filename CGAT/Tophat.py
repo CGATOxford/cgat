@@ -119,11 +119,11 @@ class CuffCompareResult:
             if line.startswith("#"):
                 d = line[1:-1].strip()
                 if d.startswith("Query"):
-                    self.query, self.query_loci, self.query_multi_exon = map(int, re.match(
-                        "Query mRNAs :\s+(\d+)\s+in\s+(\d+)\s+loci\s+\((\d+)", d).groups())
+                    self.query, self.query_loci, self.query_multi_exon = list(map(int, re.match(
+                        "Query mRNAs :\s+(\d+)\s+in\s+(\d+)\s+loci\s+\((\d+)", d).groups()))
                 elif d.startswith("Reference"):
-                    self.reference, self.reference_loci, self.reference_multi_exon = map(int, re.match(
-                        "Reference mRNAs :\s+(\d+)\s+in\s+(\d+)\s+loci\s+\((\d+)", d).groups())
+                    self.reference, self.reference_loci, self.reference_multi_exon = list(map(int, re.match(
+                        "Reference mRNAs :\s+(\d+)\s+in\s+(\d+)\s+loci\s+\((\d+)", d).groups()))
                 elif d.startswith("("):
                     self.loci_multi_exon, self.loci_transcripts = re.match(
                         "\((\d+) multi-transcript loci, ~(\S+)", d).groups()
@@ -144,8 +144,8 @@ class CuffCompareResult:
 
             if tag.startswith("novel") or tag.startswith("missed"):
 
-                counts, total = map(
-                    int, re.match("\s+(\d+)/(\d+)", data).groups())
+                counts, total = list(map(
+                    int, re.match("\s+(\d+)/(\d+)", data).groups()))
                 setattr(self, "%s_counts" % tag, counts)
                 setattr(self, "%s_total" % tag, total)
 
@@ -264,9 +264,9 @@ def parseTranscriptComparison(infile):
         yield dataset, blocks
 
     for track, blocks in __blocker(infile):
-        print track
+        print(track)
         tracks.append(track)
-        for contig, block in blocks.iteritems():
+        for contig, block in blocks.items():
             r = CuffCompareResult()
 
             r.fromLines(block)
@@ -313,11 +313,11 @@ def iterate_tracking(infile):
                          conf_hi, cov, length) = cc.split("|")
                     except ValueError:
                         raise ValueError("parsing error for field '%s'" % cc)
-                    (fpkm, conf_lo, conf_hi, cov) = map(
-                        float, (fpkm, conf_lo, conf_hi, cov))
+                    (fpkm, conf_lo, conf_hi, cov) = list(map(
+                        float, (fpkm, conf_lo, conf_hi, cov)))
                     if length == "-":
                         length = 0
-                    (fmi, length) = map(int, (fmi, length))
+                    (fmi, length) = list(map(int, (fmi, length)))
 
                     transcripts.append(TranscriptInfo._make(
                         (gene_id, transcript_id, fmi, fpkm, conf_lo, conf_hi, cov, length)))
@@ -337,7 +337,7 @@ def iterate_locus(infile):
 
         contig, strand, start, end = re.match(
             "(\S+)\[(\S*)\](\d+)-(\d+)", pos).groups()
-        start, end = map(int, (start, end))
+        start, end = list(map(int, (start, end)))
 
         # some [] contains the 0 byte, convert to empty field
         if strand not in "+-":

@@ -132,7 +132,7 @@ def main(argv=None):
         for data in IOTools.iterate(options.stdin):
 
             contig, start, end = rx_window.match(data.test_id).groups()
-            start, end = map(int, (start, end))
+            start, end = list(map(int, (start, end)))
 
             yield DATA._make((data.test_id,
                               contig, start, end,
@@ -152,11 +152,11 @@ def main(argv=None):
 
     def grouper(data, distance=10):
 
-        last = data.next()
+        last = next(data)
         entries = [last]
 
         while 1:
-            d = data.next()
+            d = next(data)
             if d is None:
                 break
             if d.contig == last.contig and d.start < last.start:

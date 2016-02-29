@@ -56,8 +56,7 @@ def main(argv=None):
 
     (options, args) = E.Start(parser, add_pipe_options=True)
 
-    numbers = map(lambda x: int(x[:-1].split("\t")[0]),
-                  filter(lambda x: x[0] != "#", sys.stdin.readlines()))
+    numbers = [int(x[:-1].split("\t")[0]) for x in [x for x in sys.stdin.readlines() if x[0] != "#"]]
 
     if options.method == "random_rgb":
         f = lambda x: "%i,%i,%i" % (random.randint(0, 256),
@@ -69,7 +68,7 @@ def main(argv=None):
         if x not in map_number2output:
             map_number2output[x] = f(x)
 
-    for x, y in map_number2output.items():
+    for x, y in list(map_number2output.items()):
         options.stdout.write("%i\t%s\n" % (x, y))
 
     E.Stop()

@@ -91,7 +91,7 @@ class multiway_groupby(object):
         self.it = [itertools.groupby(iterable, key) for iterable in iterables]
 
         # todo: catch StopIterator for empty iterables
-        self.current = [next(self.it[x]) for x in xrange(len(iterables))]
+        self.current = [next(self.it[x]) for x in range(len(iterables))]
 
         # decide on target key
         self.targetkey = min([x[0] for x in self.current if x[0] is not None])
@@ -99,7 +99,7 @@ class multiway_groupby(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
 
         # check if all iterators exhausted
         if not any(self.it):

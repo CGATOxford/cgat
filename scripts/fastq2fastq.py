@@ -261,7 +261,7 @@ def main(argv=None):
             outfile1 = options.stdout
             outfile2 = IOTools.openFile(options.output_filename_pattern, "w")
 
-            for record1, record2 in itertools.izip(
+            for record1, record2 in zip(
                     Fastq.iterate(options.stdin),
                     Fastq.iterate(IOTools.openFile(options.pair))):
                 c.input += 1
@@ -330,7 +330,7 @@ def main(argv=None):
             entries1 = {}
             entries2 = {}
 
-            for record1, record2 in itertools.izip(
+            for record1, record2 in zip(
                     Fastq.iterate(options.stdin),
                     Fastq.iterate(IOTools.openFile(options.pair))):
                 entries1[

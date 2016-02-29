@@ -222,7 +222,7 @@ class PngPlot:
         """
         self.finalizePlot()
 
-        kk = self.mElements.keys()
+        kk = list(self.mElements.keys())
         kk.sort()
         kk.reverse()
 
@@ -423,7 +423,7 @@ def main(argv=None):
         filenames = args
     else:
         # read filenames from stdin
-        filenames = map(lambda x: x[:-1], sys.stdin.readlines())
+        filenames = [x[:-1] for x in sys.stdin.readlines()]
 
     if options.loglevel >= 1:
         options.stdlog.write("# arranging %i images.\n" % len(filenames))

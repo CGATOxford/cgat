@@ -76,7 +76,7 @@ class Tree(Bio.Nexus.Trees.Tree):
 
     def __len__(self):
         """returns the number of nodes in the tree."""
-        return len(self.chain.keys())
+        return len(list(self.chain.keys()))
 
     def root_at_node(self, node, distance=0):
         """root tree at node.
@@ -338,8 +338,7 @@ class Tree(Bio.Nexus.Trees.Tree):
     def get_leaves(self, node_id):
         """Return a list of leaf nodes downward from a node (self, node_id).
         """
-        return filter(lambda x: self.node(x).succ == [],
-                      self.get_nodes(node_id))
+        return [x for x in self.get_nodes(node_id) if self.node(x).succ == []]
 
     def root_midpoint(self):
         """perform midpoint rooting of tree.
@@ -555,7 +554,7 @@ class Tree(Bio.Nexus.Trees.Tree):
     def relabel(self, map_old2new, warn=False):
         """relabel taxa in tree using the provided mapping.
         """
-        for node_id, node in self.chain.items():
+        for node_id, node in list(self.chain.items()):
             if not node.data.taxon:
                 continue
 
@@ -569,10 +568,10 @@ class Tree(Bio.Nexus.Trees.Tree):
         """rescale branch length so that they sum up to value."""
 
         t = 0.0
-        for node_id, node in self.chain.items():
+        for node_id, node in list(self.chain.items()):
             t += node.data.branchlength
         if t == 0:
             return
-        for node_id, node in self.chain.items():
+        for node_id, node in list(self.chain.items()):
             node.data.branchlength /= t
         return

@@ -901,7 +901,7 @@ def main(argv=None):
 
                 for x, counts in enumerate(counter.aggregate_counts):
                     plt.subplot(6, 1, x + 1)
-                    plt.plot(range(len(counts)), counts)
+                    plt.plot(list(range(len(counts))), counts)
                     plt.title(counter.fields[x])
                     plt.ylim(0, max_scale)
 
@@ -918,7 +918,7 @@ def main(argv=None):
                     points.extend(counts)
                     cuts.append(len(counts))
 
-                plt.plot(range(len(points)), points)
+                plt.plot(list(range(len(points))), points)
 
                 xx, xxx = 0, []
                 for x in cuts:
@@ -939,22 +939,22 @@ def main(argv=None):
 
                 plt.figure()
                 plt.subplot(1, 3, 1)
-                plt.plot(range(-options.extension_outward,
-                               options.extension_inward),
+                plt.plot(list(range(-options.extension_outward,
+                               options.extension_inward)),
                          counter.aggregate_counts[0])
                 plt.title(counter.fields[0])
                 plt.subplot(1, 3, 2)
-                plt.plot(range(-options.extension_inward,
-                               options.extension_outward),
+                plt.plot(list(range(-options.extension_inward,
+                               options.extension_outward)),
                          counter.aggregate_counts[1])
                 plt.title(counter.fields[1])
                 plt.subplot(1, 3, 3)
                 plt.title("combined")
-                plt.plot(range(-options.extension_outward,
-                               options.extension_inward),
+                plt.plot(list(range(-options.extension_outward,
+                               options.extension_inward)),
                          counter.aggregate_counts[0])
-                plt.plot(range(-options.extension_inward,
-                               options.extension_outward),
+                plt.plot(list(range(-options.extension_inward,
+                               options.extension_outward)),
                          counter.aggregate_counts[1])
                 plt.legend(counter.fields[:2])
 

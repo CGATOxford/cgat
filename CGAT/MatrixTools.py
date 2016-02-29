@@ -100,8 +100,8 @@ def getMapTokens(options):
     map_token2row, map_token2col = {}, {}
 
     if options.file_row_names:
-        row_tokens = map(lambda x: string.split(
-            x[:-1], "\t")[0], open(options.file_row_names, "r").readlines())
+        row_tokens = [string.split(
+            x[:-1], "\t")[0] for x in open(options.file_row_names, "r").readlines()]
         for row_token in row_tokens:
             map_token2row[row_token] = len(map_token2row)
 
@@ -110,8 +110,8 @@ def getMapTokens(options):
             map_token2row[x] = len(map_token2row)
 
     if options.file_col_names:
-        col_tokens = map(lambda x: string.split(
-            x[:-1], "\t")[0], open(options.file_col_names, "r").readlines())
+        col_tokens = [string.split(
+            x[:-1], "\t")[0] for x in open(options.file_col_names, "r").readlines()]
         for col_token in col_tokens:
             map_token2col[col_token] = len(map_token2col)
 
@@ -135,7 +135,7 @@ def getMatrixFromEdges(lines, options,
     """
 
     # remove comments
-    lines = filter(lambda x: x[0] != "#" and len(x[:-1]) > 0, lines)
+    lines = [x for x in lines if x[0] != "#" and len(x[:-1]) > 0]
 
     if in_map_token2row:
         map_token2row = in_map_token2row
@@ -155,16 +155,16 @@ def getMatrixFromEdges(lines, options,
         # if either row/column names are not given:
         if not map_token2row or not map_token2col:
 
-            row_tokens = map(lambda x: string.split(x[:-1], "\t")[0], lines)
-            col_tokens = map(lambda x: string.split(x[:-1], "\t")[1], lines)
+            row_tokens = [string.split(x[:-1], "\t")[0] for x in lines]
+            col_tokens = [string.split(x[:-1], "\t")[1] for x in lines]
 
             if options.is_numeric:
-                row_tokens = map(float, row_tokens)
-                col_tokens = map(float, col_tokens)
+                row_tokens = list(map(float, row_tokens))
+                col_tokens = list(map(float, col_tokens))
                 row_tokens.sort()
                 col_tokens.sort()
-                row_tokens = map(str, row_tokens)
-                col_tokens = map(str, col_tokens)
+                row_tokens = list(map(str, row_tokens))
+                col_tokens = list(map(str, col_tokens))
             else:
                 row_tokens.sort()
                 col_tokens.sort()
@@ -179,7 +179,7 @@ def getMatrixFromEdges(lines, options,
                         map_token2col[col_token] = len(map_token2col)
 
         if not options.asymmetric:
-            for col_token in map_token2col.keys():
+            for col_token in list(map_token2col.keys()):
                 if col_token not in map_token2row:
                     map_token2row[col_token] = len(map_token2row)
             map_token2col = map_token2row
@@ -221,9 +221,9 @@ def getMatrixFromEdges(lines, options,
                         map_token2row[row_token]] = int(n)
             m.mReplicates = replicates
 
-        col_tokens = map_token2col.items()
+        col_tokens = list(map_token2col.items())
         col_tokens.sort(lambda x, y: cmp(x[1], y[1]))
-        row_tokens = map_token2row.items()
+        row_tokens = list(map_token2row.items())
         row_tokens.sort(lambda x, y: cmp(x[1], y[1]))
 
         m.mMatrix = matrix
@@ -247,7 +247,7 @@ def buildMatrixFromLists(lists, dtype=numpy.float, default=None):
     all_rows = collections.defaultdict()
     for l in lists:
         all_rows.update([(x[0], 0) for x in l])
-    for x, v in enumerate(all_rows.iteritems()):
+    for x, v in enumerate(all_rows.items()):
         all_rows[v[0]] = x
 
     matrix = numpy.zeros((len(all_rows), len(lists)), dtype=dtype)
@@ -257,7 +257,7 @@ def buildMatrixFromLists(lists, dtype=numpy.float, default=None):
     for col, l in enumerate(lists):
         for row, value in l:
             matrix[all_rows[row], col] = value
-    return matrix, all_rows.keys()
+    return matrix, list(all_rows.keys())
 
 
 def buildMatrixFromTables(infiles, column, column_header=0, dtype=numpy.float,
@@ -274,7 +274,7 @@ def buildMatrixFromTables(infiles, column, column_header=0, dtype=numpy.float,
     lists = []
     for infile in infiles:
         data = pandas.read_table(IOTools.openFile(infile))
-        lists.append(zip(list(data[column_header]), list(data[column])))
+        lists.append(list(zip(list(data[column_header]), list(data[column]))))
 
     return buildMatrixFromLists(lists, dtype=dtype, default=default)
 
@@ -357,7 +357,7 @@ def buildMatrixFromEdges(edges,
                     map_token2col[col_token] = len(map_token2col)
 
         if is_symmetric:
-            for col_token in map_token2col.keys():
+            for col_token in list(map_token2col.keys()):
                 if col_token not in map_token2row:
                     map_token2row[col_token] = len(map_token2row)
             map_token2col = map_token2row
@@ -388,9 +388,9 @@ def buildMatrixFromEdges(edges,
                 "unexpected number of elements in list, expected 3 or 4, "
                 "got %i" % (len(edges[0])))
 
-    col_tokens = map_token2col.items()
+    col_tokens = list(map_token2col.items())
     col_tokens.sort(lambda x, y: cmp(x[1], y[1]))
-    row_tokens = map_token2row.items()
+    row_tokens = list(map_token2row.items())
     row_tokens.sort(lambda x, y: cmp(x[1], y[1]))
 
     return matrix, row_tokens, col_tokens

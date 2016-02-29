@@ -79,7 +79,7 @@ def main(argv=None):
                               add_pipe_options=True)
 
     if options.xrange:
-        options.xrange = map(float, options.xrange.split(","))
+        options.xrange = list(map(float, options.xrange.split(",")))
 
     data, legend = IOTools.readTable(sys.stdin,
                                      numeric_type=numpy.float32,

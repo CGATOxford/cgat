@@ -63,7 +63,7 @@ def applyThreshold(infile, fasta, threshold, max_distance=0):
 
     c = E.Counter()
 
-    for contig, size in fasta.getContigSizes(with_synonyms=False).items():
+    for contig, size in list(fasta.getContigSizes(with_synonyms=False).items()):
         c.contigs += 1
 
         E.debug("processing %s" % contig)

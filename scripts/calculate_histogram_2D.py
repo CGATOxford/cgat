@@ -98,11 +98,11 @@ def main(argv=None):
     vals = []
 
     # retrieve histogram
-    lines = filter(lambda x: x[0] != "#", sys.stdin.readlines())
+    lines = [x for x in sys.stdin.readlines() if x[0] != "#"]
 
     if options.titles:
         data = string.split(lines[0][:-1], "\t")
-        print "\t".join((data[options.column1], data[options.column2], "counts"))
+        print("\t".join((data[options.column1], data[options.column2], "counts")))
         del lines[0]
 
     ninput, noutput, nskipped = 0, 0, 0
@@ -112,8 +112,8 @@ def main(argv=None):
         data = string.split(l[:-1], "\t")
 
         try:
-            val = map(
-                string.atof, (data[options.column1], data[options.column2]))
+            val = list(map(
+                string.atof, (data[options.column1], data[options.column2])))
         except IndexError:
             nskipped += 1
             continue

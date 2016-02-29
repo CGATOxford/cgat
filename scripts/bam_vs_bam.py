@@ -126,7 +126,7 @@ def main(argv=None):
                     positions[vp] = [0] * x + [v.n]
 
             # fill with 0 those not touched in this file
-            for p in positions.keys():
+            for p in list(positions.keys()):
                 if len(positions[p]) <= x:
                     positions[p].append(0)
 

@@ -79,17 +79,16 @@ def main(argv=None):
     (options, args) = E.Start(parser)
 
     if options.xrange:
-        options.xrange = map(float, options.xrange.split(","))
+        options.xrange = list(map(float, options.xrange.split(",")))
     if options.yrange:
-        options.yrange = map(float, options.yrange.split(","))
+        options.yrange = list(map(float, options.yrange.split(",")))
 
-    exec "f = lambda x: %s" % options.function in locals()
+    exec("f = lambda x: %s" % options.function, locals())
 
     options.stdout.write("x\ty\n")
     x = options.xrange[0]
     while x <= options.xrange[1]:
-        options.stdout.write("\t".join(map(lambda x: options.value_format % x,
-                                           (x, f(x)))) + "\n")
+        options.stdout.write("\t".join([options.value_format % x for x in (x, f(x))]) + "\n")
         x += options.xrange[2]
 
     E.Stop()

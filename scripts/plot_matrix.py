@@ -52,7 +52,8 @@ def GetRange(matrix, r):
     rr = r.split(",")
 
     if len(rr) != 2:
-        raise "please supply two values for range separated by a comma."
+        raise ValueError("please supply two values for range separated "
+                         "by a comma")
 
     vv = []
     for x in rr:
@@ -226,12 +227,12 @@ def main(argv=None):
         options.yticks = options.yticks.split(",")
 
     if options.xrange:
-        options.xrange = map(float, options.xrange.split(","))
+        options.xrange = list(map(float, options.xrange.split(",")))
     if options.yrange:
-        options.yrange = map(float, options.yrange.split(","))
+        options.yrange = list(map(float, options.yrange.split(",")))
 
     if options.columns != "all":
-        options.columns = map(lambda x: int(x) - 1, options.columns.split(","))
+        options.columns = [int(x) - 1 for x in options.columns.split(",")]
 
     filenames = options.input_filename.split(",")
 
@@ -316,9 +317,9 @@ def main(argv=None):
                     pylab.subplot(nsubrows, nsubcols, plot_id)
                     plot_id += 1
 
-                    print n, "rows=", nsubrows, "cols=", nsubcols, y, y + increment_y, x, x + increment_x
-                    print matrix[y:y + increment_y, x:x + increment_x].shape
-                    print matrix.shape
+                    print(n, "rows=", nsubrows, "cols=", nsubcols, y, y + increment_y, x, x + increment_x)
+                    print(matrix[y:y + increment_y, x:x + increment_x].shape)
+                    print(matrix.shape)
                     plotMatrix(matrix[y:y + increment_y, x:x + increment_x],
                                color_scheme,
                                row_headers[y:y + increment_y],

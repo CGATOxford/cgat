@@ -135,17 +135,17 @@ def main(argv=None):
         E.info("counting entries in %s" % gtf_a)
         for entry in gtf_iterator_a:
             count_gtf_merged_a += 1
-        print "counts for gtf-a: ", count_gtf_merged_a
+        print("counts for gtf-a: ", count_gtf_merged_a)
 
         E.info("counting entries in %s" % gtf_b)
         for entry in gtf_iterator_b:
             count_gtf_merged_b += 1
-        print "counts for gtf-b: ", count_gtf_merged_b
+        print("counts for gtf-b: ", count_gtf_merged_b)
 
         E.info("counting entries in %s" % intersection_file)
         for entry in gtf_iterator_intersection:
             count_intersection += 1
-        print "counts for intersection: ", count_intersection
+        print("counts for intersection: ", count_intersection)
 
         # this is the important bit - basically take an arbitrary list of numbers to represent the list of lincrna in the refnoncoding set
         # then use the intersection count to represent the overlapping section in the lincrna set and add a set of random numbers to this
@@ -153,8 +153,8 @@ def main(argv=None):
 
         result = {}
         E.info("assembling count lists")
-        result[gtf_pair] = {"gtf-b": map(str, xrange(count_gtf_merged_b)), "gtf-a": map(str, xrange(count_intersection)) +
-                            map(str, [random.random() for i in range(count_intersection, count_gtf_merged_a)])}
+        result[gtf_pair] = {"gtf-b": list(map(str, range(count_gtf_merged_b))), "gtf-a": list(map(str, range(count_intersection))) +
+                            list(map(str, [random.random() for i in range(count_intersection, count_gtf_merged_a)]))}
 
         R_source = os.path.join(
             os.path.abspath(options.scripts_dir), "venn_diagram.R")

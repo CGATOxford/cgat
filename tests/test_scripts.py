@@ -127,7 +127,7 @@ def check_script(test_name, script, stdin,
                                cwd=tmpdir)
 
     if DEBUG:
-        print "tmpdir=", tmpdir
+        print("tmpdir=", tmpdir)
 
     process_stdout, process_stderr = process.communicate()
 
@@ -195,7 +195,6 @@ def check_script(test_name, script, stdin,
 
 def test_scripts():
     '''yield list of scripts to test.'''
-
     # the current directory
     current_dir = os.getcwd()
 
@@ -229,7 +228,7 @@ def test_scripts():
 
                 if "regex" in values:
                     rx = re.compile(values["regex"])
-                    test_dirs = filter(rx.search, test_dirs)
+                    test_dirs = list(filter(rx.search, test_dirs))
 
     # ignore those which don't exist as tests (files added through MANIFEST.in,
     # such as version.py, __init__.py, ...
@@ -267,7 +266,7 @@ def test_scripts():
 
         script_tests = yaml.load(open(fn))
 
-        for test, values in script_tests.items():
+        for test, values in list(script_tests.items()):
             check_script.description = os.path.join(script_name, test)
 
             # deal with scripts in subdirectories. These are prefixed

@@ -68,7 +68,7 @@ def Collect(infile,
 
     data = []
 
-    lines = filter(lambda x: x[0] != "#", infile.readlines())
+    lines = [x for x in infile.readlines() if x[0] != "#"]
 
     if len(lines) == 0:
         return data
@@ -97,8 +97,8 @@ def Collect(infile,
                         continue
                     dd = re.split("\s+", line[4:-1])
                     d = DataFDR()
-                    d.mObserved, d.mAverage, d.mMedian, d.m95 = map(
-                        float, dd[1:])
+                    d.mObserved, d.mAverage, d.mMedian, d.m95 = list(map(
+                        float, dd[1:]))
                     annotator_fdr[annotator_level][dd[0]] = d
                 continue
             else:
@@ -153,7 +153,7 @@ def Collect(infile,
     if ninput > 0:
         if max_qvalue is not None:
             if use_annotator_fdr:
-                pvalues = annotator_fdr.keys()
+                pvalues = list(annotator_fdr.keys())
                 pvalues.sort()
                 pvalues.reverse()
                 for pvalue in pvalues:
@@ -184,7 +184,7 @@ def Collect(infile,
                 try:
                     qvalues = Stats.doFDR(
                         pvalues, vlambda=vlambda, fdr_level=max_qvalue)
-                except ValueError, msg:
+                except ValueError as msg:
                     E.warn(
                         "fdr could not be computed - no filtering: %s" % msg)
                     no_fdr = True
@@ -212,7 +212,7 @@ PURPLE = (255, 0, 255)
 GREY = (128, 128, 128)
 
 MAX_GREY = 240
-GREY_COLORS = map(lambda x: (x, x, x), range(0, MAX_GREY))
+GREY_COLORS = [(x, x, x) for x in range(0, MAX_GREY)]
 
 DEFAULT_XWIDTH = 500
 DEFAULT_YWIDTH = 500
@@ -329,14 +329,14 @@ class GoPlot:
 
         # height of col header
         self.mHeaderHeight = max(
-            map(len, self.mColNames)) * self.mHeaderFontSize / 2
+            list(map(len, self.mColNames))) * self.mHeaderFontSize / 2
 
         if self.mTitle:
             self.mHeaderHeight += self.mSeparator + self.mTitleFontSize
 
         # width of row header
         self.mHeaderWidth = max(
-            map(len, self.mRowNames)) * self.mHeaderFontSize / 2
+            list(map(len, self.mRowNames))) * self.mHeaderFontSize / 2
 
         # height of footer:
         self.mFooterHeight = 2 * \
@@ -420,8 +420,8 @@ class GoPlot:
             num_steps = int(
                 math.floor((len(self.mThresholdsColour) + 1) / 2.0))
 
-            d = map(lambda x, y: (x - y) / num_steps,
-                    self.mMiddleColour, self.startColour)
+            d = list(map(lambda x, y: (x - y) / num_steps,
+                    self.mMiddleColour, self.startColour))
             for x in range(num_steps):
                 self.mColours.append((self.startColour[0] + x * d[0],
                                       self.startColour[1] + x * d[1],
@@ -429,8 +429,8 @@ class GoPlot:
 
             # self.mColours.append( self.mMiddleColour )
 
-            d = map(lambda x, y: (x - y) / num_steps,
-                    self.mStopColour, self.mMiddleColour)
+            d = list(map(lambda x, y: (x - y) / num_steps,
+                    self.mStopColour, self.mMiddleColour))
             for x in range(1, num_steps):
                 self.mColours.append((self.mMiddleColour[0] + x * d[0],
                                       self.mMiddleColour[1] + x * d[1],
@@ -580,7 +580,7 @@ class GoPlot:
             current_y += self.mRowHeight
 
         self.mHeaderWidth = max(
-            map(len, self.mRowNames)) * self.mHeaderFontSize / 2
+            list(map(len, self.mRowNames))) * self.mHeaderFontSize / 2
 
     def writeFooter(self):
         """write footer.
@@ -906,7 +906,7 @@ def main(argv=None):
             E.info("no sorting as matrix too large")
         else:
             matrix = numpy.ones((len(row_names), len(col_names)), numpy.float)
-            map_rows = dict(zip(row_names, range(len(row_names))))
+            map_rows = dict(list(zip(row_names, list(range(len(row_names))))))
             x = 0
             for col_name, column in columns:
                 for d in column:

@@ -152,7 +152,7 @@ class Generator:
         properties = {"from_loc" : ["data_table", "no"]
         "access_location : ["/path/to/somewhere/", "yes"]}
         """
-        for (key, values) in properties.items():
+        for (key, values) in list(properties.items()):
             if values[1] == 'no':  # not a volatile property.
                 a_node = BNode()
                 self._addTriple(a_node, RDF['type'], RDF['Statement'])
@@ -241,14 +241,14 @@ class Generator:
 
             choices = []
             if 'choices' in p and p['choices']:
-                choices = map(lambda x: x.strip(), p['choices'].split(','))
+                choices = [x.strip() for x in p['choices'].split(',')]
 
             p_type = p['type']
             if p_type == 'integer':
                 self._addTriple(a_node, RDF.type, FO['Int'])
                 try:
                     self._addTriple(a_node, FO['hasIntValue'], int(p['value']))
-                    choices = map(lambda x: int(x), choices)
+                    choices = [int(x) for x in choices]
                 except ValueError:
                     pass  # do nothing if value is not an integer
             elif p_type == 'float':
@@ -256,7 +256,7 @@ class Generator:
                 try:
                     self._addTriple(
                         a_node, FO['hasFloatValue'], float(p['value']))
-                    choices = map(lambda x: float(x), choices)
+                    choices = [float(x) for x in choices]
                 except ValueError:
                     pass  # do nothing if value is not a float
             elif p_type in ['string', 'select']:
@@ -276,7 +276,7 @@ class Generator:
                 self._addTriple(a_node, Component['hasValue'], p['value'])
 
             if choices:
-                choices = map(lambda x: Literal(x), choices)
+                choices = [Literal(x) for x in choices]
                 choice_list = BNode(_e(p['name'] + '_choice_list'))
                 choice_nodes = Collection(self.graph, choice_list, choices)
                 self._addTriple(a_node, CLP['hasValueChoices'], choice_list)

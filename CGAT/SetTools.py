@@ -50,7 +50,7 @@ def combinations(list_of_sets):
         intersection)
     '''
 
-    sr = range(len(list_of_sets))
+    sr = list(range(len(list_of_sets)))
     results = []
     for l in range(1, len(list_of_sets)):
         for combination in itertools.combinations(sr, l):
@@ -83,7 +83,7 @@ def writeSets(outfile, list_of_sets, labels=None):
 
     all_ids = list_of_sets[0].union(*list_of_sets[1:])
     if not labels:
-        labels = range(len(list_of_sets))
+        labels = list(range(len(list_of_sets)))
 
     outfile.write("id\t%s\n" % "\t".join(map(str, labels)))
 
@@ -148,11 +148,10 @@ def getAllCombinations(*sets):
 
 
 def _makeListComprehensionFunction(name, nsets):
-    """Returns a function applicable to exactly <nsets> sets.
-    The returned function has the signature
-    F(set0, set1, ..., set<nsets>)
-    and returns a list of all element combinations as tuples.
-    A set may be any iterable object.
+    """Returns a function applicable to exactly <nsets> sets.  The
+    returned function has the signature F(set0, set1, ..., set<nsets>)
+    and returns a list of all element combinations as tuples.  A set
+    may be any iterable object.
     """
     if nsets <= 0:
         source = 'def %s(): return []\n' % name
@@ -164,7 +163,7 @@ def _makeListComprehensionFunction(name, nsets):
         source = 'def %s%s:\n   return [%s %s]\n' % \
                  (name, _tuplestr(a), _tuplestr(e), ' '.join(f))
     scope = {}
-    exec source in scope
+    exec(source, scope)
     return scope[name]
 
 
@@ -188,7 +187,7 @@ def xuniqueCombinations(items, n):
     if n == 0:
         yield []
     else:
-        for i in xrange(len(items)):
+        for i in range(len(items)):
             for cc in xuniqueCombinations(items[i + 1:], n - 1):
                 yield [items[i]] + cc
 

@@ -128,15 +128,15 @@ def main(argv=None):
 
     E.info("iterating over fastq files")
     f1_count = 0
-    for f1, f2 in itertools.izip_longest(Fastq.iterate(fastq1),
+    for f1, f2 in itertools.zip_longest(Fastq.iterate(fastq1),
                                          Fastq.iterate(fastq2)):
         if not (f1 and f2) or (not f2 and f1):
             try:
                 raise PairedReadError(
                     "unpaired reads detected. Are files sorted? are "
                     "files of equal length?")
-            except PairedReadError, e:
-                raise PairedReadError(e), None, sys.exc_info()[2]
+            except PairedReadError as e:
+                raise PairedReadError(e).with_traceback(sys.exc_info()[2])
         else:
             assert f1.identifier.endswith("/1") and \
                 f2.identifier.endswith("/2"), \

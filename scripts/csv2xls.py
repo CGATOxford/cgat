@@ -69,13 +69,13 @@ def main(argv=None):
 
     for filename in args:
 
-        lines = filter(lambda x: x[0] != "#", open(filename, "r").readlines())
+        lines = [x for x in open(filename, "r").readlines() if x[0] != "#"]
 
         if len(lines) == 0:
             continue
 
         if options.loglevel >= 2:
-            print "# read %i rows" % len(lines)
+            print("# read %i rows" % len(lines))
             sys.stdout.flush()
 
         headers = lines[0][:-1].split("\t")

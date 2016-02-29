@@ -89,10 +89,10 @@ def main(argv=None):
     (options, args) = E.Start(parser, add_pipe_options=True)
 
     if len(args) < 2:
-        raise "there have to be at least two tables."
+        raise ValueError("there have to be at least two tables")
 
     if options.columns:
-        options.columns = map(lambda x: int(x) - 1, options.columns.split(","))
+        options.columns = [int(x) - 1 for x in options.columns.split(",")]
 
     # open all files
     files = []
@@ -102,7 +102,7 @@ def main(argv=None):
             files.append(open(filename, "r"))
 
     if len(files) <= 1:
-        raise "less than two files opened."
+        raise ValueError("less than two files opened")
 
     nfiles = len(files)
 
@@ -121,8 +121,8 @@ def main(argv=None):
                 t.append(x)
 
         takes.append(t)
-        data.append(map(lambda x: d[x], t))
-        entries.append(map(lambda x: d[x], options.columns))
+        data.append([d[x] for x in t])
+        entries.append([d[x] for x in options.columns])
         lengths.append(len(t))
 
     activa = list(range(nfiles))
@@ -150,8 +150,8 @@ def main(argv=None):
                         activa.remove(f)
                         break
 
-                    data[f] = map(lambda x: d[x], takes[f])
-                    entries[f] = map(lambda x: d[x], options.columns)
+                    data[f] = [d[x] for x in takes[f]]
+                    entries[f] = [d[x] for x in options.columns]
 
             else:
                 line += [options.missing_value for x in range(lengths[f])]

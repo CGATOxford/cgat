@@ -72,20 +72,20 @@ def match_smaller(iter1, iter2, matchfun1, matchfun2=None):
 
     if matchfun2 is None:
         matchfun2 = matchfun1
-    value2 = iter2.next()
+    value2 = next(iter2)
     key2 = matchfun2(value2)
     l = None
     for value1 in iter1:
         key1 = matchfun1(value1)
         while key2 < key1:
             yield(l, value2)
-            value2 = iter2.next()
+            value2 = next(iter2)
             key2 = matchfun2(value2)
         l = value1
 
     while 1:
         yield(l, value2)
-        value2 = iter2.next()
+        value2 = next(iter2)
         key2 = matchfun2(value2)
 
 
@@ -100,14 +100,14 @@ def matchby_comparison(iter1, iter2, matchfun1, matchfun2=None):
         matchfun2 = matchfun1
     groups1 = itertools.groupby(iter1, matchfun1)
     groups2 = itertools.groupby(iter2, matchfun2)
-    key2, value2 = groups2.next()
+    key2, value2 = next(groups2)
     last_key1, last_key2 = key1, key2
     for key1, value1 in groups1:
         assert last_key1 < key1, "input needs to be sorted by keys in ascending order."
         last_key1 = key1
         while key1 > key2:
             last_key2 = key2
-            key2, value2 = groups2.next()
+            key2, value2 = next(groups2)
             assert last_key2 < key2, "input needs to be sorted by keys in ascending order."
         if key1 < key2:
             continue
@@ -128,8 +128,8 @@ def matchby_sequence(iter1, iter2, matchfun1, matchfun2=None):
     groups2 = itertools.groupby(iter2, matchfun2)
 
     while 1:
-        key1, value1 = groups1.next()
-        key2, value2 = groups2.next()
+        key1, value1 = next(groups1)
+        key2, value2 = next(groups2)
 
         assert key1 == key2, "input needs to be sorted in the same order."
         yield(value1, value2)

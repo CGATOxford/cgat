@@ -35,12 +35,13 @@ Reference
 
 import numpy
 import os
-import sys
 import string
 import re
 import hashlib
 import base64
 import tempfile
+import sys
+from functools import reduce
 
 try:
     import alignlib_lite
@@ -48,14 +49,16 @@ except ImportError:
     pass
 
 from CGAT import AString as AString
-import Bio.Alphabet
 
 # For caching genome files: remember last one read
 global_last_filename_genome = None
 global_forward_sequences = {}
 global_last_sbjct_token = None
 
-global_translator = string.maketrans("ACGTacgt", "TGCAtgca")
+if sys.version_info.major >= 3:
+    global_translator = str.maketrans("ACGTacgt", "TGCAtgca")
+else:
+    global_translator = string.maketrans("ACGTacgt", "TGCAtgca")
 
 
 def complement(s):
@@ -325,9 +328,7 @@ def CountGeneFeatures(first_position,
 def Alignment2String(alignment):
     """convert a tuple alignment to an alignment string.
     """
-    return string.join(map(
-        lambda x: string.join(map(str, x), " "),
-        alignment), " ")
+    return string.join([string.join(list(map(str, x)), " ") for x in alignment], " ")
 
 
 def String2Alignment(source):
@@ -985,7 +986,7 @@ def GetMapAA2Codons():
     ."""
     map_aa2codons = {}
 
-    for codon, aa in GeneticCodeAA.items():
+    for codon, aa in list(GeneticCodeAA.items()):
         if aa not in map_aa2codons:
             map_aa2codons[aa] = []
         map_aa2codons[aa].append(codon)
@@ -1497,7 +1498,7 @@ def AlignedPair2SubstitutionMatrix(seq1, seq2, alphabet):
     a substitution matrix for the given alphabet.
     """
     if len(seq1) != len(seq2):
-        raise "two sequences of unequal length submitted."
+        raise ValueError("two sequences of unequal length submitted")
 
     nchars = len(alphabet)
     matrix = numpy.zeros((nchars, nchars), numpy.int)
@@ -1560,7 +1561,7 @@ def CalculatePairIndices(seq1, seq2, gap_char="-", with_codons=False):
 
     if with_codons:
         nsyn, nnon = 0, 0
-        pairs = zip(seq1, seq2)
+        pairs = list(zip(seq1, seq2))
         for x in range(len(pairs)):
             a, b = pairs[x]
             if a != b:
@@ -1632,7 +1633,7 @@ def makeSubstitutionMatrix(type="EMBOSS"):
         gop = -10.0
         gep = -10.0
     else:
-        raise "unknown MATRIX."
+        raise ValueError("unknown MATRIX")
 
     # build empty matrix
     for m in range(21):
@@ -1668,7 +1669,7 @@ def makeSubstitutionMatrix(type="EMBOSS"):
 
     handle_tmpfile, filename_tmpfile = tempfile.mkstemp()
     for m in matrix:
-        os.write(handle_tmpfile, string.join(map(str, m), "\t") + "\n")
+        os.write(handle_tmpfile, string.join(list(map(str, m)), "\t") + "\n")
     os.close(handle_tmpfile)
 
     smatrix = alignlib_lite.py_readSubstitutionMatrixAA(filename_tmpfile)
@@ -1691,7 +1692,7 @@ def CalculateCodonFrequenciesFromCounts(counts, pseudo_counts=0):
     map_aa2codons = GetMapAA2Codons()
     weights = {}
 
-    for aa, codons in map_aa2codons.items():
+    for aa, codons in list(map_aa2codons.items()):
 
         total_counts = reduce(
             lambda x, y: x + y, (counts[x] + pseudo_counts for x in codons))
@@ -1715,7 +1716,7 @@ def CalculateCAIWeightsFromCounts(counts, pseudo_counts=0):
     map_aa2codons = GetMapAA2Codons()
     weights = {}
 
-    for aa, codons in map_aa2codons.items():
+    for aa, codons in list(map_aa2codons.items()):
 
         max_counts = max(counts[x] for x in codons) + pseudo_counts
 
@@ -1753,7 +1754,7 @@ def CountCodons(sequence):
         raise "sequence is not multiple of 3: %i" % len(sequence)
 
     counts = {}
-    for c in GeneticCodeAA.keys():
+    for c in list(GeneticCodeAA.keys()):
         counts[c] = 0
     for codon in [sequence[x:x + 3] for x in range(0, len(sequence), 3)]:
         try:
@@ -1772,12 +1773,12 @@ def GetUniformCodonUsage():
 
     aas = {}
 
-    for codon, aa in GeneticCodeAA.items():
+    for codon, aa in list(GeneticCodeAA.items()):
         if aa not in aas:
             aas[aa] = 0
         aas[aa] += 1
 
-    for codon, aa in GeneticCodeAA.items():
+    for codon, aa in list(GeneticCodeAA.items()):
         frequencies[codon] = 1.0 / aas[aa]
 
     return frequencies
@@ -1796,12 +1797,12 @@ def GetBiasedCodonUsage(bias=1.0):
 
     aas = {}
 
-    for codon, aa in GeneticCodeAA.items():
+    for codon, aa in list(GeneticCodeAA.items()):
         if aa not in aas:
             aas[aa] = 0
         aas[aa] += 1
 
-    for codon, aa in GeneticCodeAA.items():
+    for codon, aa in list(GeneticCodeAA.items()):
         frequencies[codon] = 1.0 / aas[aa]
 
     return frequencies
@@ -1875,11 +1876,11 @@ def printPrettyAlignment(seq1, *args):
             for x in range(2 * nother):
                 otherrows[x] += " "
             if len(seqrow) > 120:
-                print "".join(seqrow)
+                print("".join(seqrow))
                 for x in range(2 * nother):
-                    print "".join(otherrows[x])
+                    print("".join(otherrows[x]))
 
-                print
+                print()
                 seqrow, otherrows = [], []
                 nother = len(args)
                 for x in range(nother):
@@ -1908,9 +1909,9 @@ def printPrettyAlignment(seq1, *args):
                 c2, l2 = "-", 1
             otherrows[x * 2 + 1].append(c2 + " " * (max_len - l2))
 
-    print "".join(seqrow)
+    print("".join(seqrow))
     for x in range(2 * nother):
-        print "".join(otherrows[x])
+        print("".join(otherrows[x]))
 
 
 def ReadPeptideSequences(infile, filter=None, as_array=False,
@@ -1922,7 +1923,7 @@ def ReadPeptideSequences(infile, filter=None, as_array=False,
         infile, filter, regex_identifier=regex_identifier)
 
     if not as_array:
-        for k in sequences.keys():
+        for k in list(sequences.keys()):
             sequences[k] = sequences[k][:]
     return sequences
 

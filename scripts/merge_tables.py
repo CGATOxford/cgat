@@ -56,7 +56,7 @@ def main(argv=None):
     (options, args) = E.Start(parser)
 
     if len(options.tables) < 1:
-        raise "please specify at least one table."
+        raise ValueError("please specify at least one table")
 
     files = []
     for t in options.tables:
@@ -77,7 +77,7 @@ def main(argv=None):
         if stop:
             break
 
-        print string.join(frags, "\t")
+        print(string.join(frags, "\t"))
 
     E.Stop()
 

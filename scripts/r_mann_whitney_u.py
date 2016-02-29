@@ -105,9 +105,9 @@ def main(argv=None):
     R("""hist( v1, freq=TRUE,  width=0.5, density=10, main='Absolute frequency histogram')""")
     R("""hist( v2, freq=TRUE,  add=TRUE,   width=0.5, col='red', offset=0.5, density=20, angle=135)""")
 
-    print "## Results for %s" % result['method']
+    print("## Results for %s" % result['method'])
     for x in ['p.value', 'statistic', 'alternative', 'method']:
-        print x, result[x]
+        print(x, result[x])
 
     E.Stop()
 

@@ -109,7 +109,7 @@ from xml.sax.handler import ContentHandler
 from xml.sax import make_parser
 from networkx import DiGraph
 from networkx import topological_sort
-import cPickle
+import pickle
 
 import matplotlib.pyplot as plt
 
@@ -161,7 +161,7 @@ class Tokenizer:
 
     def returnUnexpChar(self):
         reV = []
-        for k in self.leftchar.keys():
+        for k in list(self.leftchar.keys()):
             if self.leftchar[k] != 0:
                 reV += [k]
 
@@ -856,8 +856,8 @@ class GONode():
         wordVector = {}
 
         if not corpus:
-            print "Not corpus is given, " \
-                  "so a word vector can not be calculated."
+            print("Not corpus is given, " \
+                  "so a word vector can not be calculated.")
 
         else:
             if not pmids:
@@ -1034,10 +1034,10 @@ class GOGraph(networkx.DiGraph):
     def savePickle(self, filename="gograph.pickle"):
         try:
             f = open(filename, 'wb')
-            cPickle.dump(self, f, protocol=cPickle.HIGHEST_PROTOCOL)
+            pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
             f.close()
         except:
-            print "Could not pickle graph"
+            print("Could not pickle graph")
 
     # Load a pickle from the filesystem
     # @param    filename    The location of the pickle file to load
@@ -1045,10 +1045,10 @@ class GOGraph(networkx.DiGraph):
     def loadPickle(klass, filename="gograph.pickle"):
         try:
             f = open(filename, 'rb')
-            g = cPickle.load(f)
+            g = pickle.load(f)
             return g
         except:
-            print "Could not load pickle"
+            print("Could not load pickle")
             return
 
     # Get the description of a node
@@ -1057,7 +1057,7 @@ class GOGraph(networkx.DiGraph):
         if goid in self.nodes():
             return self.node[goid]['data'].getDescription()
         else:
-            print 'Invalid goid'
+            print('Invalid goid')
             raise
 
     # Set the description of a node
@@ -1067,7 +1067,7 @@ class GOGraph(networkx.DiGraph):
         if goid in self.nodes():
             self.node[goid]['data'].setDescription(descrip)
         else:
-            print 'Invalid goid'
+            print('Invalid goid')
             raise
 
     # Get the description of a node
@@ -1076,7 +1076,7 @@ class GOGraph(networkx.DiGraph):
         if goid in self.nodes():
             return self.node[goid]['data'].getNamespace()
         else:
-            print 'Invalid goid'
+            print('Invalid goid')
             raise
 
     # Set the description of a node
@@ -1086,7 +1086,7 @@ class GOGraph(networkx.DiGraph):
         if goid in self.nodes():
             self.node[goid]['namespace'] = namespace
         else:
-            print 'Invalid goid'
+            print('Invalid goid')
             raise
 
     # Calculates and stores the number of descendants each node in the graph
@@ -1272,7 +1272,7 @@ def computeTermFrequencies(graph, go2genes):
     # normalize
     rf = float(len(counts[root]))
     p = {}
-    for term, v in counts.iteritems():
+    for term, v in counts.items():
         p[term] = len(v) / rf
 
     E.info("computed %i frequencies" % len(p))
@@ -1303,13 +1303,13 @@ def buildSimrelMatrix(go2genes, go2info, ancestors, p):
 
     # only work on nodes with annotations
     lp = {}
-    for term, v in p.iteritems():
+    for term, v in p.items():
         # ignore p = 1.0 as these will be downweighted to
         # 0 (1.0 - p[c])
         if v > 0 and v < 1.0:
             lp[term] = math.log(v)
 
-    test_nodes = lp.keys()
+    test_nodes = list(lp.keys())
     node2index = dict([(y, x) for x, y in enumerate(test_nodes)])
 
     # compute dictionary of ancestors for
@@ -1498,7 +1498,7 @@ def clusterSimrelMatrix(matrix, terms, ancestors, p,
 
     # shrink matrix
     member_indices = set(member_indices)
-    rep_indices = [x for x in xrange(nrows) if x not in member_indices]
+    rep_indices = [x for x in range(nrows) if x not in member_indices]
     terms = [terms[x] for x in rep_indices]
     # rows = len(terms)
     matrix = matrix[numpy.array([x for x in rep_indices])]
@@ -1606,7 +1606,7 @@ def main(argv):
         'mol_function': 'molecular_function'}
 
     if "all" in options.ontology:
-        options.ontology = map_ontology2namespace.keys()
+        options.ontology = list(map_ontology2namespace.keys())
 
     #########################################
     if options.filename_pvalues is None:
@@ -1641,7 +1641,7 @@ def main(argv):
                 outfile.write(
                     "".join(["%s\t%s\n" %
                              (x, ";".join(v))
-                             for x, v in ancestors.iteritems()]))
+                             for x, v in ancestors.items()]))
 
         #########################################
         graph = readGOGraph(options.filename_obo, namespace)
@@ -1658,9 +1658,9 @@ def main(argv):
         # filter pvalues
         synonyms = graph.synonyms
         term2pvalue = dict([(synonyms.get(x, x), y)
-                            for x, y in all_term2pvalue.iteritems()])
+                            for x, y in all_term2pvalue.items()])
         term2log2fold = dict([(synonyms.get(x, x), y)
-                              for x, y in all_term2log2fold.iteritems()])
+                              for x, y in all_term2log2fold.items()])
 
         if len(term2pvalue) == 0:
             E.warn("no data - no output produced")
@@ -1669,7 +1669,7 @@ def main(argv):
 
         go2info = all_go2infos[test_ontology]
         go2info = collections.defaultdict(
-            str, dict([(x.mGOId, x.mDescription) for x in go2info.values()]))
+            str, dict([(x.mGOId, x.mDescription) for x in list(go2info.values())]))
         gene2gos = all_gene2gos[test_ontology]
 
         if options.filename_bg:
@@ -1692,7 +1692,7 @@ def main(argv):
             counts, p = computeTermFrequencies(graph, go2genes)
             with IOTools.openFile(fn, "w") as outfile:
                 outfile.write("goid\tfrequency\tcounts\n")
-                for k in counts.keys():
+                for k in list(counts.keys()):
                     outfile.write("%s\t%f\t%s\n" %
                                   (k, p[k], ";".join(counts[k])))
 
@@ -1738,7 +1738,7 @@ def main(argv):
                                "pvalue",
                                "frequency",
                                "description")) + "\n")
-                for rep, members in clusters.iteritems():
+                for rep, members in clusters.items():
                     for mem in members:
                         outfile.write("%s\t%s\t%f\t%f\t%s\n" %
                                       (rep,
@@ -1762,7 +1762,7 @@ def main(argv):
         figure = plt.figure()
 
         term_graph.add_nodes_from(terms)
-        for i, j in itertools.combinations(xrange(rows), 2):
+        for i, j in itertools.combinations(range(rows), 2):
             w = matrix[i][j]
             if w < 0.1:
                 continue
@@ -1778,7 +1778,7 @@ def main(argv):
         labels = dict([(x, go2info.get(x, x)) for x in terms])
         node_size = [-20.0 * math.log(term2pvalue[x], 10)
                      for x in term_graph.nodes()]
-        for x in term2pvalue.keys():
+        for x in list(term2pvalue.keys()):
             term2log2fold[x] = numpy.random.normal(0, 5)
         node_color = [term2log2fold[x] for x in term_graph.nodes()]
 
@@ -1799,7 +1799,7 @@ def main(argv):
                                      linewidths=0.5)
 
         positions = dict([(x, numpy.array((y[0], y[1] - 0.02)))
-                          for x, y in layout.iteritems()])
+                          for x, y in layout.items()])
 
         networkx.draw_networkx_labels(term_graph,
                                       positions,

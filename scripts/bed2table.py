@@ -106,7 +106,7 @@ try:
     from . import gtf2table
 # ValueError: Attempted relative import in non-package
 except ValueError:
-    import gtf2table
+    from . import gtf2table
 
 
 class Counter(object):
@@ -156,7 +156,7 @@ class CounterOverlap(Counter):
 
         E.info("read intervals for %s tracks" % len(self.index))
 
-        self.tracks = self.index.keys()
+        self.tracks = list(self.index.keys())
         self.headers = []
         for track in self.tracks:
             self.headers.extend(["%s_nover" % track, "%s_bases" % track])
@@ -234,7 +234,7 @@ class CounterPeaks(Counter):
         length = end - start
         try:
             counts = numpy.zeros(length)
-        except ValueError, msg:
+        except ValueError as msg:
             raise ValueError("Error negative length obtained: "
                              " message=%s contig=%s, start=%s, end=%s" %
                              (msg, contig, start, end))
@@ -269,7 +269,7 @@ class CounterPeaks(Counter):
                         # offset = 2 * shift
                         try:
                             rstart = read.pos + read.alen - offset
-                        except TypeError, msg:
+                        except TypeError as msg:
                             raise TypeError("Error message =", msg,
                                             "read.pos =", read.pos,
                                             "read.alen =", read.alen,
@@ -297,7 +297,7 @@ class CounterPeaks(Counter):
         peakval = max(counts)
 
         # set other peak parameters
-        peaks = numpy.array(range(0, length))[counts >= peakval]
+        peaks = numpy.array(list(range(0, length)))[counts >= peakval]
         npeaks = len(peaks)
         # peakcenter is median coordinate between peaks
         # such that it is a valid peak in the middle

@@ -127,8 +127,7 @@ def main(argv=None):
 
     if options.columns_token:
         if options.columns_token != "all":
-            options.columns_token = map(
-                lambda x: int(x) - 1, string.split(options.columns_token, ","))
+            options.columns_token = [int(x) - 1 for x in string.split(options.columns_token, ",")]
 
     file_id = 0
 
@@ -144,7 +143,7 @@ def main(argv=None):
             try:
                 a, b = d[:2]
             except ValueError:
-                print "# invalid map skipped in line: %s" % line
+                print("# invalid map skipped in line: %s" % line)
                 continue
 
             if options.invert:
@@ -155,7 +154,7 @@ def main(argv=None):
                 if options.extended:
                     b = "\t".join(d[1:])
 
-            if not keys.has_key(a):
+            if a not in keys:
                 keys[a] = []
 
             if options.keep:
@@ -232,7 +231,7 @@ def main(argv=None):
             elif options.columns_token:
                 data = line[:-1].split("\t")
                 if options.columns_token == "all":
-                    columns = range(len(data))
+                    columns = list(range(len(data)))
                 else:
                     columns = options.columns_token
                 keep = not options.reverse_filter

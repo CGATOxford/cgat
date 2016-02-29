@@ -161,7 +161,7 @@ def main(argv=None):
 
     options.stdout.write("probeset_id\tgene_id\tngenes\n")
 
-    for probeset, locations in probeset2location.iteritems():
+    for probeset, locations in probeset2location.items():
         counts.probesets += 1
         gene_ids = probeset2gene[probeset]
         if len(gene_ids) == 0:

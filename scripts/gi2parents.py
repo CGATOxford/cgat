@@ -134,17 +134,17 @@ def main(argv=None):
     E.info("retrieving parents for each gi accession number")
     options.stdout.write(
         "gi\tsub_species\tspecies\tgenus\tfamily\torder\tclass\tphylum\n")
-    for gi, taxid in gi2taxid.iteritems():
+    for gi, taxid in gi2taxid.items():
         # this will be the sub species id
         # walk through the parents
         parents = {}
         sub_species = taxid2name[taxid][0]
-        for i in range(len(code2taxa.keys())):
+        for i in range(len(list(code2taxa.keys()))):
             parent_taxid = taxid2parents[taxid]
             parent_name = taxid2name[parent_taxid][0]
             parent_code = taxid2name[parent_taxid][1]
             # ignore codes that we are not  interested in
-            if parent_code not in code2taxa.keys():
+            if parent_code not in list(code2taxa.keys()):
                 continue
             parent_taxa = code2taxa[parent_code]
             parents[parent_taxa] = parent_name

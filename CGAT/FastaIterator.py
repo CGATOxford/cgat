@@ -87,8 +87,8 @@ class FastaIterator:
     def __iter__(self):
         return self
 
-    def next(self):
-        return self.iterator.next()
+    def __next__(self):
+        return next(self.iterator)
 
 
 def iterate(infile, comment="#", fold=False):
@@ -164,7 +164,7 @@ def iterate_together(*args):
     iterators = [FastaIterator(x) for x in args]
 
     while 1:
-        yield [x.next() for x in iterators]
+        yield [next(x) for x in iterators]
 
 
 def count(filename):

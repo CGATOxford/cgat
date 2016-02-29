@@ -53,7 +53,7 @@ class Files:
 
     def __del__(self):
         """close all open files."""
-        for file in self.mFiles.values():
+        for file in list(self.mFiles.values()):
             file.close()
 
     def GetFile(self, identifier):
@@ -86,7 +86,7 @@ class Files:
         if filename not in self.mFiles:
 
             if len(self.mFiles) > 1000:
-                for f in self.mFiles.values():
+                for f in list(self.mFiles.values()):
                     f.close()
                 self.mFiles = {}
 
@@ -106,7 +106,7 @@ class Files:
         """delete all files below a minimum size."""
 
         ndeleted = 0
-        for filename, counts in self.mCounts.items():
+        for filename, counts in list(self.mCounts.items()):
             if counts < min_size:
                 os.remove(filename)
                 ndeleted += 1
@@ -216,7 +216,7 @@ def main(argv=None):
             try:
                 identifier = rx.search(seq.title).groups()[0]
             except AttributeError:
-                print "# parsing error in description line %s" % (seq.title)
+                print("# parsing error in description line %s" % (seq.title))
         else:
             identifier = seq.title
 
@@ -242,7 +242,7 @@ def main(argv=None):
         ndeleted = 0
 
     if options.loglevel >= 1:
-        print "# input=%i, output=%i, ndeleted=%i" % (ninput, noutput, ndeleted)
+        print("# input=%i, output=%i, ndeleted=%i" % (ninput, noutput, ndeleted))
 
     E.Stop()
 

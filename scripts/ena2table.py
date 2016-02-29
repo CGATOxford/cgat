@@ -81,8 +81,8 @@ Command line options
 '''
 
 import sys
-import urllib2
-import urllib
+import urllib.request, urllib.error, urllib.parse
+import urllib.request, urllib.parse, urllib.error
 import collections
 import xml.etree.ElementTree as ET
 
@@ -232,14 +232,14 @@ def main(argv=None):
         query += ' AND library_selection="%s" ' % options.library_selection
 
     # collect pre-study results
-    params = urllib.urlencode({'query':  query,
+    params = urllib.parse.urlencode({'query':  query,
                                'display': 'report',
                                'fields': ",".join(fields),
                                'result': 'read_run'})
 
     E.debug("?".join((query_url, params)))
 
-    lines = urllib2.urlopen(query_url, params)
+    lines = urllib.request.urlopen(query_url, params)
 
     header = lines.readline()
 
@@ -290,10 +290,10 @@ def main(argv=None):
 
     for study_accession in studies:
         # get additional info
-        params = urllib.urlencode({'display': 'xml'})
+        params = urllib.parse.urlencode({'display': 'xml'})
         url = "/".join((data_url, study_accession)) + "&" + params
 
-        info_lines = urllib2.urlopen(url)
+        info_lines = urllib.request.urlopen(url)
         tree = ET.parse(info_lines)
         root = tree.getroot()
 

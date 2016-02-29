@@ -261,7 +261,7 @@ def compareChains(pairs1, pairs2):
     '''compare chains in pairs1 versus those in pairs2'''
 
     result = {}
-    for key1, chain1 in pairs1.iteritems():
+    for key1, chain1 in pairs1.items():
         E.debug("comparing %s" % str(key1))
 
         ntotal = chain1.getNumAligned()
@@ -294,7 +294,7 @@ def outputMismatches(pairs1, pairs2,
 
     outfile = sys.stdout
 
-    for key1, chain1 in pairs1.iteritems():
+    for key1, chain1 in pairs1.items():
         E.debug("comparing %s" % str(key1))
 
         if key1 not in pairs2:
@@ -304,7 +304,7 @@ def outputMismatches(pairs1, pairs2,
 
         chain2 = pairs2[key1]
         reg_start = chain1.getRowFrom()
-        for pos in xrange(chain1.getRowFrom(), chain2.getRowTo()):
+        for pos in range(chain1.getRowFrom(), chain2.getRowTo()):
             x = chain1.mapRowToCol(pos)
             y = chain2.mapRowToCol(pos)
 
@@ -393,7 +393,7 @@ def main(argv=None):
     E.info("comparing 2 -> 1")
     comparison2 = compareChains(pairs2, pairs1)
 
-    all_keys = sorted(list(set(comparison1.keys() + comparison2.keys())))
+    all_keys = sorted(list(set(list(comparison1.keys()) + list(comparison2.keys()))))
 
     outfile = options.stdout
     headers = ("mapped", "identical", "different", "unique")

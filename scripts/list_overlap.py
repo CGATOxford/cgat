@@ -111,15 +111,15 @@ def with_genes(fftot, ffa, ffb, asfile=True):
     n = len(ftot)
 
     if asfile:
-        print "A : %-32s:%-5i" % (ffa, n1)
-        print "B : %-32s:%-5i" % (ffb, n2)
-        print "total : %-32s:%-5i" % (fftot, n)
-        print "shared: %-32s:%-5i" % (' ', m)
+        print("A : %-32s:%-5i" % (ffa, n1))
+        print("B : %-32s:%-5i" % (ffb, n2))
+        print("total : %-32s:%-5i" % (fftot, n))
+        print("shared: %-32s:%-5i" % (' ', m))
     else:
-        print "A : %-32s:%-5i" % ("set A", n1)
-        print "B : %-32s:%-5i" % ("set B", n2)
-        print "total : %-32s:%-5i" % ("total", n)
-        print "shared: %-32s:%-5i" % (' ', m)
+        print("A : %-32s:%-5i" % ("set A", n1))
+        print("B : %-32s:%-5i" % ("set B", n2))
+        print("total : %-32s:%-5i" % ("total", n))
+        print("shared: %-32s:%-5i" % (' ', m))
 
     return hypergeom(m, n, n1, n2)
 
@@ -133,20 +133,20 @@ def main(argv=None):
     if (len(args) not in (3, 4)):
         sys.exit(not p.print_help())
     if len(args) == 4 and not all(a.isdigit() for a in args):
-        print >>sys.stderr, "four arguments must be integers"
+        print("four arguments must be integers", file=sys.stderr)
         sys.exit(not p.print_help())
     elif len(args) == 3 and not all(op.exists(f) for f in args):
         sys.exit(not p.print_help())
 
     if len(args) == 4:
-        args = map(long, args)
+        args = list(map(int, args))
         m, n, n1, n2 = args
         result = hypergeom(m, n, n1, n2)
         # print type(result)
-        print result
+        print(result)
     else:
-        tot_genes, a_genes, b_genes = map(str.strip, args)
-        print with_genes(tot_genes, a_genes, b_genes)
+        tot_genes, a_genes, b_genes = list(map(str.strip, args))
+        print(with_genes(tot_genes, a_genes, b_genes))
 
     E.Stop()
 

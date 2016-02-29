@@ -62,7 +62,7 @@ def main(argv=None):
     entry.feature = "contig"
     entry.source = "genome"
 
-    for contig, size in fasta.getContigSizes(with_synonyms=False).iteritems():
+    for contig, size in fasta.getContigSizes(with_synonyms=False).items():
         ninput += 1
         entry.contig = contig
         entry.end = int(size)

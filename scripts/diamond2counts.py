@@ -178,7 +178,7 @@ def main(argv=None):
 
         E.info("writing results")
         options.stdout.write("ref\tcount\n")
-        for ref, count in counts.iteritems():
+        for ref, count in counts.items():
             options.stdout.write("\t".join([ref, str(count)]) + "\n")
 
     # write footer and output benchmark information.

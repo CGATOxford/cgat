@@ -134,7 +134,7 @@ def segmentWithGCProfile(infile, options):
 
     while 1:
         try:
-            cur_record = iterator.next()
+            cur_record = next(iterator)
         except StopIteration:
             break
 
@@ -215,7 +215,7 @@ def segmentFixedWidthWindows(infile, window_size, window_shift):
     while 1:
         ninput += 1
         try:
-            cur_record = iterator.next()
+            cur_record = next(iterator)
         except StopIteration:
             break
 
@@ -274,7 +274,7 @@ def segmentGaps(infile, gap_char):
 
     while 1:
         try:
-            cur_record = iterator.next()
+            cur_record = next(iterator)
         except StopIteration:
             break
 
@@ -292,7 +292,7 @@ def segmentUngapped(infile, gap_char, min_gap_size=0):
 
     while 1:
         try:
-            cur_record = iterator.next()
+            cur_record = next(iterator)
         except StopIteration:
             break
 

@@ -79,7 +79,7 @@ def main(argv=sys.argv):
         contig_sizes = fasta.getContigSizes(with_synonyms=False)
         E.info("allocating memory for %i contigs and %i bytes" %
                (len(contig_sizes), sum(contig_sizes.values()) * typecode().itemsize))
-        for contig, size in contig_sizes.items():
+        for contig, size in list(contig_sizes.items()):
             E.debug("allocating %s: %i bases" % (contig, size))
             counts[contig] = numpy.zeros(size, typecode)
 
@@ -120,7 +120,7 @@ def main(argv=sys.argv):
 
         # write contig sizes
         outfile_size = open(tmpfile_sizes, "w")
-        for contig, size in contig_sizes.items():
+        for contig, size in list(contig_sizes.items()):
             outfile_size.write("%s\t%s\n" % (contig, size))
         outfile_size.close()
 
@@ -140,7 +140,7 @@ def main(argv=sys.argv):
         if options.test and ninput >= options.test:
             break
 
-        match = iterator.next()
+        match = next(iterator)
 
         if match is None:
             break
@@ -157,7 +157,7 @@ def main(argv=sys.argv):
     if options.output_format in ("wig", "bigwig"):
         E.info("starting wig output")
 
-        for contig, vals in counts.items():
+        for contig, vals in list(counts.items()):
 
             E.debug("output for %s" % contig)
             for val, iter in itertools.groupby(enumerate(vals), lambda x: x[1]):
@@ -174,7 +174,7 @@ def main(argv=sys.argv):
 
         E.info("starting bedgraph output")
 
-        for contig, vals in counts.items():
+        for contig, vals in list(counts.items()):
             E.debug("output for %s" % contig)
             for val, iter in itertools.groupby(enumerate(vals), lambda x: x[1]):
                 l = list(iter)
@@ -201,7 +201,7 @@ def main(argv=sys.argv):
             if retcode < 0:
                 warn("wigToBigWig terminated with signal: %i" % -retcode)
                 return -retcode
-        except OSError, msg:
+        except OSError as msg:
             warn("Error while executing bigwig: %s" % e)
             return 1
 

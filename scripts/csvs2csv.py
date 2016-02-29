@@ -139,7 +139,7 @@ def main(argv=None):
     if options.merge:
         options.columns = []
     else:
-        options.columns = map(lambda x: int(x) - 1, options.columns.split(","))
+        options.columns = [int(x) - 1 for x in options.columns.split(",")]
 
     options.filenames = []
 
@@ -149,7 +149,7 @@ def main(argv=None):
     options.filenames += args
 
     if len(options.filenames) < 1:
-        print USAGE, "no tables specified/found."
+        print(USAGE, "no tables specified/found.")
         sys.exit(1)
 
     if options.loglevel >= 1:
@@ -182,7 +182,7 @@ def main(argv=None):
 
         if os.path.exists(filename):
             file = open(filename, "r")
-            lines = filter(lambda x: x[0] != "#", file)
+            lines = [x for x in file if x[0] != "#"]
 
         else:
             lines = []
@@ -228,14 +228,14 @@ def main(argv=None):
             else:
                 key = "-".join(row_keys)
 
-            if not keys.has_key(key):
+            if key not in keys:
                 sorted_keys.append(key)
                 keys[key] = 1
                 sizes[key] = 0
 
             max_size = max(len(data) - len(options.columns), max_size)
             table[key] = [data[x]
-                          for x in filter(lambda x: x not in options.columns, range(0, len(data)))]
+                          for x in [x for x in range(0, len(data)) if x not in options.columns]]
             n += 1
 
         # enter columns of "na" for empty tables.
@@ -266,7 +266,7 @@ def main(argv=None):
                 # otherwise: print the headers out right away
                 sys.stdout.write(string.join(headers, "\t") + "\n")
 
-        order = range(0, len(tables) + 1)
+        order = list(range(0, len(tables) + 1))
 
         if options.titles:
 
@@ -274,14 +274,14 @@ def main(argv=None):
                 sort_order = []
 
                 if options.sort == "numeric":
-                    t = zip(map(int, titles[1:]), range(1, len(titles) + 1))
+                    t = list(zip(list(map(int, titles[1:])), list(range(1, len(titles) + 1))))
                     t.sort()
 
                     for tt in t:
                         sort_order.append(titles[tt[1]])
 
                 elif options.sort == "alphabetical":
-                    t = zip(titles[1:], range(1, len(titles) + 1))
+                    t = list(zip(titles[1:], list(range(1, len(titles) + 1))))
                     t.sort()
 
                     for tt in t:
@@ -299,10 +299,10 @@ def main(argv=None):
                         order.append(map_title2pos[x])
 
             else:
-                order = range(0, len(titles))
+                order = list(range(0, len(titles)))
 
             sys.stdout.write(
-                "\t".join(map(lambda x: titles[order[x]], range(len(titles)))))
+                "\t".join([titles[order[x]] for x in range(len(titles))]))
             sys.stdout.write("\n")
 
         if options.sort_keys:
@@ -319,7 +319,7 @@ def main(argv=None):
             for x in order[1:]:
                 max_size, table = tables[x - 1]
                 c = 0
-                if table.has_key(key):
+                if key in table:
                     sys.stdout.write("\t")
                     sys.stdout.write(string.join(table[key], "\t"))
                     c = len(table[key])
@@ -336,7 +336,7 @@ def main(argv=None):
         # for multi-column table, just write
         if options.titles:
             sys.stdout.write(
-                "\t".join(map(lambda x: titles[x], range(len(titles)))))
+                "\t".join([titles[x] for x in range(len(titles))]))
             sys.stdout.write("\n")
 
         for key in sorted_keys:
@@ -347,7 +347,7 @@ def main(argv=None):
 
                 max_size, table = tables[x]
                 c = 0
-                if table.has_key(key):
+                if key in table:
                     sys.stdout.write("\t")
                     sys.stdout.write("\t".join(table[key]))
                     c = len(table[key])

@@ -194,9 +194,9 @@ def main(argv=None):
         options.symbols = options.symbols.split(",")
 
     if options.xrange:
-        options.xrange = map(float, options.xrange.split(","))
+        options.xrange = list(map(float, options.xrange.split(",")))
     if options.yrange:
-        options.yrange = map(float, options.yrange.split(","))
+        options.yrange = list(map(float, options.yrange.split(",")))
 
     # Added support for (inclusive) range format: "1,3,5,7-100"  (Gerton
     # 13/12/06)
@@ -205,7 +205,7 @@ def main(argv=None):
         for d in options.columns.split(','):
             colopts = d.split('-')
             if len(colopts) == 2:
-                cols += range(int(colopts[0]), int(colopts[1]) + 1)
+                cols += list(range(int(colopts[0]), int(colopts[1]) + 1))
             else:
                 cols += [int(d) - 1]
         options.columns = cols
@@ -242,7 +242,7 @@ def main(argv=None):
     # Solution: inplace edits.
     if options.cumulate:
         if options.add_error_bars:
-            raise "can not add error bars to cumulative histogram."
+            raise ValueError("can not add error bars to cumulative histogram")
         if data.mask.any():
             # cumsum does not work with masked arrays, so do it manually
             for y in range(1, ncols):
@@ -257,7 +257,7 @@ def main(argv=None):
 
     elif options.reverse_cumulate:
         if options.add_error_bars:
-            raise "can not add error bars to cumulative histogram."
+            raise ValueError("can not add error bars to cumulative histogram")
         if data.mask.any():
             l = [0] * ncols
             for x in range(nrows - 1, -1, -1):
@@ -274,7 +274,7 @@ def main(argv=None):
 
     if options.normalize:
         if options.add_error_bars:
-            raise "can not add error bars to normalized histogram."
+            raise ValueError("can not add error bars to normalized histogram")
         if data.mask.any():
             m = [0] * ncols
             for x in range(nrows):
@@ -299,7 +299,7 @@ def main(argv=None):
 
     if options.dump:
         for d in data:
-            print d
+            print(d)
 
     if options.title:
         pylab.title(options.title)
@@ -393,7 +393,7 @@ def main(argv=None):
     if options.function:
         xstart, xend = pylab.gca().get_xlim()
         increment = (xend - xstart) / 100.0
-        exec("f = lambda x: %s" % options.function) in locals()
+        exec(("f = lambda x: %s" % options.function), locals())
         xvals, yvals = [], []
         for x in range(0, 100):
             xvals.append(xstart)

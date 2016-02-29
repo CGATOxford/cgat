@@ -666,7 +666,7 @@ class Counts(object):
                 for idx, coord in enumerate(zip(initial_idx, change_idx)):
                     # ignore spike-in if change or initial fall into the final bin
                     if coord[0] < len(i_bins) and coord[1] < len(c_bins):
-                        if coord in indices.keys():
+                        if coord in list(indices.keys()):
                             # if max fill of bin not reached
                             if bin_counts[coord] < s_max:
                                 # ...append tuple of df indeces for groups
@@ -770,7 +770,7 @@ class Counts(object):
                     n += 1
 
         elif spike_type == "cluster":
-            for key in indices.keys():
+            for key in list(indices.keys()):
                 initial, change, size = getInitialChangeSize(
                     key, width_ibin, min_ibin, width_cbin,
                     min_cbin, width_sbin, min_sbin)
@@ -870,7 +870,7 @@ def shuffleCluster(i_bins, c_bins, tracks_map, groups,
     return indeces from which the spike in clusters can be obtained from the
     original dataframe
     '''
-    s_bins = range(s_bins_min, s_bins_max+1, s_bins_width, )
+    s_bins = list(range(s_bins_min, s_bins_max+1, s_bins_width,))
 
     counts = np.zeros((len(i_bins)+1, len(c_bins)+1, len(s_bins)+1))
 
@@ -886,8 +886,8 @@ def shuffleCluster(i_bins, c_bins, tracks_map, groups,
             group2_mean = []
             g1_rand_s = []
             g2_rand_s = []
-            g1_rand = np.random.permutation(clusters_dict.keys())
-            g2_rand = np.random.permutation(clusters_dict.keys())
+            g1_rand = np.random.permutation(list(clusters_dict.keys()))
+            g2_rand = np.random.permutation(list(clusters_dict.keys()))
             for perm in range(0, len(g1_rand)):
                 cluster1 = clusters_dict[g1_rand[perm]].ix[
                     :, tracks_map[groups[0]]]
@@ -936,12 +936,12 @@ def thresholdBins(indices, counts, s_min):
     '''use counts (np array) to remove bins from indices based on
     threshold (s_min)'''
     output_indices_keep = copy.copy(indices)
-    for key in indices.keys():
+    for key in list(indices.keys()):
         if counts[key] < s_min:
             output_indices_keep.pop(key)
 
-    E.info("%s/%s bins retained" % (len(output_indices_keep.keys()),
-                                    len(indices.keys())))
+    E.info("%s/%s bins retained" % (len(list(output_indices_keep.keys())),
+                                    len(list(indices.keys()))))
     return output_indices_keep
 
 ##########################################################################

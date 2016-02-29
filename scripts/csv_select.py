@@ -51,7 +51,7 @@ class CommentStripper:
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         while 1:
             line = self.mFile.readline()
             if not line:
@@ -103,7 +103,7 @@ def main(argv=None):
         reader = csv.DictReader(CommentStripper(sys.stdin),
                                 dialect=options.csv_dialect)
 
-    exec "f = lambda r: %s" % statement in locals()
+    exec("f = lambda r: %s" % statement, locals())
 
     counter = E.Counter()
     writer = csv.DictWriter(options.stdout,
@@ -116,8 +116,8 @@ def main(argv=None):
     while 1:
         counter.input += 1
         try:
-            row = reader.next()
-        except _csv.Error, msg:
+            row = next(reader)
+        except _csv.Error as msg:
             options.stderr.write("# error while parsing: %s\n" % (msg))
             counter.errors += 1
             continue

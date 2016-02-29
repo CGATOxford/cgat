@@ -146,7 +146,7 @@ def main(argv=None):
     options.stdout.write("contig\tstart\tend\tcount\n")
 
     E.info("outputting result")
-    for interval, count in counts.iteritems():
+    for interval, count in counts.items():
         options.stdout.write(
             "\t".join(map(str, interval)) + "\t" + str(count) + "\n")
 

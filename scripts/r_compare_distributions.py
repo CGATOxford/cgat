@@ -260,17 +260,17 @@ def main(argv=None):
 
     options.stdout.write("%s\t%s\n" % ("key", options.header))
 
-    for key in result.keys():
+    for key in list(result.keys()):
         if key == "data.name":
             continue
         options.stdout.write("\t".join((key, str(result[key]))) + "\n")
 
     stat = Stats.Summary(values1)
-    for key, value in stat.items():
+    for key, value in list(stat.items()):
         options.stdout.write("%s1\t%s\n" % (str(key), str(value)))
 
     stat = Stats.Summary(values2)
-    for key, value in stat.items():
+    for key, value in list(stat.items()):
         options.stdout.write("%s2\t%s\n" % (str(key), str(value)))
 
     if options.plot:

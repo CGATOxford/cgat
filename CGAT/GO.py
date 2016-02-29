@@ -391,7 +391,7 @@ class GOResults:
         lines = []
         lines.append("\t".join(
             map(str, (self.mNumGenes, self.mBackgroundCountsTotal, self.mSampleCountsTotal))))
-        for k, v in self.mResults.items():
+        for k, v in list(self.mResults.items()):
             lines.append("%s\t%s" % (k, str(v)))
         return "\n".join(lines)
 
@@ -456,7 +456,7 @@ def FilterByGOIds(gene2go, go2info):
 
     filtered_gene2go = {}
 
-    for gene_id in gene2go.keys():
+    for gene_id in list(gene2go.keys()):
         new_go = set()
         for go in gene2go[gene_id]:
             if go.mGOId in go2info:
@@ -485,18 +485,18 @@ def MapGO2Slims(gene2go, go2slim, ontology=None):
     # build map of go identifiers to go info
     map_go2info = {}
     if ontology:
-        for go in ontology.values():
+        for go in list(ontology.values()):
             map_go2info[go.mId] = GOInfo(goid=go.mId,
                                          go_type=go.mNameSpace,
                                          description=go.mName)
     else:
-        for gene_id, gos in gene2go.items():
+        for gene_id, gos in list(gene2go.items()):
             for go in gos:
                 map_go2info[go.mGOId] = go
 
     filtered_gene2go = {}
 
-    for gene_id, gos in gene2go.items():
+    for gene_id, gos in list(gene2go.items()):
         new_go = set()
         for go in gos:
             if go.mGOId in go2slim:
@@ -533,8 +533,7 @@ def GetGOSlims(infile):
         if len(goslims) == 0:
             continue
 
-        go2go[go.strip()] = filter(
-            lambda x: len(x), map(lambda x: x.strip(), goslims))
+        go2go[go.strip()] = [x for x in [x.strip() for x in goslims] if len(x)]
 
     return go2go
 
@@ -581,7 +580,7 @@ def AnalyseGO(gene2go,
     genes_background: background set of genes (default: all)
     """
     if genes_background is None:
-        genes_background = gene2go.keys()
+        genes_background = list(gene2go.keys())
 
     result = GOResults()
 
@@ -609,7 +608,7 @@ def AnalyseGO(gene2go,
     # report results for all go categories in the background
     # so that also categories completely absent in the foreground (sample)
     # are considered.
-    for go_id in background_counts.keys():
+    for go_id in list(background_counts.keys()):
 
         result_go = GOResult(go_id)
 
@@ -631,15 +630,15 @@ def AnalyseGO(gene2go,
         if do_probabilities:
             try:
                 result_go.UpdateProbabilities()
-            except AssertionError, msg:
-                print msg
-                print "# error while calculating probabilities for %s" % go_id
-                print "# genes in sample", sample_genes
-                print "# counts in sample: %i out of %i total" % (result_go.mSampleCountsCategory, result_go.mSampleCountsTotal)
-                print "# counts in background %i out of %i total" % (result_go.mBackgroundCountsCategory, result_go.mBackgroundCountsTotal)
-                for x in sample_genes.keys():
+            except AssertionError as msg:
+                print(msg)
+                print("# error while calculating probabilities for %s" % go_id)
+                print("# genes in sample", sample_genes)
+                print("# counts in sample: %i out of %i total" % (result_go.mSampleCountsCategory, result_go.mSampleCountsTotal))
+                print("# counts in background %i out of %i total" % (result_go.mBackgroundCountsCategory, result_go.mBackgroundCountsTotal))
+                for x in list(sample_genes.keys()):
                     for y in gene2go[x]:
-                        print x, str(y)
+                        print(x, str(y))
 
                 sys.exit(0)
 
@@ -857,7 +856,7 @@ def ReadGene2GOFromFile(infile, synonyms={}, obsolete={}):
         try:
             go_type, gene_id, goid, description, evidence = line[
                 :-1].split("\t")
-        except ValueError, msg:
+        except ValueError as msg:
             raise ValueError("parsing error in line '%s': %s" %
                              (line[:-1], msg))
         if go_type == "go_type":
@@ -900,7 +899,7 @@ def CountGO(gene2go):
 
     cats = collections.defaultdict(int)
     nmaps = 0
-    for k, vv in gene2go.items():
+    for k, vv in list(gene2go.items()):
         for v in vv:
             nmaps += 1
             cats[v.mGOId] += 1
@@ -911,7 +910,7 @@ def CountGO(gene2go):
 def removeCategories(gene2go, categories):
     '''remove all genes that map to *categories*.'''
 
-    for k, vv in gene2go.items():
+    for k, vv in list(gene2go.items()):
         gene2go[k] = [v for v in vv if v.mGOId not in categories]
 
 # ---------------------------------------------------------------------------
@@ -921,8 +920,8 @@ def countGOs(gene2gos):
     """return map of number of genes and go categories in mapping."""
     genes, goids = collections.defaultdict(int), collections.defaultdict(int)
 
-    for cat, gene2go in gene2gos.iteritems():
-        for gene_id, vv in gene2go.iteritems():
+    for cat, gene2go in gene2gos.items():
+        for gene_id, vv in gene2go.items():
             genes[gene_id] += 1
             for v in vv:
                 goids[v.mGOId] += 1
@@ -958,7 +957,7 @@ def ReadGeneLists(filename_genes, gene_pattern=None):
 
     if gene_pattern:
         rx = re.compile(gene_pattern)
-        all_genes = map(lambda x: rx.search(x).groups()[0], all_genes)
+        all_genes = [rx.search(x).groups()[0] for x in all_genes]
 
     gene_lists = collections.OrderedDict()
     for header, col in zip(headers[1:], table[1:]):
@@ -977,7 +976,7 @@ def buildGO2Genes(gene2gos, ancestors=None):
     '''
 
     go2genes = collections.defaultdict(set)
-    for gene_id, terms in gene2gos.iteritems():
+    for gene_id, terms in gene2gos.items():
         for term in terms:
             go2genes[term.mGOId].add(gene_id)
             if ancestors:
@@ -1021,7 +1020,7 @@ def convertGo2Goslim(options):
 
     go2infos = collections.defaultdict(dict)
     # substitute go2infos
-    for go in ontology.values():
+    for go in list(ontology.values()):
         go2infos[go.mNameSpace][go.mId] = GOInfo(go.mId,
                                                  go_type=go.mNameSpace,
                                                  description=go.mName)
@@ -1031,7 +1030,7 @@ def convertGo2Goslim(options):
 
     if options.loglevel >= 1:
         v = set()
-        for x in go_slims.values():
+        for x in list(go_slims.values()):
             for xx in x:
                 v.add(xx)
         E.info("read go slims from %s: go=%i, slim=%i" %
@@ -1187,7 +1186,7 @@ def getSamples(gene2go, foreground, background, options, test_ontology,
 
         go_results = AnalyseGO(gene2go, sample_genes, background)
 
-        pairs = go_results.mResults.items()
+        pairs = list(go_results.mResults.items())
 
         for k, v in pairs:
             if k not in counts:
@@ -1224,7 +1223,7 @@ def getSamples(gene2go, foreground, background, options, test_ontology,
                              "CI95lower", "CI95upper",
                              "pover", "punder", "goid",
                              "category", "description")) + "\n")
-    for k in counts.keys():
+    for k in list(counts.keys()):
 
         c = counts[k]
 
@@ -1268,7 +1267,7 @@ def computeFDRs(go_results,
                 gene2go,
                 go2info):
 
-    pairs = go_results.mResults.items()
+    pairs = list(go_results.mResults.items())
 
     E.info("calculating the FDRs using method `%s`" % options.qvalue_method)
 
@@ -1287,7 +1286,7 @@ def computeFDRs(go_results,
         try:
             fdr_data = Stats.doFDR(observed_min_pvalues)
 
-        except ValueError, msg:
+        except ValueError as msg:
             E.warn("failure in q-value computation: %s" % msg)
             E.warn("reverting to Bonferroni correction")
             method = "bonf"
@@ -1408,7 +1407,7 @@ def buildMatrix(results, valuef, dtype=numpy.float, default=0):
 
     row_headers = [set([x[0] for x in y]) for y in results]
     row_headers = sorted(list(row_headers[0].union(*row_headers[1:])))
-    map_row = dict(zip(row_headers, range(len(row_headers))))
+    map_row = dict(list(zip(row_headers, list(range(len(row_headers))))))
     matrix = numpy.zeros((len(row_headers), len(results)), dtype=dtype)
     if default != 0:
         matrix[:] = default
@@ -1640,7 +1639,7 @@ def pairwiseGOEnrichment(results_per_genelist, labels, test_ontology, go2info,
             try:
                 fdr_data = Stats.doFDR(pvalues)
 
-            except ValueError, msg:
+            except ValueError as msg:
                 E.warn("failure in q-value computation: %s" % msg)
                 E.warn("reverting to Bonferroni correction")
                 method = "bonf"

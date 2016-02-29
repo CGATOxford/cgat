@@ -161,14 +161,14 @@ if __name__ == "__main__":
     matrix[5, 0] = 1
     matrix[5, 2:5] = 1
 
-    print "matrix=", matrix
+    print("matrix=", matrix)
 
     row_indices, col_indices = GetIndices(matrix)
 
     map_row_new2old = numpy.argsort(row_indices)
     map_col_new2old = numpy.argsort(col_indices)
 
-    print map_row_new2old
-    print map_col_new2old
+    print(map_row_new2old)
+    print(map_col_new2old)
 
-    print GetPermutatedMatrix(matrix, map_row_new2old, map_col_new2old)
+    print(GetPermutatedMatrix(matrix, map_row_new2old, map_col_new2old))

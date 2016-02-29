@@ -412,7 +412,7 @@ def main(argv=None):
     elif options.action == "per_contig":
 
         E.info("processing per chromosome")
-        for contig, size in contig2size.iteritems():
+        for contig, size in contig2size.items():
             if contig not in ("chr16",):
                 continue
 

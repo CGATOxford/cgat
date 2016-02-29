@@ -146,7 +146,7 @@ def main(argv=None):
             allkeys = ["nalt_1", "nalt_2", "nalt_3", "nalt_4",
                        "nalt_5", "track", "count", "snp_count", "indel_count"]
             for k in allkeys:
-                if vcf_stats.has_key(k):
+                if k in vcf_stats:
                     continue
                 else:
                     vcf_stats[k] = "0"
@@ -155,7 +155,7 @@ def main(argv=None):
             if filename == options.filenames[0]:
 
                 # Ensure keys are sorted
-                srt = vcf_stats.keys()
+                srt = list(vcf_stats.keys())
                 srt.sort()
                 sep = ""
                 for k in srt:
@@ -167,14 +167,14 @@ def main(argv=None):
                 shared_file.write("track\tno_samples\tvar_count\n")
 
                 sep = ""
-                for k in snp_stats.iterkeys():
+                for k in snp_stats.keys():
                     snp_file.write("%s%s" % (sep, k))
                     sep = "\t"
                 snp_file.write("\n")
 
             # Write data
             sep = ""
-            srt = vcf_stats.keys()
+            srt = list(vcf_stats.keys())
             srt.sort()
             for k in srt:
                 vcf_file.write("%s%s" % (sep, vcf_stats[k]))
@@ -182,22 +182,22 @@ def main(argv=None):
             vcf_file.write("\n")
 
             # Check all indel lengths are covered
-            r = range(-20, 20, 1)
+            r = list(range(-20, 20, 1))
             for i in r:
-                if indel_stats.has_key(str(i)):
+                if str(i) in indel_stats:
                     continue
                 else:
                     indel_stats[i] = "0"
-            for k in indel_stats.iterkeys():
+            for k in indel_stats.keys():
                 indel_file.write("%s\t%s\t%s\n" %
                                  (trackname, k, indel_stats[k]))
 
-            for k in shared_stats.iterkeys():
+            for k in shared_stats.keys():
                 shared_file.write("%s\t%s\t%s\n" %
                                   (trackname, k, shared_stats[k]))
 
             sep = ""
-            for k in snp_stats.iterkeys():
+            for k in snp_stats.keys():
                 snp_file.write("%s%s" % (sep, snp_stats[k]))
                 sep = "\t"
             snp_file.write("\n")

@@ -133,7 +133,7 @@ def concatenateTables(outfile, options, args):
 
         outfile.write("%s\t%s\n" %
                       ("\t".join([x for x in row_head_titles]),
-                       "\t".join(titles.keys())))
+                       "\t".join(list(titles.keys()))))
 
         map_title2column = collections.defaultdict(lambda: None)
         for x, title in enumerate(titles.keys()):
@@ -310,7 +310,7 @@ def joinTables(outfile, options, args):
             data = string.split(line[:-1], "\t")
             try:
                 row_keys = [data[x] for x in options.columns]
-            except IndexError, msg:
+            except IndexError as msg:
                 raise IndexError(
                     "error while parsing %s: %s" % (filename, msg))
             if options.sort_keys:
@@ -371,7 +371,7 @@ def joinTables(outfile, options, args):
                 # otherwise: print the headers out right away
                 outfile.write(string.join(headers, "\t") + "\n")
 
-        order = range(0, len(tables) + 1)
+        order = list(range(0, len(tables) + 1))
 
         if options.input_has_titles or \
            (options.use_file_prefix or options.add_file_prefix):
@@ -380,14 +380,14 @@ def joinTables(outfile, options, args):
                 sort_order = []
 
                 if options.sort == "numeric":
-                    t = zip(map(int, titles[1:]), range(1, len(titles) + 1))
+                    t = list(zip(list(map(int, titles[1:])), list(range(1, len(titles) + 1))))
                     t.sort()
 
                     for tt in t:
                         sort_order.append(titles[tt[1]])
 
                 elif options.sort == "alphabetical":
-                    t = zip(titles[1:], range(1, len(titles) + 1))
+                    t = list(zip(titles[1:], list(range(1, len(titles) + 1))))
                     t.sort()
 
                     for tt in t:
@@ -405,10 +405,10 @@ def joinTables(outfile, options, args):
                         order.append(map_title2pos[x])
 
             else:
-                order = range(0, len(titles))
+                order = list(range(0, len(titles)))
 
             outfile.write(
-                "\t".join(map(lambda x: titles[order[x]], range(len(titles)))))
+                "\t".join([titles[order[x]] for x in range(len(titles))]))
             outfile.write("\n")
 
         if options.sort_keys:
@@ -442,7 +442,7 @@ def joinTables(outfile, options, args):
         # for multi-column table, just write
         if options.input_has_titles:
             outfile.write(
-                "\t".join(map(lambda x: titles[x], range(len(titles)))))
+                "\t".join([titles[x] for x in range(len(titles))]))
             outfile.write("\n")
 
         for key in sorted_keys:
@@ -621,7 +621,7 @@ def main(argv=sys.argv):
     if options.merge:
         options.columns = []
     else:
-        options.columns = map(lambda x: int(x) - 1, options.columns.split(","))
+        options.columns = [int(x) - 1 for x in options.columns.split(",")]
 
     options.filenames = []
 

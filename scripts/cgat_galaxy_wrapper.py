@@ -60,7 +60,7 @@ class CGATBase():
             except OverflowError:
                 pass
             tmp.close()
-        except Exception, e:
+        except Exception as e:
             stop_err('Read Large Exception : %s' % str(e))
         return s
 
@@ -96,7 +96,7 @@ class CGATBase():
     def sortSam(self, infile=None, outfile=None, outdir=None):
         """
         """
-        print '## sortSam got infile=%s,outfile=%s,outdir=%s' % (infile, outfile, outdir)
+        print('## sortSam got infile=%s,outfile=%s,outdir=%s' % (infile, outfile, outdir))
         cl = ['samtools sort', infile, outfile]
         tlog, stdouts, rval = self.runCL(cl, outdir)
         return tlog

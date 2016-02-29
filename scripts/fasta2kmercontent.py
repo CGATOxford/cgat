@@ -155,10 +155,10 @@ def main(argv=None):
 
     E.info("writing results")
     # write out the results
-    headers = result.keys()
+    headers = list(result.keys())
     rows = set()
-    for kmer_counts in result.values():
-        for kmer, count in kmer_counts.iteritems():
+    for kmer_counts in list(result.values()):
+        for kmer, count in kmer_counts.items():
             rows.add("".join(kmer))
 
     # write header row

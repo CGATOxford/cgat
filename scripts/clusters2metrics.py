@@ -187,7 +187,7 @@ def main(argv=None):
                     clust_dict[cluster] += 1
                 except KeyError:
                     clust_dict[cluster] = 1
-            med_size = np.median(clust_dict.values())
+            med_size = np.median(list(clust_dict.values()))
             file_dict[fname] = {'condition': condition,
                                 'reference': ref,
                                 'median_cluster_size': med_size}

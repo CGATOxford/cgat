@@ -97,7 +97,7 @@ def collectOptionsFromScript(script_name):
 
     try:
         module = imp.load_source(basename, script_name)
-    except ImportError, msg:
+    except ImportError as msg:
         E.warn('could not import %s - skipped: %s' % (basename, msg))
         return []
 
@@ -216,8 +216,8 @@ def main(argv=None):
         if alternative == "nan":
             alternative = ""
 
-        outfile.write("\t".join((map(
-            str, (o, action, comment, alternative, ",".join(v))))) + "\n")
+        outfile.write("\t".join((list(map(
+            str, (o, action, comment, alternative, ",".join(v)))))) + "\n")
 
     if outfile != options.stdout:
         outfile.close()

@@ -110,18 +110,20 @@ def main(argv=None):
     (options, args) = E.Start(parser)
 
     if options.columns != "all":
-        options.columns = map(lambda x: int(x) - 1, options.columns.split(","))
+        options.columns = [int(x) - 1 for x in options.columns.split(",")]
 
     if options.range:
-        options.min_value, options.max_value = map(
-            float, options.range.split(","))
+        options.min_value, options.max_value = list(map(
+            float, options.range.split(",")))
 
     if options.headers:
         options.headers = options.headers.split(",")
 
     if options.on_the_fly:
-        if options.min_value is None or options.max_value is None or options.bin_size is None:
-            raise "please supply columns, min-value, max-value and bin-size for on-the-fly computation."
+        if options.min_value is None or options.max_value is None or \
+           options.bin_size is None:
+            raise ValueError("please supply columns, min-value, max-value and "
+                             "bin-size for on-the-fly computation.")
 
         # try to glean titles from table:
         if options.titles:
@@ -136,7 +138,7 @@ def main(argv=None):
 
             if options.columns == "all":
                 options.titles = data
-                options.columns = range(len(data))
+                options.columns = list(range(len(data)))
             else:
                 options.titles = [data[x] for x in options.columns]
 
@@ -185,7 +187,7 @@ def main(argv=None):
                 first = False
                 ncols = len(data)
                 if options.columns == "all":
-                    options.columns = range(ncols)
+                    options.columns = list(range(ncols))
 
                 vals = [[] for x in options.columns]
 
@@ -193,8 +195,8 @@ def main(argv=None):
                     try:
                         options.titles = [data[x] for x in options.columns]
                     except IndexError:
-                        raise IndexError, "not all columns %s found in data %s" % (
-                            str(options.columns), str(data))
+                        raise IndexError("not all columns %s found in data %s" % (
+                            str(options.columns), str(data)))
                     continue
 
             for x in range(len(options.columns)):
@@ -202,7 +204,7 @@ def main(argv=None):
                 try:
                     v = string.atof(data[options.columns[x]])
                 except IndexError:
-                    print "# IndexError in line:", l[:-1]
+                    print("# IndexError in line:", l[:-1])
                     continue
                 except ValueError:
                     continue

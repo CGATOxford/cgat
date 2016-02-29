@@ -439,7 +439,7 @@ def main(argv=None):
         sum_copies = sum(copies.values())
         sum_counts = sum(counts.values())
 
-        for entry_id, count in counts.iteritems():
+        for entry_id, count in counts.items():
             tpm = 1000000 * (float(copies[entry_id]) / sum_copies)
             counts_out.write(
                 "%s\n" % "\t".join(map(str, (entry_id, count, tpm))))

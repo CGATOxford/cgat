@@ -33,7 +33,7 @@ import CGAT.Experiment as E
 def getFixedWidthWindows(map_contig2size, window_size):
     """return a list of fixed contig sizes."""
 
-    for contig, size in map_contig2size.items():
+    for contig, size in list(map_contig2size.items()):
         E.info("processing %s" % contig)
         for x in range(0, size, window_increment):
             if x + window_size > size:
@@ -94,7 +94,7 @@ def main(argv=None):
         remove_regex = None
 
     if options.fixed_width_windows:
-        v = map(int, options.fixed_width_windows.split(","))
+        v = list(map(int, options.fixed_width_windows.split(",")))
         if len(v) == 2:
             window_size, window_increment = v
         elif len(v) == 1:
@@ -128,7 +128,7 @@ def main(argv=None):
     # do sth
     counter = E.Counter()
 
-    for contig, size in map_contig2size.items():
+    for contig, size in list(map_contig2size.items()):
         size = int(size)
         counter.input += 1
 

@@ -325,12 +325,12 @@ def computeMappedReadsFromAlignments(total_alignments, nh, max_hi):
     if len(nh) > 0:
         max_nh = max(nh.keys())
         if max_hi > 0:
-            for x in xrange(2, min(max_nh + 1, max_hi)):
+            for x in range(2, min(max_nh + 1, max_hi)):
                 nreads_mapped -= (nh[x] / x) * (x - 1)
-            for x in xrange(max_hi, max_nh + 1):
+            for x in range(max_hi, max_nh + 1):
                 nreads_mapped -= (nh[x] / max_hi) * (max_hi - 1)
         else:
-            for x in xrange(2, max(nh.keys()) + 1):
+            for x in range(2, max(nh.keys()) + 1):
                 nreads_mapped -= (nh[x] / x) * (x - 1)
 
     return nreads_mapped
@@ -344,16 +344,16 @@ def writeNH(outfile, nh, max_hi):
 
     max_nh = max(nh.keys())
     if max_hi > 0:
-        for x in xrange(1, min(max_nh + 1, max_hi)):
+        for x in range(1, min(max_nh + 1, max_hi)):
             if nh[x] == 0:
                 continue
             outfile.write("%i\t%i\n" % (x, nh[x] / x))
-        for x in xrange(max_hi, max_nh + 1):
+        for x in range(max_hi, max_nh + 1):
             if nh[x] == 0:
                 continue
             outfile.write("%i\t%i\n" % (x, nh[x] / max_hi))
     else:
-        for x in xrange(1, max_nh + 1):
+        for x in range(1, max_nh + 1):
             if nh[x] == 0:
                 continue
             outfile.write("%i\t%i\n" % (x, nh[x] / x))
@@ -494,7 +494,7 @@ def main(argv=None):
         E.Stop()
         return
 
-    for flag, counts in flags_counts.iteritems():
+    for flag, counts in flags_counts.items():
         if flag == "unmapped":
             continue
         _write(outs,
@@ -787,7 +787,7 @@ def main(argv=None):
         outfile = E.openOutputFile("nm", "w")
         outfile.write("NM\talignments\n")
         if len(nm_filtered) > 0:
-            for x in xrange(0, max(nm_filtered.keys()) + 1):
+            for x in range(0, max(nm_filtered.keys()) + 1):
                 outfile.write("%i\t%i\n" % (x, nm_filtered[x]))
         else:
             outfile.write("0\t%i\n" % (counter.filtered))
@@ -816,7 +816,7 @@ def main(argv=None):
     if options.force_output or len(mapq_all) > 1:
         outfile = E.openOutputFile("mapq", "w")
         outfile.write("mapq\tall_reads\tfiltered_reads\n")
-        for x in xrange(0, max(mapq_all.keys()) + 1):
+        for x in range(0, max(mapq_all.keys()) + 1):
             outfile.write("%i\t%i\t%i\n" % (x, mapq_all[x], mapq[x]))
         outfile.close()
 

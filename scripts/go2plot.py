@@ -89,16 +89,16 @@ def posy(y):
 
 def makeheader(input, annlist, numcols, numpages):
     if doEps:
-        print "%!PS-Adobe-2.0 EPSF-2.0"
+        print("%!PS-Adobe-2.0 EPSF-2.0")
     else:
-        print "%!PS-Adobe-2.0"
-        print "%%Pages: ", numpages
-    print "%%BoundingBox: ", \
+        print("%!PS-Adobe-2.0")
+        print("%%Pages: ", numpages)
+    print("%%BoundingBox: ", \
           10, \
           posy(collen + 4) + 60, \
           int(10 + (numcols - 1) * maincolsep + labelsize / 3 + (numcols) * posx(len(input))),\
-          int(posy(0) + labelsize) + 60
-    print """
+          int(posy(0) + labelsize) + 60)
+    print("""
 /makebox {
     % x y size color
     gsave
@@ -122,7 +122,7 @@ def makeheader(input, annlist, numcols, numpages):
      minarg1 minarg2 lt {minarg1} {minarg2} ifelse}def
 /max {/maxarg1 exch def /maxarg2 exch def
      maxarg1 maxarg2 gt {maxarg1} {maxarg2} ifelse}def
-"""
+""")
 
 
 def sameannotation(ann1, ann2):
@@ -130,34 +130,34 @@ def sameannotation(ann1, ann2):
 
 
 def makecolheader(input, annlist, title=""):
-    print "/Times-Roman findfont ", colsize, " scalefont setfont"
+    print("/Times-Roman findfont ", colsize, " scalefont setfont")
     for i in range(len(input)):
-        print posx(i), posy(-1), " moveto gsave ", textangle, " rotate"
-        print "(", input[i], ") show grestore"
-    print "/Times-Roman findfont [", rowwidth, "0 0", rowheight, "0 0] makefont setfont"
+        print(posx(i), posy(-1), " moveto gsave ", textangle, " rotate")
+        print("(", input[i], ") show grestore")
+    print("/Times-Roman findfont [", rowwidth, "0 0", rowheight, "0 0] makefont setfont")
 
     if title:
-        print "gsave ", 10, posy(-8), "moveto ( %s ) show grestore" % (title)
+        print("gsave ", 10, posy(-8), "moveto ( %s ) show grestore" % (title))
 
     for i in range(len(annlist)):
-        print "gsave 0 ", posy(i), " translate"
-        print "newpath -5 -5 moveto ", annsize - 5, 0, "lineto",
-        print annsize - 5, 5 + rowheight, "lineto", 0, 5 + rowheight, "lineto"
-        print "closepath clip (", annlist[i], ") 0 0 moveto show grestore"
+        print("gsave 0 ", posy(i), " translate")
+        print("newpath -5 -5 moveto ", annsize - 5, 0, "lineto", end=' ')
+        print(annsize - 5, 5 + rowheight, "lineto", 0, 5 + rowheight, "lineto")
+        print("closepath clip (", annlist[i], ") 0 0 moveto show grestore")
         # helper lines
         if (greylines > 0 and (i + 1) % greylines == 0) or \
            (greylines == 0 and i < len(annlist) - 1 and not sameannotation(annlist[i], annlist[i + 1])):
-            print "gsave 0.5 setgray"
-            print "0.25 setlinewidth"
-            print "[0.25 0.25] 0 setdash"
-            print 0, posy(i), "moveto"
-            print "(", annlist[i], ") stringwidth pop ", annsize, " min 0 rmoveto"
-            print posx(len(input)), posy(i), "lineto stroke grestore"
+            print("gsave 0.5 setgray")
+            print("0.25 setlinewidth")
+            print("[0.25 0.25] 0 setdash")
+            print(0, posy(i), "moveto")
+            print("(", annlist[i], ") stringwidth pop ", annsize, " min 0 rmoveto")
+            print(posx(len(input)), posy(i), "lineto stroke grestore")
 
 
 def makecolor(color):
     if color == 0.5:
-        print "0 0 0"
+        print("0 0 0")
         return
     color = 1 - color
     if color > 0.5:
@@ -170,9 +170,9 @@ def makecolor(color):
         color = min(1, 1 - 2 * color)
         col0 = [0.1, 0.2, 0.05]
         col1 = [0.9, 1, 0.2]
-    print col0[0] + color * (col1[0] - col0[0]),\
+    print(col0[0] + color * (col1[0] - col0[0]),\
         col0[1] + color * (col1[1] - col0[1]),\
-        col0[2] + color * (col1[2] - col0[2])
+        col0[2] + color * (col1[2] - col0[2]))
 
 
 def makeps(i, j, element):
@@ -197,71 +197,71 @@ def makeps(i, j, element):
     else:
         size = 0
     if size > 0:
-        print xpos, rowheight / 2.0 + posy(j), size
+        print(xpos, rowheight / 2.0 + posy(j), size)
         makecolor(color)
-        print "makebox"
+        print("makebox")
     else:
-        print xpos, rowheight / 2.0 + posy(j), 1
+        print(xpos, rowheight / 2.0 + posy(j), 1)
         makecolor(0.5)
-        print "makebox"
+        print("makebox")
     if i == vertical:
-        print "gsave 0.5 setgray"
-        print "0.25 setlinewidth"
-        print "[] 0 setdash"
-        print posx(i) - colsize / 2, posy(j), "moveto"
-        print posx(i) - colsize / 2, posy(j + 1), "lineto stroke grestore"
+        print("gsave 0.5 setgray")
+        print("0.25 setlinewidth")
+        print("[] 0 setdash")
+        print(posx(i) - colsize / 2, posy(j), "moveto")
+        print(posx(i) - colsize / 2, posy(j + 1), "lineto stroke grestore")
 
 
 def makefooter(lineno, footer=""):
-    print "/prtstr {dup stringwidth pop exch gsave 7", posy(lineno), "2 add rmoveto show grestore ", 3 + colsize, " add 0 rmoveto currentpoint translate} def"
-    print "/Times-Roman findfont ", colsize, " scalefont setfont gsave"
-    print "5 0 moveto"
-    print "(P values: ) prtstr "
+    print("/prtstr {dup stringwidth pop exch gsave 7", posy(lineno), "2 add rmoveto show grestore ", 3 + colsize, " add 0 rmoveto currentpoint translate} def")
+    print("/Times-Roman findfont ", colsize, " scalefont setfont gsave")
+    print("5 0 moveto")
+    print("(P values: ) prtstr ")
     makeps(-1, lineno, [-99, pval0, 0, 0])
-    print "(<", pval0, ") prtstr "
+    print("(<", pval0, ") prtstr ")
     makeps(-1, lineno, [-99, pval1, 0, 0])
-    print "(<", pval1, ") prtstr "
+    print("(<", pval1, ") prtstr ")
     makeps(-1, lineno, [-99, pval2, 0, 0])
-    print "(<", pval2, ") prtstr "
+    print("(<", pval2, ") prtstr ")
     makeps(-1, lineno, [-99, pval3, 0, 0])
-    print "(<", pval3, ") prtstr "
+    print("(<", pval3, ") prtstr ")
     makeps(-1, lineno, [-99, pval4, 0, 0])
-    print "(<", pval4, ") prtstr "
+    print("(<", pval4, ") prtstr ")
     makeps(-1, lineno, [-99, pval5, 0, 0])
-    print "(<", pval5, ") prtstr "
-    print "grestore"
+    print("(<", pval5, ") prtstr ")
+    print("grestore")
     # fold change
-    print "gsave 0 ", -colsize, "translate"
-    print "5 0 moveto"
-    print "(Fold change:) prtstr "
+    print("gsave 0 ", -colsize, "translate")
+    print("5 0 moveto")
+    print("(Fold change:) prtstr ")
     makeps(-1, lineno, [300, pval0, 0, 0])
-    print "(>+4) prtstr"
+    print("(>+4) prtstr")
     makeps(-1, lineno, [200, pval0, 0, 0])
-    print "(+3) prtstr"
+    print("(+3) prtstr")
     makeps(-1, lineno, [100, pval0, 0, 0])
-    print "(+2) prtstr"
+    print("(+2) prtstr")
     makeps(-1, lineno, [50, pval0, 0, 0])
     print ("(+1.5) prtstr")
     makeps(-1, lineno, [-33, pval0, 0, 0])
     print ("(-1.5) prtstr")
     makeps(-1, lineno, [-50, pval0, 0, 0])
-    print "(-2) prtstr"
+    print("(-2) prtstr")
     makeps(-1, lineno, [-66, pval0, 0, 0])
-    print "(-3) prtstr"
+    print("(-3) prtstr")
     makeps(-1, lineno, [-75, pval0, 0, 0])
-    print "(<-4) prtstr"
-    print "grestore"
+    print("(<-4) prtstr")
+    print("grestore")
     if footer:
-        print "gsave ", 0, posy(lineno + 3), "moveto ( %s ) show grestore" % (footer)
+        print("gsave ", 0, posy(lineno + 3), "moveto ( %s ) show grestore" % (footer))
 
 
 def makepageheader(page):
-    print "%%Page: ", page, page
-    print "gsave 11 60 translate"
+    print("%%Page: ", page, page)
+    print("gsave 11 60 translate")
 
 
 def makepagetrailer(page):
-    print "grestore"
+    print("grestore")
 
 
 def collect(infile, with_headers=False):
@@ -269,7 +269,7 @@ def collect(infile, with_headers=False):
 
     data = []
 
-    lines = filter(lambda x: x[0] != "#", infile.readlines())
+    lines = [x for x in infile.readlines() if x[0] != "#"]
 
     if len(lines) == 0:
         return data
@@ -334,7 +334,7 @@ def main(argv=None):
     (options, args) = E.Start(parser, add_pipe_options=True)
 
     if len(args) == 0:
-        raise "Please supply at least one input file."
+        raise ValueError("please supply at least one input file")
 
     if options.pattern_filename:
         input = []
@@ -413,8 +413,8 @@ def main(argv=None):
             globcolumn = page * pagecols + column
             colannlist = annlist[globcolumn * collen:
                                  min((globcolumn + 1) * collen, len(annlist))]
-            print "gsave"
-            print column * (posx(len(titles)) + maincolsep), " 0 translate"
+            print("gsave")
+            print(column * (posx(len(titles)) + maincolsep), " 0 translate")
 
             makecolheader(titles, colannlist,
                           title=options.title)
@@ -430,7 +430,7 @@ def main(argv=None):
                         # show
                         makeps(i, j, element)
 
-            print "grestore"
+            print("grestore")
 
         if colsonpage > 1:
             makefooter(collen + 2, footer=options.footer)
@@ -440,7 +440,7 @@ def main(argv=None):
         makepagetrailer(page + 1)
 
         if not doEps:
-            print "showpage"
+            print("showpage")
 
     E.Stop()
 

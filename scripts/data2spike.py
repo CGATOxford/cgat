@@ -166,7 +166,7 @@ def shuffleCluster(i_bins, c_bins, tracks_map, groups,
                    difference, s_max, i, clusters_dict,
                    s_bins_max, s_bins_min, s_bins_width):
 
-    s_bins = range(s_bins_min, s_bins_max+1, s_bins_width, )
+    s_bins = list(range(s_bins_min, s_bins_max+1, s_bins_width,))
 
     counts = np.zeros((len(i_bins)+1, len(c_bins)+1, len(s_bins)+1))
 
@@ -182,8 +182,8 @@ def shuffleCluster(i_bins, c_bins, tracks_map, groups,
             group2_mean = []
             g1_rand_s = []
             g2_rand_s = []
-            g1_rand = np.random.permutation(clusters_dict.keys())
-            g2_rand = np.random.permutation(clusters_dict.keys())
+            g1_rand = np.random.permutation(list(clusters_dict.keys()))
+            g2_rand = np.random.permutation(list(clusters_dict.keys()))
             for perm in range(0, len(g1_rand)):
                 cluster1 = clusters_dict[g1_rand[perm]].ix[
                     :, tracks_map[groups[0]]]
@@ -285,7 +285,7 @@ def shuffleRows(df, i_bins, c_bins, tracks_map,  groups,
             # for each of the initial and change values co-ordinates...
             for idx, coord in enumerate(zip(initial_idx, change_idx)):
                 # if that combination is desired...
-                if coord in indices.keys():
+                if coord in list(indices.keys()):
                     if counts[coord] < s_max:
                         counts[coord] += 1
                         # ...append tuple of the expression val for each group
@@ -303,11 +303,11 @@ def shuffleRows(df, i_bins, c_bins, tracks_map,  groups,
 
 def thresholdBins(indices, counts, s_min):
     output_indices_keep = copy.copy(indices)
-    for key in indices.keys():
+    for key in list(indices.keys()):
         if counts[key] < s_min:
             output_indices_keep.pop(key)
 
-    E.info("%s bins retained" % len(output_indices_keep.keys()))
+    E.info("%s bins retained" % len(list(output_indices_keep.keys())))
     E.info("Just to check, the largest bin has %i subregions" %
            (max(counts.flatten())))
 
@@ -366,7 +366,7 @@ def outputSpikes(df, id_column, indices, tracks_map, groups,
                 n += 1
 
     elif spike_type == "cluster":
-        for key in indices.keys():
+        for key in list(indices.keys()):
             initial, change, size = getInitialChangeSize(
                 key, width_ibin, min_ibin, width_cbin,
                 min_cbin, width_sbin, min_sbin)

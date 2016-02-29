@@ -58,14 +58,14 @@ def readTable(file,
     Uses the MA module to deal with missing values.
     """
 
-    lines = filter(lambda x: x[0] != "#", file.readlines())
+    lines = [x for x in file.readlines() if x[0] != "#"]
 
     if len(lines) == 0:
         raise ValueError("no data")
 
     if take == "all":
         num_cols = len(string.split(lines[0][:-1], "\t"))
-        take = range(0, num_cols)
+        take = list(range(0, num_cols))
     else:
         num_cols = len(take)
 
@@ -77,7 +77,7 @@ def readTable(file,
 
     if has_headers:
         headers = lines[0][:-1].split("\t")
-        headers = map(lambda x: headers[x], take)
+        headers = [headers[x] for x in take]
         del lines[0]
     else:
         headers = None
@@ -97,7 +97,7 @@ def readTable(file,
             colors.append(float(data[color]))
 
         try:
-            data = map(lambda x: data[x], take)
+            data = [data[x] for x in take]
         except IndexError:
             continue
 
@@ -238,9 +238,9 @@ def main(argv=None):
     plot_kwargs = {}
 
     if options.xrange:
-        options.xrange = map(float, options.xrange.split(","))
+        options.xrange = list(map(float, options.xrange.split(",")))
     if options.yrange:
-        options.yrange = map(float, options.yrange.split(","))
+        options.yrange = list(map(float, options.yrange.split(",")))
     if options.legend:
         options.legend = options.legend.split(",")
     if options.layout:
@@ -249,7 +249,7 @@ def main(argv=None):
         options.color -= 1
         plot_kwargs["edgecolor"] = 'none'
     if options.columns != "all":
-        options.columns = map(lambda x: int(x) - 1, options.columns.split(","))
+        options.columns = [int(x) - 1 for x in options.columns.split(",")]
 
     if options.palette:
         if options.palette == "gray":
@@ -282,7 +282,7 @@ def main(argv=None):
                                              has_headers=options.has_headers,
                                              truncate=options.xrange,
                                              color=options.color)
-        except ValueError, msg:
+        except ValueError as msg:
             E.warn("parsing error in %s: %s" % (filename, msg))
             continue
 
@@ -331,7 +331,7 @@ def main(argv=None):
 
         if options.dump:
             for d in data:
-                print d
+                print(d)
 
         lines = []
 
@@ -389,7 +389,7 @@ def main(argv=None):
     if options.function:
         xstart, xend = pylab.gca().get_xlim()
         increment = (xend - xstart) / 100.0
-        exec "f = lambda x: %s" % options.function in locals()
+        exec("f = lambda x: %s" % options.function, locals())
         xvals, yvals = [], []
         for x in range(0, 100):
             xvals.append(xstart)

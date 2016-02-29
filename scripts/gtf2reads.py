@@ -81,7 +81,7 @@ def getMutatedSequence(sequence, divergence):
     nmutate = numpy.random.poisson(float(lsequence) * divergence)
     sequence = list(sequence.upper())
 
-    for pos in random.sample(xrange(lsequence), nmutate):
+    for pos in random.sample(range(lsequence), nmutate):
         c = sequence[pos]
         x = c
         while x == c:
@@ -215,7 +215,7 @@ def main(argv=None):
 
         try:
             sequence = GTF.toSequence(gtfs, genome)
-        except KeyError, msg:
+        except KeyError as msg:
             if options.loglevel >= 2:
                 options.stdlog.write("# skipping %s: %s\n" % (id, msg))
             nskipped += 1

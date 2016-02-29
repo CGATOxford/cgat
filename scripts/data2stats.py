@@ -35,6 +35,7 @@ import string
 import scipy
 import scipy.stats
 import CGAT.Experiment as E
+from functools import reduce
 
 
 def PrintValues(outfile, values,  options, prefix="", titles=None):
@@ -48,7 +49,7 @@ def PrintValues(outfile, values,  options, prefix="", titles=None):
             if titles:
                 outfile.write("column\t")
 
-            print "\t".join(("nval", "min", "max", "mean", "median", "stddev", "sum", "q1", "q3"))
+            print("\t".join(("nval", "min", "max", "mean", "median", "stddev", "sum", "q1", "q3")))
 
         for x in range(len(values)):
 
@@ -101,41 +102,34 @@ def PrintValues(outfile, values,  options, prefix="", titles=None):
 
         outfile.write(
             "count\t%s" % (string.join(
-                map(lambda v: "%i" % len(v), values), "\t")) + "\n")
+                ["%i" % len(v) for v in values], "\t")) + "\n")
         outfile.write(
             "min\t%s" % (string.join(
-                map(lambda v: options.value_format % min(v),
-                    values), "\t")) + "\n")
+                [options.value_format % min(v) for v in values], "\t")) + "\n")
         outfile.write(
             "max\t%s" % (string.join(
-                map(lambda v: options.value_format % max(v),
-                    values), "\t")) + "\n")
+                [options.value_format % max(v) for v in values], "\t")) + "\n")
         outfile.write(
             "mean\t%s" % (string.join(
-                map(lambda v: options.value_format % scipy.mean(v),
-                    values), "\t")) + "\n")
+                [options.value_format % scipy.mean(v) for v in values], "\t")) + "\n")
         outfile.write(
             "median\t%s" % (string.join(
-                map(lambda v: options.value_format % scipy.median(v),
-                    values), "\t")) + "\n")
+                [options.value_format % scipy.median(v) for v in values], "\t")) + "\n")
         outfile.write(
             "stddev\t%s" % (string.join(
-                map(lambda v: options.value_format % scipy.std(v),
-                    values), "\t")) + "\n")
+                [options.value_format % scipy.std(v) for v in values], "\t")) + "\n")
         outfile.write(
             "sum\t%s" % (string.join(
-                map(lambda v: options.value_format %
-                    reduce(lambda x, y: x + y, v), values), "\t")) + "\n")
+                [options.value_format %
+                    reduce(lambda x, y: x + y, v) for v in values], "\t")) + "\n")
         outfile.write(
             "q1\t%s" % (string.join(
-                map(lambda v: options.value_format %
-                    scipy.stats.scoreatpercentile(v, per=25),
-                    values), "\t")) + "\n")
+                [options.value_format %
+                    scipy.stats.scoreatpercentile(v, per=25) for v in values], "\t")) + "\n")
         outfile.write(
             "q3\t%s" % (string.join(
-                map(lambda v: options.value_format %
-                    scipy.stats.scoreatpercentile(v, per=75),
-                    values), "\t")) + "\n")
+                [options.value_format %
+                    scipy.stats.scoreatpercentile(v, per=75) for v in values], "\t")) + "\n")
 
 
 def main(argv=None):
@@ -209,7 +203,7 @@ def main(argv=None):
     (options, args) = E.Start(parser, quiet=True)
 
     if options.columns not in ("all", "all-but-first", "variable"):
-        options.columns = map(lambda x: int(x) - 1, options.columns.split(","))
+        options.columns = [int(x) - 1 for x in options.columns.split(",")]
 
     if options.headers:
         options.headers = options.headers.split(",")
@@ -222,7 +216,7 @@ def main(argv=None):
         return
 
     # retrieve histogram
-    lines = filter(lambda x: x[0] != "#", sys.stdin.readlines())
+    lines = [x for x in sys.stdin.readlines() if x[0] != "#"]
 
     outfile = options.stdout
 
@@ -231,9 +225,9 @@ def main(argv=None):
         ncols = len(string.split(lines[0][:-1], "\t"))
 
         if options.columns == "all":
-            options.columns = range(0, ncols)
+            options.columns = list(range(0, ncols))
         elif options.columns == "all-but-first":
-            options.columns = range(1, ncols)
+            options.columns = list(range(1, ncols))
         elif options.columns == "variable":
             pass
 
@@ -263,7 +257,7 @@ def main(argv=None):
                 if options.columns == "variable":
                     vals = data[1:]
                 else:
-                    vals = map(lambda x: data[x], options.columns)
+                    vals = [data[x] for x in options.columns]
 
                 # remove unknown values
                 vals = [float(x)
@@ -273,7 +267,7 @@ def main(argv=None):
                     vals = [x for x in vals if x != 0.0]
 
                 # now convert to float
-                vals = map(float, vals)
+                vals = list(map(float, vals))
 
                 PrintValues(outfile, [vals], options, data[0])
 
@@ -285,7 +279,7 @@ def main(argv=None):
                 data = lines[0][:-1].split("\t")
 
                 if not options.headers:
-                    options.headers = map(lambda x: data[x], options.columns)
+                    options.headers = [data[x] for x in options.columns]
                     del lines[0]
 
                 if options.aggregate_column is not None:

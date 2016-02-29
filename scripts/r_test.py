@@ -128,7 +128,7 @@ def main(argv=None):
         else:
             options.stdout.write("%s\t%s\n" % (str(key), str(value)))
 
-    for key, value in stat.items():
+    for key, value in list(stat.items()):
         options.stdout.write("%s\t%s\n" % (str(key), str(value)))
 
     if power:

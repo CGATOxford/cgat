@@ -149,7 +149,7 @@ def combineGFF(gffs,
 
     def iterate_chunks(gffs):
 
-        last = gffs.next()
+        last = next(gffs)
         to_join = [last]
 
         for gff in gffs:
@@ -298,7 +298,7 @@ def cropGFF(gffs, filename_gff):
     other_gffs = GTF.iterator(IOTools.openFile(filename_gff, "r"))
     cropper = GTF.readAsIntervals(other_gffs)
     ntotal = 0
-    for contig in cropper.keys():
+    for contig in list(cropper.keys()):
         intersector = bx.intervals.intersection.Intersecter()
         for start, end in cropper[contig]:
             intersector.add_interval(bx.intervals.Interval(start, end))
@@ -742,20 +742,20 @@ def main(argv=None):
         if skipped_contigs:
             E.info("skipped %i entries on %i contigs: %s" %
                    (sum(skipped_contigs.values()),
-                    len(skipped_contigs.keys(
-                    )),
+                    len(list(skipped_contigs.keys(
+                    ))),
                     str(skipped_contigs)))
 
         if outofrange_contigs:
             E.warn("skipped %i entries on %i contigs because they are out of range: %s" %
                    (sum(outofrange_contigs.values()),
-                    len(outofrange_contigs.keys()),
+                    len(list(outofrange_contigs.keys())),
                     str(outofrange_contigs)))
 
         if filtered_contigs:
             E.info("filtered out %i entries on %i contigs: %s" %
                    (sum(filtered_contigs.values()),
-                    len(filtered_contigs.keys()),
+                    len(list(filtered_contigs.keys())),
                     str(filtered_contigs)))
 
     else:

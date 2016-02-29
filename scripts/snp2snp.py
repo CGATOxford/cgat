@@ -78,8 +78,8 @@ def validateSNPs(options, fastafile):
         contig, pos, reference, genotype, consensus_quality, genotype_quality, mapping_quality, read_depth = data[
             :8]
         pos, consensus_quality, genotype_quality, mapping_quality, read_depth = \
-            map(int, (pos, consensus_quality,
-                      genotype_quality, mapping_quality, read_depth))
+            list(map(int, (pos, consensus_quality,
+                      genotype_quality, mapping_quality, read_depth)))
 
         if reference == "*":
             # todo: treat indels
@@ -92,7 +92,7 @@ def validateSNPs(options, fastafile):
         for x, caller in enumerate(callers):
             try:
                 calls.append(caller.call(contig, pos))
-            except ValueError, msg:
+            except ValueError as msg:
                 continue
         outf.write("\t".join(map(str,
                                  (contig, pos, reference, genotype,

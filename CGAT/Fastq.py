@@ -87,7 +87,7 @@ class Record:
         c = [ord(x) for x in self.quals]
         mi, ma = min(c), max(c)
         r = []
-        for format, v in RANGES.iteritems():
+        for format, v in RANGES.items():
             m1, m2 = v
             if mi >= m1 and ma < m2:
                 r.append(format)
@@ -390,5 +390,5 @@ def getReadLength(filename):
     '''
 
     with IOTools.openFile(filename) as infile:
-        record = iterate(infile).next()
+        record = next(iterate(infile))
         return len(record.seq)

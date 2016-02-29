@@ -80,7 +80,7 @@ def main(argv=None):
         if options.test and ninput >= options.test:
             break
 
-        match = iterator.next()
+        match = next(iterator)
 
         if match is None:
             break

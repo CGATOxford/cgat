@@ -342,7 +342,7 @@ def writeMatricesForSortOrder(features_per_interval,
     if "name" in features_per_interval[0].interval:
         names = [x.interval.name for x in features_per_interval]
     else:
-        names = map(str, range(1, len(features_per_interval) + 1))
+        names = list(map(str, list(range(1, len(features_per_interval) + 1))))
 
     bins = ["%i" % x for x in bins]
     sort_order = re.sub("-", "_", sort_order)

@@ -71,7 +71,7 @@ class CommentStripper:
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         while 1:
             line = self.mFile.readline()
             if not line:
@@ -117,8 +117,7 @@ def main(argv=None):
     input_fields = args
 
     if options.filename_fields:
-        input_fields = map(lambda x: x[:-1].split("\t")[0],
-                           filter(lambda x: x[0] != "#", open(options.filename_fields, "r").readlines()))
+        input_fields = [x[:-1].split("\t")[0] for x in [x for x in open(options.filename_fields, "r").readlines() if x[0] != "#"]]
 
     if options.unique:
         outfile = UniqueBuffer(sys.stdout)
@@ -171,7 +170,7 @@ def main(argv=None):
                             lineterminator=options.csv_lineterminator,
                             extrasaction='ignore')
 
-    print "\t".join(fields)
+    print("\t".join(fields))
 
     first_row = True
     ninput, noutput, nerrors = 0, 0, 0
@@ -179,8 +178,8 @@ def main(argv=None):
     while 1:
         ninput += 1
         try:
-            row = reader.next()
-        except _csv.Error, msg:
+            row = next(reader)
+        except _csv.Error as msg:
             options.stderr.write("# error while parsing: %s\n" % (msg))
             nerrors += 1
             continue

@@ -168,9 +168,9 @@ class Bed(object):
 
         if self.columns >= 12:
 
-            blockStarts = map(int, self.blockStarts.split(","))
+            blockStarts = list(map(int, self.blockStarts.split(",")))
             starts = [self.start + blockStart for blockStart in blockStarts]
-            blockLengths = map(int, self.blockSizes.split(","))
+            blockLengths = list(map(int, self.blockSizes.split(",")))
 
             assert (len(blockStarts), len(blockLengths)) == \
                 (int(self.blockCount), int(self.blockCount)), \
@@ -182,7 +182,7 @@ class Bed(object):
             assert ends[-1] == self.end, \
                 "Malformed Bed12 entry:\n%s" % str(self)
 
-            return zip(starts, ends)
+            return list(zip(starts, ends))
         else:
             return [(self.start, self.end)]
 

@@ -55,7 +55,7 @@ def alignIndels(all_alleles, colcounts, extend_by=0):
         alignlib_lite.py_ALIGNMENT_LOCAL, 0, 0)
     alignator = alignlib_lite.py_makeMultipleAlignatorSimple(aa)
 
-    ids = all_alleles.keys()
+    ids = list(all_alleles.keys())
 
     for x, c in enumerate(colcounts):
         if c <= 1:
@@ -189,7 +189,7 @@ def main(argv=None):
         for track in options.tracks:
             cc = dbhandle.cursor()
             cc.execute(statement % locals())
-            all_variants.append(map(Variants.Variant._make, cc.fetchall()))
+            all_variants.append(list(map(Variants.Variant._make, cc.fetchall())))
             cc.close()
 
         E.debug("%s:%i..%i collected %i variants for %i tracks" % (contig,

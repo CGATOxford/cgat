@@ -89,14 +89,14 @@ def main(argv=None):
 
     lines = []
     if options.identifier:
-        lines += map(lambda x: x.split(":"), options.identifier.split(","))
+        lines += [x.split(":") for x in options.identifier.split(",")]
 
     if args:
-        lines += map(lambda x: x.split(":"), args)
+        lines += [x.split(":") for x in args]
 
     if len(lines) == 0:
-        lines = map(lambda x: x[
-                    :-1].split("\t"), (filter(lambda x: x[0] != "#", options.stdin.readlines())))
+        lines = [x[
+                    :-1].split("\t") for x in ([x for x in options.stdin.readlines() if x[0] != "#"])]
 
     ninput, nskipped, noutput = 0, 0, 0
     for data in lines:

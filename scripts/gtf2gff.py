@@ -368,7 +368,7 @@ def addIntergenicSegment(last, this, fasta, options):
         # last telomere
         try:
             lcontig = fasta.getLength(last.contig)
-        except KeyError, msg:
+        except KeyError as msg:
             if options.ignore_missing:
                 return nadded
             else:
@@ -613,7 +613,7 @@ def annotateExons(iterator, fasta, options):
         gtf.addAttribute("ntranscripts", ntranscripts)
 
         gtfs = []
-        for r, pos in intervals.iteritems():
+        for r, pos in intervals.items():
 
             g = GTF.Entry().copy(gtf)
             g.start, g.end = r
@@ -1016,7 +1016,7 @@ def annotateGenes(iterator, fasta, options):
             # add flank
             start, end = exons[0][0], exons[-1][1]
             upstream, downstream = [], []
-            for x in xrange(0, options.flank, increment):
+            for x in range(0, options.flank, increment):
                 upstream.append((start - increment, start))
                 start -= increment
                 downstream.append((end, end + increment))

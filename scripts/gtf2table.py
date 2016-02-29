@@ -536,7 +536,7 @@ def readIntervalsFromGFF(filename_gff, source, feature,
             elif format == "gff":
                 iterator_gff = GTF.iterator(infile)
 
-        elif type(filename_gff) in (types.TupleType, types.ListType):
+        elif type(filename_gff) in (tuple, list):
 
             E.info("loading data from cache for source '%s' and feature '%s'" %
                    (source, feature))
@@ -594,13 +594,13 @@ def readIntervalsFromGFF(filename_gff, source, feature,
     # translate names of contigs
     if fasta:
         if use_strand:
-            for contig, strand in e.keys():
+            for contig, strand in list(e.keys()):
                 if contig in fasta:
                     x = e[contig]
                     del e[contig, strand]
                     e[fasta.getToken(contig), strand] = x
         else:
-            for contig in e.keys():
+            for contig in list(e.keys()):
                 if contig in fasta:
                     x = e[contig]
                     del e[contig]
@@ -824,7 +824,7 @@ class CounterOverlap(_gtf2table.Counter):
                                  use_strand=self.mUseStrand)
 
         # convert intervals to intersectors
-        for key in e.keys():
+        for key in list(e.keys()):
             intersector = bx.intervals.intersection.Intersecter()
             if self.mWithValues or self.mWithRecords:
                 for start, end, value in e[key]:
@@ -1452,7 +1452,7 @@ class ClassifierRNASeq(_gtf2table.Counter):
         self.transcript_intervals = transcript_intervals
         self.map_transcript2gene = map_transcript2gene
         self.map_gene2transcripts = dict(
-            [(y, x) for x, y in map_transcript2gene.iteritems()])
+            [(y, x) for x, y in map_transcript2gene.items()])
 
         self.mapClass2Priority = dict(
             [(y, x) for x, y in enumerate(self.priority)])
@@ -1631,7 +1631,7 @@ class ClassifierRNASeq(_gtf2table.Counter):
         try:
             overlaps = list(
                 self.transcript_intervals.get(contig, segments[0][0], segments[-1][1]))
-        except KeyError, msg:
+        except KeyError as msg:
             E.warn("failed lookup of interval %s:%i-%i: '%s'" %
                    (contig, segments[0][0], segments[-1][1], msg))
             self.skip = True
@@ -1872,7 +1872,7 @@ class ClassifierRNASeqSplicing(_gtf2table.Counter):
         self.transcript_intervals = transcript_intervals
         self.map_transcript2gene = map_transcript2gene
         self.map_gene2transcripts = dict(
-            [(y, x) for x, y in map_transcript2gene.iteritems()])
+            [(y, x) for x, y in map_transcript2gene.items()])
 
         self.mapClass2Priority = dict(
             [(y, x) for x, y in enumerate(self.priority)])
@@ -2178,7 +2178,7 @@ class ClassifierRNASeqSplicing(_gtf2table.Counter):
         try:
             overlaps = list(
                 self.transcript_intervals.get(contig, segments[0][0], segments[-1][1]))
-        except KeyError, msg:
+        except KeyError as msg:
             E.warn("failed lookup of interval %s:%i-%i: '%s'" %
                    (contig, segments[0][0], segments[-1][1], msg))
             self.skip = True
@@ -2628,7 +2628,7 @@ class CounterOverrun(_gtf2table.Counter):
                                  format=self.options.filename_format)
 
         # convert intervals to intersectors
-        for contig in e.keys():
+        for contig in list(e.keys()):
             intersector = bx.intervals.intersection.Intersecter()
             for start, end in e[contig]:
                 intersector.add_interval(bx.intervals.Interval(start, end))
@@ -2770,7 +2770,7 @@ class CounterDistance(_gtf2table.Counter):
         self.endPoints, self.endValues = {}, {}
         self.mIntervals = IndexedGenome.IndexedGenome()
 
-        for contig, values in e.items():
+        for contig, values in list(e.items()):
             for start, end, value in values:
                 self.mIntervals.add(contig, start, end, value)
 
@@ -3567,10 +3567,10 @@ class CounterReadExtension(_gtf2table.Counter):
             self.outfiles.write("%s_%s" % (x, y),
                                 "%s\n" % "\t".join(
                                     ("gene_id", "length", "utr", "exon") +
-                                    tuple(map(str, range(
+                                    tuple(map(str, list(range(
                                         0,
                                         self.max_territory_size,
-                                        self.increment)))))
+                                        self.increment))))))
 
         if not bamfiles:
             raise ValueError("supply --bam-file options for readcoverage")
@@ -3703,13 +3703,13 @@ class CounterReadExtension(_gtf2table.Counter):
                 _update(cc, start, end)
 
         # invert "upstream" counts so that they are counting from TSS
-        for x in xrange(0, len(regions), 2):
+        for x in range(0, len(regions), 2):
             for y in range(len(counts[x])):
                 counts[x][y] = counts[x][y][::-1]
 
         # switch upstream (x) /downstream (x+1)
         if is_reverse:
-            for x in xrange(0, len(regions), 2):
+            for x in range(0, len(regions), 2):
                 counts[x], counts[x + 1] = counts[x + 1], counts[x]
                 regions[x], regions[x + 1] = regions[x + 1], regions[x]
 
@@ -3738,7 +3738,7 @@ class CounterReadExtension(_gtf2table.Counter):
                 r.extend(["na"] * 3)
 
         # max number of distances, +1 for exon
-        max_d = len(range(0, self.max_territory_size, self.increment)) + 1
+        max_d = len(list(range(0, self.max_territory_size, self.increment))) + 1
 
         # compute distributions for regions
         for label, region, counts, exon_counts, utr_region in \

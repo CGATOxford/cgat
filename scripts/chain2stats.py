@@ -477,7 +477,7 @@ class CounterPercentIdentify(ChainCounter):
         self.stats = 0
 
     def _get_pid(self, x, y):
-        z = zip(x, y)
+        z = list(zip(x, y))
         pid = (float(len([a for a, b in z if a == b])) / float(len(z)) * 100)
         return(pid)
 

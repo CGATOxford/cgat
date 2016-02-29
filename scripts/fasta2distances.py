@@ -183,17 +183,17 @@ def main(argv=None):
 
     headers = ["id1", "id2"]
     for f in options.filters:
-        headers += list(map(lambda x: "%s_%s" % (f, x), options.fields))
+        headers += list(["%s_%s" % (f, x) for x in options.fields])
 
     options.stdout.write("\t".join(headers) + "\n")
 
     while 1:
         try:
-            cur_record = iterator.next()
+            cur_record = next(iterator)
             if cur_record is None:
                 break
             first_record = cur_record
-            cur_record = iterator.next()
+            cur_record = next(iterator)
             if cur_record is None:
                 break
             second_record = cur_record

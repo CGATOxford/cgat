@@ -123,7 +123,7 @@ def readWorkspace(infile,
         # convert to intergenic regions.
         # overlapping genes are merged and the labels
         # of the right-most entry is retained
-        for contig in workspace.keys():
+        for contig in list(workspace.keys()):
             segs = workspace[contig]
             segs.sort()
             last = segs[0]
@@ -526,7 +526,7 @@ class Counter(object):
         return self.mCounts[key]
 
     def getLabels(self):
-        return self.mCounts.keys()
+        return list(self.mCounts.keys())
 
     def resolve(self, value):
         if self.mResolution > 1:
@@ -648,7 +648,7 @@ def indexIntervals(intervals, with_values=False):
 
     indexed = {}
 
-    for contig, values in intervals.iteritems():
+    for contig, values in intervals.items():
         intersector = bx.intervals.intersection.Intersecter()
         if with_values:
             for start, end, value in values:
@@ -666,7 +666,7 @@ def plotCounts(counter, options, transform=lambda x: x):
 
     num_bins = options.num_bins
     resolution = options.resolution
-    bins = numpy.array(xrange(num_bins)) * resolution
+    bins = numpy.array(range(num_bins)) * resolution
     for label in counter.getLabels():
         fig = plt.figure()
 
@@ -828,7 +828,7 @@ def main(argv=sys.argv):
         sampler = SamplerGaps
 
     if options.xrange:
-        options.xrange = map(float, options.xrange.split(","))
+        options.xrange = list(map(float, options.xrange.split(",")))
 
     if len(options.counters) == 0:
         raise ValueError("please specify at least one counter.")
@@ -844,7 +844,7 @@ def main(argv=sys.argv):
     # read data
     if options.workspace_labels == "annotation":
         def constant_factory(value):
-            return itertools.repeat(value).next
+            return itertools.repeat(value).__next__
 
         def dicttype():
             return collections.defaultdict(constant_factory(("unknown",)))
@@ -869,7 +869,7 @@ def main(argv=sys.argv):
                             remove_overhangs=options.remove_overhangs)
 
     nsegments = 0
-    for contig, vv in segments.iteritems():
+    for contig, vv in segments.items():
         nsegments += len(vv)
 
     E.info("read %i segments for %i contigs" % (nsegments, len(workspace)))
@@ -882,7 +882,7 @@ def main(argv=sys.argv):
 
     # build labels
     labels = collections.defaultdict(int)
-    for contig, vv in workspace.iteritems():
+    for contig, vv in workspace.items():
         for start, end, v in vv:
             for l in v[0]:
                 labels[l] += 1
@@ -951,7 +951,7 @@ def main(argv=sys.argv):
     # get observed and simpulated counts
     nworkspaces, nempty_workspaces, nempty_contigs, nmiddle = 0, 0, 0, 0
     iteration2 = 0
-    for contig, vv in workspace.iteritems():
+    for contig, vv in workspace.items():
 
         iteration2 += 1
         E.info("counting %i/%i: %s %i segments" %
@@ -1180,7 +1180,7 @@ def main(argv=sys.argv):
         plt.figure()
         plt.title("distribution of workspace length")
         data = []
-        for contig, segs in workspace.iteritems():
+        for contig, segs in workspace.items():
             if len(segs) == 0:
                 continue
             data.extend([x[1] - x[0] for x in segs])
@@ -1213,8 +1213,8 @@ def main(argv=sys.argv):
         plt.figure()
         plt.title("workspaces per label")
         plt.barh(
-            range(0, len(labels)), [workspaces_per_label[x] for x in labels], height=0.5)
-        plt.yticks(range(0, len(labels)), labels)
+            list(range(0, len(labels))), [workspaces_per_label[x] for x in labels], height=0.5)
+        plt.yticks(list(range(0, len(labels))), labels)
         plt.ylabel("workspaces per label")
         plt.xlabel("absolute frequency")
         plt.gca().set_xscale('log')
@@ -1225,12 +1225,12 @@ def main(argv=sys.argv):
 
         plt.figure()
         plt.title("segments per label")
-        plt.barh(range(0, len(labels)), [segments_per_label[x]
+        plt.barh(list(range(0, len(labels))), [segments_per_label[x]
                                          for x in labels], height=0.5)
-        plt.yticks(range(0, len(labels)), labels)
+        plt.yticks(list(range(0, len(labels))), labels)
         plt.ylabel("segments per label")
         plt.xlabel("absolute frequency")
-        plt.xticks(range(0, len(labels)), labels)
+        plt.xticks(list(range(0, len(labels))), labels)
         if options.hardcopy:
             plt.savefig(
                 os.path.expanduser(options.hardcopy % "segments_per_label"))

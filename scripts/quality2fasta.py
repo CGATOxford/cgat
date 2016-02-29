@@ -62,7 +62,7 @@ class FromFastaIterator:
 
         if encoding == "phred":
             # no change for phred scores
-            self.mMapScore2Score = range(0, 93)
+            self.mMapScore2Score = list(range(0, 93))
         elif encoding == "solexa":
             # solexa encoding
             self.mMapScore2Score = [
@@ -76,21 +76,21 @@ class FromFastaIterator:
     def __iter__(self):
         return self
 
-    def next(self):
-        return self.mOutputIterator.next()
+    def __next__(self):
+        return next(self.mOutputIterator)
 
     def _iterate(self):
         """iterate over muliple files."""
 
         while 1:
-            cur_entry = self.mInputIterator.next()
+            cur_entry = next(self.mInputIterator)
 
             self.mNInput += 1
             if self.mDefault:
                 values = [self.mDefault] * \
                     len(re.sub("\s", "", cur_entry.sequence))
             else:
-                values = map(int, re.split(" +", cur_entry.sequence.strip()))
+                values = list(map(int, re.split(" +", cur_entry.sequence.strip())))
 
             s = []
             for v in values:
@@ -175,7 +175,7 @@ def main(argv=None):
         else:
             while 1:
                 try:
-                    r = iterator.next()
+                    r = next(iterator)
                 except StopIteration:
                     break
                 t, s = r
@@ -184,7 +184,7 @@ def main(argv=None):
     elif options.output_format == "fastq":
 
         if not options.filename_sequences:
-            raise "please supply a filename with sequences."
+            raise ValueError("please supply a filename with sequences")
 
         iterator_sequence = FastaIterator.FastaIterator(
             open(options.filename_sequences, "r"))
@@ -192,8 +192,8 @@ def main(argv=None):
         while 1:
             qual, seq = None, None
             try:
-                qual = iterator.next()
-                seq = iterator_sequence.next()
+                qual = next(iterator)
+                seq = next(iterator_sequence)
             except StopIteration:
                 if qual and not seq:
                     options.stdlog.write("# sequence file incomplete\n")

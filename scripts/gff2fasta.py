@@ -249,7 +249,7 @@ def main(argv=None):
             e = GTF.readAsIntervals(GTF.iterator(infile))
 
         # convert intervals to intersectors
-        for contig in e.keys():
+        for contig in list(e.keys()):
             intersector = bx.intervals.intersection.Intersecter()
             for start, end in e[contig]:
                 intersector.add_interval(bx.intervals.Interval(start, end))
@@ -277,7 +277,7 @@ def main(argv=None):
         ninput += 1
 
         if feature:
-            chunk = filter(lambda x: x.feature == feature, ichunk)
+            chunk = [x for x in ichunk if x.feature == feature]
         else:
             chunk = ichunk
 
@@ -320,7 +320,7 @@ def main(argv=None):
                 if options.remove_masked_regions:
                     intervals = Intervals.truncate(intervals, masked_regions)
                 else:
-                    raise "unimplemented"
+                    raise NotImplementedError("unimplemented")
 
                 if len(intervals) == 0:
                     nskipped_masked += 1

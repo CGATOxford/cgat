@@ -75,7 +75,7 @@ def main(argv=None):
     (options, args) = E.Start(parser, add_csv_options=True)
 
     if len(args) != 2:
-        raise "please specify two files to join."
+        raise ValueError("please specify two files to join")
 
     options.filename1, options.filename2 = args
 
@@ -120,7 +120,7 @@ def main(argv=None):
         reader = csv.DictReader(lines,
                                 dialect=options.csv_dialect)
 
-        print "\t".join(fields)
+        print("\t".join(fields))
 
         first_row = True
         for row in reader:

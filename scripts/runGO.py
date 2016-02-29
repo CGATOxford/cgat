@@ -381,7 +381,7 @@ def main(argv=None):
                 len(gene2name)))
     else:
         # use identity mapping
-        gene2name = dict([(x, x) for x in gene2gos.keys()])
+        gene2name = dict([(x, x) for x in list(gene2gos.keys())])
 
     #############################################################
     # read GO ontology from file
@@ -397,7 +397,7 @@ def main(argv=None):
         go2infos = collections.defaultdict(_g)
 
         # substitute go2infos
-        for go in ontology.values():
+        for go in list(ontology.values()):
             go2infos[go.mNameSpace][go.mId] = GO.GOInfo(
                 go.mId,
                 go_type=go.mNameSpace,
@@ -429,7 +429,7 @@ def main(argv=None):
     # sort out which ontologies to test
     if not options.ontology:
         if options.filename_input:
-            options.ontology = gene2gos.keys()
+            options.ontology = list(gene2gos.keys())
 
     E.info("found %i ontologies: %s" %
            (len(options.ontology), options.ontology))
@@ -490,7 +490,7 @@ def main(argv=None):
 
         if options.minimum_counts > 0:
             to_remove = set(
-                [x for x, y in counts_per_category.iteritems()
+                [x for x, y in counts_per_category.items()
                  if y < options.minimum_counts])
             E.info("removing %i categories with less than %i genes" %
                    (len(to_remove), options.minimum_counts))
@@ -502,7 +502,7 @@ def main(argv=None):
                    "to %i categories (%i maps)" % (
                        ngenes, ncategories, nmaps))
 
-        for genelist_name, foreground in genelists.iteritems():
+        for genelist_name, foreground in genelists.items():
 
             msgs = []
             E.info("processing %s with %i genes" %
@@ -550,7 +550,7 @@ def main(argv=None):
 
                 if options.loglevel >= 1:
                     v = set()
-                    for x in go_slims.values():
+                    for x in list(go_slims.values()):
                         for xx in x:
                             v.add(xx)
                     options.stdlog.write(
@@ -567,7 +567,7 @@ def main(argv=None):
                             options.filename_map_slims, "w")
 
                     outfile.write("GO\tGOSlim\n")
-                    for go, go_slim in go_slims.items():
+                    for go, go_slim in list(go_slims.items()):
                         outfile.write("%s\t%s\n" % (go, go_slim))
 
                     if outfile != options.stdout:
@@ -588,7 +588,7 @@ def main(argv=None):
             if options.get_genes:
                 fg, bg, ng = [], [], []
 
-                for gene, vv in gene2go.items():
+                for gene, vv in list(gene2go.items()):
                     for v in vv:
                         if v.mGOId == options.get_genes:
                             if gene in genes:
@@ -646,7 +646,7 @@ def main(argv=None):
                        genelist_name)
                 continue
 
-            pairs = go_results.mResults.items()
+            pairs = list(go_results.mResults.items())
 
             #############################################################
             # calculate fdr for each hypothesis

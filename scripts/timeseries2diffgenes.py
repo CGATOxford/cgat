@@ -181,8 +181,8 @@ def main(argv=None):
             else:
                 time_dict[c_t] = count_table[cols]
 
-        for bt in itertools.product(base_col.keys(),
-                                    time_dict.keys()):
+        for bt in itertools.product(list(base_col.keys()),
+                                    list(time_dict.keys())):
             df = pd.merge(left=base_col[bt[0]],
                           right=time_dict[bt[1]],
                           how='outer',
@@ -192,7 +192,7 @@ def main(argv=None):
             data_dict["%s_0_%i" % (bt[0].split(".")[0],
                                    time)] = df
 
-        for each in data_dict.keys():
+        for each in list(data_dict.keys()):
             df_ = data_dict[each]
             outfile = "%s/%s-time.tsv" % (res_dir,
                                           each)
@@ -221,8 +221,8 @@ def main(argv=None):
         # make a dataframe for each 0:time point combination
         # for all conditions, index on `condition:0_time`
 
-        base_keys = base_col.keys()
-        time_keys = time_dict.keys()
+        base_keys = list(base_col.keys())
+        time_keys = list(time_dict.keys())
         for k in conditions:
             for x in itertools.product(base_keys, time_keys):
                 if re.search(k, x[0]) and re.search(k, x[1]):
@@ -237,7 +237,7 @@ def main(argv=None):
                 else:
                     pass
 
-        time_span = set([x.split(".")[1] for x in data_dict.keys()])
+        time_span = set([x.split(".")[1] for x in list(data_dict.keys())])
 
         all_dict = {}
         for cond in itertools.combinations(conditions, 2):
@@ -253,7 +253,7 @@ def main(argv=None):
                               right_index=True)
                 all_dict["%s_%s.%s-diff" % (c1, c2, x)] = df
 
-        for each in all_dict.keys():
+        for each in list(all_dict.keys()):
 
             df = all_dict[each]
             outfile = "%s/%s-cond.tsv" % (res_dir,

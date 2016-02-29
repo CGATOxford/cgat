@@ -80,7 +80,7 @@ def main(argv=None):
     (options, args) = E.Start(parser, quiet=True)
 
     if options.columns not in ("all", "all-but-first"):
-        options.columns = map(lambda x: int(x) - 1, options.columns.split(","))
+        options.columns = [int(x) - 1 for x in options.columns.split(",")]
 
     data = []
 

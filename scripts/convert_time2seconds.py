@@ -82,7 +82,7 @@ def main(argv=None):
             new_fields.append("%.2f" % (
                 string.atof(hours) * 3600.0 + string.atof(minutes) * 60.0 + string.atof(seconds)))
 
-        print string.join(new_fields, "\t")
+        print(string.join(new_fields, "\t"))
 
     # write footer and output benchmark information.
     E.Stop()

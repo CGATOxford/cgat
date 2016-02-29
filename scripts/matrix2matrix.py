@@ -50,7 +50,7 @@ Command line options
 '''
 import sys
 import math
-import StringIO
+import io
 
 import numpy
 import CGAT.Experiment as E
@@ -148,12 +148,12 @@ def main(argv=None):
 
     options.parameters = options.parameters.split(",")
 
-    lines = filter(lambda x: x[0] != "#", sys.stdin.readlines())
+    lines = [x for x in sys.stdin.readlines() if x[0] != "#"]
 
     if len(lines) == 0:
         raise IOError("no input")
 
-    chunks = filter(lambda x: lines[x][0] == ">", range(len(lines)))
+    chunks = [x for x in range(len(lines)) if lines[x][0] == ">"]
 
     if not chunks:
         options.write_separators = False
@@ -169,11 +169,11 @@ def main(argv=None):
     for chunk in range(len(chunks) - 1):
 
         try:
-            raw_matrix, row_headers, col_headers = MatlabTools.readMatrix(StringIO.StringIO("".join(lines[chunks[chunk] + 1:chunks[chunk + 1]])),
+            raw_matrix, row_headers, col_headers = MatlabTools.readMatrix(io.StringIO("".join(lines[chunks[chunk] + 1:chunks[chunk + 1]])),
                                                                           format=options.input_format,
                                                                           headers=options.headers,
                                                                           missing=options.missing)
-        except ValueError, msg:
+        except ValueError as msg:
             E.warn("matrix could not be read: %s" % msg)
             continue
 
@@ -211,7 +211,7 @@ def main(argv=None):
 
             elif method == "normalize-by-column":
                 if nrows != ncols:
-                    raise "only supported for symmeric matrices."
+                    raise ValueError("only supported for symmeric matrices")
 
                 for x in range(nrows):
                     for y in range(ncols):
@@ -224,7 +224,7 @@ def main(argv=None):
 
             elif method == "normalize-by-row":
                 if nrows != ncols:
-                    raise "only supported for symmeric matrices."
+                    raise ValueError("only supported for symmeric matrices")
 
                 for x in range(nrows):
                     for y in range(ncols):

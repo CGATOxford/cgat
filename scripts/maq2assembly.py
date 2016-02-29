@@ -157,7 +157,7 @@ class BuilderCoverage(Builder):
 
     def process(self, contig, start, end, reads, qualities):
 
-        aligned = filter(lambda x: x > 0, reads)
+        aligned = [x for x in reads if x > 0]
         self.mOutFile.write("%s\t%s\t%i\t%i\t%i\t%i\t%i\t%s\n" % (self.mOutputId,
                                                                   contig, start, end, end -
                                                                   start,
@@ -243,7 +243,7 @@ def main(argv=None):
     methods = []
 
     if len(options.methods) == 0:
-        raise "please supply at least one method to apply."
+        raise ValueError("please supply at least one method to apply")
 
     genome_fasta, queries_fasta = None, None
 

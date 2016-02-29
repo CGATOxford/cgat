@@ -49,7 +49,7 @@ class VCFEntry:
             self.filter, self.info, self.format = \
             data[:9]
 
-        self.genotypes = dict(zip(samples, data[9:]))
+        self.genotypes = dict(list(zip(samples, data[9:])))
         self.order = samples
 
     def __str__(self):
@@ -84,9 +84,9 @@ class VCFFile:
 
     def writeHeader(self, outfile, order=None):
         outfile.write("##fileformat=%s\n" % self.fileformat)
-        for key, values in self.format.iteritems():
+        for key, values in self.format.items():
             outfile.write("##FORMAT=%s,%s\n" % (key, ",".join(values)))
-        for key, values in self.info.iteritems():
+        for key, values in self.info.items():
             outfile.write("##INFO=%s,%s\n" % (key, ",".join(values)))
         outfile.write(
             "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t")
@@ -114,7 +114,7 @@ class VCFFile:
         elif key == "fileformat":
             self.fileformat = value
 
-    def next(self):
+    def __next__(self):
 
         data = self.line[:-1].split("\t")
         self.line = self.infile.readline()
@@ -127,4 +127,4 @@ if __name__ == "__main__":
     inf = VCFFile(sys.stdin)
 
     for x in inf:
-        print str(x)
+        print(str(x))

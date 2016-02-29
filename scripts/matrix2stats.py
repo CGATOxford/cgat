@@ -43,7 +43,7 @@ Command line options
 
 import sys
 import re
-import StringIO
+import io
 import numpy
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
@@ -101,9 +101,9 @@ def main(argv=None):
 
     (options, args) = E.Start(parser)
 
-    lines = filter(lambda x: x[0] != "#", sys.stdin.readlines())
+    lines = [x for x in sys.stdin.readlines() if x[0] != "#"]
 
-    chunks = filter(lambda x: lines[x][0] == ">", range(len(lines)))
+    chunks = [x for x in range(len(lines)) if lines[x][0] == ">"]
 
     if not chunks:
         options.write_separators = False
@@ -142,7 +142,7 @@ def main(argv=None):
 
     for x in range(len(chunks) - 1):
         ninput += 1
-        matrix, row_headers, col_headers = MatlabTools.readMatrix(StringIO.StringIO("".join(lines[chunks[x] + 1:chunks[x + 1]])),
+        matrix, row_headers, col_headers = MatlabTools.readMatrix(io.StringIO("".join(lines[chunks[x] + 1:chunks[x + 1]])),
                                                                   format=options.input_format,
                                                                   headers=options.headers)
         nrows, ncols = matrix.shape
@@ -181,21 +181,22 @@ def main(argv=None):
                     continue
 
                 noutput += 1
-                options.stdout.write("\t".join(("%s" % row_header1,
-                                                "%s" % row_header2,
-                                                "%i" % result.mSampleSize,
-                                                "%i" % min(matrix.flat),
-                                                "%i" % max(matrix.flat),
-                                                options.value_format % result.mChiSquaredValue,
-                                                "%i" % result.mDegreesFreedom,
-                                                options.pvalue_format % result.mProbability,
-                                                "%s" % result.mSignificance,
-                                                options.value_format % result.mPhi)) + "\n")
+                options.stdout.write("\t".join((
+                    "%s" % row_header1,
+                    "%s" % row_header2,
+                    "%i" % result.mSampleSize,
+                    "%i" % min(matrix.flat),
+                    "%i" % max(matrix.flat),
+                    options.value_format % result.mChiSquaredValue,
+                    "%i" % result.mDegreesFreedom,
+                    options.pvalue_format % result.mProbability,
+                    "%s" % result.mSignificance,
+                    options.value_format % result.mPhi)) + "\n")
 
         elif options.method == "pearson-chi-squared":
 
             if nrows != 2:
-                raise "only implemented for 2xn table"
+                raise ValueError("only implemented for 2xn table")
 
             if options.write_separators:
                 id = re.match("(\S+)", lines[chunks[x]][1:-1]).groups()[0]
@@ -205,15 +206,16 @@ def main(argv=None):
                 options.stdout.write("%s\t" % col_headers[col])
                 result = Stats.doPearsonChiSquaredTest(
                     probability, sum(matrix[:, col]), matrix[0, col])
-                options.stdout.write("\t".join(("%i" % result.mSampleSize,
-                                                "%f" % probability,
-                                                "%i" % result.mObserved,
-                                                "%f" % result.mExpected,
-                                                options.value_format % result.mChiSquaredValue,
-                                                "%i" % result.mDegreesFreedom,
-                                                options.pvalue_format % result.mProbability,
-                                                "%s" % result.mSignificance,
-                                                options.value_format % result.mPhi)))
+                options.stdout.write("\t".join((
+                    "%i" % result.mSampleSize,
+                    "%f" % probability,
+                    "%i" % result.mObserved,
+                    "%f" % result.mExpected,
+                    options.value_format % result.mChiSquaredValue,
+                    "%i" % result.mDegreesFreedom,
+                    options.pvalue_format % result.mProbability,
+                    "%s" % result.mSignificance,
+                    options.value_format % result.mPhi)))
                 if col < ncols - 1:
                     options.stdout.write("\n")
                     if options.write_separators:

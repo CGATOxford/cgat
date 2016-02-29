@@ -147,7 +147,7 @@ def main(argv=None):
                 spliced[read].append(cigar_tag)
 
     # write out spliced alignments
-    for read in spliced.keys():
+    for read in list(spliced.keys()):
         splicedreads.write(read)
     splicedreads.close()
     allreads.close()
@@ -225,7 +225,7 @@ def main(argv=None):
             context_dict[feature] += 1
             context_file.write("\t".join([e for e in entry]) + "\n")
 
-        for feature, value in context_dict.iteritems():
+        for feature, value in context_dict.items():
             context_summary.write("\t".join([feature, str(value)]) + "\n")
 
         context_file.close()

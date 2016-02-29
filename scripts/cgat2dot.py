@@ -176,7 +176,7 @@ def processScript(script_name, outfile, options):
 
     try:
         module = imp.load_source(basename, script_name)
-    except ImportError, msg:
+    except ImportError as msg:
         E.warn('could not import %s - skipped: %s' % (basename, msg))
         return
 
@@ -191,7 +191,7 @@ def processScript(script_name, outfile, options):
     E.Start = LocalStart
     try:
         module.main(argv=["--help"])
-    except TypeError, msg:
+    except TypeError as msg:
         E.warn('could not import %s: %s' % (basename, msg))
         return
     except DummyError:

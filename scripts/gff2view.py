@@ -110,8 +110,8 @@ def main(argv=None):
     (options, args) = E.Start(parser)
 
     if len(args) != 1:
-        print USAGE
-        raise "please specify the gff file to open."
+        print(USAGE)
+        raise ValueError("please specify the gff file to open")
 
     if options.is_gtf:
         entry_iterator = GTF.iterator
@@ -185,12 +185,12 @@ def main(argv=None):
                                             start,
                                             end)
 
-        print "# opening browser window for:"
-        print "#", url
+        print("# opening browser window for:")
+        print("#", url)
 
         if nopened % options.chunk_size == 0:
             if nopened != 0:
-                x = raw_input(
+                x = input(
                     'showing %i - hit return to continue:' % options.chunk_size)
             b.open_new(url)
             first = False

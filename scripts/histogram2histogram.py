@@ -36,6 +36,7 @@ import string
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import numpy
+from functools import reduce
 
 USAGE = """python %s < stdin > stdout
 
@@ -99,7 +100,7 @@ def main(argv=None):
         vals = []
 
         # retrieve histogram
-        lines = filter(lambda x: x[0] != "#", sys.stdin.readlines())
+        lines = [x for x in sys.stdin.readlines() if x[0] != "#"]
 
         # check if first line contains a header
         d = string.split(lines[0][:-1], "\t")[0]
@@ -109,17 +110,17 @@ def main(argv=None):
             else:
                 value = float(d)
         except ValueError:
-            print string.join((d, "counts", "frequency",
+            print(string.join((d, "counts", "frequency",
                                "cumulative counts", "increasing cumulative frequency",
-                               "cumulative counts", "decreasing cumulative frequency"), "\t")
+                               "cumulative counts", "decreasing cumulative frequency"), "\t"))
             del lines[0]
 
-        data = map(lambda x: map(float, string.split(x[:-1], "\t")), lines)
+        data = [list(map(float, string.split(x[:-1], "\t"))) for x in lines]
 
         if len(data) == 0:
-            raise "No data found."
+            raise ValueError("no data found")
 
-        total = float(reduce(lambda x, y: x + y, map(lambda x: x[1], data)))
+        total = float(reduce(lambda x, y: x + y, [x[1] for x in data]))
 
         cumul_down = int(total)
         cumul_up = 0
@@ -135,16 +136,16 @@ def main(argv=None):
             percent_cumul_up = float(cumul_up) / total
             percent_cumul_down = float(cumul_down) / total
 
-            print form % \
+            print(form % \
                 (bin, val, percent, cumul_up, percent_cumul_up,
-                 cumul_down, percent_cumul_down)
+                 cumul_down, percent_cumul_down))
 
             cumul_down -= val
 
     else:
 
         if options.truncate:
-            options.truncate = map(float, options.truncate.split(","))
+            options.truncate = list(map(float, options.truncate.split(",")))
 
         options.method = options.method.split(",")
         data, legend = IOTools.readTable(sys.stdin,
@@ -192,13 +193,13 @@ def main(argv=None):
             else:
                 raise "unknown method %s" % method
 
-        print "\t".join(legend)
+        print("\t".join(legend))
 
         format = options.format_bin + "\t" + \
             "\t".join([options.format_val] * (nfields - 1))
 
         for d in data:
-            print format % tuple(d)
+            print(format % tuple(d))
 
     E.Stop()
 

@@ -249,10 +249,10 @@ def main(argv=None):
     tmpfile_sizes = os.path.join(tmpdir, "sizes")
 
     # Create dictionary of contig sizes
-    contig_sizes = dict(zip(samfile.references, samfile.lengths))
+    contig_sizes = dict(list(zip(samfile.references, samfile.lengths)))
     # write contig sizes
     outfile_size = IOTools.openFile(tmpfile_sizes, "w")
-    for contig, size in contig_sizes.items():
+    for contig, size in list(contig_sizes.items()):
         outfile_size.write("%s\t%s\n" % (contig, size))
     outfile_size.close()
 
@@ -295,7 +295,7 @@ def main(argv=None):
             outf = lambda outfile, contig, start, end, val: \
                 outfile.write(
                     "".join(["%i\t%i\n" % (x, val)
-                             for x in xrange(start + 1, end + 1)]))
+                             for x in range(start + 1, end + 1)]))
         else:
             outf = SpanWriter(options.span)
     elif options.output_format == "bedgraph":
@@ -458,7 +458,7 @@ def main(argv=None):
                     E.warn("%s terminated with signal: %i" %
                            (executable, -retcode))
                     return -retcode
-            except OSError, msg:
+            except OSError as msg:
                 E.warn("Error while executing bigwig: %s" % msg)
                 return 1
             E.info("finished bigwig conversion")

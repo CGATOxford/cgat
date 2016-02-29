@@ -43,7 +43,7 @@ import random
 from CGAT import Experiment as E
 from CGAT import Genomics as Genomics
 from CGAT import FastaIterator as FastaIterator
-import cStringIO as StringIO
+import io as StringIO
 
 # Class for calling masking programs.
 
@@ -247,10 +247,10 @@ class MaskerRandom (Masker):
             x for x in range(0, len(sequence), frame) if sequence[x] != "-"]
         to_mask = random.sample(
             positions, int(len(positions) * self.mProportion))
-        print int(len(positions) * self.mProportion)
+        print(int(len(positions) * self.mProportion))
 
         s = list(sequence)
-        print to_mask
+        print(to_mask)
         for x in to_mask:
             for y in range(x, x + frame):
                 s[x] == "x"
@@ -259,11 +259,11 @@ class MaskerRandom (Masker):
 
 if __name__ == "__main__":
     x = MaskerRandom()
-    print x("AAA AAA AAA AAA --- AAA AAA AAA AAA")
+    print(x("AAA AAA AAA AAA --- AAA AAA AAA AAA"))
 
     x = MaskerDustMasker()
-    print x.maskSequences(("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                           "GGGGGGGGGG", ))
+    print(x.maskSequences(("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                           "GGGGGGGGGG", )))
 
 
 def maskSequences(sequences, masker=None):

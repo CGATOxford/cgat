@@ -44,7 +44,7 @@ def readLiftOver(infile, chromosome,
     """
 
     if options.loglevel >= 2:
-        print "## started reading mapping information"
+        print("## started reading mapping information")
         sys.stdout.flush()
 
     map_position = numpy.zeros((chromosome_size,), numpy.int)
@@ -62,7 +62,7 @@ def readLiftOver(infile, chromosome,
 
         if not (n % report_step):
             if options.loglevel >= 2:
-                print "# iteration %i" % n
+                print("# iteration %i" % n)
                 sys.stdout.flush()
 
         if line[:5] == "chain":
@@ -71,7 +71,7 @@ def readLiftOver(infile, chromosome,
              dontknow) = line[:-1].split(" ")[2:]
 
             if strand_x == "-":
-                raise "what shall I do with negative strands?"
+                raise ValueError("what shall I do with negative strands?")
 
             x = int(first_x)
 
@@ -93,7 +93,7 @@ def readLiftOver(infile, chromosome,
             else:
                 keep = True
                 if options.loglevel >= 3:
-                    print "# adding alignment", line[:-1]
+                    print("# adding alignment", line[:-1])
 
             continue
 
@@ -103,7 +103,7 @@ def readLiftOver(infile, chromosome,
 
         elif keep:
 
-            data = map(int, line[:-1].split("\t"))
+            data = list(map(int, line[:-1].split("\t")))
 
             if len(data) == 3:
                 size, increment_x, increment_y = data
@@ -134,9 +134,12 @@ def readLiftOver(infile, chromosome,
                 y += increment_y + size
 
             if y < 0:
-                raise "illegal mapping: %i -> %i for %s %s:%s-%s(%s) to %s %s: %s-%s(%s)" % (x, y,
-                                                                                             chr_x, strand_x, first_x, last_x, size_x,
-                                                                                             chr_y, strand_y, first_y, last_y, size_y)
+                raise ValueError(
+                    "illegal mapping: %i -> %i for %s %s:%s-%s(%s) "
+                    "to %s %s: %s-%s(%s)" % (
+                        x, y,
+                        chr_x, strand_x, first_x, last_x, size_x,
+                        chr_y, strand_y, first_y, last_y, size_y))
 
     return map_position, map_chromosome, map_chromosome2id, map_id2chromosome
 
@@ -168,10 +171,11 @@ def main(argv=None):
     (options, args) = E.Start(parser)
 
     if options.filename_map == "":
-        raise "please specify the file with the liftover mapping information."
+        raise ValueError("please specify the file with the "
+                         "liftover mapping information")
 
     if not options.chromosome:
-        raise "please give a chromosome."
+        raise ValueError("please give a chromosome")
 
     map_position, map_chromosome, map_chromosome2id, \
         map_id2chromosome = readLiftOver(
@@ -194,7 +198,7 @@ def main(argv=None):
         if chromosome == options.chromosome:
 
             if options.loglevel >= 1:
-                print "#", l, ":", line[:-1]
+                print("#", l, ":", line[:-1])
 
             for x in range(range_from, range_to):
                 if map_position[x]:
@@ -205,7 +209,8 @@ def main(argv=None):
                         c = "-"
                         id = -id
 
-                    print "%s\t%i\t%s\t%s\t%i" % (chromosome, x, map_id2chromosome[id], c, map_position[x] - 1)
+                    print("%s\t%i\t%s\t%s\t%i" % (
+                        chromosome, x, map_id2chromosome[id], c, map_position[x] - 1))
                 else:
                     pass
                     # print "%s\t%i\tna" % (chromosome, x )

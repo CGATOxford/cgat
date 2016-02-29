@@ -320,7 +320,7 @@ def main(argv=None):
 
     while 1:
         try:
-            cur_record = iterator.next()
+            cur_record = next(iterator)
         except StopIteration:
             break
 
@@ -377,9 +377,9 @@ def main(argv=None):
                 seq = []
 
                 try:
-                    other_record = other_iterator.next()
+                    other_record = next(other_iterator)
                 except StopIteration:
-                    raise "run out of sequences."
+                    raise ValueError("run out of sequences")
 
                 if cur_record.title != other_record.title:
                     raise "sequence titles don't match: %s %s" % (
@@ -465,7 +465,7 @@ def main(argv=None):
             elif method == "mask-soft":
                 # Get next hard masked record and extract sequence and length
                 try:
-                    cur_hm_record = hard_masked_iterator.next()
+                    cur_hm_record = next(hard_masked_iterator)
                 except StopIteration:
                     break
                 hm_sequence = re.sub(" ", "", cur_hm_record.sequence)
@@ -484,7 +484,7 @@ def main(argv=None):
                 if sequence == hm_sequence:
                     pass
                 else:
-                    for x, y in itertools.izip_longest(sequence, hm_sequence):
+                    for x, y in itertools.zip_longest(sequence, hm_sequence):
                         if y == "N":
                             new_sequence += x.lower()
                         else:
@@ -496,7 +496,7 @@ def main(argv=None):
                 seq = []
 
                 for codon in (sequence[x:x + 3].upper()
-                              for x in xrange(0, l, 3)):
+                              for x in range(0, l, 3)):
 
                     if codon not in map_codon2code:
                         aa = "X"
@@ -595,7 +595,7 @@ def main(argv=None):
             elif method == "mask-incomplete-codons":
                 seq = list(sequence)
                 for x in range(0, l, 3):
-                    nm = len(filter(lambda x: x in mask_chars, seq[x:x + 3]))
+                    nm = len([x for x in seq[x:x + 3] if x in mask_chars])
                     if 0 < nm < 3:
                         seq[x:x + 3] = [mask_char] * 3
                 sequence = "".join(seq)
@@ -603,7 +603,7 @@ def main(argv=None):
             elif method == "mask-codons":
                 # mask codons based on amino acids given as reference
                 # sequences.
-                other_record = other_iterator.next()
+                other_record = next(other_iterator)
 
                 if other_record is None:
                     raise ValueError("run out of sequences.")
@@ -654,7 +654,7 @@ def main(argv=None):
             outfile = options.stdout
 
         outfile.write("old\tnew\n")
-        for old_id, new_id in map_seq2nid.items():
+        for old_id, new_id in list(map_seq2nid.items()):
             outfile.write("%s\t%s\n" % (old_id, new_id))
         if p:
             outfile.close()

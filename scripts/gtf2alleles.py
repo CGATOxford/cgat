@@ -103,7 +103,7 @@ class VariantGetterSqlite(VariantGetter):
         cc = self.dbhandle.cursor()
         tablename = self.tablename
         cc.execute(self.statement % locals())
-        variants = map(Variants.Variant._make, cc.fetchall())
+        variants = list(map(Variants.Variant._make, cc.fetchall()))
         cc.close()
         return variants
 
@@ -214,7 +214,7 @@ def buildCompactVariantSequences(variants, sequences):
     '''
 
     result = {}
-    for key, sequence in sequences.iteritems():
+    for key, sequence in sequences.items():
         variant_seq = list(sequence.lower())
         start, end = key
 
@@ -306,7 +306,7 @@ def buildVariantSequences(indexed_variants, sequences):
     '''
 
     result = {}
-    for key, sequence in sequences.iteritems():
+    for key, sequence in sequences.items():
 
         feature_start, feature_end = key
 
@@ -490,19 +490,19 @@ def buildAlleles(transcript,
         loriginal = sum([x.end - x.start for x in transcript])
 
         if E.global_options.loglevel >= 8:
-            print "%i: exon_indels (%i-%i):" % (allele_id, exon.start, exon.end)
+            print("%i: exon_indels (%i-%i):" % (allele_id, exon.start, exon.end))
             for x, c in enumerate(exons[exon_key]):
                 if len(c) != 1:
-                    print x + exon.start, ":%s:" % c
-            print
-            print exons[exon_key]
-            print "genome_pos=", genome_pos, \
+                    print(x + exon.start, ":%s:" % c)
+            print()
+            print(exons[exon_key])
+            print("genome_pos=", genome_pos, \
                 ",exon=%i-%i" % (genome_pos, genome_pos + len(exon_seq)), \
                 ", len(exon_seq)=", len(exon_seq), \
                 ", len(exon)=", exon.end - exon.start, \
                 ", offsets=%i,%i," % (start_offset, end_offset), \
                 ", offset at start=", _getOffset( exon.start, offsets), \
-                ", offset at end=", _getOffset(exon.end, offsets)
+                ", offset at end=", _getOffset(exon.end, offsets))
 
         for exon in transcript[1:]:
 
@@ -595,21 +595,21 @@ def buildAlleles(transcript,
                     cds_starts.append(lcds)
 
             if E.global_options.loglevel >= 8:
-                print "%i: intron_indels (%i-%i):" % (allele_id, last_end, exon.start)
+                print("%i: intron_indels (%i-%i):" % (allele_id, last_end, exon.start))
                 if intron_key:
                     for x, c in enumerate(introns[intron_key]):
                         if len(c) != 1:
-                            print x + last_end, ":%s:" % c
-                    print
-                    print introns[intron_key]
-                    print "genome_pos=", genome_pos, \
+                            print(x + last_end, ":%s:" % c)
+                    print()
+                    print(introns[intron_key])
+                    print("genome_pos=", genome_pos, \
                         ",intron=%i-%i" % (genome_pos, genome_pos + len(intron_seq)), \
                         ", len(intron_seq)=", len(intron_seq), \
                         ", len(intron)=", exon.start - last_end, \
                         ", offset at start=", _getOffset( last_end, offsets), \
-                        ", offset at end=", _getOffset(exon.start, offsets)
+                        ", offset at end=", _getOffset(exon.start, offsets))
                 else:
-                    print "empty intron"
+                    print("empty intron")
 
             genome_pos += len(intron_seq)
 
@@ -645,19 +645,19 @@ def buildAlleles(transcript,
             last_end = exon.end
 
             if E.global_options.loglevel >= 8:
-                print "%i: exon_indels (%i-%i):" % (allele_id, exon.start, exon.end)
+                print("%i: exon_indels (%i-%i):" % (allele_id, exon.start, exon.end))
                 for x, c in enumerate(exons[exon_key]):
                     if len(c) != 1:
-                        print x + exon.start, ":%s:" % c
-                print
-                print exons[exon_key]
-                print "genome_pos=", genome_pos, \
+                        print(x + exon.start, ":%s:" % c)
+                print()
+                print(exons[exon_key])
+                print("genome_pos=", genome_pos, \
                     ",exon=%i-%i" % (genome_pos, genome_pos + len(exon_seq)), \
                     ", len(exon_seq)=", len(exon_seq), \
                     ", len(exon)=", exon.end - exon.start, \
                     ", offsets=%i,%i," % (start_offset, end_offset), \
                     ", offset at start=", _getOffset( exon.start, offsets), \
-                    ", offset at end=", _getOffset(exon.end, offsets)
+                    ", offset at end=", _getOffset(exon.end, offsets))
 
             genome_pos += len(exon_seq)
 
@@ -779,9 +779,9 @@ def buildAlleles(transcript,
     if variant_exons or variant_introns:
         for allele in range(0, 2):
             exons = dict([(x, y[allele])
-                          for x, y in variant_exons.iteritems()])
+                          for x, y in variant_exons.items()])
             introns = dict([(x, y[allele])
-                            for x, y in variant_introns.iteritems()])
+                            for x, y in variant_introns.items()])
             result.append(
                 _buildAllele(allele, transcript, exons, introns, offsets[allele]))
     else:
@@ -943,7 +943,7 @@ def main(argv=None):
                 (gene_id, len(variants), contig, extended_start, extended_end))
 
         if E.global_options.loglevel >= 10:
-            print "# collected variants:", variants
+            print("# collected variants:", variants)
 
         # collect intron/exon sequences
         # coordinates are forward/reverse
@@ -961,7 +961,7 @@ def main(argv=None):
                 (gene_id, len(variants), contig, extended_start, extended_end))
 
         if E.global_options.loglevel >= 10:
-            print "# merged variants:", variants
+            print("# merged variants:", variants)
 
         # collect coordinate offsets and remove conflicting variants
         variants, removed_variants, offsets = Variants.buildOffsets(
@@ -987,14 +987,14 @@ def main(argv=None):
 
             if E.global_options.loglevel >= 10:
                 for key in variant_exons:
-                    print "exon", key
+                    print("exon", key)
                     Genomics.printPrettyAlignment(
                         all_exons[key],
                         variant_exons[key][0],
                         variant_exons[key][1],
                     )
                 for key in variant_introns:
-                    print "intron", key
+                    print("intron", key)
                     Genomics.printPrettyAlignment(
                         all_introns[key][:30] + all_introns[key][-30:],
                         variant_introns[key][0][:30] +

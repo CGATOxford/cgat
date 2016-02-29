@@ -71,10 +71,10 @@ def readTable(lines,
 
     if take_columns == "all":
         num_cols = len(string.split(lines[0][:-1], "\t"))
-        take = range(0, num_cols)
+        take = list(range(0, num_cols))
     elif take_columns == "all-but-first":
         num_cols = len(string.split(lines[0][:-1], "\t"))
-        take = range(1, num_cols)
+        take = list(range(1, num_cols))
 
     outfile = open(name, "w")
     c = []
@@ -100,14 +100,14 @@ def readTable(lines,
     # get column headers
     if headers:
         headers = lines[0][:-1].split("\t")
-        headers = map(lambda x: headers[x], take)
+        headers = [headers[x] for x in take]
         del lines[0]
 
     for l in lines:
         data = [x.strip() for x in l[:-1].split("\t")]
         if not data or not [x for x in data if x != ""]:
             continue
-        outfile.write(string.join(map(lambda x: data[x], take), "\t") + "\n")
+        outfile.write(string.join([data[x] for x in take], "\t") + "\n")
         if row_names is not None:
             legend.append(data[row_names])
 
@@ -154,7 +154,7 @@ def writeMatrix(file,
         if headers:
             file.write(headers[x] + "\t")
         file.write(
-            string.join(map(lambda x: format % x, matrix[x]), "\t") + "\n")
+            string.join([format % x for x in matrix[x]], "\t") + "\n")
 
 
 def FuncScatterDiagonal(data):
@@ -264,7 +264,7 @@ def main(argv=None):
         options.input_filename = args[0]
 
     if options.columns not in ("all", "all-but-first"):
-        options.columns = map(lambda x: int(x) - 1, options.columns.split(","))
+        options.columns = [int(x) - 1 for x in options.columns.split(",")]
 
     if options.colours:
         options.colours -= 1
@@ -282,7 +282,7 @@ def main(argv=None):
         # creating hardcopy plots works.
         lines = sys.stdin.readlines()
 
-    lines = filter(lambda x: x[0] != "#", lines)
+    lines = [x for x in lines if x[0] != "#"]
 
     if len(lines) == 0:
         if options.fail_on_empty:
@@ -338,7 +338,7 @@ def main(argv=None):
                     try:
                         result = R(
                             """cor.test( matrix[,%i], matrix[,%i] )""" % (x + 1, y + 1))
-                    except rpy.RPyException, msg:
+                    except rpy.RPyException as msg:
                         E.warn("correlation not computed for columns %i(%s) and %i(%s): %s" % (
                             x, headers[x], y, headers[y], msg))
                         options.stdout.write("%s\t%s\t%s\t%s\t%s\t%i\t%s\t%s\n" %
@@ -616,16 +616,14 @@ title(main='%s');
                 R("""layout(matrix(seq(1,%i), %i, %i, byrow = TRUE))""" %
                   (w * h, w, h))
                 for a, b in pairs:
-                    new_matrix = filter(lambda x:
-                                        x[0] not in (float("nan"), PosInf, NegInf) and
+                    new_matrix = [x for x in zip(list(matrix[a].values())[0], list(matrix[b].values())[0]) if x[0] not in (float("nan"), PosInf, NegInf) and
                                         x[1] not in (
-                                            float("nan"), PosInf, NegInf),
-                                        zip(matrix[a].values()[0], matrix[b].values()[0]))
+                                            float("nan"), PosInf, NegInf)]
                     try:
                         R("""plot(matrix[,%i], matrix[,%i], main='%s versus %s', cex=0.5, pch=".", xlab='%s', ylab='%s' )""" % (
                             a + 1, b + 1, headers[b], headers[a], xlabel, ylabel))
-                    except rpy.RException, msg:
-                        print "could not plot %s versus %s: %s" % (headers[b], headers[a], msg)
+                    except rpy.RException as msg:
+                        print("could not plot %s versus %s: %s" % (headers[b], headers[a], msg))
 
         if options.hardcopy:
             R['dev.off']()

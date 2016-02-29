@@ -46,7 +46,7 @@ import CGAT.CSV2DB as CSV2DB
 
 import csv
 
-csv.field_size_limit(sys.maxint)
+csv.field_size_limit(sys.maxsize)
 
 
 def main(argv=sys.argv):

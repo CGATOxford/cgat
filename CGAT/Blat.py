@@ -167,8 +167,8 @@ class Match:
             query_starts.reverse()
             sbjct_starts.reverse()
 
-        self.mQueryStarts = map(lambda x: x - self.mQueryFrom, query_starts)
-        self.mSbjctStarts = map(lambda x: x - self.mSbjctFrom, sbjct_starts)
+        self.mQueryStarts = [x - self.mQueryFrom for x in query_starts]
+        self.mSbjctStarts = [x - self.mSbjctFrom for x in sbjct_starts]
 
     def _switchQueryStrandFlag(self):
         '''switch the strand flag of the query
@@ -225,9 +225,9 @@ class Match:
             raise ParsingError("parsing error: %i fields" %
                                len(data), "\t".join(data))
 
-        nmatches, nmismatches, nrepmatches, nns = map(
+        nmatches, nmismatches, nrepmatches, nns = list(map(
             int,
-            (nmatches, nmismatches, nrepmatches, nns))
+            (nmatches, nmismatches, nrepmatches, nns)))
 
         self.mNMatches = nmatches
         self.mNMismatches = nmismatches
@@ -247,9 +247,9 @@ class Match:
         self.mSbjctFrom = int(sbjct_from)
         self.mSbjctTo = int(sbjct_to)
         self.mNBlocks = int(nblocks)
-        self.mBlockSizes = map(int, block_sizes[:-1].split(","))
-        self.mQueryBlockStarts = map(int, query_block_starts[:-1].split(","))
-        self.mSbjctBlockStarts = map(int, sbjct_block_starts[:-1].split(","))
+        self.mBlockSizes = list(map(int, block_sizes[:-1].split(",")))
+        self.mQueryBlockStarts = list(map(int, query_block_starts[:-1].split(",")))
+        self.mSbjctBlockStarts = list(map(int, sbjct_block_starts[:-1].split(",")))
 
         # this makes sure that the block positions are rescaled
         if self.mQueryLength != 0:
@@ -293,9 +293,9 @@ class Match:
 
     def getBlocks(self):
         """return a list of aligned blocks."""
-        return zip(self.mQueryBlockStarts,
+        return list(zip(self.mQueryBlockStarts,
                    self.mSbjctBlockStarts,
-                   self.mBlockSizes)
+                   self.mBlockSizes))
 
     def __str__(self):
         return "\t".join(map(str, (
@@ -378,11 +378,11 @@ class Match:
                 f).split("\t")
 
         if self.mBlockSizes:
-            self.mBlockSizes = map(int, self.mBlockSizes[:-1].split(","))
-            self.mQueryBlockStarts = map(
-                int, self.mQueryBlockStarts[:-1].split(","))
-            self.mSbjctBlockStarts = map(
-                int, self.mSbjctBlockStarts[:-1].split(","))
+            self.mBlockSizes = list(map(int, self.mBlockSizes[:-1].split(",")))
+            self.mQueryBlockStarts = list(map(
+                int, self.mQueryBlockStarts[:-1].split(",")))
+            self.mSbjctBlockStarts = list(map(
+                int, self.mSbjctBlockStarts[:-1].split(",")))
         else:
             self.mBlockSizes = []
             self.mQueryBlockStarts = []
@@ -391,9 +391,9 @@ class Match:
         self.mNBlocks = len(self.mBlockSizes)
 
         self.mQueryFrom, self.mQueryTo, self.mSbjctFrom, self.mSbjctTo = \
-            map(int,
+            list(map(int,
                 (self.mQueryFrom, self.mQueryTo,
-                 self.mSbjctFrom, self.mSbjctTo))
+                 self.mSbjctFrom, self.mSbjctTo)))
 
         # queryfrom and queryto are always forward strand coordinates
         if use_strand and self.strand == "-":
@@ -630,9 +630,9 @@ class BlatIterator:
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         try:
-            return self.mIterator.next()
+            return next(self.mIterator)
         except StopIteration:
             return None
 
@@ -710,7 +710,7 @@ def iterator_target_overlap(infile, merge_distance):
 
     while 1:
 
-        match = infile.next()
+        match = next(infile)
 
         if match is None:
             break
@@ -751,7 +751,7 @@ def iterator_query_overlap(infile, merge_distance):
 
     while 1:
 
-        match = infile.next()
+        match = next(infile)
 
         if match is None:
             break
@@ -788,8 +788,8 @@ def iterator_test(infile, report_step=100000):
 
     while 1:
         try:
-            x = infile.next()
-        except ParsingError, msg:
+            x = next(infile)
+        except ParsingError as msg:
             nerrors += 1
             ninput += 1
             E.warn(str(msg))
@@ -821,7 +821,7 @@ def iterator_per_query(iterator_psl):
     for match in iterator_psl:
         data[match.mQueryId].append(match)
 
-    for x in data.values():
+    for x in list(data.values()):
         yield x
 
     raise StopIteration

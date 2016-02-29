@@ -169,7 +169,7 @@ def iterator_psl_intervals(options):
 
     while 1:
 
-        match = iterator.next()
+        match = next(iterator)
         if not match:
             break
 
@@ -223,7 +223,7 @@ def pslFilter(options, keep=True):
     ninput, noutput, ndiscarded, nskipped = 0, 0, 0, 0
 
     if keep:
-        raise "not implemented"
+        raise NotImplementedError("not implemented")
     else:
         for match, qx, tx in iterator_psl_intervals(options):
 
@@ -454,7 +454,7 @@ def pslMerge(options):
         map_query2target = alignlib_lite.py_makeAlignmentBlocks()
 
         graph = networkx.DiGraph()
-        graph.add_nodes_from(xrange(len(matches) + 2))
+        graph.add_nodes_from(range(len(matches) + 2))
 
         matches.sort(key=lambda x: x.mQueryFrom)
 
@@ -520,7 +520,7 @@ def pslMerge(options):
 
     while 1:
 
-        match = iterator.next()
+        match = next(iterator)
         if not match:
             break
 
@@ -560,7 +560,7 @@ def pslAddSequence(query_fasta, sbjct_fasta, options):
 
     while 1:
 
-        match = iterator.next()
+        match = next(iterator)
         if not match:
             break
 
@@ -598,7 +598,7 @@ def pslComplement(query_fasta, target_fasta, options):
 
     while 1:
 
-        match = iterator.next()
+        match = next(iterator)
         if not match:
             break
 
@@ -657,7 +657,7 @@ def pslComplementQuery(options):
 
     while 1:
 
-        match = iterator.next()
+        match = next(iterator)
         if not match:
             break
 
@@ -799,7 +799,7 @@ def iterator_rename_query(infile, options):
     x = 1
     while 1:
 
-        match = infile.next()
+        match = next(infile)
 
         if not match:
             break
@@ -817,7 +817,7 @@ def iterator_rename_query(infile, options):
     if options.output_filename_map:
         outfile = open(options.output_filename_map, "w")
         outfile.write("%s\t%s\n" % ("old", "new"))
-        for old, new in map_old2new.iteritems():
+        for old, new in map_old2new.items():
             outfile.write("%s\t%s\n" % (old, new))
         outfile.close()
 
@@ -833,8 +833,8 @@ def iterator_sanitize(infile, query_fasta, sbjct_fasta, options):
 
     while 1:
         try:
-            x = infile.next()
-        except Blat.ParsingError, msg:
+            x = next(infile)
+        except Blat.ParsingError as msg:
             nerrors += 1
             ninput += 1
             E.warn(str(msg))
@@ -869,8 +869,8 @@ def iterator_filter_fasta(infile, query_fasta, sbjct_fasta, options):
 
     while 1:
         try:
-            x = infile.next()
-        except Blat.ParsingError, msg:
+            x = next(infile)
+        except Blat.ParsingError as msg:
             nerrors += 1
             ninput += 1
             E.warn(str(msg))

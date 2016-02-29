@@ -129,7 +129,7 @@ def printValues(contig, max_size, window_size, values, options):
     max_vv = []
 
     for f in range(len(options.features)):
-        max_vv.append(float(max(map(lambda x: x[f], values))))
+        max_vv.append(float(max([x[f] for x in values])))
 
     bin = 0
     for vv in values:
@@ -169,7 +169,7 @@ def processChunk(contig, chunk, options, fasta=None):
     del checked[:]
 
     # compute max_coordinate for the histogram
-    max_coordinate = max(map(lambda x: x.end, chunk))
+    max_coordinate = max([x.end for x in chunk])
     # compute window size
     if options.window_size:
         window_size = options.window_size

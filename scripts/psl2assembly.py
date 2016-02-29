@@ -494,7 +494,7 @@ class BuilderTranscriptSpliced(BuilderTranscribedLocus):
         # fill small gaps
         is_gap = False
         lgap = 0
-        for x in xrange(0, lgenome):
+        for x in range(0, lgenome):
             if is_exon[x] == 0:
                 lgap += 1
             else:
@@ -504,7 +504,7 @@ class BuilderTranscriptSpliced(BuilderTranscribedLocus):
                             self.options.stdlog.write(
                                 "# fixing small gap of length %i: %i-%i\n" % (lgap, x - lgap, x))
 
-                        for y in xrange(x - lgap, x):
+                        for y in range(x - lgap, x):
                             is_exon[y] = 1
                             is_intron[y] = 0
                         self.mFixedGaps += 1
@@ -539,7 +539,7 @@ class BuilderTranscriptSpliced(BuilderTranscribedLocus):
                     return x - 1
             return None
 
-        for x in xrange(0, lgenome):
+        for x in range(0, lgenome):
             # check for read ends within introns
             if self.options.loglevel >= 5:
                 self.options.stdlog.write("# %i(%i): is_term=%i, is_exon=%i, is_intron=%i, check=%i\n" %
@@ -626,7 +626,7 @@ class BuilderTranscriptSpliced(BuilderTranscribedLocus):
 
         was_intron = False
         f = 0
-        for x in xrange(start, end):
+        for x in range(start, end):
             if is_exon[x] and was_intron:
                 introns.append((f, x))
             elif not is_exon[x] and not was_intron:
@@ -712,7 +712,7 @@ class BuilderCoverage(Builder):
 
         else:
             nmatches = len(matches)
-            extra_info = str(Stats.DistributionalParameters(residues.values()))
+            extra_info = str(Stats.DistributionalParameters(list(residues.values())))
 
         self.mOutFile.write("%s\t%s\t%i\t%i\t%i\t%i\t%i\t%s\n" % (self.mOutputId, sbjct_id, sbjct_start, sbjct_end,
                                                                   sbjct_end -
@@ -759,7 +759,7 @@ class BuilderSbjctCoverage(Builder):
                                                                   sbjct_start,
                                                                   len(matches),
                                                                   len(residues),
-                                                                  str(Stats.DistributionalParameters(residues.values() + [0.0] * (sbjct_length - len(residues))))))
+                                                                  str(Stats.DistributionalParameters(list(residues.values()) + [0.0] * (sbjct_length - len(residues))))))
         self.mOutFile.flush()
 
 
@@ -915,7 +915,7 @@ class BuilderConsensus(Builder):
                                                    map_genome2transcript=map_genome2transcript)
 
         if options.loglevel >= 4:
-            print str(mali)
+            print(str(mali))
             options.stdlog.flush()
 
         if not identifiers:
@@ -1111,7 +1111,7 @@ class BuilderPolyA(Builder):
         tails = new_tails
 
         # check direction
-        directions = set([x[1] for x in tails.keys()])
+        directions = set([x[1] for x in list(tails.keys())])
 
         if len(directions) > 1:
 
@@ -1119,9 +1119,9 @@ class BuilderPolyA(Builder):
             #nforward = sum([ sum([ y[1] for y in x[1]]) for x in tails.items() if x[0][1] == "+"] )
             #nreverse = sum([ sum([ y[1] for y in x[1]]) for x in tails.items() if x[0][1] == "-"] )
             nforward = sum([len(x[1])
-                            for x in tails.items() if x[0][1] == "+"])
+                            for x in list(tails.items()) if x[0][1] == "+"])
             nreverse = sum([len(x[1])
-                            for x in tails.items() if x[0][1] == "-"])
+                            for x in list(tails.items()) if x[0][1] == "-"])
 
             ninconsistent = min(nforward, nreverse)
 
@@ -1139,12 +1139,12 @@ class BuilderPolyA(Builder):
             ninconsistent = 0
 
         nmotifs = 0
-        for key, ids in tails.items():
+        for key, ids in list(tails.items()):
 
             mapped, direction = key
 
             distances = []
-            for name, motifs in self.mMotifs.items():
+            for name, motifs in list(self.mMotifs.items()):
                 if direction == "+":
                     pos = genome.rfind(
                         motifs[0], mapped - self.mMotifArea, mapped)
@@ -1258,7 +1258,7 @@ class FilterIntrons(Filter):
         not fully implemented.
         """
 
-        raise "not implemented"
+        raise NotImplementedError("not implemented")
         matches_without_introns, matches_with_introns = [], []
 
         for match in matches:
@@ -1457,7 +1457,7 @@ class FilterTranscriptMergers(Filter):
             keep = True
 
             exons = match.iterator_exons()
-            last_start, last_end = exons.next()
+            last_start, last_end = next(exons)
             last_start -= sbjct_start
             last_end -= sbjct_start
             for start, end in exons:
@@ -1471,7 +1471,7 @@ class FilterTranscriptMergers(Filter):
                     (last_end - last_start + end - start)
 
                 v = [is_intron[x]
-                     for x in filter(lambda x: is_exon[x] == 0, range(last_end, start))]
+                     for x in [x for x in range(last_end, start) if is_exon[x] == 0]]
                 if len(v) == 0:
                     continue
                 coverage_intron = min(v)
@@ -1916,7 +1916,7 @@ def main(argv=None):
             options.stdlog.write("## region: %s:%i..%i: forcing merge for %i matches\n" %
                                  (sbjct_id, sbjct_start, sbjct_end, len(matches)))
             options.stdlog.flush()
-            components = (range(0, len(matches), ), )
+            components = (list(range(0, len(matches),)), )
         else:
             components = Blat.getComponents(matches,
                                             max_distance=options.threshold_merge_distance,
@@ -1955,7 +1955,7 @@ def main(argv=None):
                     options.stdlog.write("## region: %s:%i..%i: forcing merge for %i matches\n" %
                                          (sbjct_id, sbjct_start, sbjct_end, len(matches)))
                     options.stdlog.flush()
-                    components = (range(0, len(matches), ), )
+                    components = (list(range(0, len(matches),)), )
                 else:
                     components = Blat.getComponents(matches,
                                                     max_distance=options.threshold_merge_distance,
@@ -1981,7 +1981,7 @@ def main(argv=None):
                                          (len(components), sbjct_id, sbjct_start, sbjct_end,
                                           str([len(x) for x in components])))
 
-                components = [range(len(matches)), ]
+                components = [list(range(len(matches))), ]
 
         # applying filters
         for component in components:
@@ -2042,7 +2042,7 @@ def main(argv=None):
 
     while 1:
 
-        match = iterator.next()
+        match = next(iterator)
 
         if match is None:
             break

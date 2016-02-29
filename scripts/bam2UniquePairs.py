@@ -115,7 +115,7 @@ def main(argv=None):
 
         def _row(x, npp=npp):
             name, d = x
-            n = len(d.keys())
+            n = len(list(d.keys()))
             pc = float(n) / npp * 100
             line = "%s\t%i\t%.2f" % (name, n, pc)
             return(line)

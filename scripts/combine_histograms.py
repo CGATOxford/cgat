@@ -79,16 +79,16 @@ def main(argv=None):
                                       param_short_options,
                                       param_long_options)
 
-    except getopt.error, msg:
-        print globals()["__doc__"], msg
+    except getopt.error as msg:
+        print(globals()["__doc__"], msg)
         sys.exit(1)
 
     for o, a in optlist:
         if o in ("--help",):
-            print globals()["__doc__"]
+            print(globals()["__doc__"])
             sys.exit(0)
         elif o in ("--version", ):
-            print "version="
+            print("version=")
             sys.exit(0)
         elif o in ("-h", "--header-names"):
             param_headers = string.split(a, ",")
@@ -113,13 +113,13 @@ def main(argv=None):
                 param_sort = string.split(a, ",")
 
     if len(args) < 1:
-        print globals()["__doc__"], "please specify at one histogram."
+        print(globals()["__doc__"], "please specify at one histogram.")
         sys.exit(1)
 
     param_filenames = args
 
-    print E.GetHeader()
-    print E.GetParams()
+    print(E.GetHeader())
+    print(E.GetParams())
 
     histograms = []
 
@@ -133,12 +133,12 @@ def main(argv=None):
 
         filename = param_filenames[x]
         if not os.path.exists(filename):
-            print "# skipped because file not present: %s" % filename
+            print("# skipped because file not present: %s" % filename)
             continue
 
         file = open(filename, "r")
 
-        lines = filter(lambda x: x[0] != "#", file)
+        lines = [x for x in file if x[0] != "#"]
 
         if len(lines) == 0:
             continue
@@ -154,8 +154,7 @@ def main(argv=None):
         elif param_titles:
             headers += h
 
-        data = map(
-            lambda x: map(string.atof, string.split(x[:-1], "\t")), lines)
+        data = [list(map(string.atof, string.split(x[:-1], "\t"))) for x in lines]
 
         # add empty data point for empty histograms
         if len(data) == 0:
@@ -168,14 +167,14 @@ def main(argv=None):
         sort_order = []
 
         if param_sort == "numerical":
-            t = zip(map(int, headers[1:]), range(1, len(headers) + 1))
+            t = list(zip(list(map(int, headers[1:])), list(range(1, len(headers) + 1))))
             t.sort()
 
             for tt in t:
                 sort_order.append(headers[tt[1]])
 
         elif param_sort == "alphabetical":
-            t = zip(headers[1:], range(1, len(headers) + 1))
+            t = list(zip(headers[1:], list(range(1, len(headers) + 1))))
             t.sort()
 
             for tt in t:
@@ -206,7 +205,7 @@ def main(argv=None):
     combined_histogram = Histogram.Combine(histograms, param_missing_value)
 
     if headers:
-        print "\t".join(headers)
+        print("\t".join(headers))
 
     if param_normalize:
         combined_histogram = Histogram.Normalize(combined_histogram)
@@ -216,7 +215,7 @@ def main(argv=None):
                     format_value=param_format_value,
                     )
 
-    print E.GetFooter()
+    print(E.GetFooter())
 
 
 if __name__ == "__main__":

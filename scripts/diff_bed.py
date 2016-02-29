@@ -112,7 +112,7 @@ class Counter:
                     idx[this.contig].find(max(0, this.start), this.end))
             except KeyError:
                 continue
-            except Exception, msg:
+            except Exception as msg:
                 raise Exception(
                     "error while processing %s, msg=%s" % (filename, msg))
             if len(intervals) == 0:
@@ -162,7 +162,7 @@ class Counter:
             self.mBases1, self.mBases2,
             self.mBasesOverlapping1, self.mBasesOverlapping2,
             self.mBasesUnique1, self.mBasesUnique2 ) ) ) + "\t" +\
-            "\t".join(map(lambda x: IOTools.prettyPercent(*x), (
+            "\t".join([IOTools.prettyPercent(*x) for x in (
                 (self.mExonsOverlapping1, self.mExons1),
                 (self.mExonsOverlapping2, self.mExons2),
                 (self.mExonsUnique1, self.mExons1),
@@ -170,7 +170,7 @@ class Counter:
                 (self.mBasesOverlapping1, self.mBases1),
                 (self.mBasesOverlapping2, self.mBases2),
                 (self.mBasesUnique1, self.mBases1),
-                (self.mBasesUnique2, self.mBases2))))
+                (self.mBasesUnique2, self.mBases2))])
 
 
 class CounterTracks(Counter):
@@ -192,7 +192,7 @@ class CounterTracks(Counter):
 
         nexons, nexons_overlapping = 0, 0
         nbases, nbases_overlapping = 0, 0
-        for contig, ix in idx_in.iteritems():
+        for contig, ix in idx_in.items():
 
             # note: add a findall function to ncl
             for start, end, value in ix.find(0, 1000000000):

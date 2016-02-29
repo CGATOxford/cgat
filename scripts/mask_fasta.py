@@ -118,7 +118,7 @@ def main(argv=None):
             options.stdlog.write(
                 "# masking %i regions on %i contigs\n" % (nregions, len(mask_regions)))
 
-        for contig, regions in mask_regions.items():
+        for contig, regions in list(mask_regions.items()):
             regions.sort()
 
         infile.close()

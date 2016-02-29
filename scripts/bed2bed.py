@@ -181,7 +181,7 @@ def merge(iterator,
         to_join = defaultdict(list)
         last_name = defaultdict(str)
 
-        last = iterator.next()
+        last = next(iterator)
 
         if not stranded:
             strand = "."
@@ -548,7 +548,7 @@ def main(argv=sys.argv):
 
     if options.bam_file:
         samfile = pysam.Samfile(options.bam_file)
-        contigs = dict(zip(samfile.references, samfile.lengths))
+        contigs = dict(list(zip(samfile.references, samfile.lengths)))
 
     processor = Bed.iterator(options.stdin)
 
@@ -572,7 +572,7 @@ def main(argv=sys.argv):
                 stranded=options.stranded)
         elif method == "bins":
             if options.bin_edges:
-                bin_edges = map(float, options.bin_edges.split(","))
+                bin_edges = list(map(float, options.bin_edges.split(",")))
                 # IMS: check bin edges are valid
                 if not(len(bin_edges) == options.num_bins + 1):
                     raise ValueError(

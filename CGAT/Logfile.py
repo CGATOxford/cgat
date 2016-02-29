@@ -171,9 +171,8 @@ class LogFileData:
 
         return "%i\t%s" % (
             self.mNChunks,
-            "\t".join(map(lambda x: self.mFormat % (float(x) / self.mDivider),
-                          (self.mWall, self.mUser, self.mSys,
-                           self.mChildUser, self.mChildSys))))
+            "\t".join([self.mFormat % (float(x) / self.mDivider) for x in (self.mWall, self.mUser, self.mSys,
+                           self.mChildUser, self.mChildSys)]))
 
     def getHeader(self):
         return "\t".join(("chunks", "wall", "user", "sys", "cuser", "csys"))

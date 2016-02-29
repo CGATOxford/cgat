@@ -1540,7 +1540,7 @@ class CounterTranscripts(Counter):
                 continue
 
             if v.is_homozygous:
-                toupdate = range(nvariants)
+                toupdate = list(range(nvariants))
             else:
                 toupdate = (0,)
 
@@ -1597,7 +1597,7 @@ class CounterTranscripts(Counter):
             E.debug("transcript_id=%s: splice=%s" % (transcript_id, str(v)))
 
             if v.is_homozygous:
-                toupdate = range(nvariants)
+                toupdate = list(range(nvariants))
             else:
                 toupdate = (0,)
 
@@ -1803,7 +1803,7 @@ class CounterTranscripts(Counter):
         # to counting premature stop codons as it also includes
         # the wild type as variant 0.
 
-        for transcript_id, exons in self.mExons.iteritems():
+        for transcript_id, exons in self.mExons.items():
 
             ###################################################
             ###################################################

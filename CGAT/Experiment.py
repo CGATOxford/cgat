@@ -577,12 +577,12 @@ def getParams(options=None):
     if options:
         members = options.__dict__
         for k, v in sorted(members.items()):
-            result.append("# %-40s: %s" % (k, str(v).encode("string_escape")))
+            result.append("# %-40s: %s" % (k, str(v)))
     else:
         vars = inspect.currentframe().f_back.f_locals
-        for var in filter(lambda x: re.match("param_", x), vars.keys()):
+        for var in [x for x in list(vars.keys()) if re.match("param_", x)]:
             result.append("# %-40s: %s" %
-                          (var, str(vars[var]).encode("string_escape")))
+                          (var, str(vars[var])))
 
     if result:
         return "\n".join(result)
@@ -597,7 +597,7 @@ def getFooter():
     return "# job finished in %i seconds at %s -- %s -- %s" %\
            (time.time() - global_starting_time,
             time.asctime(time.localtime(time.time())),
-            " ".join(map(lambda x: "%5.2f" % x, os.times()[:4])),
+            " ".join(["%5.2f" % x for x in os.times()[:4]]),
             global_id)
 
 
@@ -987,7 +987,7 @@ def Stop():
         global_options.stdlog.write(
             "######### Time spent in benchmarked functions #########\n")
         global_options.stdlog.write("# function\tseconds\tpercent\n")
-        for key, value in global_benchmark.items():
+        for key, value in list(global_benchmark.items()):
             global_options.stdlog.write(
                 "# %s\t%6i\t%5.2f%%\n" % (key, value,
                                           (100.0 * float(value) / t)))
@@ -1017,8 +1017,8 @@ def Stop():
                  "host", "system", "release", "machine",
                  "start", "end", "path", "cmd")) + "\n")
 
-        csystem, host, release, version, machine = map(str, os.uname())
-        uusr, usys, c_usr, c_sys = map(lambda x: "%5.2f" % x, os.times()[:4])
+        csystem, host, release, version, machine = list(map(str, os.uname()))
+        uusr, usys, c_usr, c_sys = ["%5.2f" % x for x in os.times()[:4]]
         t_end = time.time()
         c_wall = "%5.2f" % (t_end - global_starting_time)
 
@@ -1158,18 +1158,18 @@ class Counter(object):
         self._counts[name] = value
 
     def __str__(self):
-        return ", ".join("%s=%i" % x for x in self._counts.iteritems())
+        return ", ".join("%s=%i" % x for x in self._counts.items())
 
     def __iadd__(self, other):
         try:
-            for key, val in other.iteritems():
+            for key, val in other.items():
                 self._counts[key] += val
         except:
             raise TypeError("unknown type")
         return self
 
     def iteritems(self):
-        return self._counts.iteritems()
+        return iter(self._counts.items())
 
     def asTable(self):
         '''return values as tab-separated table (without header).
@@ -1177,7 +1177,7 @@ class Counter(object):
         Key, value pairs are sorted lexicographically.
         '''
         return '\n'.join("%s\t%i" % x
-                         for x in sorted(self._counts.iteritems()))
+                         for x in sorted(self._counts.items()))
 
 
 def run(statement,
@@ -1234,7 +1234,7 @@ def benchmark(func):
         t1 = time.time()
         res = func(*arg)
         t2 = time.time()
-        key = "%s:%i" % (func.func_name, func.func_code.co_firstlineno)
+        key = "%s:%i" % (func.__name__, func.__code__.co_firstlineno)
         global_benchmark[key] += t2 - t1
         global_options.stdlog.write(
             '## benchmark: %s completed in %6.4f s\n' % (key, (t2 - t1)))

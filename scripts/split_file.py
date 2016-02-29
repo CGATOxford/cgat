@@ -68,7 +68,7 @@ def CreateOpen(file, mode="w", dry_run=False, header=None):
     """
 
     if dry_run:
-        print "# opening file %s" % file
+        print("# opening file %s" % file)
         return open("/dev/null", mode)
 
     if mode in ("w", "a"):
@@ -125,18 +125,18 @@ def main(argv=None):
                                       param_short_options,
                                       param_long_options)
 
-    except getopt.error, msg:
-        print USAGE, msg
+    except getopt.error as msg:
+        print(USAGE, msg)
         sys.exit(1)
 
     for o, a in optlist:
         if o in ("-v", "--verbose"):
             param_loglevel = int(a)
         elif o in ("--version", ):
-            print "version="
+            print("version=")
             sys.exit(0)
         elif o in ("-h", "--help"):
-            print USAGE
+            print(USAGE)
             sys.exit(0)
         elif o in ("-r", "--split-regex"):
             param_split_at_regex = re.compile(a)
@@ -163,8 +163,8 @@ def main(argv=None):
         elif o == "--chunk-size":
             param_chunk_size = int(a)
 
-    print E.GetHeader()
-    print E.GetParams()
+    print(E.GetHeader())
+    print(E.GetParams())
 
     mymap = {}
     if param_filename_map:
@@ -223,10 +223,10 @@ def main(argv=None):
                 # reset if too many files are open
                 if len(files) > 1000:
                     if param_loglevel >= 1:
-                        print "# resetting all files."
+                        print("# resetting all files.")
                         sys.stdout.flush()
 
-                    for f in files.values():
+                    for f in list(files.values()):
                         f.close()
                     files = {}
 
@@ -241,7 +241,7 @@ def main(argv=None):
 
             noutput += 1
 
-        for f in files.values():
+        for f in list(files.values()):
             f.close()
 
     else:
@@ -290,7 +290,7 @@ def main(argv=None):
                 len(set(mymap).difference(found)),
                 len(filenames)))
 
-    print E.GetFooter()
+    print(E.GetFooter())
 
 if __name__ == "__main__":
     sys.exit(main(sys.argv))

@@ -179,7 +179,7 @@ def main(argv=None):
         outf.write("%s\t%s\n" % (key, "\t".join(Counter.headers)))
 
     total_bases = 0
-    for key, count in counts.iteritems():
+    for key, count in counts.items():
         if options.add_percent:
             total_bases += fasta.getLength(key)
             count.setSize(fasta.getLength(key))

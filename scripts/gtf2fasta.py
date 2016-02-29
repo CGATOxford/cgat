@@ -237,7 +237,7 @@ def addSegments(annotation, intervals, is_positive, code):
         code = code.upper()
 
     for start, end in intervals:
-        for x in xrange(start, end):
+        for x in range(start, end):
             setCode(annotation, x, code)
 
 
@@ -271,7 +271,7 @@ def addIntrons(annotation, intervals, is_positive, max_frameshift_length):
             last += 2
             start -= 2
 
-        for x in xrange(last, start):
+        for x in range(last, start):
             setCode(annotation, x, code)
 
         last = end
@@ -299,9 +299,9 @@ def addCDS(annotation, gtfs, is_positive):
             c = 3 - c
 
         if is_positive:
-            r = xrange(cds.start, cds.end)
+            r = range(cds.start, cds.end)
         else:
-            r = xrange(cds.end - 1, cds.start - 1, -1)
+            r = range(cds.end - 1, cds.start - 1, -1)
 
         for x in r:
             code = chars[c]
@@ -326,11 +326,11 @@ def outputCounts(outfile, annotations):
                                  str(len(annotations[k])),
                                  "\t".join([str(counts[x]) for x in ALL_CODES]))) + "\n")
 
-        for k, v in counts.iteritems():
+        for k, v in counts.items():
             total_counts[k] += v
 
     outfile.write("\t".join(("total",
-                             str(sum([len(x) for x in annotations.values()])),
+                             str(sum([len(x) for x in list(annotations.values())])),
                              "\t".join([str(total_counts[x]) for x in ALL_CODES]))) + "\n")
 
 
@@ -345,7 +345,7 @@ def annotateGenome(iterator, fasta, options, default_code=DEFAULT_CODE):
            (len(contig_sizes), sum(contig_sizes.values()) * array.array("c").itemsize))
     # AString.AString( "a").itemsize ))
 
-    for contig, size in contig_sizes.items():
+    for contig, size in list(contig_sizes.items()):
         E.debug("allocating %s: %i bases" % (contig, size))
         # annotations[contig] = AString.AString( default_code * size )
         annotations[contig] = array.array("c", default_code * size)
@@ -367,7 +367,7 @@ def annotateGenome(iterator, fasta, options, default_code=DEFAULT_CODE):
 
         try:
             contig = fasta.getToken(gtfs[0].contig)
-        except KeyError, msg:
+        except KeyError as msg:
             E.warn("contig %s not found - annotation ignored" % gtfs[0].contig)
             counter.skipped_contig += 1
             continue

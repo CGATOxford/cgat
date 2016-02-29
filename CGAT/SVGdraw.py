@@ -85,7 +85,7 @@ if use_dom_implementation != 0:
         from xml.dom import implementation
         from xml.dom.ext import PrettyPrint
     except:
-        raise exceptions.ImportError, "PyXML is required for using the dom implementation"
+        raise exceptions.ImportError("PyXML is required for using the dom implementation")
 
 # The implementation is used for the creating the XML document.
 # The prettyprint module is used for converting the xml document object to
@@ -117,7 +117,7 @@ def _escape(data, entities={}):
     data = data.replace("&", "&amp;")
     data = data.replace("<", "&lt;")
     data = data.replace(">", "&gt;")
-    for chars, entity in entities.items():
+    for chars, entity in list(entities.items()):
         data = data.replace(chars, entity)
     return data
 
@@ -289,7 +289,7 @@ class SVGelement:
         self.text = text
         self.namespace = namespace
         self.cdata = cdata
-        for arg in args.keys():
+        for arg in list(args.keys()):
             self.attributes[arg] = args[arg]
 
     def addElement(self, SVGelement):
@@ -302,7 +302,7 @@ class SVGelement:
     def toXml(self, level, f):
         f.write('\t' * level)
         f.write('<' + self.type)
-        for attkey in self.attributes.keys():
+        for attkey in list(self.attributes.keys()):
             f.write(' ' + _escape(str(attkey)) + '=' +
                     _quoteattr(str(self.attributes[attkey])))
         if self.namespace:
@@ -356,7 +356,7 @@ class tspan(SVGelement):
 
     def __repr__(self):
         s = "<tspan"
-        for key, value in self.attributes.items():
+        for key, value in list(self.attributes.items()):
             s += ' %s="%s"' % (key, value)
         s += '>'
         s += self.text
@@ -382,7 +382,7 @@ class tref(SVGelement):
     def __repr__(self):
         s = "<tref"
 
-        for key, value in self.attributes.items():
+        for key, value in list(self.attributes.items()):
             s += ' %s="%s"' % (key, value)
         s += '/>'
         return s
@@ -440,11 +440,11 @@ class rect(SVGelement):
     def __init__(self, x=None, y=None, width=None, height=None, fill=None, stroke=None, stroke_width=None, **args):
         if width is None or height is None:
             if width is not None:
-                raise ValueError, 'height is required'
+                raise ValueError('height is required')
             if height is not None:
-                raise ValueError, 'width is required'
+                raise ValueError('width is required')
             else:
-                raise ValueError, 'both height and width are required'
+                raise ValueError('both height and width are required')
         SVGelement.__init__(
             self, 'rect', {'width': width, 'height': height}, **args)
         if x is not None:
@@ -469,11 +469,11 @@ class ellipse(SVGelement):
     def __init__(self, cx=None, cy=None, rx=None, ry=None, fill=None, stroke=None, stroke_width=None, **args):
         if rx is None or ry is None:
             if rx is not None:
-                raise ValueError, 'rx is required'
+                raise ValueError('rx is required')
             if ry is not None:
-                raise ValueError, 'ry is required'
+                raise ValueError('ry is required')
             else:
-                raise ValueError, 'both rx and ry are required'
+                raise ValueError('both rx and ry are required')
         SVGelement.__init__(self, 'ellipse', {'rx': rx, 'ry': ry}, **args)
         if cx is not None:
             self.attributes['cx'] = cx
@@ -496,7 +496,7 @@ class circle(SVGelement):
 
     def __init__(self, cx=None, cy=None, r=None, fill=None, stroke=None, stroke_width=None, **args):
         if r is None:
-            raise ValueError, 'r is required'
+            raise ValueError('r is required')
         SVGelement.__init__(self, 'circle', {'r': r}, **args)
         if cx is not None:
             self.attributes['cx'] = cx
@@ -769,11 +769,11 @@ class image(SVGelement):
     def __init__(self, url, x=None, y=None, width=None, height=None, **args):
         if width is None or height is None:
             if width is not None:
-                raise ValueError, 'height is required'
+                raise ValueError('height is required')
             if height is not None:
-                raise ValueError, 'width is required'
+                raise ValueError('width is required')
             else:
-                raise ValueError, 'both height and width are required'
+                raise ValueError('both height and width are required')
         SVGelement.__init__(
             self, 'image', {'xlink:href': url, 'width': width, 'height': height}, **args)
         if x is not None:
@@ -1067,8 +1067,8 @@ class drawing:
         # Voeg een element toe aan de grafiek toe.
     if use_dom_implementation == 0:
         def toXml(self, filename='', compress=False):
-            import cStringIO
-            xml = cStringIO.StringIO()
+            import io
+            xml = io.StringIO()
             xml.write("<?xml version='1.0' encoding='UTF-8'?>\n")
             xml.write(
                 "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\" \"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd \">\n")
@@ -1076,7 +1076,7 @@ class drawing:
             if not filename:
                 if compress:
                     import gzip
-                    f = cStringIO.StringIO()
+                    f = io.StringIO()
                     zf = gzip.GzipFile(fileobj=f, mode='wb')
                     zf.write(xml.getvalue())
                     zf.close()
@@ -1124,7 +1124,7 @@ class drawing:
                     textnode = root.createTextNode(element.text)
                     e.appendChild(textnode)
                 # in element.attributes is supported from python 2.2
-                for attribute in element.attributes.keys():
+                for attribute in list(element.attributes.keys()):
                     e.setAttribute(
                         attribute, str(element.attributes[attribute]))
                 if element.elements:
@@ -1134,12 +1134,12 @@ class drawing:
                 return elementroot
             root = appender(self.svg, root)
             if not filename:
-                import cStringIO
-                xml = cStringIO.StringIO()
+                import io
+                xml = io.StringIO()
                 PrettyPrint(root, xml)
                 if compress:
                     import gzip
-                    f = cStringIO.StringIO()
+                    f = io.StringIO()
                     zf = gzip.GzipFile(fileobj=f, mode='wb')
                     zf.write(xml.getvalue())
                     zf.close()
@@ -1151,8 +1151,8 @@ class drawing:
                 try:
                     if filename[-4:] == 'svgz':
                         import gzip
-                        import cStringIO
-                        xml = cStringIO.StringIO()
+                        import io
+                        xml = io.StringIO()
                         PrettyPrint(root, xml)
                         f = gzip.GzipFile(
                             filename=filename, mode='wb', compresslevel=9)
@@ -1163,21 +1163,23 @@ class drawing:
                         PrettyPrint(root, f)
                         f.close()
                 except:
-                    print "Cannot write SVG file: " + filename
+                    print("Cannot write SVG file: " + filename)
 
     def validate(self):
         try:
             import xml.parsers.xmlproc.xmlval
         except:
-            raise exceptions.ImportError, 'PyXml is required for validating SVG'
+            raise exceptions.ImportError('PyXml is required for validating SVG')
         svg = self.toXml()
         xv = xml.parsers.xmlproc.xmlval.XMLValidator()
         try:
             xv.feed(svg)
         except:
-            raise "SVG is not well formed, see messages above"
+            raise ValueError("SVG is not well formed, see messages above")
         else:
-            print "SVG well formed"
+            print("SVG well formed")
+
+
 if __name__ == '__main__':
 
     d = drawing()
@@ -1210,4 +1212,4 @@ if __name__ == '__main__':
             s.addElement(c)
     d.setSVG(s)
 
-    print d.toXml()
+    print(d.toXml())

@@ -42,6 +42,7 @@ import scipy.interpolate
 import collections
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
+from functools import reduce
 
 
 def getSignificance(pvalue, thresholds=[0.05, 0.01, 0.001]):
@@ -90,10 +91,10 @@ class Result(object):
         return getattr(self._data, key)
 
     def keys(self):
-        return self._data.keys()
+        return list(self._data.keys())
 
     def values(self):
-        return self._data.values()
+        return list(self._data.values())
 
     def __iter__(self):
         return self._data.__iter__()
@@ -342,7 +343,7 @@ class DistributionalParameters:
 
         # convert
         self.mNErrors = 0
-        if type(values[0]) not in (types.IntType, types.FloatType):
+        if type(values[0]) not in (int, float):
             n = []
             for x in values:
                 try:
@@ -471,7 +472,7 @@ class Summary(Result):
 
             # convert
             self._nerrors = 0
-            if type(values[0]) not in (types.IntType, types.FloatType):
+            if type(values[0]) not in (int, float):
                 n = []
                 for x in values:
                     try:
@@ -564,7 +565,7 @@ def smoothPValues(pvalues,
 
     R.assign("pi0", pi0)
     R.assign("vlambda", vlambda)
-    print "pi0=", pi0
+    print("pi0=", pi0)
 
     if smooth_log_pi0:
         pi0 = math.log(pi0)
@@ -574,7 +575,7 @@ def smoothPValues(pvalues,
     spi0 = R("""spi0 <- smooth.spline(vlambda,pi0, df = smooth_df)""")
     pi0 = R("""pi0 <- predict( spi0, x = max(vlambda) )$y""")
 
-    print spi0
+    print(spi0)
     if smooth_log_pi0:
         pi0 = math.exp(pi0)
 
@@ -956,12 +957,12 @@ def doFDRPython(pvalues,
                 mse = numpy.zeros(len(vlambda), numpy.float)
                 pi0_boot = numpy.zeros(len(vlambda), numpy.float)
 
-                for i in xrange(100):
+                for i in range(100):
                     # sample pvalues
                     idx_boot = numpy.random.random_integers(0, m - 1, m)
                     pvalues_boot = pvalues[idx_boot]
 
-                    for x in xrange(len(vlambda)):
+                    for x in range(len(vlambda)):
                         # compute number of pvalues larger than lambda[x]
                         pi0_boot[x] = numpy.mean(
                             pvalues_boot > vlambda[x]) / (1.0 - vlambda[x])
@@ -991,7 +992,7 @@ def doFDRPython(pvalues,
     val2bin = len(bins) - numpy.digitize(pvalues, bins)
     v = numpy.zeros(m, dtype=numpy.int)
     lastbin = None
-    for x in xrange(m - 1, -1, -1):
+    for x in range(m - 1, -1, -1):
         bin = val2bin[idx[x]]
         if bin != lastbin:
             c = x
@@ -1004,7 +1005,7 @@ def doFDRPython(pvalues,
 
     # bound qvalues by 1 and make them monotonic
     qvalues[idx[m - 1]] = min(qvalues[idx[m - 1]], 1.0)
-    for i in xrange(m - 2, -1, -1):
+    for i in range(m - 2, -1, -1):
         qvalues[idx[i]] = min(min(qvalues[idx[i]], qvalues[idx[i + 1]]), 1.0)
 
     result = FDRResult()
@@ -1600,7 +1601,7 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
         raise TypeError("window_size size must be a positive odd number")
     if window_size < order + 2:
         raise TypeError("window_size is too small for the polynomials order")
-    order_range = range(order + 1)
+    order_range = list(range(order + 1))
     half_window = (window_size - 1) // 2
     # precompute coefficients
     b = numpy.mat([[k**i for i in order_range]

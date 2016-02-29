@@ -126,7 +126,7 @@ def testSignificanceOfMatrices(background,
         # initialise contingency table...
         contingency = np.zeros((2, 2))
         # populate contingency table...
-        for seq_id in ids_tfs.keys():
+        for seq_id in list(ids_tfs.keys()):
             if seq_id in interval_sets["foreground"]:
                 if tf in ids_tfs[seq_id]:
                     contingency[0, 0] += 1

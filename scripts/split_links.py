@@ -111,7 +111,7 @@ def main(argv=None):
                 WriteLine(g1, g2, line, options.output)
                 ndiff += 1
 
-    print "nsame=%i, ndiff=%i" % (nsame, ndiff)
+    print("nsame=%i, ndiff=%i" % (nsame, ndiff))
 
     E.Stop()
 

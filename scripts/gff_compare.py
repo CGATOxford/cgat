@@ -92,11 +92,11 @@ def AnalyseOverlaps(references, targets):
     if len(references) == 0 or len(targets) == 0:
         return((0, 0, 0, 0))
 
-    targets_start = min(map(lambda x: x.start, targets))
-    targets_end = max(map(lambda x: x.end, targets))
+    targets_start = min([x.start for x in targets])
+    targets_end = max([x.end for x in targets])
 
-    refs_start = min(map(lambda x: x.start, references))
-    refs_end = max(map(lambda x: x.end, references))
+    refs_start = min([x.start for x in references])
+    refs_end = max([x.end for x in references])
 
     min_start = min(targets_start, refs_start)
     max_end = max(targets_end, refs_end)
@@ -194,7 +194,7 @@ def CountMatchesPerGene(gffs,
         try:
             gene = rx_gene.search(x.mInfo).groups()[0]
         except AttributeError:
-            print "# ERROR: could not find gene identifier in %s" % x.mInfo
+            print("# ERROR: could not find gene identifier in %s" % x.mInfo)
             sys.stdout.flush()
             sys.exit(1)
 
@@ -223,13 +223,13 @@ def CountMatchesPerGene(gffs,
                     elif GTF.HalfIdentity(x, y, max_slippage=options.max_exon_slippage):
                         info[3][other_gene] += 1
         except AttributeError:
-            print "Programming ERROR: no mStatus for ", str(x)
+            print("Programming ERROR: no mStatus for ", str(x))
 
     total_extra = 0
     total_match = 0
     total_partial_match = 0
     total = len(map_gene2matches)
-    for gene, info in map_gene2matches.items():
+    for gene, info in list(map_gene2matches.items()):
 
         l, nextra, matches, partials = info
 
@@ -238,7 +238,7 @@ def CountMatchesPerGene(gffs,
             if "missed" in write:
                 outfile.write("missed\t%s\n" % (gene,))
         else:
-            for x, y in matches.items():
+            for x, y in list(matches.items()):
                 if y == l:
                     total_match += 1
                     if "match" in write:
@@ -246,7 +246,7 @@ def CountMatchesPerGene(gffs,
                     break
 
             else:
-                for x, y in partials.items():
+                for x, y in list(partials.items()):
                     if y == l:
                         total_partial_match += 1
                         if "partial" in write:
@@ -310,32 +310,32 @@ def main(argv=None):
     (options, args) = E.Start(parser)
 
     if len(args) != 2:
-        print USAGE
-        print "two arguments required"
+        print(USAGE)
+        print("two arguments required")
         sys.exit(1)
 
     input_filename_target, input_filename_reference = args
 
     if options.loglevel >= 1:
-        print "# target entries from %s" % input_filename_target
-        print "# reading target entries ...",
+        print("# target entries from %s" % input_filename_target)
+        print("# reading target entries ...", end=' ')
         sys.stdout.flush()
 
     gff_targets = GTF.readFromFile(open(input_filename_target, "r"))
 
     if options.loglevel >= 1:
-        print "finished: %i" % (len(gff_targets))
+        print("finished: %i" % (len(gff_targets)))
         sys.stdout.flush()
 
     if options.loglevel >= 1:
-        print "# reference entries from %s" % input_filename_reference
-        print "# reading reference entries ...",
+        print("# reference entries from %s" % input_filename_reference)
+        print("# reading reference entries ...", end=' ')
         sys.stdout.flush()
 
     gff_references = GTF.readFromFile(open(input_filename_reference, "r"))
 
     if options.loglevel >= 1:
-        print "finished: %i" % (len(gff_references))
+        print("finished: %i" % (len(gff_references)))
         sys.stdout.flush()
 
     if options.remove_redundancy:
@@ -343,12 +343,12 @@ def main(argv=None):
         gff_references = GTF.CombineOverlaps(gff_references)
 
         if options.loglevel >= 1:
-            print "# after filtering: targets=%i, references=%i" % (len(gff_targets), len(gff_references))
+            print("# after filtering: targets=%i, references=%i" % (len(gff_targets), len(gff_references)))
 
     ##########################################################################
     # sort exons
     if options.loglevel >= 1:
-        print "# sorting exons ...",
+        print("# sorting exons ...", end=' ')
         sys.stdout.flush()
 
     gff_targets.sort(lambda x, y: cmp((x.mName, x.strand, x.start, x.end),
@@ -361,14 +361,14 @@ def main(argv=None):
     nreferences = len(gff_references)
 
     if options.loglevel >= 1:
-        print "finished"
+        print("finished")
         sys.stdout.flush()
 
     ##########################################################################
     # get nucleotide level accuracy
     # process each fragment separately
     if options.do_nucleotides:
-        print """##############################################################################
+        print("""##############################################################################
 # nucleotide accuracy
 #
 # TP: true postives  : nucleotides to be predicted coding in both target and reference.
@@ -378,12 +378,12 @@ def main(argv=None):
 #
 # Sensitivity: TP / TP + FN = correct exons / actual exons
 # Specificity: TP / TP + FP
-# CC: correlation coefficient:  (tp*tn-fn*fp)/((tp+fn)*(tn+fp)*(tp+fp)*(tn+fn))"""
+# CC: correlation coefficient:  (tp*tn-fn*fp)/((tp+fn)*(tn+fp)*(tp+fp)*(tn+fn))""")
 
         headers = (
             "contig", "strand", "tp", "fp", "tn", "fn", "sp", "sn", "cc")
 
-        print "\t".join(headers)
+        print("\t".join(headers))
 
         first_r, first_t = 0, 0
         r, t = 0, 0
@@ -420,7 +420,7 @@ def main(argv=None):
 
             spec, sens = CalculateSpecificitySensitivity(tp, fp, tn, fn)
             cc = CalculateCorrelationCoefficient(tp, fp, tn, fn)
-            print "%s\t%s\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f" % (this_name, this_strand, tp, fp, tn, fn, spec, sens, cc)
+            print("%s\t%s\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f" % (this_name, this_strand, tp, fp, tn, fn, spec, sens, cc))
 
             ttp += tp
             tfp += fp
@@ -430,14 +430,14 @@ def main(argv=None):
 
         spec, sens = CalculateSpecificitySensitivity(ttp, tfp, ttn, tfn)
         cc = CalculateCorrelationCoefficient(ttp, tfp, ttn, tfn)
-        print "%s\t%s\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f" % ("all", "all", ttp, tfp, ttn, tfn, spec, sens, cc)
+        print("%s\t%s\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f" % ("all", "all", ttp, tfp, ttn, tfn, spec, sens, cc))
 
         sys.stdout.flush()
 
     ##########################################################################
     if options.do_exons or options.do_genes:
 
-        print """##############################################################################
+        print("""##############################################################################
 # exon accuracy (see Burset & Guigo (1996))
 #
 # TP: true postives  : exons matching both exon boundaries exactly (a deviation of
@@ -458,12 +458,12 @@ def main(argv=None):
 #
 # Values are calculated where both exon boundaries of a target exon have to be
 # correct (category "full") and where only one exon boundary has to be correct (catgory "half").""" %\
-            (options.max_exon_slippage)
+            (options.max_exon_slippage))
 
         headers = ("category", "contig", "strand", "tp", "fp", "tn",
                    "fn", "sp", "sn", "cc", "me", "we", "me", "we")
 
-        print "\t".join(headers)
+        print("\t".join(headers))
 
         r, t = 0, 0
         next_r, next_t = r, t
@@ -498,11 +498,11 @@ def main(argv=None):
                     gff_targets, t)
 
             if options.loglevel >= 3:
-                print "########################################################"
+                print("########################################################")
                 for x in ref_overlaps:
-                    print "#", str(x)
+                    print("#", str(x))
                 for x in target_overlaps:
-                    print "#", str(x)
+                    print("#", str(x))
 
             do_summary = False
             # check strand switch in reference
@@ -510,7 +510,7 @@ def main(argv=None):
                 (this_name != gff_references[next_r].mName or
                     this_strand != gff_references[next_r].strand):
                 if options.loglevel >= 3:
-                    print "# target advance"
+                    print("# target advance")
                 do_summary = True
 
                 last_increased_ref = False
@@ -539,7 +539,7 @@ def main(argv=None):
                  this_strand != gff_targets[next_t].strand):
                     # advance in reference until next name is found
                 if options.loglevel >= 3:
-                    print "# reference advance"
+                    print("# reference advance")
                 do_summary = True
 
                 last_increased_ref = False
@@ -567,7 +567,7 @@ def main(argv=None):
                 ref_status, target_status = None, None
 
                 if options.loglevel >= 3:
-                    print "# same chromosome"
+                    print("# same chromosome")
 
                 # overlap between segments
                 if min(ref_end, target_end) - max(ref_start, target_start) > 0:
@@ -593,11 +593,11 @@ def main(argv=None):
                         tp += 1
                         ptp += 1
                         if options.write_matched_exons:
-                            print "############# matching exons ###########################"
+                            print("############# matching exons ###########################")
                             for x in ref_overlaps:
-                                print "#", str(x)
+                                print("#", str(x))
                             for x in target_overlaps:
-                                print "#", str(x)
+                                print("#", str(x))
                     else:
                         fn += 1
 
@@ -624,11 +624,11 @@ def main(argv=None):
                             target_status = "mismatch"
 
                         if options.write_missed_exons:
-                            print "############# %s non-overlapping exons ###########################" % code
+                            print("############# %s non-overlapping exons ###########################" % code)
                             for x in ref_overlaps:
-                                print "#", str(x)
+                                print("#", str(x))
                             for x in target_overlaps:
-                                print "#", str(x)
+                                print("#", str(x))
 
                     ###########################################################
                     # r, t = next_r, next_t
@@ -656,9 +656,9 @@ def main(argv=None):
                         if not (last_partial_overlap and not last_increased_ref):
 
                             if options.write_missed_exons:
-                                print "############# missed exon ###########################"
+                                print("############# missed exon ###########################")
                                 for x in ref_overlaps:
-                                    print "#", str(x)
+                                    print("#", str(x))
                             missed_exons += 1
                             fn += 1
                             pfn += 1
@@ -675,9 +675,9 @@ def main(argv=None):
 
                         if not (last_partial_overlap and last_increased_ref):
                             if options.write_wrong_exons:
-                                print "############# wrong exon ###########################"
+                                print("############# wrong exon ###########################")
                                 for x in target_overlaps:
-                                    print "#", str(x)
+                                    print("#", str(x))
 
                             wrong_exons += 1
                             fp += 1
@@ -689,7 +689,7 @@ def main(argv=None):
                     last_partial_overlap = False
 
                 if options.loglevel >= 3:
-                    print "# ref_status=%s, target_status=%s" % (ref_status, target_status)
+                    print("# ref_status=%s, target_status=%s" % (ref_status, target_status))
 
                 if ref_status:
                     for rr in ref_overlaps:
@@ -733,22 +733,22 @@ def main(argv=None):
 
                 spec, sens = CalculateSpecificitySensitivity(tp, fp, tn, fn)
                 cc = (spec + sens) / 2.0
-                print "full\t%s\t%s\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%s\t%s" % \
+                print("full\t%s\t%s\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%s\t%s" % \
                       (this_name, this_strand,
                        tp, fp, tn, fn,
                        spec, sens, cc,
                        missed_exons, wrong_exons,
-                       pmissed_exons, pwrong_exons)
+                       pmissed_exons, pwrong_exons))
 
                 spec, sens = CalculateSpecificitySensitivity(
                     ptp, pfp, ptn, pfn)
                 cc = (spec + sens) / 2.0
-                print "half\t%s\t%s\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%s\t%s" %\
+                print("half\t%s\t%s\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%s\t%s" %\
                       (this_name, this_strand,
                        ptp, pfp, ptn, pfn,
                        spec, sens, cc,
                        missed_exons, wrong_exons,
-                       pmissed_exons, pwrong_exons)
+                       pmissed_exons, pwrong_exons))
 
                 tp, fp, tn, fn = 0, 0, 0, 0
                 ptp, pfp, ptn, pfn = 0, 0, 0, 0
@@ -763,27 +763,27 @@ def main(argv=None):
 
         spec, sens = CalculateSpecificitySensitivity(ttp, tfp, ttn, tfn)
         cc = (spec + sens) / 2.0
-        print "full\t%s\t%s\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%5.2f\t%5.2f" % \
+        print("full\t%s\t%s\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%5.2f\t%5.2f" % \
               ("all", "all", ttp, tfp, ttn, tfn,
                spec, sens, cc,
                tmissed_exons, twrong_exons,
                float(tmissed_exons) / (ttp + tfn),
-               float(twrong_exons) / (ttp + tfp))
+               float(twrong_exons) / (ttp + tfp)))
 
         spec, sens = CalculateSpecificitySensitivity(tptp, tpfp, tptn, tpfn)
         cc = (spec + sens) / 2.0
-        print "half\t%s\t%s\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%5.2f\t%5.2f" %\
+        print("half\t%s\t%s\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%5.2f\t%5.2f" %\
               ("all", "all", tptp, tpfp, tptn, tpfn,
                spec, sens, cc,
                tmissed_exons, twrong_exons,
                float(tmissed_exons) / (ttp + tfn),
-               float(twrong_exons) / (ttp + tfp))
+               float(twrong_exons) / (ttp + tfp)))
 
     if options.do_genes and \
             options.regex_reference and \
             options.regex_target:
 
-        print """##############################################################################
+        print("""##############################################################################
 # gene accuracy (see Burset & Guigo (1996))
 #
 # TP: true postives  : genes with exons matching both exon boundaries exactly (a deviation of
@@ -804,14 +804,14 @@ def main(argv=None):
 #
 # Values are calculated where both exon boundaries of a target exon have to be
 # correct (category "full") and where only one exon boundary has to be correct (catgory "half").""" %\
-            (options.max_exon_slippage)
+            (options.max_exon_slippage))
 
         out_options = []
         if options.write_missed_genes:
             out_options.append("missed")
 
         if options.loglevel >= 2:
-            print "# counting matches for reference."
+            print("# counting matches for reference.")
             sys.stdout.flush()
 
         (ref_total, ref_match, ref_partial, ref_extra) =\
@@ -822,7 +822,7 @@ def main(argv=None):
                                 outfile=open(options.outfile_pattern % "reference", "w"))
 
         if options.loglevel >= 2:
-            print "# counting matches for target."
+            print("# counting matches for target.")
             sys.stdout.flush()
 
         (target_total, target_match, target_partial, target_extra) =\
@@ -834,14 +834,14 @@ def main(argv=None):
                                 outfile=open(options.outfile_pattern % "target", "w"))
 
         if options.loglevel >= 1:
-            print "# reference: genes=%6i, matches=%6i, partial=%6i, extra=%6i" % \
-                  (ref_total, ref_match, ref_partial, ref_extra)
-            print "# target   : genes=%6i, matches=%6i, partial=%6i, extra=%6i" % \
-                  (target_total, target_match, target_partial, target_extra)
+            print("# reference: genes=%6i, matches=%6i, partial=%6i, extra=%6i" % \
+                  (ref_total, ref_match, ref_partial, ref_extra))
+            print("# target   : genes=%6i, matches=%6i, partial=%6i, extra=%6i" % \
+                  (target_total, target_match, target_partial, target_extra))
 
         headers = ("category", "tp", "fp", "tn", "fn",
                    "sp", "sn", "cc", "mg", "wg", "mg", "wg")
-        print "\t".join(headers)
+        print("\t".join(headers))
 
         tp = ref_match
         fp = target_extra
@@ -856,12 +856,12 @@ def main(argv=None):
         if tp + fp == 0:
             fp = nreferences
 
-        print "full\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%5.2f\t%5.2f" % \
+        print("full\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%5.2f\t%5.2f" % \
               (tp, fp, tn, fn,
                spec, sens, cc,
                missed_genes, wrong_genes,
                float(missed_genes) / (tp + fn),
-               float(wrong_genes) / (tp + fp))
+               float(wrong_genes) / (tp + fp)))
 
         tp = ref_match + ref_partial
         fp = target_extra
@@ -872,12 +872,12 @@ def main(argv=None):
 
         spec, sens = CalculateSpecificitySensitivity(tp, fp, tn, fn)
         cc = (spec + sens) / 2.0
-        print "half\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%5.2f\t%5.2f" % \
+        print("half\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%5.2f\t%5.2f" % \
               (tp, fp, tn, fn,
                spec, sens, cc,
                missed_genes, wrong_genes,
                float(missed_genes) / (tp + fn),
-               float(wrong_genes) / (tp + fp))
+               float(wrong_genes) / (tp + fp)))
 
     E.Stop()
 

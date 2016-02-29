@@ -84,7 +84,7 @@ def main(argv=None):
         data = line[:-1].split("\t")
         contig, coverage = data[0], data[2]
         coverage_result[contig].append(coverage)
-    E.info("read %i contigs" % len(coverage_result.keys()))
+    E.info("read %i contigs" % len(list(coverage_result.keys())))
 
     options.stdout.write("contig\tcov_mean\tcov_sd\n")
     if options.bin:
@@ -92,8 +92,8 @@ def main(argv=None):
                                 "w")
         outf.write("%s" % "\t".join(
             [str(i) for i in range(1, options.bin_number + 1, 1)]) + "\n")
-    for contig, coverage in coverage_result.iteritems():
-        coverage = map(float, coverage)
+    for contig, coverage in coverage_result.items():
+        coverage = list(map(float, coverage))
         options.stdout.write(
             "%s\t%s\t%s\n" % (contig,
                               str(np.mean(coverage)),

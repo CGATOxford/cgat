@@ -97,7 +97,7 @@ def main(argv=None):
 
         for iterator in iterators:
             try:
-                cur_record = iterator.next()
+                cur_record = next(iterator)
             except StopIteration:
                 break
 
@@ -109,7 +109,7 @@ def main(argv=None):
         ninput += 1
 
         if len(sequences) != len(iterators):
-            raise "unequal number of sequences in files."
+            raise ValueError("unequal number of sequences in files")
 
         noutput += 1
 

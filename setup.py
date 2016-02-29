@@ -50,7 +50,7 @@ from setuptools import setup, find_packages, Extension
 
 from distutils.version import LooseVersion
 if LooseVersion(setuptools.__version__) < LooseVersion('1.1'):
-    print "Version detected:", LooseVersion(setuptools.__version__)
+    print("Version detected:", LooseVersion(setuptools.__version__))
     raise ImportError(
         "the CGAT code collection requires setuptools 1.1 higher")
 
@@ -88,25 +88,22 @@ for tool, toolkit, expected in external_dependencies:
     try:
         retcode = subprocess.call(tool, shell=True,
                                   stdout=DEVNULL, stderr=DEVNULL)
-    except OSError, msg:
-        print("WARNING: depency check for %s failed: %s" % (toolkit, msg))
+    except OSError as msg:
+        print(("WARNING: depency check for %s failed: %s" % (toolkit, msg)))
 
     # UCSC tools return 255 when called without arguments
     if retcode != expected:
-        print ("WARNING: depency check for %s(%s) failed, error %i" %
-               (toolkit, tool, retcode))
+        print(("WARNING: depency check for %s(%s) failed, error %i" %
+               (toolkit, tool, retcode)))
 
 ###############################################################
 ###############################################################
-# Define dependencies 
+# Define dependencies
 #
 # Perform a CGAT Code Collection Installation
 INSTALL_CGAT_CODE_COLLECTION = True
 
 major, minor1, minor2, s, tmp = sys.version_info
-
-if major == 3:
-    raise SystemExit("""CGAT is not fully python3 compatible""")
 
 if (major == 2 and minor1 < 7) or major < 2:
     raise SystemExit("""CGAT requires Python 2.7 or later.""")
@@ -246,7 +243,7 @@ if IS_OSX:
     # within OS X
     extra_link_args = []
 else:
-    extra_link_args = [os.path.join(pysam_dirname, x) for x in 
+    extra_link_args = [os.path.join(pysam_dirname, x) for x in
                        pysam.get_libraries()]
 
 for pyx_file in pyx_files:
@@ -274,7 +271,7 @@ setup(
     platforms=["any"],
     keywords="computational genomics",
     long_description='CGAT : the Computational Genomics Analysis Toolkit',
-    classifiers=filter(None, classifiers.split("\n")),
+    classifiers=[_f for _f in classifiers.split("\n") if _f],
     url="http://www.cgat.org/cgat/Tools/",
     # package contents
     packages=cgat_packages,

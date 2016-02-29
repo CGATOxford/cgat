@@ -65,14 +65,14 @@ import re
 import struct
 import math
 import tarfile
-import anydbm
+import dbm
 import random
 import zlib
 import gzip
 import tempfile
-import cStringIO
+import io
 from CGAT import Experiment as E
-from AString import AString
+from .AString import AString
 import pysam
 
 
@@ -148,7 +148,7 @@ def writeFragments(outfile_fasta,
 
 def gzip_mangler(s):
 
-    xfile = cStringIO.StringIO()
+    xfile = io.StringIO()
 
     gzipfile = gzip.GzipFile(fileobj=xfile, mode="wb")
     gzipfile.write(s)
@@ -161,7 +161,7 @@ def gzip_mangler(s):
 
 def gzip_demangler(s):
 
-    gzipfile = gzip.GzipFile(fileobj=cStringIO.StringIO(s), mode="rb")
+    gzipfile = gzip.GzipFile(fileobj=io.StringIO(s), mode="rb")
     m = gzipfile.readline()
     return m
 
@@ -188,7 +188,7 @@ class TranslatorPhred(Translator):
     def __init__(self, *args, **kwargs):
         Translator.__init__(self, *args, **kwargs)
         self.mMapScore2Char = [chr(33 + x) for x in range(0, 93)]
-        self.mMapScore2Score = range(0, 93)
+        self.mMapScore2Score = list(range(0, 93))
 
     def translate(self, sequence):
         return array.array("I", (ord(x) - 33 for x in sequence))
@@ -233,7 +233,7 @@ class TranslatorRange200(Translator):
         try:
             return "".join(self.mMapScore2Char[int(x)]
                            for x in self.mRegEx.split(sequence.strip()))
-        except ValueError, msg:
+        except ValueError as msg:
             raise ValueError(msg + " parsing error in fragment: %s" % sequence)
 
     def translate(self, sequence):
@@ -255,9 +255,9 @@ class TranslatorBytes(Translator):
         try:
             return "".join(chr(int(x)) for x in
                            self.mRegEx.split(sequence.strip()))
-        except ValueError, msg:
-            print "parsing error in line: %s" % sequence
-            print "message=%s" % str(msg)
+        except ValueError as msg:
+            print("parsing error in line: %s" % sequence)
+            print("message=%s" % str(msg))
             return ""
 
     def translate(self, sequence):
@@ -283,9 +283,9 @@ class MultipleFastaIterator:
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         try:
-            return self.iterator.next()
+            return next(self.iterator)
         except StopIteration:
             return None
 
@@ -405,7 +405,7 @@ def createDatabase(db, iterator,
             db_name = db + ".gz"
             write_chunks = True
         elif compression == "dictzip":
-            import dictzip
+            from . import dictzip
 
             def mangler(x):
                 return x
@@ -427,7 +427,7 @@ def createDatabase(db, iterator,
             db_name = db + ".debug"
             write_chunks = True
         elif compression == "rle":
-            import RLE
+            from . import RLE
             mangler = RLE.compress
             db_name = db + ".rle"
             write_chunks = True
@@ -478,7 +478,7 @@ def createDatabase(db, iterator,
     while 1:
 
         try:
-            result = iterator.next()
+            result = next(iterator)
         except StopIteration:
             break
 
@@ -573,7 +573,7 @@ def createDatabase(db, iterator,
 
     # add synonyms for the table
     if synonyms:
-        for key, vals in synonyms.items():
+        for key, vals in list(synonyms.items()):
             for val in vals:
                 outfile_index.write("%s\t%s\n" % (key, val))
 
@@ -645,7 +645,7 @@ class CGATIndexedFasta:
         if self.mMethod == "uncompressed":
             self.mDatabaseFile = open(self.mDbname, "r")
         elif self.mMethod == "dictzip":
-            import dictzip
+            from . import dictzip
             self.mDatabaseFile = dictzip.GzipFile(self.mDbname)
         elif self.mMethod == "lzo":
             import lzo
@@ -666,9 +666,9 @@ class CGATIndexedFasta:
         if compress:
             # if os.path.exists(filename_index):
             #     raise OSError("file %s already exists" % filename_index)
-            self.mIndex = anydbm.open(filename_index, "n")
+            self.mIndex = dbm.open(filename_index, "n")
         elif os.path.exists(filename_index):
-            self.mIndex = anydbm.open(filename_index, "r")
+            self.mIndex = dbm.open(filename_index, "r")
             self.mIsLoaded = True
             return
         else:
@@ -689,7 +689,7 @@ class CGATIndexedFasta:
                 if len(data) > 4:
                     (identifier, pos_id, block_size, lsequence) = data[
                         0], int(data[1]), int(data[2]), int(data[-1])
-                    points = map(int, data[3:-1])
+                    points = list(map(int, data[3:-1]))
                     self.mIndex[identifier] = (
                         pos_id, block_size, lsequence, points)
                 else:
@@ -727,7 +727,7 @@ class CGATIndexedFasta:
                     if k not in self.mIndex:
                         self.mSynonyms[k] = target
 
-        k = self.mSynonyms.items()
+        k = list(self.mSynonyms.items())
 
         # fix the ambiguity between chrMT and chrM between UCSC and ENSEMBL
         if "chrM" in self.mIndex and "chrMT" not in self.mIndex:
@@ -739,7 +739,7 @@ class CGATIndexedFasta:
             _add(key, val)
 
         # add pointers to self
-        for key in self.mIndex.keys():
+        for key in list(self.mIndex.keys()):
             _add(key, key)
 
     def setTranslator(self, translator=None):
@@ -779,7 +779,7 @@ class CGATIndexedFasta:
         if not self.mIsLoaded:
             self._loadIndex()
         results = []
-        for contig in self.mIndex.values():
+        for contig in list(self.mIndex.values()):
             data = self.mIndex[self.getToken(contig)]
             try:
                 pos_id, pos_seq, lcontig = struct.unpack("QQi", data)
@@ -798,7 +798,7 @@ class CGATIndexedFasta:
         """return a list of contigs (no synonyms)."""
         if not self.mIsLoaded:
             self._loadIndex()
-        return self.mIndex.keys()
+        return list(self.mIndex.keys())
 
     def getContigSizes(self, with_synonyms=True):
         """return hash with contig sizes including synonyms."""
@@ -806,11 +806,11 @@ class CGATIndexedFasta:
             self._loadIndex()
 
         contig_sizes = {}
-        for key, val in self.mIndex.items():
+        for key, val in list(self.mIndex.items()):
             contig_sizes[key] = self.getLength(key)
 
         if with_synonyms:
-            for key, val in self.mSynonyms.items():
+            for key, val in list(self.mSynonyms.items()):
                 contig_sizes[key] = self.getLength(val)
 
         return contig_sizes
@@ -932,7 +932,7 @@ class CGATIndexedFasta:
         if not self.mIsLoaded:
             self._loadIndex()
 
-        token = random.choice(self.mIndex.keys())
+        token = random.choice(list(self.mIndex.keys()))
         strand = random.choice(("+", "-"))
         data = self.mIndex[token]
         try:

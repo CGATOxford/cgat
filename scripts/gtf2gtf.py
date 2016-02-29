@@ -309,20 +309,20 @@ def find_retained_introns(gene):
         introns = iter(intron_intervals)
         retained_introns = []
         try:
-            intron = introns.next()
-            exon = exons.next()
+            intron = next(introns)
+            exon = next(exons)
             while True:
 
                 if exon[1] < intron[0]:
 
-                    exon = exons.next()
+                    exon = next(exons)
                     continue
 
                 if intron[0] >= exon[0] and intron[1] <= exon[1]:
                     E.debug("exon %s of transcript %s contains intron %s" %
                             (exon, transcript[0].transcript_id, intron))
                     retained_introns.append(intron)
-                intron = introns.next()
+                intron = next(introns)
         except StopIteration:
             pass
 
@@ -772,7 +772,7 @@ def main(argv=None):
 
         def iterate_chunks(gff_chunks):
 
-            last = gff_chunks.next()
+            last = next(gff_chunks)
             to_join = [last]
 
             for gffs in gff_chunks:
@@ -1251,9 +1251,9 @@ def main(argv=None):
         E.info("Number of duplicated gene_ids: %i" % len(dup_gene))
         E.info("Number of duplicated transcript_ids: %i" % len(dup_transcript))
 
-        gene_dict = dict(zip(dup_gene, ([0] * len(dup_gene))))
-        transcript_dict = dict(zip(dup_transcript,
-                                   ([0] * len(dup_transcript))))
+        gene_dict = dict(list(zip(dup_gene, ([0] * len(dup_gene)))))
+        transcript_dict = dict(list(zip(dup_transcript,
+                                   ([0] * len(dup_transcript)))))
 
         for gtf in gtfs:
             if gtf.feature == "CDS":

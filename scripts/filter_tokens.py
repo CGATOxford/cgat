@@ -84,10 +84,10 @@ def main(argv=None):
     (options, args) = E.Start(parser)
 
     if options.columns:
-        options.columns = map(lambda x: int(x) - 1, options.columns.split(","))
+        options.columns = [int(x) - 1 for x in options.columns.split(",")]
 
     if len(args) == 0 and not options.filename_tokens:
-        print USAGE, "please specify tokens on command line or supply file with tokens."
+        print(USAGE, "please specify tokens on command line or supply file with tokens.")
         sys.exit(1)
 
     regex_token = re.compile(options.regex_token)
@@ -123,14 +123,14 @@ def main(argv=None):
         if line[0] == "#":
             continue
         if line[0] == ">":
-            print line[:-1]
+            print(line[:-1])
             continue
 
         ninput += 1
 
         # skip first line if there are titles
         if ninput == 1 and options.titles:
-            print line[:-1]
+            print(line[:-1])
             continue
 
         found = False
@@ -148,7 +148,7 @@ def main(argv=None):
         elif regex_token:
             r = regex_token.search(line[:-1])
             if r:
-                if keys.has_key(r.groups()[0]):
+                if r.groups()[0] in keys:
                     found = True
 
         if options.invert_match:
@@ -156,7 +156,7 @@ def main(argv=None):
 
         if found:
             nkept += 1
-            print line[:-1]
+            print(line[:-1])
 
     if options.loglevel >= 1:
         options.stdlog.write(

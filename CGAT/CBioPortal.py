@@ -82,7 +82,7 @@ Reference
 ---------
 
 '''
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 import re
 import optparse
 import sys
@@ -176,7 +176,7 @@ class CBioPortal():
 
                 return query1 + query2
 
-        data = urllib2.urlopen(query)
+        data = urllib.request.urlopen(query)
 
         line = data.readline()
         self.last_query = query
@@ -213,7 +213,7 @@ class CBioPortal():
                 line = data.readline()
                 continue
             line = line.strip()
-            return_table.append(odict(zip(headers, line.split("\t"))))
+            return_table.append(odict(list(zip(headers, line.split("\t")))))
 
         return return_table
 
@@ -610,7 +610,7 @@ class CBioPortal():
         gene_list = ",".join(gene_list)
         command = "%s/link.do?cancer_study_id=%s&gene_list=%s&report=oncoprint_html" % (
             url, study, gene_list)
-        return urllib2.urlopen(command).read()
+        return urllib.request.urlopen(command).read()
 
     def setDefaultStudy(self, study=None, study_name=None):
         '''sets a new study as the default study. Will check that the study

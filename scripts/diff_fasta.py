@@ -103,7 +103,7 @@ def MapIdentifiers(seqs, pattern):
 
     rx = re.compile(pattern)
 
-    for k, s in seqs.items():
+    for k, s in list(seqs.items()):
         try:
             nk = rx.search(k).groups()[0]
         except AttributeError:
@@ -236,14 +236,12 @@ def main(argv=None):
 
                     l = len(differences)
                     # check for Selenocysteins
-                    if len(filter(lambda x: x[0] == "U" or x[1] == "U",
-                                  differences)) == l:
+                    if len([x for x in differences if x[0] == "U" or x[1] == "U"]) == l:
                         ndiff_selenocysteine += 1
                         status = "selenocysteine"
 
                     # check for masked residues
-                    elif len(filter(lambda x: x[0] in "NX" or x[1] in "NX",
-                                    differences)) == l:
+                    elif len([x for x in differences if x[0] in "NX" or x[1] in "NX"]) == l:
                         ndiff_masked += 1
                         status = "masked"
 
@@ -267,7 +265,7 @@ def main(argv=None):
                             if s1[a] != s2[b]:
                                 break
                     except IndexError:
-                        print "# index error for %s: x=%i, a=%i, b=%i, l1=%i, l2=%i" % (k, x, a, b, len(s1), len(s2))
+                        print("# index error for %s: x=%i, a=%i, b=%i, l1=%i, l2=%i" % (k, x, a, b, len(s1), len(s2)))
                         break
 
                     a += 1
@@ -278,10 +276,10 @@ def main(argv=None):
                     keep = True
                     nfixed += 1
                     f = alignlib_lite.py_AlignmentFormatEmissions(map_a2b)
-                    print "fix\t%s\t%s" % (k, str(f))
+                    print("fix\t%s\t%s" % (k, str(f)))
 
                 if not keep:
-                    print "# warning: not fixable: %s" % k
+                    print("# warning: not fixable: %s" % k)
 
             if write_diff:
                 options.stdout.write("---- %s ---- %s\n" % (k, status))
@@ -289,7 +287,7 @@ def main(argv=None):
             if write_seqdiff:
                 options.stdout.write("< %s\n> %s\n" % (seqs1[k], seqs2[k]))
 
-    for k in seqs2.keys():
+    for k in list(seqs2.keys()):
         if k not in found2:
             nmissed2 += 1
             if write_missed2:

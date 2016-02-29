@@ -46,7 +46,7 @@ def importFromBiomart(outfile,
 
     R.library("biomaRt")
 
-    keys = columns.keys()
+    keys = list(columns.keys())
 
     mart = R.useMart(biomart=biomart, dataset=dataset, host=host)
     result = R.getBM(attributes=keys, mart=mart)
@@ -132,4 +132,4 @@ def biomart_iterator(columns,
         (str(tuple(result.colnames)), tuple(columns))
 
     for data in zip(*[result[x] for x in range(len(columns))]):
-        yield dict(zip(columns, data))
+        yield dict(list(zip(columns, data)))

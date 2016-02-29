@@ -111,8 +111,8 @@ def main(argv=None):
         genomefile = pysam.Samfile(options.filename_genome_bam, "rb")
     elif options.filename_contigs:
         contigs = IOTools.ReadMap(IOTools.openFile(options.filename_contigs))
-        data = zip(*list(contigs.iteritems()))
-        referencenames, referencelengths = data[0], map(int, data[1])
+        data = list(zip(*list(contigs.items())))
+        referencenames, referencelengths = data[0], list(map(int, data[1]))
     else:
         raise ValueError(
             "please provide either --template-bam-file or --contigs-tsv-file")
@@ -161,15 +161,15 @@ def main(argv=None):
         # set NH flag to latest count
         t = dict(read.tags)
         t['NH'] = 1
-        read.tags = list(t.iteritems())
+        read.tags = list(t.items())
 
         sname = infile.getrname(read.tid)
 
         contig, first_exon_start, middle, last_exon_end, splice, strand = sname.split(
             "|")
         first_exon_end, last_exon_start = middle.split("-")
-        first_exon_start, first_exon_end, last_exon_start, last_exon_end = map(int, (
-            first_exon_start, first_exon_end, last_exon_start, last_exon_end))
+        first_exon_start, first_exon_end, last_exon_start, last_exon_end = list(map(int, (
+            first_exon_start, first_exon_end, last_exon_start, last_exon_end)))
         first_exon_end += 1
 
         total = first_exon_end - first_exon_start + \

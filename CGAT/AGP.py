@@ -87,7 +87,7 @@ class AGP(object):
             orientation = orientation in ("+", "0", "na")
 
             if com_start != 0:
-                raise "beware, non zero com_start"
+                raise ValueError("non zero com_start")
 
             object = ObjectPosition()
             object.mId = obj_id

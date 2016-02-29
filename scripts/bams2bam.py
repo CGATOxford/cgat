@@ -173,7 +173,7 @@ def main(argv=None):
         E.info("reading map")
         id_map = IOTools.readMap(
             IOTools.openFile(options.filename_map), has_header=True)
-        id_map = dict([(y, x) for x, y in id_map.iteritems()])
+        id_map = dict([(y, x) for x, y in id_map.items()])
     else:
         id_map = None
 

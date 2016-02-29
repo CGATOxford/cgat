@@ -87,7 +87,7 @@ def bigwig(infile, contig_sizes):
     tmp, filename_sizes = tempfile.mkstemp()
 
     os.write(tmp, "\n".join(["\t".join(map(str, x))
-             for x in contig_sizes.iteritems()]))
+             for x in contig_sizes.items()]))
     os.close(tmp)
 
     statement = "wigToBigWig " \
@@ -257,7 +257,7 @@ def main(argv=None):
                         ["0", "1"][float(line['edgeR.adj.p.value']) <
                                    options.fdr_threshold],
                         status)))
-            except ValueError, msg:
+            except ValueError as msg:
                 raise ValueError("parsing error %s in line: %s" % (msg, line))
 
         Expression.writeExpressionResults(options.stdout, results)
@@ -514,7 +514,7 @@ def main(argv=None):
             quote=F,
             row.names=FALSE,
             col.names=FALSE); close(of)''' % E.getOutputFile("gain.bed.gz"))
-        except rpy2.rinterface.RRuntimeError, msg:
+        except rpy2.rinterface.RRuntimeError as msg:
             E.warn("could not compute gain windows: msg=%s" % msg)
         # select loss and merge adjacent windows
         try:
@@ -531,7 +531,7 @@ def main(argv=None):
             quote=F,
             row.names=F,
             col.names=F); close(of)''' % E.getOutputFile("loss.bed.gz"))
-        except rpy2.rinterface.RRuntimeError, msg:
+        except rpy2.rinterface.RRuntimeError as msg:
             E.warn("could not compute loss windows: msg=%s" % msg)
 
     # if "rpm" in options.toolset or do_all:

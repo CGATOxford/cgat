@@ -236,7 +236,7 @@ def addIterations(group):
 
     # normalize
     normed = {}
-    for pair, iterations in query2sbjct_pairs.iteritems():
+    for pair, iterations in query2sbjct_pairs.items():
         normed[pair] = sorted(list(set(iterations)))
     return normed, iteration
 

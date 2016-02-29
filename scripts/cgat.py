@@ -76,7 +76,7 @@ def printListInColumns(l, ncolumns):
         columns[-(x + 1)].append('')
 
     # convert to rows
-    rows = zip(*columns)
+    rows = list(zip(*columns))
 
     # build pattern for a row
     p = '%-' + str(max_width) + 's'
@@ -93,7 +93,7 @@ def main(argv=None):
     path = os.path.abspath(os.path.dirname(__file__))
 
     if len(argv) == 1 or argv[1] == "--help" or argv[1] == "-h":
-        print(globals()["__doc__"])
+        print((globals()["__doc__"]))
 
         map_keyword2script = mapKeyword2Script(path)
 
@@ -101,23 +101,23 @@ def main(argv=None):
 
             print('CGAT tools are grouped by keywords. The following keywords')
             print('are defined:\n')
-            print("%s\n" % printListInColumns(map_keyword2script.keys(),
-                                              3))
+            print(("%s\n" % printListInColumns(list(map_keyword2script.keys()),
+                                              3)))
 
         if 'all' in argv[2:]:
             print("The list of all available commands is:\n")
-            print("%s\n" % printListInColumns(
+            print(("%s\n" % printListInColumns(
                 sorted([os.path.basename(x)[:-3]
                         for x in glob.glob(os.path.join(path, "*.py"))]),
-                3))
+                3)))
 
         else:
             for arg in argv[2:]:
                 if arg in map_keyword2script:
-                    print ("Tools matching the keyword '%s':\n" % arg)
-                    print ('%s\n' % printListInColumns(
+                    print(("Tools matching the keyword '%s':\n" % arg))
+                    print(('%s\n' % printListInColumns(
                         sorted(map_keyword2script[arg]),
-                        3))
+                        3)))
         return
 
     command = argv[1]

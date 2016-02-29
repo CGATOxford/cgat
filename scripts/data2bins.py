@@ -116,11 +116,11 @@ def main(argv=None):
 
     if options.method == "equal-sized-bins":
         increment = int(math.floor(float(len(values)) / options.num_bins))
-        indices = range(0, len(values))
+        indices = list(range(0, len(values)))
         indices.sort(key=lambda x: values[x])
-        for x in xrange(len(values)):
+        for x in range(len(values)):
             values[indices[x]] = x
-        bins = range(0, len(values) - increment, increment)
+        bins = list(range(0, len(values) - increment, increment))
 
     elif options.method == "pass":
         pass
@@ -128,19 +128,19 @@ def main(argv=None):
     E.debug("bins=%s" % str(bins))
 
     outputters = []
-    for x in xrange(0, len(bins)):
+    for x in range(0, len(bins)):
         outputters.append(
             Outputter(options.output_filename_pattern % x, fields))
 
     # output tables
-    for x in xrange(0, len(data)):
+    for x in range(0, len(data)):
         bin = bisect.bisect(bins, values[x]) - 1
         outputters[bin].write(data[x])
 
     # stats
     if options.loglevel >= 1:
         options.stdlog.write("# bin\tstart\tcounts\tfilename\n")
-        for x in xrange(0, len(bins)):
+        for x in range(0, len(bins)):
             options.stdlog.write("# %i\t%f\t%i\t%s\n" % (
                 x, bins[x], outputters[x].mCounts, outputters[x].mFilename))
 

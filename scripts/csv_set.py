@@ -84,10 +84,10 @@ def main(argv=None):
     (options, args) = E.Start(parser, add_csv_options=True)
 
     if len(args) != 2:
-        raise "please specify two files to join."
+        raise ValueError("please specify two files to join")
 
     if not options.join_fields1 or not options.join_fields2:
-        raise "please specify at least one join field per table."
+        raise ValueError("please specify at least one join field per table")
 
     options.join_fields1 = options.join_fields1.split(",")
     options.join_fields2 = options.join_fields2.split(",")
@@ -114,13 +114,13 @@ def main(argv=None):
     # calculate row indices: double keys are not taken care of here
     keys = {}
     for row1 in table1:
-        v = map(lambda x: row1[x], nfields1)
+        v = [row1[x] for x in nfields1]
         key = hashlib.md5("".join(v)).digest()
         keys[key] = row1
 
     if options.method == "intersection":
         # build new field list
-        take = range(len(fields1))
+        take = list(range(len(fields1)))
         c = len(take)
         for x in fields2:
             if x not in options.join_fields2:
@@ -129,25 +129,25 @@ def main(argv=None):
 
         t = fields1 + fields2
 
-        new_fields = map(lambda x: t[x], take)
+        new_fields = [t[x] for x in take]
 
-        print "\t".join(new_fields)
+        print("\t".join(new_fields))
 
         for row2 in table2:
-            v = map(lambda x: row2[x], nfields2)
+            v = [row2[x] for x in nfields2]
             key = hashlib.md5("".join(v)).digest()
             if key in keys:
                 new_row = keys[key] + row2
                 outfile.write(
-                    "\t".join(map(lambda x: new_row[x], take)) + "\n")
+                    "\t".join([new_row[x] for x in take]) + "\n")
 
     elif options.method == "rest":
 
         new_fields = fields2
-        print "\t".join(new_fields)
+        print("\t".join(new_fields))
 
         for row2 in table2:
-            v = map(lambda x: row2[x], nfields2)
+            v = [row2[x] for x in nfields2]
             key = hashlib.md5("".join(v)).digest()
             if key not in keys:
                 outfile.write("\t".join(row2) + "\n")

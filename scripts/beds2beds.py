@@ -150,11 +150,11 @@ def combineMergedIntervals(bedfiles):
             data_per_contig[contig].extend(i)
 
     # merge intervals
-    for contig in data_per_contig.keys():
+    for contig in list(data_per_contig.keys()):
         data_per_contig[contig] = Intervals.combine(data_per_contig[contig])
 
     # filter intervals - take only those present in all bedfiles
-    for contig, data in data_per_contig.iteritems():
+    for contig, data in data_per_contig.items():
         for start, end in data:
             if isContainedInAll(contig, start, end, bedfiles):
                 yield contig, start, end
@@ -228,7 +228,7 @@ def main(argv=None):
         bedfiles.append(pysam.Tabixfile(infile, "r"))
         tags.append(re.search(options.pattern_id, infile).groups()[0])
 
-    indices = range(len(bedfiles))
+    indices = list(range(len(bedfiles)))
     is_exclusive = options.exclusive
 
     if options.method == "merged-combinations":

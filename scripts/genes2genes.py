@@ -65,7 +65,7 @@ def buildIdentifierMap(query_species):
             map_identifiers[xid].add((ensid, column))
 
     # convert to lists
-    map_identifiers = dict([(x, list(y)) for x, y in map_identifiers.items()])
+    map_identifiers = dict([(x, list(y)) for x, y in list(map_identifiers.items())])
 
     return map_identifiers
 
@@ -138,7 +138,7 @@ def main(argv=None):
 
     E.info("orthology map: %i -> %i (%i unique)" %
            (len(map_orthologs),
-            len(map_orthologs.values()),
+            len(list(map_orthologs.values())),
             len(set(map_orthologs.values()))))
 
     map_identifiers = buildIdentifierMap(
@@ -146,7 +146,7 @@ def main(argv=None):
 
     E.info("identifier map: %i -> %i" %
            (len(map_identifiers),
-            len(map_identifiers.values())))
+            len(list(map_identifiers.values()))))
 
     first = True
     outfile = options.stdout

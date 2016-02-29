@@ -171,7 +171,7 @@ def main(argv=None):
             if found and len(expected) == 0:
                 break
 
-        for project_id, received in found.items():
+        for project_id, received in list(found.items()):
             line = "\t".join(map(str, (
                 project_id,
                 received,

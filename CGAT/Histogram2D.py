@@ -21,14 +21,14 @@ def Calculate(values, mode=0, bin_function=None):
     """
 
     if bin_function:
-        values = map(bin_function, values)
+        values = list(map(bin_function, values))
 
     bins = {}
     for val in values:
         v = "%f-%f" % tuple(val)
         bins[v] = bins.get(v, 0) + 1
 
-    bb = bins.items()
+    bb = list(bins.items())
 
     if mode:
         bb.sort(lambda x, y: cmp(y[1], x[1]))
@@ -37,7 +37,7 @@ def Calculate(values, mode=0, bin_function=None):
 
     r = []
     for v, n in bb:
-        x, y = map(string.atof, string.split(v, "-"))
+        x, y = list(map(string.atof, string.split(v, "-")))
         r.append((x, y, n))
 
     return r
@@ -59,7 +59,7 @@ def Print(h, bin_function=None):
     """
 
     if bin_function:
-        h = map(bin_function, h)
+        h = list(map(bin_function, h))
 
     for hh in h:
-        print string.join(map(str, hh), "\t")
+        print(string.join(list(map(str, hh)), "\t"))

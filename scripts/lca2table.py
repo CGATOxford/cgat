@@ -345,9 +345,9 @@ def main(argv=None):
                 unmapped["subspecies+"] += 1
 
         options.stdout.write("level\ttaxa\tcount\tproportion\trpm\n")
-        for level, taxa_count in taxa_counts.iteritems():
+        for level, taxa_count in taxa_counts.items():
             total_level = total - unmapped[level]
-            for taxa, count in taxa_count.iteritems():
+            for taxa, count in taxa_count.items():
                 options.stdout.write("\t".join(
                     [level,
                      taxa,

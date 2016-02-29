@@ -63,25 +63,25 @@ import CGAT.GTF as GTF
 
 def decorator_counts(intervals, start, end, contig, fasta):
     """compute length distribution."""
-    d = Stats.DistributionalParameters(map(lambda x: x[1] - x[0], intervals))
+    d = Stats.DistributionalParameters([x[1] - x[0] for x in intervals])
     return d['nval'], str(d)
 
 
 def decorator_percent_coverage(intervals, start, end, contig, fasta):
     """compute length of intervals."""
-    d = Stats.DistributionalParameters(map(lambda x: x[1] - x[0], intervals))
+    d = Stats.DistributionalParameters([x[1] - x[0] for x in intervals])
     return 100.0 * float(d['sum']) / (end - start), str(d)
 
 
 def decorator_mean_length(intervals, start, end, contig, fasta):
     """compute length distribution."""
-    d = Stats.DistributionalParameters(map(lambda x: x[1] - x[0], intervals))
+    d = Stats.DistributionalParameters([x[1] - x[0] for x in intervals])
     return d['mean'], str(d)
 
 
 def decorator_median_length(intervals, start, end, contig, fasta):
     """compute length distribution."""
-    d = Stats.DistributionalParameters(map(lambda x: x[1] - x[0], intervals))
+    d = Stats.DistributionalParameters([x[1] - x[0] for x in intervals])
     return d['median'], str(d)
 
 
@@ -94,8 +94,7 @@ def decorator_percent_gc(intervals, start, end, contig, fasta):
     sequence = fasta.getSequence(contig, "+", start, end)
 
     for istart, iend in intervals:
-        ngc += len(filter(lambda x: x in "GCgc",
-                          sequence[istart - start:iend - start]))
+        ngc += len([x for x in sequence[istart - start:iend - start] if x in "GCgc"])
         l += iend - istart
 
     return 100.0 * ngc / l, None
@@ -140,13 +139,13 @@ def decorator_max_score(values, start, end, contig):
 def transform_overlap(start, end, intervals_with_gff):
     """transform: overlap of intervals in x with y."""
     y = Intervals.combineIntervals(
-        map(lambda x: (x[0], x[1]), intervals_with_gff))
+        [(x[0], x[1]) for x in intervals_with_gff])
     return Intervals.pruneIntervals(y, start, end)
 
 
 def transform_complement(start, end, intervals_with_gff):
     y = Intervals.combineIntervals(
-        map(lambda x: (x[0], x[1]), intervals_with_gff))
+        [(x[0], x[1]) for x in intervals_with_gff])
     return Intervals.complementIntervals(y, start, end)
 
 
@@ -209,7 +208,7 @@ def test_transform_third_codon():
 
         intervals = transform_third_codon(start, end, [(xfrom, xto, entry)])
         if ref != intervals:
-            print "failed:", ref != intervals
+            print("failed:", ref != intervals)
 
     test_entry(0, "+", 1, 7, 0, 6, [(3, 4)])
     test_entry(0, "-", 1, 7, 0, 6, [(1, 2), (4, 5)])
@@ -231,7 +230,7 @@ def annotateWindows(contig, windows, gff_data, fasta, options):
     is_gtf = options.is_gtf
 
     if options.transform == "none":
-        transform = lambda x, y, z: map(lambda x: (x[0], x[1]), z)
+        transform = lambda x, y, z: [(x[0], x[1]) for x in z]
     elif options.transform == "overlap":
         transform = transform_overlap
     elif options.transform == "complement":
@@ -312,7 +311,7 @@ def annotateWindows(contig, windows, gff_data, fasta, options):
 
         else:
             if len(values) > 0:
-                values = map(float, values)
+                values = list(map(float, values))
                 score, extra_info = decorator(values, start, end, contig)
             else:
                 score, extra_info = 0, None
@@ -445,11 +444,11 @@ def main(argv=None):
         fasta = IndexedFasta.IndexedFasta(options.genome_file)
         map_contig2size = fasta.getContigSizes()
     else:
-        for contig, values in windows.items():
+        for contig, values in list(windows.items()):
             map_contig2size[contig] = max(lambda x: x[1], values)
         fasta = None
 
-    contigs = map_contig2size.keys()
+    contigs = list(map_contig2size.keys())
     contigs.sort()
 
     # proceed contig wise

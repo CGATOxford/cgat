@@ -134,7 +134,7 @@ def main(argv=None):
         try:
             quality_scores = quality.getSequence(
                 match.mSbjctId, "+", match.mSbjctFrom, match.mSbjctTo)
-        except ValueError, msg:
+        except ValueError as msg:
             nmissed += 1
             E.warn("could not retrieve quality scores for %s:%i-%i: %s" %
                    (match.mSbjctId, match.mSbjctFrom, match.mSbjctTo, msg))

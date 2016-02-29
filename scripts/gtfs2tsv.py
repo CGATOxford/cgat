@@ -159,11 +159,10 @@ class Counts:
         return h
 
     def getHeaderPercent(self):
-        return "\t".join(map(lambda x: "pl%s\tpr%s" % (x, x), ("overlap", "identical", "half", "unique", "split")))
+        return "\t".join(["pl%s\tpr%s" % (x, x) for x in ("overlap", "identical", "half", "unique", "split")])
 
     def asPercent(self):
-        return "\t".join(map(lambda x: self.mPercentFormat % (100.0 * x),
-                             (float(self.noverlap) / self.nleft,
+        return "\t".join([self.mPercentFormat % (100.0 * x) for x in (float(self.noverlap) / self.nleft,
                               float(self.noverlap) / self.nright,
                               float(self.nidentical) / self.nleft,
                               float(self.nidentical) / self.nright,
@@ -172,7 +171,7 @@ class Counts:
                               float(self.nunique_left) / self.nleft,
                               float(self.nunique_right) / self.nright,
                               float(self.nsplit_left) / self.nleft,
-                              float(self.nsplit_right) / self.nright)))
+                              float(self.nsplit_right) / self.nright)])
 
 
 def getFile(options, section):

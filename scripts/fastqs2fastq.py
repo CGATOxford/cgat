@@ -109,7 +109,7 @@ def main(argv=None):
                     offsets[x - y] += 1
 
             # find maximum diagonal
-            sorted = sorted([(y, x) for x, y in offsets.items()])
+            sorted = sorted([(y, x) for x, y in list(offsets.items())])
             max_count, max_offset = sorted[-1]
 
             E.debug('%s: maximum offset at %i' % (left.identifier,
