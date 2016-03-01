@@ -2353,47 +2353,24 @@ def runEdgeR(outfile,
     results = []
     counts = E.Counter()
 
-    for interval, data, padj in zip(
-            R('''rownames(lrt$table)'''),
-            zip(*R('''lrt$table''')),
-            R('''padj''')):
-        d = rtype._make(data)
+    df = R('''lrt$table''')
+    df["padj"] = R('''padj''')
 
-        counts.input += 1
+    counts.significant = sum(df.padj <= fdr)
+    counts.insignificant = sum(df.padj > fdr)
+    counts.significant_over = sum((df.padj <= fdr) & (df.logFC > 0))
+    counts.significant_under = sum((df.padj <= fdr) & (df.logFC < 0))
+    counts.input = len(df)
+    counts.all_over = sum(df.logFC > 0)
+    counts.all_under = sum(df.logFC < 0)
+    counts.fail = sum(df.PValue.isnull())
+    counts.ok = counts.input - counts.fail
 
-        # set significant flag
-        if padj <= fdr:
-            signif = 1
-            counts.significant += 1
-            if d.lfold > 0:
-                counts.significant_over += 1
-            else:
-                counts.significant_under += 1
-        else:
-            signif = 0
-            counts.insignificant += 1
+    df["fold"] = df.logFC.pow(2.0)
+    df["significant"] = df.padj <= fdr
 
-        if d.lfold > 0:
-            counts.all_over += 1
-        else:
-            counts.all_under += 1
-
-        # is.na failed in rpy2 2.4.2
-        if d.pvalue != R('''NA'''):
-            status = "OK"
-        else:
-            status = "FAIL"
-
-        counts[status] += 1
-
-        try:
-            fold = math.pow(2.0, d.lfold)
-        except OverflowError:
-            E.warn("%s: fold change out of range: lfold=%f" %
-                   (interval, d.lfold))
-            # if out of range set to 0
-            fold = 0
-
+    # TODO: use pandas throughout
+    for interval, d in df.iterrows():
         # fold change is determined by the alphabetical order of the factors.
         # Is the following correct?
         results.append(GeneExpressionResult._make((
@@ -2404,13 +2381,13 @@ def runEdgeR(outfile,
             groups[0],
             d.logCPM,
             0,
-            d.pvalue,
-            padj,
-            d.lfold,
-            fold,
-            d.lfold,  # no transform of lfold
-            str(signif),
-            status)))
+            d.PValue,
+            d.padj,
+            d.logFC,
+            d.fold,
+            d.logFC,  # no transform of lfold
+            str(int(d.significant)),
+            "OK")))
 
     writeExpressionResults(outfile, results)
 
@@ -2738,17 +2715,20 @@ def deseq2ParseResults(fdr, vsd=False):
 
     #  fill columns with values described above
     R('''res2['test_id'] = rownames(res)''')
+    R('''g = unique(groups)''')
+    R('''g1 = which(groups == g[1])''')
+    R('''g2 = which(groups == g[2])''')
     R('''res2['treatment_name'] = rep(unique(groups)[1], nrow(res2))''')
-    R('''res2['treatment_mean'] = rowMeans(normalcounts[,1:3])''')
-    R('''res2['treatment_std'] = apply(normalcounts[,1:3], 1, sd)''')
+    R('''res2['treatment_mean'] = rowMeans(normalcounts[, g1])''')
+    R('''res2['treatment_std'] = apply(normalcounts[, g1], 1, sd)''')
     R('''res2['control_name'] = rep(unique(groups)[2], nrow(res2))''')
-    R('''res2['control_mean'] = rowMeans(normalcounts[,4:6])''')
-    R('''res2['control_std'] = apply(normalcounts[,4:6], 1, sd)''')
+    R('''res2['control_mean'] = rowMeans(normalcounts[,g2])''')
+    R('''res2['control_std'] = apply(normalcounts[, g2], 1, sd)''')
     R('''res2['pvalue'] = res$pvalue''')
     R('''res2['qvalue'] = res$padj''')
     R('''res2['l2fold'] = res$log2FoldChange''')
     R('''res2['fold'] = res2$control_mean / res2$treatment_mean''')
-    R('''res2['signif'] = as.character(res2$qvalue <= fdr)''')
+    R('''res2['signif'] = as.integer(res2$qvalue <= fdr)''')
     R('''res2['status'] = ifelse(is.na(res2$pvalue), "FAIL", "OK")''')
 
     #  replace l2fold change and fold for expression levels of 0 in treatment
@@ -2762,7 +2742,7 @@ def deseq2ParseResults(fdr, vsd=False):
     #  occupy transformed l2fold with 0s
     R('''res2$transformed_l2fold = 0''')
 
-    D = pandas2ri.ri2py(R('res2'))
+    D = R('res2')
     D.index = D['test_id']
     D = D.drop('test_id', 1)
     return D
@@ -3113,7 +3093,7 @@ def runDESeq2(outfile,
     R('''rlogtab = rlogtab[, c(ncol(rlogtab), 1:ncol(rlogtab)-1)]''')
     R('''rlogtab = as.data.frame(rlogtab)''')
     R.data('rlogtab')
-    rlog_out = pandas2ri.ri2py(R('rlogtab'))
+    rlog_out = R('rlogtab')
     rlogoutf = outfile_prefix + "rlog.tsv"
 
     rlog_out.to_csv(rlogoutf, sep="\t", index=False)
@@ -3157,7 +3137,7 @@ def runDESeq2(outfile,
         R('''res_df$test_id = rownames(res_df)''')
         R('''res_df = res_df[, c(ncol(res_df), 1:ncol(res_df)-1)]''')
         R.data('res_df')
-        raw_out = pandas2ri.ri2py(R('res_df'))
+        raw_out = R('res_df')
 
         #  manipulate output into standard format
         df_out = deseq2ParseResults(fdr, vsd=False)
