@@ -5,7 +5,8 @@ CGAT |version| - Computational Genomics Analysis Tools
 =======================================================
 
 CGAT is a collection of tools for the computational genomicist written
-in the python language. The tools have been developed and accumulated
+in the Python language (currently Python 2.7 only). 
+The tools have been developed and accumulated
 in various genome projects (`Heger & Ponting, 2007`_, `Warren et al.,
 2008`_) and NGS projects (`Ramagopalan et al., 2010`_). The tools are
 continuously being developed as part of the `CGAT Training
@@ -36,6 +37,7 @@ are below, followed by a :ref:`quickstart` guide.
 Quickstart
 ==========
 
+Please make sure that you are using Python 2.7 with pip_ package manager.
 To install the CGAT tools, type::
 
    pip install cgat
@@ -144,4 +146,5 @@ Use at your own risk.
 .. _Heger & Ponting, 2007: 
 .. _Warren et al., 2008:
 .. _Ramagopalan et al., 2010:
- 
+.. _pip: https://pip.pypa.io/en/stable/
+
