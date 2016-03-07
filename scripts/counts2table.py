@@ -228,6 +228,12 @@ def main(argv=None):
                       help=("contrasts for post-hoc testing writen as comma "
                             "seperated list `condition,replicate` etc"))
 
+    parser.add_option("--deseq2-fit-type",
+                      dest="deseq2_fit_type",
+                      type="string",
+                      help=("fit type used for observed dispersion mean "
+                            "relationship in deseq2"))
+
     parser.set_defaults(
         input_filename_tags="-",
         input_filename_result=None,
@@ -251,7 +257,8 @@ def main(argv=None):
         spike_max_counts_per_bin=50,
         model=None,
         contrasts=None,
-        output_filename_pattern=None
+        output_filename_pattern=None,
+        deseq2_fit_type="parametric"
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -325,7 +332,9 @@ def main(argv=None):
                                  model=options.model,
                                  contrasts=options.contrasts,
                                  outfile_prefix=outfile_prefix,
-                                 fdr=options.fdr)
+                                 fdr=options.fdr,
+                                 fit_type=options.deseq2_fit_type,
+                                 ref_group=options.ref_group)
 
     results.getResults(fdr=options.fdr)
 
