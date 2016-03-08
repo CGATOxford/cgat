@@ -270,6 +270,7 @@ def iterate_convert(infile, format, max_tries=10000, guess=None):
         if len(quals) == 0:
             raise ValueError("could not guess format - ranges incompatible.")
         if len(quals) == 1:
+            cache.append(record)
             break
         cache.append(record)
 
