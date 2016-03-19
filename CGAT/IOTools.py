@@ -266,6 +266,10 @@ def zapFile(filename, outfile=None):
     If the file is a link, the link will be broken and replaced with
     an empty file having the same attributes as the file linked to.
 
+    It also takes an optional outfile. If the outfile has zero byte,
+        it usually means there's an error in generating the outfile,
+        and it will throw an error and stop.
+
    It also takes an optional outfile. If the outfile has zero byte,
         it usually means there's an error in generating the outfile,
         and it will throw an error and stop.
@@ -325,6 +329,21 @@ def cloneFile(infile, outfile):
         os.symlink(target, outfile)
     except OSError:
         pass
+
+
+def shadowFile(infile, outfile):
+    '''move ```infile``` as ```outfile```, and
+    touch ```infile```.
+    This could be useful when one wants to skip
+    some steps in a pipeline.
+    Note that zapFile is not needed when shadowFile
+    is used
+    '''
+    if outfile != infile:
+        shutil.move(infile, outfile)
+        touchFile(infile)
+    else:
+        raise ValueError('Panic: infile and outfile names cannot be the same')
 
 
 def shadowFile(infile, outfile):
