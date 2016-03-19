@@ -65,6 +65,7 @@ import numpy
 import numpy.ma
 import shutil
 
+
 def getFirstLine(filename, nlines=1):
     """return the first line of a file.
 
@@ -264,8 +265,8 @@ def zapFile(filename, outfile=None):
 
     If the file is a link, the link will be broken and replaced with
     an empty file having the same attributes as the file linked to.
-    
-    It also takes an optional outfile. If the outfile has zero byte,
+
+   It also takes an optional outfile. If the outfile has zero byte,
         it usually means there's an error in generating the outfile,
         and it will throw an error and stop.
 
@@ -325,8 +326,9 @@ def cloneFile(infile, outfile):
     except OSError:
         pass
 
+
 def shadowFile(infile, outfile):
-    '''move ```infile``` as ```outfile```, and 
+    '''move ```infile``` as ```outfile```, and
     touch ```infile```.
     This could be useful when one wants to skip
     some steps in a pipeline.
@@ -409,7 +411,8 @@ def which(program):
        The full path to the program. Returns None if not found.
 
     """
-    # see http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
+    # see http://stackoverflow.com/questions/377017/test-if-
+    #  executable-exists-in-python
 
     def is_exe(fpath):
         return os.path.exists(fpath) and os.access(fpath, os.X_OK)
