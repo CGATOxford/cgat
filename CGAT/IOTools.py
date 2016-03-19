@@ -33,7 +33,7 @@ These include methods for
   :func:`checkPresenceOfFiles`
 
 * manipulating file, such as :func:`openFile`, :func:`zapFile`,
-  :func:`cloneFile`, :func:`touchFile`.
+  :func:`cloneFile`, :func:`touchFile`, :func:`shadowFile`.
 
 * converting values for input/output, such as :func:`val2str`,
   :func:`str2val`, :func:`prettyPercent`, :func:`human2bytes`,
@@ -63,7 +63,7 @@ import subprocess
 import itertools
 import numpy
 import numpy.ma
-
+import shutil
 
 def getFirstLine(filename, nlines=1):
     """return the first line of a file.
@@ -324,6 +324,20 @@ def cloneFile(infile, outfile):
         os.symlink(target, outfile)
     except OSError:
         pass
+
+def shadowFile(infile, outfile):
+    '''move ```infile``` as ```outfile```, and 
+    touch ```infile```.
+    This could be useful when one wants to skip
+    some steps in a pipeline.
+    Note that zapFile is not needed when shadowFile
+    is used
+    '''
+    if outfile != infile:
+        shutil.move(infile, outfile)
+        touchFile(infile)
+    else:
+        raise ValueError('Panic: infile and outfile names cannot be the same')
 
 
 def val2str(val, format="%5.2f", na="na"):
