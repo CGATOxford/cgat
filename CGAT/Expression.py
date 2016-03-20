@@ -91,7 +91,7 @@ import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import FloatVector
-import os 
+import os
 
 try:
     import CGAT.Experiment as E
@@ -243,8 +243,11 @@ class ExperimentalDesign(object):
         if isinstance(filename_or_table, str):
             self.table = pandas.read_csv(filename_or_table, sep="\t",
                                          index_col=0)
-        else:
+        elif isinstance(filename_or_table, pandas.core.frame.DataFrame):
             self.table = filename_or_table
+        else:
+            raise ValueError("Type needs to be string or pandas data frame."
+                             "Type = %s", type(filename_or_table))
 
         assert self.table.shape, "design table is empty"
 
@@ -1346,7 +1349,7 @@ class DEExperiment_Sleuth(DEExperiment):
 
         differentialTesting = R('''
         function(so){
-
+        
         suppressMessages(library('sleuth'))
 
         so <- sleuth_wt(so, which_beta = '%(contrast)s')
@@ -1480,7 +1483,7 @@ def writeExpressionResults(outfile, result):
 
     if outf != sys.stdout:
         outf.close()
-    
+
 
 class WelchsTTest(object):
 
