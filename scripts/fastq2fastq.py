@@ -138,6 +138,7 @@ import itertools
 import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
 import CGAT.Fastq as Fastq
+import CGAT.Genomics as Genomics
 
 
 def main(argv=None):
@@ -163,6 +164,7 @@ def main(argv=None):
                           "trim3",
                           "trim5",
                           "unique",
+                          "reverse-complement",
                           "grep"),
                       help="method to apply [%default]")
 
@@ -238,6 +240,12 @@ def main(argv=None):
         for record in Fastq.iterate(options.stdin):
             if re.match(options.grep_pattern, record.seq):
                 options.stdout.write("%s\n" % record)
+
+    elif options.method == "reverse-complement":
+        for record in Fastq.iterate(options.stdin):
+            record.seq = Genomics.complement(record.seq)
+            record.quals = record.quals[::-1]
+            options.stdout.write("%s\n" % record)
 
     elif options.method == "sample":
         sample_threshold = min(1.0, options.sample_size)

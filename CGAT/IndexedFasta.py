@@ -730,10 +730,10 @@ class CGATIndexedFasta:
         k = self.mSynonyms.items()
 
         # fix the ambiguity between chrMT and chrM between UCSC and ENSEMBL
-        if "chrM" in self.mIndex and "chrMT" not in self.mIndex:
-            self.mSynonyms["chrMT"] = "chrM"
-        elif "chrM" not in self.mSynonyms and "chrMT" in self.mSynonyms:
-            self.mSynonyms["chrM"] = "chrMT"
+        if "chrM" in self.mIndex and "MT" not in self.mIndex:
+            self.mSynonyms["MT"] = "chrM"
+        elif "chrM" not in self.mSynonyms and "MT" in self.mSynonyms:
+            self.mSynonyms["chrM"] = "MT"
 
         for key, val in k:
             _add(key, val)
@@ -741,7 +741,7 @@ class CGATIndexedFasta:
         # add pointers to self
         for key in self.mIndex.keys():
             _add(key, key)
-
+       
     def setTranslator(self, translator=None):
         """set the :class:`Translator` to use."""
         self.mTranslator = translator

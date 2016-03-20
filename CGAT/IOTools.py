@@ -257,13 +257,17 @@ def openFile(filename, mode="r", create_dir=False):
         return open(filename, mode)
 
 
-def zapFile(filename):
+def zapFile(filename, outfile=None):
     '''replace *filename* with empty file.
 
     File attributes such as accession times are preserved.
 
     If the file is a link, the link will be broken and replaced with
     an empty file having the same attributes as the file linked to.
+    
+    It also takes an optional outfile. If the outfile has zero byte,
+        it usually means there's an error in generating the outfile,
+        and it will throw an error and stop.
 
     Returns
     -------
@@ -273,6 +277,10 @@ def zapFile(filename):
        If the file was a link, the file being linked to.
 
     '''
+    # outfile as zero byte? Let's throw an error and stop
+    if outfile and os.path.getsize(outfile) == 0:
+        raise ValueError('%s has size zero!' % outfile)
+
     # stat follows times to links
     original = os.stat(filename)
 

@@ -309,7 +309,7 @@ class ExperimentalDesign(object):
 
             # check all model terms exist
             missing = set(model_terms).difference(
-                set(self.factors.columns.tolist()))
+                set(self.table.columns.tolist()))
 
             if len(missing) > 0:
                 raise ValueError("following terms in the model are missing"
@@ -1083,8 +1083,6 @@ class DEExperiment_DESeq2(DEExperiment):
                 return(design)}''')
 
             r_design = buildDesign(r_counts, r_groups)
-            print r_design
-            print r_groups
 
             buildCountDataSet = R('''
             function(counts, design){
@@ -1113,7 +1111,12 @@ class DEExperiment_DESeq2(DEExperiment):
             dev.off()
 
             res = suppressMessages(results(dds, addMLE=TRUE))
+            png(paste0(c("%(outfile_prefix)s", "MA.png"), collapse="_"))
+            plotMA(res, alpha=%(fdr)s)
+            dev.off()
+
             res = as.data.frame(res)
+
             c = counts(dds, normalized = TRUE)
 
             contrast = "condition"
@@ -1157,14 +1160,13 @@ class DEExperiment_DESeq2(DEExperiment):
             }''' % locals())
 
             r_dds = buildCountDataSet(r_counts, r_design, r_model)
-
             results = pandas.DataFrame()
 
             n = 0
 
             for contrast in contrasts:
                 assert contrast in design.table.columns, (
-                    "contrast not found in design factors columns")
+                    "contrast: %s not found in design factors columns" % contrast)
                 model = [x for x in model_terms if x != contrast]
                 model = "~" + "+".join(model)
 
@@ -1172,7 +1174,9 @@ class DEExperiment_DESeq2(DEExperiment):
                 function(dds){
 
                 ddsLRT <- suppressMessages(
-                DESeq(dds, reduced=formula(%(model)s), betaPrior=TRUE))
+                DESeq(dds, test="LRT", reduced=formula(%(model)s),
+                      betaPrior=TRUE))
+                #DESeq(dds, betaPrior=TRUE))
 
                 png("%(outfile_prefix)s_dispersion.png")
                 plotDispEsts(ddsLRT)
@@ -1205,11 +1209,12 @@ class DEExperiment_DESeq2(DEExperiment):
                   res$control = "%(contrast)s"
                   res$treatment = "%(contrast)s"}
 
+                res['test_id'] = rownames(res)
                 return(res)
                 }''' % locals())
 
                 tmp_results = pandas2ri.ri2py(performDifferentialTesting(r_dds))
-                tmp_results['test_id'] = tmp_results.index
+                # tmp_results['test_id'] = tmp_results.index
 
                 # need to set index to sequence of ints to avoid duplications
                 n2 = n+tmp_results.shape[0]
@@ -1276,17 +1281,26 @@ class DEExperiment_Sleuth(DEExperiment):
     The run method expects all kallisto abundance.h5 files to be under
     a single directory with a subdirectory for each sample
 
+    Note: LRT does not generate fold change estimates (see DEResult_Sleuth)
+
     '''
 
     def run(self,
-            base_dir,
             design,
+            base_dir,
             model=None,
             contrast=None,
             outfile_prefix=None,
             counts=None,
             tpm=None,
-            fdr=0.1):
+            fdr=0.1,
+            lrt=False,
+            reduced_model=None):
+
+        if lrt:
+            E.info("Note: LRT will not generate fold changes")
+            assert reduced_model is not None, ("need to provide a reduced "
+                                               "model to use LRT")
 
         # Design table needs a "sample" column
         design.table['sample'] = design.table.index
@@ -1300,17 +1314,24 @@ class DEExperiment_Sleuth(DEExperiment):
         # load sleuth
         R('''suppressMessages(library('sleuth'))''')
 
+        # make variates string to ensure all model terms are in the
+        # design dataframe for sleuth
+        model_terms = [x for x in re.split("[\+~ ]+", model)[1:]
+                       if x != "0"]
+        variates = "c(%s)" % ",".join(model_terms)
+
         createSleuthObject = R('''
         function(design_df){
         sample_id = design_df$sample
         kal_dirs <- sapply(sample_id,
                            function(id) file.path('%(base_dir)s', id))
 
-        design_df <- dplyr::select(design_df, sample = sample, group)
+        design_df <- dplyr::select(design_df, sample = sample,
+                                   %(variates)s)
         design_df <- dplyr::mutate(design_df, path = kal_dirs)
 
-        so <- sleuth_prep(design_df, %(model)s)
-        so <- sleuth_fit(so)
+        so <- suppressMessages(sleuth_prep(design_df, %(model)s))
+        so <- suppressMessages(sleuth_fit(so))
         return(so)
         }''' % locals())
 
@@ -1347,55 +1368,81 @@ class DEExperiment_Sleuth(DEExperiment):
 
             makeTPMTable(so)
 
-        differentialTesting = R('''
-        function(so){
-        
-        suppressMessages(library('sleuth'))
 
-        so <- sleuth_wt(so, which_beta = '%(contrast)s')
+        if lrt:
+            differentialTesting = R('''
+            function(so){
+            so <- suppressMessages(sleuth_fit(so, formula = %(reduced_model)s,
+                                   fit_name = "reduced"))
+            so <- suppressMessages(sleuth_lrt(so, "reduced", "full"))
 
-        p_ma = plot_ma(so, '%(contrast)s')
-        ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_ma.png",
+            return(so)
+            } ''' % locals())
+        else:
+            differentialTesting = R('''
+            function(so){
+            so <- sleuth_wt(so, which_beta = '%(contrast)s')
+
+            p_ma = plot_ma(so, '%(contrast)s')
+            ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_ma.png",
+                width=15, height=15, units="cm")
+
+            p_vars = plot_vars(so, '%(contrast)s')
+            ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_vars.png",
+                width=15, height=15, units="cm")
+
+            p_mean_var = plot_mean_var(so)
+            ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_mean_var.png",
             width=15, height=15, units="cm")
 
-        p_vars = plot_vars(so, '%(contrast)s')
-        ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_vars.png",
-            width=15, height=15, units="cm")
-
-        p_mean_var = plot_mean_var(so)
-        ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_mean_var.png",
-            width=15, height=15, units="cm")
-
-        return(so)
-        } ''' % locals())
+            return(so)
+            } ''' % locals())
 
         results = differentialTesting(so)
 
-        final_result = DEResult_Sleuth(so=results, contrast=contrast)
+        final_result = DEResult_Sleuth(so=results, contrast=contrast, lrt=lrt)
 
         return final_result
 
 
 class DEResult_Sleuth(DEResult):
 
-    def __init__(self, so=None, contrast=None):
+    def __init__(self, so=None, contrast=None, lrt=False):
         ''' extract the test results from the so table using the
         sleuth_results R function. retain the so object for plotting
-        purposes'''
+        purposes
 
-        extractSleuthResults = R('''
-        library(sleuth)
-        function(so){
-        results_table <- sleuth_results(so, '%(contrast)s')
-        return(results_table)
-        }''' % locals())
+        TS: LRT does not generate fold change estimates. Need to find
+        some way to generate output in line with expected final
+        results table in getResults method.
+        '''
 
         self.contrast = contrast
+        self.lrt = lrt
         self.so = so
+
+        R('''suppressMessages(library(sleuth))''')
+
+        if self.lrt:
+            extractSleuthResults = R('''
+            function(so){
+            results_table <- sleuth_results(so, test = 'reduced:full',
+                                            test_type = 'lrt')
+            return(results_table)
+            }''' % locals())
+
+        else:
+            extractSleuthResults = R('''
+            function(so){
+            results_table <- sleuth_results(so, test = '%(contrast)s')
+            return(results_table)
+            }''' % locals())
+
         self.sleuthResults = pandas2ri.ri2py(extractSleuthResults(self.so))
 
     def getResults(self, fdr):
-        ''' post-process test results table into generic results output '''
+        ''' post-process test results table into generic results output
+        expression and fold changes from Sleuth are natural logs'''
 
         E.info("Generating output - results table")
 
@@ -1407,21 +1454,19 @@ class DEResult_Sleuth(DEResult):
         df_dict["control_name"] = ("NA",)*n_rows
         df_dict["test_id"] = self.sleuthResults['target_id']
         df_dict["contrast"] = self.contrast
-        df_dict["control_mean"] = self.sleuthResults['mean_obs']
-        df_dict["treatment_mean"] = self.sleuthResults['mean_obs']
+        df_dict["control_mean"] = [math.exp(float(x)) for
+                                   x in self.sleuthResults['mean_obs']]
+        df_dict["treatment_mean"] = df_dict["control_mean"]
         df_dict["control_std"] = (0,)*n_rows
         df_dict["treatment_std"] = (0,)*n_rows
         df_dict["p_value"] = self.sleuthResults['pval']
         df_dict["p_value_adj"] = adjustPvalues(self.sleuthResults['pval'])
         df_dict["significant"] = pvaluesToSignficant(df_dict["p_value_adj"],
                                                      fdr)
-        df_dict["l2fold"] = self.sleuthResults['b']
-        df_dict["transformed_l2fold"] = self.sleuthResults['b']
-
-        # TS: check what happens when no fold change is available
-        # TS: may need an if/else in list comprehension. Raise E.warn too?
-        df_dict["fold"] = [math.pow(2, float(x)) for
+        df_dict["fold"] = [math.exp(float(x)) for
                            x in self.sleuthResults['b']]
+        df_dict["l2fold"] = [math.log(float(x), 2) for x in df_dict['fold']]
+        df_dict["transformed_l2fold"] = df_dict["l2fold"]
 
         # set all status values to "OK"
         # TS: again, may need an if/else to check...
@@ -2003,10 +2048,12 @@ def groupTagData(ref_group=None, ref_regex=None):
     if isinstance(factors, rpy2.robjects.vectors.DataFrame):
         E.warn("There are additional factors in design file that are ignored"
                " by groupTagData: %s" % factors.r_repr())
-    else:
-        # Hack... must be a better way to evaluate r NA instance in python?
-        assert len(list(factors)) == 1 and bool(list(factors)[0]) is False, \
-            "factors must either be DataFrame or NA in R global namespace"
+    # AH: uncommented as it causes an issue with rpy2 2.7.7
+    # else:
+    #     # Hack... must be a better way to evaluate r NA instance in python?
+    #     import pdb; pdb.set_trace()
+    #     assert len(list(factors)) == 1 and bool(list(factors)[0]) is False, \
+    #         "factors must either be DataFrame or NA in R global namespace"
 
     # Test if replicates exist - at least one group must have multiple samples
     max_per_group = R('''max(table(groups)) ''')[0]
@@ -2309,47 +2356,24 @@ def runEdgeR(outfile,
     results = []
     counts = E.Counter()
 
-    for interval, data, padj in zip(
-            R('''rownames(lrt$table)'''),
-            zip(*R('''lrt$table''')),
-            R('''padj''')):
-        d = rtype._make(data)
+    df = R('''lrt$table''')
+    df["padj"] = R('''padj''')
 
-        counts.input += 1
+    counts.significant = sum(df.padj <= fdr)
+    counts.insignificant = sum(df.padj > fdr)
+    counts.significant_over = sum((df.padj <= fdr) & (df.logFC > 0))
+    counts.significant_under = sum((df.padj <= fdr) & (df.logFC < 0))
+    counts.input = len(df)
+    counts.all_over = sum(df.logFC > 0)
+    counts.all_under = sum(df.logFC < 0)
+    counts.fail = sum(df.PValue.isnull())
+    counts.ok = counts.input - counts.fail
 
-        # set significant flag
-        if padj <= fdr:
-            signif = 1
-            counts.significant += 1
-            if d.lfold > 0:
-                counts.significant_over += 1
-            else:
-                counts.significant_under += 1
-        else:
-            signif = 0
-            counts.insignificant += 1
+    df["fold"] = df.logFC.pow(2.0)
+    df["significant"] = df.padj <= fdr
 
-        if d.lfold > 0:
-            counts.all_over += 1
-        else:
-            counts.all_under += 1
-
-        # is.na failed in rpy2 2.4.2
-        if d.pvalue != R('''NA'''):
-            status = "OK"
-        else:
-            status = "FAIL"
-
-        counts[status] += 1
-
-        try:
-            fold = math.pow(2.0, d.lfold)
-        except OverflowError:
-            E.warn("%s: fold change out of range: lfold=%f" %
-                   (interval, d.lfold))
-            # if out of range set to 0
-            fold = 0
-
+    # TODO: use pandas throughout
+    for interval, d in df.iterrows():
         # fold change is determined by the alphabetical order of the factors.
         # Is the following correct?
         results.append(GeneExpressionResult._make((
@@ -2360,13 +2384,13 @@ def runEdgeR(outfile,
             groups[0],
             d.logCPM,
             0,
-            d.pvalue,
-            padj,
-            d.lfold,
-            fold,
-            d.lfold,  # no transform of lfold
-            str(signif),
-            status)))
+            d.PValue,
+            d.padj,
+            d.logFC,
+            d.fold,
+            d.logFC,  # no transform of lfold
+            str(int(d.significant)),
+            "OK")))
 
     writeExpressionResults(outfile, results)
 
@@ -2694,17 +2718,20 @@ def deseq2ParseResults(fdr, vsd=False):
 
     #  fill columns with values described above
     R('''res2['test_id'] = rownames(res)''')
+    R('''g = unique(groups)''')
+    R('''g1 = which(groups == g[1])''')
+    R('''g2 = which(groups == g[2])''')
     R('''res2['treatment_name'] = rep(unique(groups)[1], nrow(res2))''')
-    R('''res2['treatment_mean'] = rowMeans(normalcounts[,1:3])''')
-    R('''res2['treatment_std'] = apply(normalcounts[,1:3], 1, sd)''')
+    R('''res2['treatment_mean'] = rowMeans(normalcounts[, g1])''')
+    R('''res2['treatment_std'] = apply(normalcounts[, g1], 1, sd)''')
     R('''res2['control_name'] = rep(unique(groups)[2], nrow(res2))''')
-    R('''res2['control_mean'] = rowMeans(normalcounts[,4:6])''')
-    R('''res2['control_std'] = apply(normalcounts[,4:6], 1, sd)''')
+    R('''res2['control_mean'] = rowMeans(normalcounts[,g2])''')
+    R('''res2['control_std'] = apply(normalcounts[, g2], 1, sd)''')
     R('''res2['pvalue'] = res$pvalue''')
     R('''res2['qvalue'] = res$padj''')
     R('''res2['l2fold'] = res$log2FoldChange''')
     R('''res2['fold'] = res2$control_mean / res2$treatment_mean''')
-    R('''res2['signif'] = as.character(res2$qvalue <= fdr)''')
+    R('''res2['signif'] = as.integer(res2$qvalue <= fdr)''')
     R('''res2['status'] = ifelse(is.na(res2$pvalue), "FAIL", "OK")''')
 
     #  replace l2fold change and fold for expression levels of 0 in treatment
@@ -2718,7 +2745,7 @@ def deseq2ParseResults(fdr, vsd=False):
     #  occupy transformed l2fold with 0s
     R('''res2$transformed_l2fold = 0''')
 
-    D = pandas2ri.ri2py(R('res2'))
+    D = R('res2')
     D.index = D['test_id']
     D = D.drop('test_id', 1)
     return D
@@ -2919,7 +2946,6 @@ def runDESeq(outfile,
 
         # plot heatmap of differentially expressed genes
         # plot gene heatmap for all genes - order by average expression
-        padj_column = list(res.colnames).index('padj')
         select = R('''select = res['padj'] < %f''' % fdr)
 
         if R('''sum(select)''')[0] > 0:
@@ -3070,7 +3096,7 @@ def runDESeq2(outfile,
     R('''rlogtab = rlogtab[, c(ncol(rlogtab), 1:ncol(rlogtab)-1)]''')
     R('''rlogtab = as.data.frame(rlogtab)''')
     R.data('rlogtab')
-    rlog_out = pandas2ri.ri2py(R('rlogtab'))
+    rlog_out = R('rlogtab')
     rlogoutf = outfile_prefix + "rlog.tsv"
 
     rlog_out.to_csv(rlogoutf, sep="\t", index=False)
@@ -3114,7 +3140,7 @@ def runDESeq2(outfile,
         R('''res_df$test_id = rownames(res_df)''')
         R('''res_df = res_df[, c(ncol(res_df), 1:ncol(res_df)-1)]''')
         R.data('res_df')
-        raw_out = pandas2ri.ri2py(R('res_df'))
+        raw_out = R('res_df')
 
         #  manipulate output into standard format
         df_out = deseq2ParseResults(fdr, vsd=False)
