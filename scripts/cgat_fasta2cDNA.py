@@ -53,9 +53,8 @@ def makeSplicedFasta(infile):
             else:
                 fasta_dict[header] += line.rstrip("\n")
 
-    with IOTools.openFile(outfile, "w") as ofile:
-        for key, value in fasta_dict.items():
-            yield "%s\n%s\n" % (key, value)
+    for key, value in fasta_dict.items():
+        yield "%s\n%s\n" % (key, value)
 
 
 def main(argv=None):
@@ -70,13 +69,11 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("--outfile", dest="outfile", type="string")
-
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
 
     infile = argv[-1]
-    for record in makeSplicedFasta(infile, options.outfile):
+    for record in makeSplicedFasta(infile):
         options.stdout.write(record)
 
     # write footer and output benchmark information.
