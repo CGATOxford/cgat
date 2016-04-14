@@ -41,6 +41,12 @@ tasks
 
 `aggregate` - aggregate together multiple stats tables,
               and select relevant measures
+=======
+`extract_table` - extract a table from a database containing relevant information
+
+`get_coverage` - calculate gene/transcript model coverage stats
+
+`aggregate` - aggregate together multiple stats tables, and select relevant measures
 
 
 '''
