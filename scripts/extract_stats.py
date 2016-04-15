@@ -1,5 +1,5 @@
 '''
-extract_stats.py - template for CGAT scripts
+extract_stats.py - extract and process tables from CSVDB
 ====================================================
 
 :Author: Mike Morgan
@@ -10,7 +10,7 @@ extract_stats.py - template for CGAT scripts
 Purpose
 -------
 
-.. Extract single cell metrics from sqlite databases
+.. Extract tables from sqlite databases and process
 
 Usage
 -----
@@ -19,11 +19,11 @@ Usage
 
 Example::
 
-   python cgat_script_template.py
+   python extract_stats.py
 
 Type::
 
-   python cgat_script_template.py --help
+   python extract_stats.py --help
 
 for command line help.
 
@@ -37,17 +37,11 @@ tasks
                   containing relevant information
 
 `get_coverage` - calculate gene/transcript model
-                 coverage stats
+                 coverage stats - only works on single cell data
+                 with filename format <seqRun>_<plate>_<well>_<mappper>
 
 `aggregate` - aggregate together multiple stats tables,
               and select relevant measures
-=======
-`extract_table` - extract a table from a database containing relevant information
-
-`get_coverage` - calculate gene/transcript model coverage stats
-
-`aggregate` - aggregate together multiple stats tables, and select relevant measures
-
 
 '''
 
