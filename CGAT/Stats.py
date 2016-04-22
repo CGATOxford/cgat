@@ -485,8 +485,8 @@ class Summary(Result):
             # use a non-sort algorithm?
             n.sort()
             if len(n):
-                self.q1 = n[len(n) / 4]
-                self.q3 = n[len(n) * 3 / 4]
+                self.q1 = n[len(n) // 4]
+                self.q3 = n[len(n) * 3 // 4]
             else:
                 self.q1 = self.q3 = 0
 

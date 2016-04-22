@@ -1,6 +1,8 @@
+import sys
 from pysam.chtslib cimport *
 from pysam.csamfile cimport *
 from pysam.cfaidx cimport *
+from pysam.cutils cimport force_str, force_bytes
 from libc.string cimport strchr
 from libc.stdint cimport int8_t
 from libc.stdio cimport puts, printf
@@ -97,6 +99,8 @@ def count(AlignmentFile samfile,
     cdef int count_fastq = filename_fastq != None
     cdef int fastq_notfound = 0
     cdef int chop = 0
+    
+    cdef bint is_py3 = sys.version_info.major >= 3
 
     if count_fastq:
         E.info("reading fastq file")
@@ -118,9 +122,11 @@ def count(AlignmentFile samfile,
                     chop = -2
                 
             if chop != 0:
-                name = hashlib.md5(fq.name[:chop]).digest()
+                s = fq.name[:chop]
             else:
-                name = hashlib.md5(fq.name).digest()
+                s = fq.name
+
+            name = hashlib.md5(force_bytes(s)).digest()
 
             reads[name] = fastq_nreads
 
@@ -217,7 +223,7 @@ def count(AlignmentFile samfile,
         # note: does not take into account gaps within reads
         # or partial overlap.
         if rna:
-            if rna.contains( contig, read.pos, read.pos + read.alen ):
+            if rna.contains(contig, read.pos, read.pos + read.alen):
                 nrna += 1
                 if _remove_rna:
                     continue
@@ -436,13 +442,14 @@ def count(AlignmentFile samfile,
         if outfile_details:
             if outfile_details != sys.stdout:
                 # later: get access FILE * object
-                outfile_details.write("read_md5\tis_unmapped\tmate_is_unmapped\tis_paired\tmapped_is_read1\tmapped_is_read2\tis_proper_pair\tis_qcfail\tis_duplicate\n")
+                outfile_details.write(
+                    "read_md5\tis_unmapped\tmate_is_unmapped\tis_paired\tmapped_is_read1\tmapped_is_read2\tis_proper_pair\tis_qcfail\tis_duplicate\n")
                 for qname, index in reads.items():
                     fastq_count = &fastq_counts[index]
                     
                     # remove "\n" from base64 encoded md5
                     outfile_details.write("%s\t%s\n" % (
-                        base64.encodestring(qname)[:-1],
+                        force_str(base64.encodestring(qname)[:-1]),
                         "\t".join( \
                                    map(str,
                                        (fastq_count.is_unmapped,
@@ -464,7 +471,7 @@ def count(AlignmentFile samfile,
                     fastq_count = &fastq_counts[index]
                     read_name = qname
                     printf("%s\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\n",
-                           read_name,
+                           force_str(read_name),
                            fastq_count.is_unmapped,
                            fastq_count.mate_is_unmapped,
                            fastq_count.is_paired,

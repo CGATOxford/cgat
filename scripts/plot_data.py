@@ -36,7 +36,6 @@ Command line options
 
 '''
 import sys
-import string
 import os
 import CGAT.Experiment as E
 import numpy
@@ -64,7 +63,7 @@ def readTable(file,
         raise ValueError("no data")
 
     if take == "all":
-        num_cols = len(string.split(lines[0][:-1], "\t"))
+        num_cols = len(lines[0][:-1].split("\t"))
         take = list(range(0, num_cols))
     else:
         num_cols = len(take)

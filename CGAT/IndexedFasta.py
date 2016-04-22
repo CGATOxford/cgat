@@ -71,6 +71,7 @@ import gzip
 import tempfile
 import io
 from CGAT import Experiment as E
+import CGAT.Genomics as Genomics
 from .AString import AString
 import pysam
 import future
@@ -285,6 +286,12 @@ class MultipleFastaIterator:
         return self
 
     def __next__(self):
+        try:
+            return next(self.iterator)
+        except StopIteration:
+            return None
+
+    def next(self):
         try:
             return next(self.iterator)
         except StopIteration:
@@ -909,15 +916,7 @@ class CGATIndexedFasta:
             p.fromstring(self.mDatabaseFile.read(last_pos - first_pos))
 
         if str(strand) in ("-", "0", "-1"):
-            p.reverse()
-            if sys.version_info.major >= 3:
-                p = AString(string.translate(
-                    p[:],
-                    str.maketrans("ACGTacgt", "TGCAtgca")).encode("ascii"))
-            else:
-                p = AString(string.translate(
-                    p[:],
-                    string.maketrans("ACGTacgt", "TGCAtgca")))
+            p = AString(Genomics.complement(str(p)))
 
         if self.mTranslator:
             return self.mTranslator.translate(p)

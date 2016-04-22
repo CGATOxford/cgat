@@ -312,14 +312,17 @@ import numpy
 import pandas
 
 try:
+    from bx.bbi.bigwig_file import BigWigFile
+except ImportError:
+    # py3: cStringIO dependency of BigWigFile
+    pass
+
+try:
     import pyximport
     pyximport.install(build_in_temp=False)
     import _bam2geneprofile
 except ImportError:
     import CGAT._bam2geneprofile as _bam2geneprofile
-
-
-from bx.bbi.bigwig_file import BigWigFile
 
 
 def main(argv=None):

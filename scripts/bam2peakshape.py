@@ -166,7 +166,12 @@ import pysam
 import CGAT.Bed as Bed
 import numpy
 import collections
-import bx.bbi.bigwig_file
+
+try:
+    import bx.bbi.bigwig_file
+except ImportError:
+    # py3: cStringIO dependency of BigWigFile
+    pass
 
 try:
     import pyximport

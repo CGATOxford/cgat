@@ -41,7 +41,6 @@ Command line options
 '''
 import sys
 import re
-import string
 import os
 import glob
 import collections
@@ -225,7 +224,7 @@ def joinTables(outfile, options, args):
         ncolumns = 0
 
         if options.input_has_titles:
-            data = string.split(lines[0][:-1], "\t")
+            data = lines[0][:-1].split("\t")
             # no titles have been defined so far
             if not titles:
                 key = "-".join([data[x] for x in options.columns])
@@ -307,7 +306,7 @@ def joinTables(outfile, options, args):
 
         n = 0
         for line in lines:
-            data = string.split(line[:-1], "\t")
+            data = line[:-1].split("\t")
             try:
                 row_keys = [data[x] for x in options.columns]
             except IndexError as msg:
@@ -369,7 +368,7 @@ def joinTables(outfile, options, args):
                 titles = headers
             else:
                 # otherwise: print the headers out right away
-                outfile.write(string.join(headers, "\t") + "\n")
+                outfile.write("\t".join(headers) + "\n")
 
         order = list(range(0, len(tables) + 1))
 
@@ -428,7 +427,7 @@ def joinTables(outfile, options, args):
                 c = 0
                 if key in table:
                     outfile.write("\t")
-                    outfile.write(string.join(table[key], "\t"))
+                    outfile.write("\t".join(table[key]))
                     c = len(table[key])
 
                 assert(max_size == 1)

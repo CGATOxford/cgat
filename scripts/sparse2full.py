@@ -31,7 +31,6 @@ Command line options
 '''
 
 import sys
-import string
 import CGAT.Experiment as E
 from functools import reduce
 
@@ -87,8 +86,8 @@ def Sparse2Matrix(outfile, matrix_id, lines, options,
 
         # if either row/column names are not given:
         if not map_token2row or not map_token2col:
-            row_tokens = [string.split(x[:-1], "\t")[0] for x in lines]
-            col_tokens = [string.split(x[:-1], "\t")[1] for x in lines]
+            row_tokens = [x[:-1].split("\t")[0] for x in lines]
+            col_tokens = [x[:-1].split("\t")[1] for x in lines]
 
             if options.input_format == "row-col-weight-weight":
                 # merge row and col tokens
@@ -141,8 +140,7 @@ def Sparse2Matrix(outfile, matrix_id, lines, options,
 
         if options.input_format == "row-col-weight":
             for line in lines:
-                row_token, col_token, weight = string.split(
-                    line[:-1], "\t")[:3]
+                row_token, col_token, weight = line[:-1].split("\t")[:3]
                 row_token, col_token = row_converter(
                     row_token), col_converter(col_token)
                 matrix[map_token2row[row_token]][
@@ -157,8 +155,7 @@ def Sparse2Matrix(outfile, matrix_id, lines, options,
 
         elif options.input_format == "row-col-weight-replicates":
             for line in lines:
-                row_token, col_token, weight, n = string.split(
-                    line[:-1], "\t")[:4]
+                row_token, col_token, weight, n = line[:-1].split("\t")[:4]
                 matrix[map_token2row[row_token]][
                     map_token2col[col_token]] = weight
                 replicates[map_token2row[row_token]][
@@ -171,8 +168,7 @@ def Sparse2Matrix(outfile, matrix_id, lines, options,
 
         elif options.input_format == "row-col-weight-weight":
             for line in lines:
-                row_token, col_token, weight1, weight2 = string.split(
-                    line[:-1], "\t")[:4]
+                row_token, col_token, weight1, weight2 = line[:-1].split("\t")[:4]
                 matrix[map_token2row[row_token]][
                     map_token2col[col_token]] = weight1
                 matrix[map_token2col[col_token]][
@@ -210,7 +206,7 @@ def Sparse2Matrix(outfile, matrix_id, lines, options,
 
             for row in range(len(matrix)):
                 outfile.write(
-                    "%s\t%s\n" % (row_tokens[row][0], string.join(matrix[row], "\t")))
+                    "%s\t%s\n" % (row_tokens[row][0], "\t".join(matrix[row])))
 
         elif options.output_format == "phylip":
 
@@ -253,7 +249,7 @@ def Sparse2Matrix(outfile, matrix_id, lines, options,
 
         matrix = [[options.default for j in col_range] for i in row_range]
         for line in lines:
-            row_token, col_token, weight = string.split(line[:-1], "\t")[:3]
+            row_token, col_token, weight = line[:-1].split("\t")[:3]
 
             row_pos = map_row[int(float(row_token))]
             col_pos = map_col[int(float(col_token))]
@@ -377,8 +373,8 @@ def main(argv=None):
         options.stdout.write("row\tcol\tvalue\n")
 
         if options.row_names:
-            row_tokens = [string.split(
-                x[:-1], "\t")[0] for x in open(options.row_names, "r").readlines()]
+            row_tokens = [x[:-1].split("\t")[0]
+                          for x in open(options.row_names, "r").readlines()]
         else:
             row_tokens = None
 
@@ -395,8 +391,9 @@ def main(argv=None):
             if row == 1:
                 if not col_tokens:
                     if options.col_names:
-                        col_tokens = [string.split(
-                            x[:-1], "\t")[0] for x in open(options.col_names, "r").readlines()]
+                        col_tokens = [x[:-1].split("\t")[0]
+                                      for x in open(options.col_names, "r").readlines()]
+
                     else:
                         if not row_tokens:
                             del data[0]
@@ -440,8 +437,8 @@ def main(argv=None):
         map_token2col = {}
 
         if options.file_row_names:
-            row_tokens = [string.split(
-                x[:-1], "\t")[0] for x in open(options.file_row_names, "r").readlines()]
+            row_tokens = [x[:-1].split("\t")[0]
+                          for x in open(options.file_row_names, "r").readlines()]
             for row_token in row_tokens:
                 map_token2row[row_token] = len(map_token2row)
 
@@ -450,8 +447,8 @@ def main(argv=None):
                 map_token2row[x] = len(map_token2row)
 
         if options.file_col_names:
-            col_tokens = [string.split(
-                x[:-1], "\t")[0] for x in open(options.file_col_names, "r").readlines()]
+            col_tokens = [x[:-1].split("\t")[0]
+                          for x in open(options.file_col_names, "r").readlines()]
             for col_token in col_tokens:
                 map_token2col[col_token] = len(map_token2col)
 

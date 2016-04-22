@@ -529,7 +529,7 @@ def main(argv=None):
 
         for chunk in iterator:
             is_positive = Genomics.IsPositiveStrand(chunk[0].strand)
-            chunk.sort(lambda x, y: cmp(x.start, y.start))
+            chunk.sort(key=lambda x: (x.contig, x.start))
             lcontig = contigs[chunk[0].contig]
 
             if extend_flank:
@@ -594,7 +594,7 @@ def main(argv=None):
                 chunk = [x for x in chunk if x.feature == "exon"]
                 if len(chunk) == 0:
                     continue
-            chunk.sort()
+            chunk.sort(key=lambda x: (x.contig, x.start))
             x = GTF.Entry()
             x.copy(chunk[0])
             x.start = x.end
@@ -610,7 +610,7 @@ def main(argv=None):
                                        group_field=options.group_field)
 
         for chunk in iterator:
-            chunk.sort()
+            chunk.sort(key=lambda x: (x.contig, x.start))
             x = GTF.Entry()
             x.copy(chunk[0])
             x.end = chunk[-1].end
@@ -723,7 +723,7 @@ def main(argv=None):
                     continue
                 else:
                     raise
-
+                    
             if genome_fasta:
                 lcontig = genome_fasta.getLength(gff.contig)
                 if lcontig < gff.end:

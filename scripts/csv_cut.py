@@ -107,6 +107,7 @@ def main(argv=None):
     parser.set_defaults(
         remove=False,
         unique=False,
+        large=False,
         filename_fields=None,
     )
 

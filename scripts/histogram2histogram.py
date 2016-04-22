@@ -32,7 +32,6 @@ Command line options
 
 '''
 import sys
-import string
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import numpy
@@ -103,19 +102,20 @@ def main(argv=None):
         lines = [x for x in sys.stdin.readlines() if x[0] != "#"]
 
         # check if first line contains a header
-        d = string.split(lines[0][:-1], "\t")[0]
+        d = lines[0][:-1].split("\t")[0]
         try:
             if options.is_ints:
                 value = int(d)
             else:
                 value = float(d)
         except ValueError:
-            print(string.join((d, "counts", "frequency",
-                               "cumulative counts", "increasing cumulative frequency",
-                               "cumulative counts", "decreasing cumulative frequency"), "\t"))
+            print ("\t".join(
+                (d, "counts", "frequency",
+                 "cumulative counts", "increasing cumulative frequency",
+                 "cumulative counts", "decreasing cumulative frequency")))
             del lines[0]
 
-        data = [list(map(float, string.split(x[:-1], "\t"))) for x in lines]
+        data = [list(map(float, x[:-1].split("\t"))) for x in lines]
 
         if len(data) == 0:
             raise ValueError("no data found")

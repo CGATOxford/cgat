@@ -46,7 +46,6 @@ Command line options
 
 '''
 
-import string
 import sys
 
 import CGAT.Experiment as E
@@ -152,7 +151,7 @@ def main(argv=None):
         if line[0] == "#":
             continue
 
-        data = string.split(line[:-1], "\t")
+        data = line[:-1].split("\t")
 
         ninput += 1
         if data[0] not in ("+", "-", "1", "0"):

@@ -71,7 +71,7 @@ def complement(s):
     -------
     string
     """
-    return string.translate(s[:], global_translator)[::-1]
+    return s[::-1].translate(global_translator)
 
 
 def GetHID(sequence):
@@ -146,7 +146,7 @@ def readContigSizes(infile):
     for line in infile:
         if line[0] == "#":
             continue
-        sbjct_token, size = string.split(line[:-1], "\t")[:2]
+        sbjct_token, size = line[:-1].split("\t")[:2]
         sizes[sbjct_token] = int(size)
 
     return sizes
@@ -328,14 +328,14 @@ def CountGeneFeatures(first_position,
 def Alignment2String(alignment):
     """convert a tuple alignment to an alignment string.
     """
-    return string.join([string.join(list(map(str, x)), " ") for x in alignment], " ")
+    return " ".join([" ".join(list(map(str, x))) for x in alignment])
 
 
 def String2Alignment(source):
     """convert an alignment string to a tuple alignment.
     """
 
-    d = string.split(source, " ")
+    d = source.split(" ")
     ali = []
     if len(d) < 3:
         return ali
@@ -542,7 +542,7 @@ def MaskStopCodons(sequence, stop_codons=("TAG", "TAA", "TGA")):
         if codon in stop_codons:
             codon = "NNN"
         codons.append(codon)
-    return string.join(codons, "")
+    return codons.join("")
 
 
 def Alignment2DNA(alignment, query_from=0, sbjct_from=0):
@@ -1016,7 +1016,7 @@ def MapCodon2AA(codon, is_seleno=False, ignore_n=True):
     Amino acids are returned as upper-case letters.
     '''
 
-    codon = string.upper(codon)
+    codon = codon.upper()
 
     codon = re.sub("[.-]", "", codon)
     if len(codon) == 0:
@@ -1046,7 +1046,7 @@ def Protein2Wobble(s):
     c = []
     for x in s:
         c.append(Wobble[x])
-    return string.join(c, "")
+    return c.join("")
 
 
 def Alignment2PeptideAlignment(alignment,
@@ -1115,7 +1115,7 @@ def Alignment2PeptideAlignment(alignment,
 
         sbjct_genome_pos += l_sbjct
 
-    return map_query2sbjct, string.join(sbjct_residues, "")
+    return map_query2sbjct, "".join(sbjct_residues)
 
 
 def translate(sequence,
@@ -1153,7 +1153,7 @@ def translate(sequence,
                                         is_seleno=is_seleno,
                                         ignore_n=ignore_n).upper())
 
-    return string.join(residues, "")
+    return residues.join("")
 
 
 def TranslateDNA2Protein(*args, **kwargs):
@@ -1217,7 +1217,7 @@ def Alignment2CDNA(alignment,
         query_pos += l_query
         sbjct_pos += l_sbjct
 
-    return map_query2sbjct, string.join(fragments, "")
+    return map_query2sbjct, fragments.join("")
 
 # -------------------------------------------------------------------
 
@@ -1421,7 +1421,7 @@ def GetDegenerateSites(seq1, seq2,
                     new_seq1.append(c1[position - 1])
                     new_seq2.append(c2[position - 1])
 
-    return string.join(new_seq1, ""), string.join(new_seq2, "")
+    return "".join(new_seq1), "".join(new_seq2)
 
 
 # -------------------------------------------------------------------
@@ -1669,7 +1669,7 @@ def makeSubstitutionMatrix(type="EMBOSS"):
 
     handle_tmpfile, filename_tmpfile = tempfile.mkstemp()
     for m in matrix:
-        os.write(handle_tmpfile, string.join(list(map(str, m)), "\t") + "\n")
+        os.write(handle_tmpfile, "\t".join(list(map(str, m))) + "\n")
     os.close(handle_tmpfile)
 
     smatrix = alignlib_lite.py_readSubstitutionMatrixAA(filename_tmpfile)

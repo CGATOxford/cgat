@@ -54,7 +54,10 @@ class AString(array):
     """
 
     def __new__(cls, *args):
-        return array.__new__(cls, "b", *args)
+        if IS_PY3:
+            return array.__new__(cls, "b", *[x.encode("ascii") for x in args])
+        else:
+            return array.__new__(cls, "b", *args)
 
     def upper(self):
         """return upper case version."""

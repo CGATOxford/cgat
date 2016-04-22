@@ -103,10 +103,10 @@ import pysam
 # methods in gtf2table need to be exported to
 # a separate module.
 try:
-    from . import gtf2table
+    from CGAT import gtf2table
 # ValueError: Attempted relative import in non-package
 except ValueError:
-    from . import gtf2table
+    from CGAT import gtf2table
 
 
 class Counter(object):

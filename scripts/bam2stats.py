@@ -494,7 +494,7 @@ def main(argv=None):
         E.Stop()
         return
 
-    for flag, counts in flags_counts.items():
+    for flag, counts in sorted(flags_counts.items()):
         if flag == "unmapped":
             continue
         _write(outs,

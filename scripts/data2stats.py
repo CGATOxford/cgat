@@ -31,7 +31,6 @@ Command line options
 
 '''
 import sys
-import string
 import scipy
 import scipy.stats
 import CGAT.Experiment as E
@@ -98,38 +97,38 @@ def PrintValues(outfile, values,  options, prefix="", titles=None):
     else:
 
         if titles:
-            outfile.write("category\t%s" % string.join(titles, "\t") + "\n")
+            outfile.write("category\t%s" % "\t".join(titles) + "\n")
 
         outfile.write(
-            "count\t%s" % (string.join(
-                ["%i" % len(v) for v in values], "\t")) + "\n")
+            "count\t%s" % ("\t".join(
+                ["%i" % len(v) for v in values]) + "\n")
         outfile.write(
-            "min\t%s" % (string.join(
-                [options.value_format % min(v) for v in values], "\t")) + "\n")
+            "min\t%s" % ("\t".join(
+                [options.value_format % min(v) for v in values]) + "\n")
         outfile.write(
-            "max\t%s" % (string.join(
-                [options.value_format % max(v) for v in values], "\t")) + "\n")
+            "max\t%s" % ("\t".join(
+                [options.value_format % max(v) for v in values]) + "\n")
         outfile.write(
-            "mean\t%s" % (string.join(
-                [options.value_format % scipy.mean(v) for v in values], "\t")) + "\n")
+            "mean\t%s" % ("\t".join(
+                [options.value_format % scipy.mean(v) for v in values]) + "\n")
         outfile.write(
-            "median\t%s" % (string.join(
-                [options.value_format % scipy.median(v) for v in values], "\t")) + "\n")
+            "median\t%s" % ("\t".join(
+                [options.value_format % scipy.median(v) for v in values]) + "\n")
         outfile.write(
-            "stddev\t%s" % (string.join(
-                [options.value_format % scipy.std(v) for v in values], "\t")) + "\n")
+            "stddev\t%s" % ("\t".join(
+                [options.value_format % scipy.std(v) for v in values]) + "\n")
         outfile.write(
-            "sum\t%s" % (string.join(
+            "sum\t%s" % ("\t".join(
                 [options.value_format %
-                    reduce(lambda x, y: x + y, v) for v in values], "\t")) + "\n")
+                    reduce(lambda x, y: x + y, v) for v in values]) + "\n")
         outfile.write(
-            "q1\t%s" % (string.join(
+            "q1\t%s" % ("\t".join(
                 [options.value_format %
-                    scipy.stats.scoreatpercentile(v, per=25) for v in values], "\t")) + "\n")
+                    scipy.stats.scoreatpercentile(v, per=25) for v in values]) + "\n")
         outfile.write(
-            "q3\t%s" % (string.join(
+            "q3\t%s" % ("\t".join(
                 [options.value_format %
-                    scipy.stats.scoreatpercentile(v, per=75) for v in values], "\t")) + "\n")
+                    scipy.stats.scoreatpercentile(v, per=75) for v in values]) + "\n")
 
 
 def main(argv=None):
@@ -222,7 +221,7 @@ def main(argv=None):
 
     if len(lines) > 0:
 
-        ncols = len(string.split(lines[0][:-1], "\t"))
+        ncols = len(lines[0][:-1].split("\t"))
 
         if options.columns == "all":
             options.columns = list(range(0, ncols))
@@ -295,7 +294,7 @@ def main(argv=None):
                 for c in range(len(options.columns)):
 
                     try:
-                        val = string.atof(data[options.columns[c]])
+                        val = float(data[options.columns[c]])
 
                     except IndexError:
                         E.warn("IndexError in line: %s" % l[:-1])

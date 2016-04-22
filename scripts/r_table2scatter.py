@@ -33,7 +33,6 @@ Command line options
 '''
 import os
 import sys
-import string
 import re
 import tempfile
 import math
@@ -70,10 +69,10 @@ def readTable(lines,
     os.close(handle)
 
     if take_columns == "all":
-        num_cols = len(string.split(lines[0][:-1], "\t"))
+        num_cols = len(lines[0][:-1].split("\t"))
         take = list(range(0, num_cols))
     elif take_columns == "all-but-first":
-        num_cols = len(string.split(lines[0][:-1], "\t"))
+        num_cols = len(lines[0][:-1].split("\t"))
         take = list(range(1, num_cols))
 
     outfile = open(name, "w")
@@ -107,7 +106,7 @@ def readTable(lines,
         data = [x.strip() for x in l[:-1].split("\t")]
         if not data or not [x for x in data if x != ""]:
             continue
-        outfile.write(string.join([data[x] for x in take], "\t") + "\n")
+        outfile.write("\t".join([data[x] for x in take]) + "\n")
         if row_names is not None:
             legend.append(data[row_names])
 
@@ -146,7 +145,7 @@ def writeMatrix(file,
     """
 
     if headers:
-        file.write("\t" + string.join(headers, "\t") + "\n")
+        file.write("\t" + "\t".join(headers) + "\n")
 
     nrows, ncols = matrix.shape
 
@@ -154,7 +153,7 @@ def writeMatrix(file,
         if headers:
             file.write(headers[x] + "\t")
         file.write(
-            string.join([format % x for x in matrix[x]], "\t") + "\n")
+            "\t".join([format % x for x in matrix[x]]) + "\n")
 
 
 def FuncScatterDiagonal(data):

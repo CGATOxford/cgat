@@ -306,6 +306,7 @@ import optparse
 import textwrap
 import random
 import uuid
+import CGAT.IOTools as IOTools
 
 
 class DefaultOptions:
@@ -1113,10 +1114,7 @@ def openOutputFile(section, mode="w"):
                 raise OSError(
                     ("file %s already exists, use --force-output to "
                      "overwrite existing files.") % fn)
-            if fn.endswith(".gz"):
-                return gzip.open(fn, mode)
-            else:
-                return open(fn, mode)
+            return IOTools.openFile(fn, mode)
     except AttributeError:
         return global_options.stdout
 

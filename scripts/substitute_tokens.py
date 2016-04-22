@@ -32,7 +32,6 @@ Command line options
 '''
 import sys
 import re
-import string
 import os
 import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
@@ -127,7 +126,7 @@ def main(argv=None):
 
     if options.columns_token:
         if options.columns_token != "all":
-            options.columns_token = [int(x) - 1 for x in string.split(options.columns_token, ",")]
+            options.columns_token = [int(x) - 1 for x in options.columns_token.split(",")]
 
     file_id = 0
 
@@ -250,7 +249,7 @@ def main(argv=None):
                             # multiple substitutions: write data now
                             data[c] = v
                             if keep:
-                                new_lines.append(string.join(data, "\t"))
+                                new_lines.append("\t".join(data))
                         keep = False
                     else:
                         if options.create:
@@ -261,7 +260,7 @@ def main(argv=None):
                         elif options.reverse_filter:
                             keep = True
                 if keep:
-                    new_lines.append(string.join(data, "\t"))
+                    new_lines.append("\t".join(data))
 
             elif options.apply:
                 for key in keys:
@@ -270,7 +269,7 @@ def main(argv=None):
                 new_lines.append(line[:-1])
 
             if new_lines:
-                outfile.write(string.join(new_lines, "\n") + "\n")
+                outfile.write("\n".join(new_lines) + "\n")
 
         if options.create:
             create_file = IOTools.openFile(options.create, "w")

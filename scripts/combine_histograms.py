@@ -40,7 +40,6 @@ Command line options
 
 '''
 import sys
-import string
 import os
 import getopt
 import CGAT.Experiment as E
@@ -91,7 +90,7 @@ def main(argv=None):
             print("version=")
             sys.exit(0)
         elif o in ("-h", "--header-names"):
-            param_headers = string.split(a, ",")
+            param_headers = a.split(",")
         elif o in ("-n", "--normalize"):
             param_normalize = 1
         elif o in ("-m", "--missing-value"):
@@ -110,7 +109,7 @@ def main(argv=None):
             if a in ("numerical", "alphabetic"):
                 param_sort = a
             else:
-                param_sort = string.split(a, ",")
+                param_sort = a.split(",")
 
     if len(args) < 1:
         print(globals()["__doc__"], "please specify at one histogram.")
@@ -154,7 +153,7 @@ def main(argv=None):
         elif param_titles:
             headers += h
 
-        data = [list(map(string.atof, string.split(x[:-1], "\t"))) for x in lines]
+        data = [list(map(float, x[:-1].split("\t"))) for x in lines]
 
         # add empty data point for empty histograms
         if len(data) == 0:

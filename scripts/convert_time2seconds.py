@@ -35,7 +35,6 @@ Command line options
 '''
 
 import sys
-import string
 import re
 import CGAT.Experiment as E
 
@@ -61,7 +60,7 @@ def main(argv=None):
         if line[0] == "#":
             continue
 
-        data = string.split(line[:-1], "\t")
+        data = line[:-1].split("\t")
 
         new_fields = []
 
@@ -80,9 +79,9 @@ def main(argv=None):
                 hours, minutes, seconds = x.groups()
 
             new_fields.append("%.2f" % (
-                string.atof(hours) * 3600.0 + string.atof(minutes) * 60.0 + string.atof(seconds)))
+                float(hours) * 3600.0 + float(minutes) * 60.0 + float(seconds)))
 
-        print(string.join(new_fields, "\t"))
+        print ("\t".join(new_fields))
 
     # write footer and output benchmark information.
     E.Stop()

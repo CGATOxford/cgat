@@ -181,7 +181,7 @@ def main(argv=None):
             if l[0] == "#":
                 continue
 
-            data = string.split(l[:-1], "\t")
+            data = l[:-1].split("\t")
 
             if first:
                 first = False

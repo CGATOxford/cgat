@@ -35,8 +35,6 @@ Apart from basic iteration, this module provides the following utilities:
 
 """
 
-import copy
-import types
 import collections
 from CGAT import Intervals as Intervals
 from CGAT import Genomics as Genomics
@@ -798,7 +796,7 @@ class Entry:
         self.strand = "."
         self.gene_id = None
         self.transcript_id = None
-        self.attributes = {}
+        self.attributes = collections.OrderedDict()
 
     def read(self, line):
         """read gff entry from line in GTF/GFF format.
@@ -840,7 +838,7 @@ class Entry:
         # space, which seems to be part of the specification, see
         # http://mblab.wustl.edu/GTF22.html
         fields = [x.strip() for x in attributes.split("; ")[:-1]]
-        self.attributes = {}
+        self.attributes = collections.OrderedDict()
 
         for f in fields:
 
@@ -988,7 +986,7 @@ class Entry:
         except AttributeError:
             pass
 
-        self.attributes = copy.copy(other.asDict())
+        self.attributes = collections.OrderedDict(other.asDict().items())
         # from gff - remove gene_id and transcript_id from attributes
         try:
             del self.attributes["gene_id"]
@@ -1003,7 +1001,7 @@ class Entry:
         return self.attributes
 
     def clearAttributes(self):
-        self.attributes = {}
+        self.attributes = collections.OrderedDict()
 
     def addAttribute(self, key, value=None):
         self.attributes[key] = value
@@ -1012,6 +1010,12 @@ class Entry:
         # note: does compare by strand as well!
         return cmp((self.contig, self.strand, self.start),
                    (other.contig, other.strand, other.start))
+
+    # python 3 compatibility
+    def __lt__(self, other):
+        # note: does compare by strand as well!
+        return (self.contig, self.strand, self.start) < \
+            (other.contig, other.strand, other.start)
 
     def __setitem__(self, key, value):
         self.addAttribute(key, value)

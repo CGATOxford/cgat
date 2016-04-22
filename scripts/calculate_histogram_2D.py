@@ -101,7 +101,7 @@ def main(argv=None):
     lines = [x for x in sys.stdin.readlines() if x[0] != "#"]
 
     if options.titles:
-        data = string.split(lines[0][:-1], "\t")
+        data = lines[0][:-1].split("\t")
         print("\t".join((data[options.column1], data[options.column2], "counts")))
         del lines[0]
 
@@ -109,7 +109,7 @@ def main(argv=None):
 
     for l in lines:
         ninput += 1
-        data = string.split(l[:-1], "\t")
+        data = l[:-1].split("\t")
 
         try:
             val = list(map(

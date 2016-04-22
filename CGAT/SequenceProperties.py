@@ -65,6 +65,7 @@ import math
 import hashlib
 import base64
 import itertools
+import six
 
 from CGAT import Genomics as Genomics
 
@@ -163,18 +164,16 @@ class SequencePropertiesHid(SequenceProperties):
         SequenceProperties.loadSequence(self, sequence, seqtype)
 
         # do the encryption
-        h = hashlib.md5(sequence).digest()
+        h = hashlib.md5(six.b(sequence)).digest()
         # map to printable letters: hid has length 22, so the padded '=' are
         # truncated. You have to add them, if you ever want to decode,
         # but who would do such a thing :=)
-        r = base64.encodestring(h)[0:22]
+        r = base64.encodestring(h)[0:22].decode("ascii")
 
         # finally substitute some characters:
         # '/' for '_', so we have legal file names
         # '[' for '+' and ']' for '=' for internet-applications
-        hid = string.replace(r, '/', '_')
-        hid = string.replace(hid, '+', '[')
-        hid = string.replace(hid, '=', ']')
+        hid = r.replace('/', '_').replace('+', '[').replace('=', ']')
 
         self.mHid = hid
 
@@ -427,8 +426,8 @@ class SequencePropertiesCpg(SequencePropertiesNA, SequencePropertiesDN):
 
     def getFields(self):
         fields = ["%s" % self.mCountsDinuc["CG"]]
-        fields.append("%s" % self.mCpG_density)
-        fields.append("%s" % self.mCpG_ObsExp)
+        fields.append("%6.4f" % self.mCpG_density)
+        fields.append("%6.4f" % self.mCpG_ObsExp)
         return fields
 
     def getHeaders(self):

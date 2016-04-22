@@ -124,6 +124,7 @@ import sys
 import CGAT.Experiment as E
 import CGAT.GTF as GTF
 import CGAT.Genomics as Genomics
+import CGAT.IOTools as IOTools
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Intervals as Intervals
 import CGAT.Masker as Masker
@@ -245,7 +246,7 @@ def main(argv=None):
     masks = None
     if options.filename_masks:
         masks = {}
-        with open(options.filename_masks, "r") as infile:
+        with IOTools.openFile(options.filename_masks, "r") as infile:
             e = GTF.readAsIntervals(GTF.iterator(infile))
 
         # convert intervals to intersectors

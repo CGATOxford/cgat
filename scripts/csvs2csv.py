@@ -35,7 +35,6 @@ Command line options
 '''
 import sys
 import re
-import string
 import os
 import glob
 
@@ -196,7 +195,7 @@ def main(argv=None):
         ncolumns = 0
 
         if options.titles:
-            data = string.split(lines[0][:-1], "\t")
+            data = lines[0][:-1].split("\t")
             if not titles:
                 key = "-".join([data[x] for x in options.columns])
                 titles = [key]
@@ -216,7 +215,7 @@ def main(argv=None):
 
         n = 0
         for line in lines:
-            data = string.split(line[:-1], "\t")
+            data = line[:-1].split("\t")
             row_keys = [data[x] for x in options.columns]
             if options.sort_keys:
                 if options.sort_keys == "numeric":
@@ -264,7 +263,7 @@ def main(argv=None):
                 titles = headers
             else:
                 # otherwise: print the headers out right away
-                sys.stdout.write(string.join(headers, "\t") + "\n")
+                sys.stdout.write("\t".join(headers) + "\n")
 
         order = list(range(0, len(tables) + 1))
 
@@ -321,7 +320,7 @@ def main(argv=None):
                 c = 0
                 if key in table:
                     sys.stdout.write("\t")
-                    sys.stdout.write(string.join(table[key], "\t"))
+                    sys.stdout.write("\t".join(table[key]))
                     c = len(table[key])
 
                 assert(max_size == 1)
