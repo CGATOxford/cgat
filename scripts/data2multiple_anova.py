@@ -88,7 +88,7 @@ def main(argv=None):
 
     for filename in options.filenames:
 
-        infile = open(filename, "r")
+        infile = IOTools.openFile(filename, "r")
         table, headers = IOTools.readTable(
             infile, take=options.columns, headers=False)
         infile.close()

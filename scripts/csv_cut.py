@@ -118,7 +118,7 @@ def main(argv=None):
     input_fields = args
 
     if options.filename_fields:
-        input_fields = [x[:-1].split("\t")[0] for x in [x for x in open(options.filename_fields, "r").readlines() if x[0] != "#"]]
+        input_fields = [x[:-1].split("\t")[0] for x in [x for x in IOTools.openFile(options.filename_fields, "r").readlines() if x[0] != "#"]]
 
     if options.unique:
         outfile = UniqueBuffer(sys.stdout)

@@ -45,7 +45,7 @@ def mapKeyword2Script(path):
 
     for script in glob.glob(os.path.join(path, "*.py")):
         s = os.path.basename(script)[:-3]
-        with open(script, 'r') as inf:
+        with IOTools.openFile(script, 'r') as inf:
             data = [x for x in inf.readlines(10000) if x.startswith(':Tags:')]
             if data:
                 keywords = [x.strip() for x in data[0][6:].split(' ')]

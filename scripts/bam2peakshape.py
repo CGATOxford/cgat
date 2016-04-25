@@ -579,7 +579,7 @@ def main(argv=None):
         fg_file = bx.bbi.bigwig_file.BigWigFile(open(infile))
         for control_file in options.control_files:
             control_files.append(bx.bbi.bigwig_file.BigWigFile(
-                open(control_file)))
+               IOTools.openFile(control_file)))
         counter = _bam2peakshape.CounterBigwig(
             smooth_method=options.smooth_method)
 

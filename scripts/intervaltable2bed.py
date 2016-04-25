@@ -55,8 +55,8 @@ def main(argv=None):
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
 
-    outfile = open(options.outfile, "w")
-    for line in open(options.table).readlines():
+    outfile = IOTools.openFile(options.outfile, "w")
+    for line in IOTools.openFile(options.table).readlines():
         contig = line.split("\t")[0].split('"')[1]
         outfile.write(
             "\t".join((contig, line.split("\t")[1], line.split("\t")[2])))

@@ -93,7 +93,7 @@ def processSequence(key, description_rest, sequence, options, mask_regions=None)
         # check if we need to open a new sequence file:
         if global_outfile is None:
             global_file_id += 1
-            global_outfile = open(options.output_pattern % global_file_id, "w")
+            global_outfile = IOTools.openFile(options.output_pattern % global_file_id, "w")
 
         offset_positive_strand = first_res
         offset_negative_strand = lsequence - last_res
@@ -163,7 +163,7 @@ def main(argv=None):
 
     if options.filename_mask_regions:
         mask_regions = {}
-        infile = open(options.filename_mask_regions, "r")
+        infile = IOTools.openFile(options.filename_mask_regions, "r")
         nregions = 0
         for line in infile:
             if line[0] == "#":
@@ -186,7 +186,7 @@ def main(argv=None):
         mask_regions = None
 
     if options.filename_sequence:
-        infile = open(options.filename_sequence, "r")
+        infile = IOTools.openFile(options.filename_sequence, "r")
     else:
         infile = sys.stdin
 

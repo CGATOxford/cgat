@@ -187,7 +187,7 @@ def main(argv=None):
             raise ValueError("please supply a filename with sequences")
 
         iterator_sequence = FastaIterator.FastaIterator(
-            open(options.filename_sequences, "r"))
+           IOTools.openFile(options.filename_sequences, "r"))
 
         while 1:
             qual, seq = None, None

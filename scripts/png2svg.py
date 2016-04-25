@@ -269,7 +269,7 @@ class PngPlot:
 
         self.mRoot.toXml(tfile)
 
-        lines = open(tfile, "r").readlines()
+        lines = IOTools.openFile(tfile, "r").readlines()
 
         outfile.write(string.join(lines, ""))
         outfile.write("\n")

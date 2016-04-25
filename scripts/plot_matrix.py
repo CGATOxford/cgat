@@ -266,7 +266,7 @@ def main(argv=None):
         if filename == "-":
             infile = sys.stdin
         else:
-            infile = open(filename, "r")
+            infile = IOTools.openFile(filename, "r")
 
         matrix, row_headers, col_headers = MatlabTools.readMatrix(infile,
                                                                   numeric_type=numpy.float32,

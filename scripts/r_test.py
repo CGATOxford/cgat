@@ -68,7 +68,7 @@ def main(argv=None):
                               add_pipe_options=True)
 
     if options.filename_input:
-        infile = open(options.filename_input, "r")
+        infile = IOTools.openFile(options.filename_input, "r")
     else:
         infile = sys.stdin
 
@@ -90,7 +90,7 @@ def main(argv=None):
             xargs.append(arg)
 
     if options.filename_input2:
-        infile = open(options.filename_input2, "r")
+        infile = IOTools.openFile(options.filename_input2, "r")
         values2, errors2 = IOTools.ReadList(infile,
                                             map_function=float)
         infile.close()

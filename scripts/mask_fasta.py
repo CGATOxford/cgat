@@ -103,7 +103,7 @@ def main(argv=None):
 
     if options.filename_mask_regions:
         mask_regions = {}
-        infile = open(options.filename_mask_regions, "r")
+        infile = IOTools.openFile(options.filename_mask_regions, "r")
         nregions = 0
         for line in infile:
             if line[0] == "#":
@@ -126,7 +126,7 @@ def main(argv=None):
         mask_regions = None
 
     if options.filename_sequence:
-        infile = open(options.filename_sequence, "r")
+        infile = IOTools.openFile(options.filename_sequence, "r")
     else:
         infile = sys.stdin
 

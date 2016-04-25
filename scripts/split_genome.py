@@ -105,7 +105,7 @@ def main(argv=None):
 
             nchunk += 1
 
-            outfile = open(options.filename_pattern_output % nchunk, "w")
+            outfile = IOTools.openFile(options.filename_pattern_output % nchunk, "w")
 
             if is_header:
                 description = line[1:-1]

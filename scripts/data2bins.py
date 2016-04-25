@@ -45,7 +45,7 @@ class Outputter:
 
     def __init__(self, filename, headers=None):
         self.mFilename = filename
-        self.mOutfile = open(filename, "w")
+        self.mOutfile = IOTools.openFile(filename, "w")
         self.mCounts = 0
         if headers:
             self.mOutfile.write("\t".join(headers) + "\n")
@@ -103,7 +103,7 @@ def main(argv=None):
         if args[0] == "-":
             infile = sys.stdin
         else:
-            infile = open(args[0], "r")
+            infile = IOTools.openFile(args[0], "r")
     else:
         infile = sys.stdin
 

@@ -157,7 +157,7 @@ def main(argv=None):
 
     counts = E.Counter()
 
-    outfile_notfound = open("notfound.table", "w")
+    outfile_notfound = IOTools.openFile("notfound.table", "w")
 
     options.stdout.write("probeset_id\tgene_id\tngenes\n")
 

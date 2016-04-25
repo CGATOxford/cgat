@@ -69,7 +69,8 @@ def main(argv=None):
 
     for filename in args:
 
-        lines = [x for x in open(filename, "r").readlines() if x[0] != "#"]
+        lines = [x for x in IOTools.openFile(filename, "r").readlines()
+                 if x[0] != "#"]
 
         if len(lines) == 0:
             continue

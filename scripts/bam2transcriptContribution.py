@@ -82,7 +82,7 @@ def main(argv=None):
     ######################################################
 
     # open outfile and prepare headers
-    outf = open(options.outfile, "w")
+    outf = IOTools.openFile(options.outfile, "w")
     outf.write("\t".join(["total alignments", "aligments in transcripts", "percent alignments in transcripts",
                           "total spliced alignments", "spliced alignments in transcripts", "percent spliced alignments in transcripts"]) + "\n")
 
@@ -207,12 +207,12 @@ def main(argv=None):
     ############################
 
     if options.reference_gtf:
-        context_summary = open(
+        context_summary = IOTools.openFile(
             IOTools.snip(options.bam_file, ".bam") + ".excluded.context", "w")
         context_summary.write("\t".join(["Feature", "number"]) + "\n")
 
         # write out the read info as well
-        context_file = open(
+        context_file = IOTools.openFile(
             IOTools.snip(options.bam_file, ".bam") + ".excluded", "w")
 
         context_dict = collections.defaultdict(int)

@@ -124,7 +124,7 @@ def readJunctions(filename_junctions):
     '''
 
     junctions = collections.defaultdict(dict)
-    infile = open(filename_junctions, "r")
+    infile = IOTools.openFile(filename_junctions, "r")
     njunctions = 0
 
     for line in infile:
@@ -291,7 +291,7 @@ class BaseAnnotatorSpliceSites(BaseAnnotator):
 
         junctions = IndexedGenome.IndexedGenome()
 
-        infile = open(filename_junctions, "r")
+        infile = IOTools.openFile(filename_junctions, "r")
         njunctions = 0
 
         for line in infile:

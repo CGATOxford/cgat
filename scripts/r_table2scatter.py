@@ -75,7 +75,7 @@ def readTable(lines,
         num_cols = len(lines[0][:-1].split("\t"))
         take = list(range(1, num_cols))
 
-    outfile = open(name, "w")
+    outfile = IOTools.openFile(name, "w")
     c = []
 
     # delete columns with colour information/legend
@@ -275,7 +275,7 @@ def main(argv=None):
 
     # read data matrix
     if options.input_filename:
-        lines = open(options.input_filename, "r").readlines()
+        lines = IOTools.openFile(options.input_filename, "r").readlines()
     else:
         # note: this will not work for interactive viewing, but
         # creating hardcopy plots works.

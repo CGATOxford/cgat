@@ -69,7 +69,7 @@ def CreateOpen(file, mode="w", dry_run=False, header=None):
 
     if dry_run:
         print("# opening file %s" % file)
-        return open("/dev/null", mode)
+        returnIOTools.openFile("/dev/null", mode)
 
     if mode in ("w", "a"):
         dirname = os.path.dirname(file)
@@ -81,7 +81,7 @@ def CreateOpen(file, mode="w", dry_run=False, header=None):
     else:
         existed = False
 
-    f = open(file, mode)
+    f = IOTools.openFile(file, mode)
 
     if header and not existed:
         f.write(header + "\n")
@@ -168,7 +168,7 @@ def main(argv=None):
 
     mymap = {}
     if param_filename_map:
-        infile = open(param_filename_map, "r")
+        infile = IOTools.openFile(param_filename_map, "r")
         for line in infile:
             if line[0] == "#":
                 continue

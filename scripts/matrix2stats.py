@@ -136,7 +136,7 @@ def main(argv=None):
 
         if options.write_separators:
             probabilities = IOTools.ReadMap(
-                open(param, "r"), map_functions=(str, float))
+               IOTools.openFile(param, "r"), map_functions=(str, float))
         else:
             probability = float(param)
 

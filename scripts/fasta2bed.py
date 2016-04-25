@@ -144,7 +144,7 @@ def segmentWithGCProfile(infile, options):
 
         contig = re.sub("\s.*", "", cur_record.title)
         filename = os.path.join(tmpdir, contig) + ".fasta"
-        with open(filename, "w") as f:
+        with IOTools.openFile(filename, "w") as f:
             f.write(">%s\n%s\n" % (contig, cur_record.sequence))
 
         E.info("running %s on %s" % (EXECUTABLE, contig))
@@ -180,7 +180,7 @@ def segmentWithGCProfile(infile, options):
 
     for f in glob.glob(os.path.join(tmpdir, "*.SegGC")):
         contig = os.path.basename(f[:-len(".SegGC")])
-        with open(f, "r") as infile:
+        with IOTools.openFile(f, "r") as infile:
             start = None
             for line in infile:
                 pos, gc = line[:-1].split("\t")

@@ -102,7 +102,7 @@ def main(argv=None):
         keys[a] = 1
 
     if options.filename_tokens:
-        infile = open(options.filename_tokens, "r")
+        infile = IOTools.openFile(options.filename_tokens, "r")
         for line in infile:
             if line[0] == "#":
                 continue

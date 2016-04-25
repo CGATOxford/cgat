@@ -471,7 +471,7 @@ def count(AlignmentFile samfile,
                     fastq_count = &fastq_counts[index]
                     read_name = qname
                     printf("%s\t%i\t%i\t%i\t%i\t%i\t%i\t%i\t%i\n",
-                           force_str(read_name),
+                           read_name,
                            fastq_count.is_unmapped,
                            fastq_count.mate_is_unmapped,
                            fastq_count.is_paired,

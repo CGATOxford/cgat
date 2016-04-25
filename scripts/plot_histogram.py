@@ -214,7 +214,7 @@ def main(argv=None):
         if args[0] == "-":
             infile = sys.stdin
         else:
-            infile = open(args[0], "r")
+            infile = IOTools.openFile(args[0], "r")
     else:
         infile = sys.stdin
 

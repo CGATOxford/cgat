@@ -49,7 +49,7 @@ def WriteLine(a, b, line, prefix="%s-%s"):
         key = key2
 
     if key not in open_files:
-        open_files[key] = open(key, "a")
+        open_files[key] = IOTools.openFile(key, "a")
 
     f = open_files[key]
     f.write(line)

@@ -206,7 +206,7 @@ def main(argv=None):
                     g2.difference(g1), ids2, options)
 
             if output_set:
-                outfile = open(options.output_pattern % (choice), "w")
+                outfile = IOTools.openFile(options.output_pattern % (choice), "w")
                 for x in output_set:
                     outfile.write("%s\n" % (x,))
                 outfile.close()

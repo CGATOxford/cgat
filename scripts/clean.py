@@ -45,7 +45,7 @@ import CGAT.Experiment as E
 def getLastLine(filename, read_size=1024):
     """return last line of a file.
     """
-    f = open(
+    f = IOTools.openFile(
         filename, 'rU')    # U is to open it with Universal newline support
     offset = read_size
     f.seek(0, 2)

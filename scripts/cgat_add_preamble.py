@@ -165,7 +165,7 @@ def main(argv=None):
 
     for filename in args:
         E.info("processing %s" % filename)
-        lines = open(filename).readlines()
+        lines = IOTools.openFile(filename).readlines()
         x = 0
         while x < len(lines) and lines[x][0] in ("#", "", "\n"):
             x += 1
@@ -174,7 +174,7 @@ def main(argv=None):
             continue
         E.info("moving %s to %s.bak" % (filename, filename))
         shutil.move(filename, "%s.bak" % filename)
-        outfile = open(filename, "w")
+        outfile = IOTools.openFile(filename, "w")
         outfile.write(template % locals())
         outfile.write("".join(lines[x:]))
         outfile.close()

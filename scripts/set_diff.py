@@ -120,7 +120,7 @@ def main(argv=None):
     for f in args:
         if options.with_title:
             title, data = IOTools.readList(
-                open(f, "r"), with_title=options.with_title)
+               IOTools.openFile(f, "r"), with_title=options.with_title)
             titles.append(title)
         else:
             data = IOTools.readList(open(f, "r"))

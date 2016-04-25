@@ -680,7 +680,7 @@ def main(argv=None):
         patterns = []
 
         if options.file:
-            infile = open(options.file, "r")
+            infile = IOTools.openFile(options.file, "r")
             for line in infile:
                 if line[0] == "#":
                     continue
@@ -849,7 +849,7 @@ def main(argv=None):
                 other_table_name = options.parameters[0]
                 del options.parameters[0]
                 other_fields, other_table = CSV.readTable(
-                    open(other_table_name, "r"),
+                   IOTools.openFile(other_table_name, "r"),
                     with_header=options.has_headers,
                     as_rows=False)
 

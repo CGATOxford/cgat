@@ -1033,7 +1033,7 @@ class GOGraph(networkx.DiGraph):
     # @param filename The filename of the pickle to use
     def savePickle(self, filename="gograph.pickle"):
         try:
-            f = open(filename, 'wb')
+            f = IOTools.openFile(filename, 'wb')
             pickle.dump(self, f, protocol=pickle.HIGHEST_PROTOCOL)
             f.close()
         except:
@@ -1044,7 +1044,7 @@ class GOGraph(networkx.DiGraph):
     @classmethod
     def loadPickle(klass, filename="gograph.pickle"):
         try:
-            f = open(filename, 'rb')
+            f = IOTools.openFile(filename, 'rb')
             g = pickle.load(f)
             return g
         except:

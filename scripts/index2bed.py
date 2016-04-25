@@ -104,7 +104,7 @@ def main(argv=None):
                 "could not parse window size '%s': should be size[,increment]" % options.fixed_width_windows)
 
     if options.gff_file:
-        infile = open(options.gff_file, "r")
+        infile = IOTools.openFile(options.gff_file, "r")
         gff = GTF.readFromFile(infile)
         infile.close()
         for g in gff:

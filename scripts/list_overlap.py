@@ -100,9 +100,9 @@ def with_genes(fftot, ffa, ffb, asfile=True):
     """
 
     if asfile:
-        ftot = frozenset(f.strip() for f in open(fftot) if f.strip())
-        fa = frozenset(f.strip() for f in open(ffa) if f.strip())
-        fb = frozenset(f.strip() for f in open(ffb) if f.strip())
+        ftot = frozenset(f.strip() for f in IOTools.openFile(fftot) if f.strip())
+        fa = frozenset(f.strip() for f in IOTools.openFile(ffa) if f.strip())
+        fb = frozenset(f.strip() for f in IOTools.openFile(ffb) if f.strip())
     else:
         fa, fb, ftot = frozenset(ffa), frozenset(ffb), frozenset(fftot)
 

@@ -156,7 +156,7 @@ def main(argv=None):
                              len(options.filenames))
         sys.stdout.flush()
         if len(options.filenames) == 1:
-            for line in open(options.filenames[0]):
+            for line in IOTools.openFile(options.filenames[0]):
                 options.stdout.write(line)
             E.Stop()
             sys.exit(0)
@@ -180,7 +180,7 @@ def main(argv=None):
         prefix = os.path.basename(filename)
 
         if os.path.exists(filename):
-            file = open(filename, "r")
+            file = IOTools.openFile(filename, "r")
             lines = [x for x in file if x[0] != "#"]
 
         else:

@@ -31,7 +31,6 @@ Command line options
 
 '''
 import sys
-import string
 import CGAT.Experiment as E
 import CGAT.Histogram as Histogram
 import numpy
@@ -202,7 +201,7 @@ def main(argv=None):
             for x in range(len(options.columns)):
 
                 try:
-                    v = string.atof(data[options.columns[x]])
+                    v = float(data[options.columns[x]])
                 except IndexError:
                     print("# IndexError in line:", l[:-1])
                     continue

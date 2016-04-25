@@ -92,7 +92,7 @@ def main(argv=None):
 
     # read in mapping between spcies and contigs
     species_map = {}
-    for line in open(options.species_map).readlines():
+    for line in IOTools.openFile(options.species_map).readlines():
         data = line[:-1].split("\t")
         contig, species = data[0], data[1]
         species_map[contig] = species

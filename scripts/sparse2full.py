@@ -374,7 +374,7 @@ def main(argv=None):
 
         if options.row_names:
             row_tokens = [x[:-1].split("\t")[0]
-                          for x in open(options.row_names, "r").readlines()]
+                          for x in IOTools.openFile(options.row_names, "r").readlines()]
         else:
             row_tokens = None
 
@@ -392,7 +392,7 @@ def main(argv=None):
                 if not col_tokens:
                     if options.col_names:
                         col_tokens = [x[:-1].split("\t")[0]
-                                      for x in open(options.col_names, "r").readlines()]
+                                      for x in IOTools.openFile(options.col_names, "r").readlines()]
 
                     else:
                         if not row_tokens:
@@ -415,7 +415,7 @@ def main(argv=None):
         nskipped = 0
 
         if options.filename_map:
-            outfile_map = open(options.filename_map, "w")
+            outfile_map = IOTools.openFile(options.filename_map, "w")
             outfile_map.write(
                 "## Map between matrices in input file and output matrices.\nnew\told\n")
 
@@ -438,7 +438,7 @@ def main(argv=None):
 
         if options.file_row_names:
             row_tokens = [x[:-1].split("\t")[0]
-                          for x in open(options.file_row_names, "r").readlines()]
+                          for x in IOTools.openFile(options.file_row_names, "r").readlines()]
             for row_token in row_tokens:
                 map_token2row[row_token] = len(map_token2row)
 
@@ -448,7 +448,7 @@ def main(argv=None):
 
         if options.file_col_names:
             col_tokens = [x[:-1].split("\t")[0]
-                          for x in open(options.file_col_names, "r").readlines()]
+                          for x in IOTools.openFile(options.file_col_names, "r").readlines()]
             for col_token in col_tokens:
                 map_token2col[col_token] = len(map_token2col)
 

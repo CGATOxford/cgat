@@ -815,7 +815,7 @@ def iterator_rename_query(infile, options):
         yield match
 
     if options.output_filename_map:
-        outfile = open(options.output_filename_map, "w")
+        outfile = IOTools.openFile(options.output_filename_map, "w")
         outfile.write("%s\t%s\n" % ("old", "new"))
         for old, new in map_old2new.items():
             outfile.write("%s\t%s\n" % (old, new))

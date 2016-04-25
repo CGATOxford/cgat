@@ -152,8 +152,8 @@ def main(argv=None):
                                   coverage_full5prime[x],
                                   coverage_full3prime[x])]) + "\n")
 
-    outfile5 = open(options.output_filename_pattern % "reads5", "w")
-    outfile3 = open(options.output_filename_pattern % "reads3", "w")
+    outfile5 = IOTools.openFile(options.output_filename_pattern % "reads5", "w")
+    outfile3 = IOTools.openFile(options.output_filename_pattern % "reads3", "w")
 
     outfile5.write("\t".join(["distance", ] + ["reads%i" % options.maximum_reads[y]
                                                for y in range(len(options.maximum_reads))]) + "\n")

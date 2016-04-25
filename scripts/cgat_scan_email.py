@@ -44,7 +44,7 @@ import CGAT.Experiment as E
 
 def reverse_readline(filename, buf_size=8192):
     """a generator that returns the lines of a file in reverse order"""
-    with open(filename) as fh:
+    with IOTools.openFile(filename) as fh:
         segment = None
         offset = 0
         fh.seek(0, os.SEEK_END)

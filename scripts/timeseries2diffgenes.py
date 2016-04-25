@@ -135,7 +135,7 @@ def main(argv=None):
 
     try:
         infile = argv[-1]
-        open(infile, "r")
+       IOTools.openFile(infile, "r")
         # check for compression state
         if infile.split(".")[-1] == "gz":
             comp = "gzip"

@@ -375,7 +375,7 @@ def main(argv=None):
         raise ValueError("at least two arguments required")
 
     if options.filename_update:
-        infile = open(options.filename_update, "r")
+        infile = IOTools.openFile(options.filename_update, "r")
         previous_results = {}
         for line in infile:
             if line.startswith("#"):

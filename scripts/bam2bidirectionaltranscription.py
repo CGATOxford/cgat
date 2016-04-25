@@ -165,7 +165,7 @@ def main(argv=None):
     ################################################
     if options.analysis_type == "ratio":
         E.info("calculating ratio of sense / antisense")
-        outf = open(options.outbase + "_ratio.tsv", "w")
+        outf = IOTools.openFile(options.outbase + "_ratio.tsv", "w")
         outf.write("gene_id\ttranscript_id\tasratio\n")
         total_unmapped = 0
         total_no_xs = 0
@@ -266,7 +266,7 @@ def main(argv=None):
                     bin_as.append(ratio)
             profile[gtf.gene_id] = bin_as
 
-        outf = open(options.outbase + "_profile.tsv", "w")
+        outf = IOTools.openFile(options.outbase + "_profile.tsv", "w")
         outf.write("\t".join(list(profile.keys())) + "\n")
         for x in zip(*list(profile.values())):
             outf.write("\t".join(map(str, list(x))) + "\n")
@@ -326,7 +326,7 @@ def main(argv=None):
             sense[gtf.gene_id] = bin_s
             antisense[gtf.gene_id] = bin_as
 
-        outf = open(options.outbase + "_shape.tsv", "w")
+        outf = IOTools.openFile(options.outbase + "_shape.tsv", "w")
         outf.write("\t".join(list(sense.keys())) + "\tstatus" + "\n")
         for x in zip(*list(sense.values())):
             outf.write("\t".join(map(str, list(x))) + "\tsense" + "\n")

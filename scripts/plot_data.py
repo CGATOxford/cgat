@@ -272,7 +272,7 @@ def main(argv=None):
         if filename == "-":
             infile = sys.stdin
         else:
-            infile = open(filename)
+            infile = IOTools.openFile(filename)
 
         try:
             data, legend, colors = readTable(infile,

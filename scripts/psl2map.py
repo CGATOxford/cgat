@@ -53,7 +53,7 @@ def printHistogram(values, section, options, min_value=0, increment=1.0):
                 "# no histogram data for section %s\n" % (section))
         return
 
-    outfile = open(options.output_filename_pattern % section, "w")
+    outfile = IOTools.openFile(options.output_filename_pattern % section, "w")
     h = Histogram.Calculate(
         values, no_empty_bins=True, min_value=0, increment=1.0)
 
@@ -65,7 +65,7 @@ def printHistogram(values, section, options, min_value=0, increment=1.0):
 
 def printMatched(query_ids, section, options):
 
-    outfile = open(options.output_filename_pattern % section, "w")
+    outfile = IOTools.openFile(options.output_filename_pattern % section, "w")
 
     for query_id in query_ids:
         outfile.write("%s\n" % (query_id))
@@ -415,7 +415,7 @@ def main(argv=None):
             import gzip
             infile = gzip.open(args[0], "r")
         else:
-            infile = open(args[0], "r")
+            infile = IOTools.openFile(args[0], "r")
     else:
         infile = sys.stdin
 
@@ -433,7 +433,7 @@ def main(argv=None):
             raise ValueError("filtering for intervals requires the bx tools")
 
         intervals = GTF.readGFFFromFileAsIntervals(
-            open(options.filename_filter_sbjct, "r"))
+           IOTools.openFile(options.filename_filter_sbjct, "r"))
 
         intersectors = {}
 
@@ -476,13 +476,13 @@ def main(argv=None):
     new_family_id = options.new_family_id
 
     if options.output_filename_empty:
-        outfile_empty = open(options.output_filename_empty, "w")
+        outfile_empty = IOTools.openFile(options.output_filename_empty, "w")
         outfile_empty.write("read_id\tcomment\n")
     else:
         outfile_empty = None
 
     if options.polyA:
-        options.outfile_polyA = open(
+        options.outfile_polyA = IOTools.openFile(
             options.output_filename_pattern % "polyA", "w")
         options.outfile_polyA.write("query_id\tstart\tend\tpA+N\tpT+N\ttail\n")
 

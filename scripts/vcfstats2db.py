@@ -60,10 +60,10 @@ def main(argv=None):
     E.info("Parsing %i file(s)" % len(options.filenames))
 
     # set up output files
-    vcf_file = open('vcfstats.txt', 'w')
-    indel_file = open('indelstats.txt', 'w')
-    snp_file = open('snpstats.txt', 'w')
-    shared_file = open('sharedstats.txt', 'w')
+    vcf_file = IOTools.openFile('vcfstats.txt', 'w')
+    indel_file = IOTools.openFile('indelstats.txt', 'w')
+    snp_file = IOTools.openFile('snpstats.txt', 'w')
+    shared_file = IOTools.openFile('sharedstats.txt', 'w')
 
     for fileno, filename in enumerate(options.filenames):
 

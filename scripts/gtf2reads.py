@@ -168,10 +168,10 @@ def main(argv=None):
     assert options.genome_file, "please supply an indexed genome."
 
     if options.output_filename_pattern:
-        outfile_stats = open(options.output_filename_pattern % "stats", "w")
+        outfile_stats = IOTools.openFile(options.output_filename_pattern % "stats", "w")
         outfile_stats.write(
             "id\tlen\tnreads\tlen_mean\tlen_std\tcov_mean\tcov_std\n")
-        outfile_map = open(options.output_filename_pattern % "map", "w")
+        outfile_map = IOTools.openFile(options.output_filename_pattern % "map", "w")
         outfile_map.write("id\ttranscript\n")
     else:
         outfile_stats = None

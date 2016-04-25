@@ -71,6 +71,7 @@ import gzip
 import tempfile
 import io
 from CGAT import Experiment as E
+import CGAT.IOTools as IOTools
 import CGAT.Genomics as Genomics
 from .AString import AString
 import pysam
@@ -162,8 +163,12 @@ def gzip_mangler(s):
 
 
 def gzip_demangler(s):
-
-    gzipfile = gzip.GzipFile(fileobj=io.StringIO(s), mode="rb")
+    if sys.version_info.major >= 3:
+        gzipfile = io.TextIOWrapper(
+            gzip.GzipFile(fileobj=io.BytesIO(s), mode="rb"),
+            encoding="ascii")
+    else:
+        gzipfile = gzip.GzipFile(fileobj=io.BytesIO(s), mode="rb")
     m = gzipfile.readline()
     return m
 
@@ -340,7 +345,12 @@ class MultipleFastaIterator:
                     b, ext = os.path.splitext(f.name)
                     if ext.lower() in (".fasta", ".fa"):
                         E.info("extracting %s" % f.name)
-                        infile = tf.extractfile(f)
+                        if sys.version_info.major >= 3:
+                            infile = io.TextIOWrapper(
+                                tf.extractfile(f),
+                                encoding="ascii")
+                        else:
+                            infile = tf.extractfile(f)
                         for x in _iter(infile):
                             yield x
                     else:
@@ -351,11 +361,11 @@ class MultipleFastaIterator:
                 continue
             elif self.format == "fasta.gz" or (self.format == "auto" and
                                                filename.endswith(".gz")):
-                infile = gzip.open(filename, "r")
+                infile = IOTools.openFile(filename, "r")
             elif filename == "-":
                 infile = sys.stdin
             else:
-                infile = open(filename, "r")
+                infile = IOTools.openFile(filename, "r")
 
             for x in _iter(infile):
                 yield x
@@ -470,7 +480,7 @@ def createDatabase(db, iterator,
             db_name, "wb", buffersize=1000000, chunksize=random_access_points)
         compression = None
     else:
-        outfile_fasta = open(db_name, "wb")
+        outfile_fasta = open(db_name, "w")
 
     identifiers = {}
     lsequence = 0
@@ -652,7 +662,6 @@ class CGATIndexedFasta:
         if compress is set to true, the index will not be loaded,
         but a compressed index will be created instead.
         """
-
         if self.mMethod == "uncompressed":
             self.mDatabaseFile = open(self.mDbname, "r")
         elif self.mMethod == "dictzip":
@@ -862,7 +871,7 @@ class CGATIndexedFasta:
         # -> block_size for unseekable streams
         try:
             pos_id, dummy, lsequence = struct.unpack("QQi", data)
-        except struct.error:
+        except (struct.error, TypeError):
             pos_id, dummy, lsequence, points = data
 
         pos_seq = dummy
@@ -945,7 +954,7 @@ class CGATIndexedFasta:
         data = self.mIndex[token]
         try:
             pos_id, pos_seq, lcontig = struct.unpack("QQi", data)
-        except struct.error:
+        except (struct.error, TypeError):
             pos_id, pos_seq, lcontig, points = data
 
         rpos = random.randint(0, lcontig)

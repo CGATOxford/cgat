@@ -86,7 +86,7 @@ def main(argv=None):
         raise ValueError("please supply filename with cds sequences.")
 
     if options.filename_peptides:
-        infile = open(options.filename_peptides, "r")
+        infile = IOTools.openFile(options.filename_peptides, "r")
         E.info("reading from %s" % options.filename_peptides)
     else:
         E.info("reading from stdin")

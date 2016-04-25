@@ -26,4 +26,5 @@ weblogo>=3.0
 ggplot>=0.6.5
 pybedtools>=0.6.5
 pep8>=1.4.0
+openpyxl>=2.3.5
 scikit-learn>=0.17.1

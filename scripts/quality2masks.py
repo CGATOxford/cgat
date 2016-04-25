@@ -80,7 +80,7 @@ def main(argv=None):
     ##################################################
     # read map
     ##################################################
-    infile = open(options.filename_map)
+    infile = IOTools.openFile(options.filename_map)
     map_genes2genome = {}
     for match in Blat.iterator(infile):
         assert match.mQueryId not in map_genes2genome, "duplicate entry %s" % match.mQueryId

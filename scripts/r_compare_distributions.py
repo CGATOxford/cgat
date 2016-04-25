@@ -133,7 +133,7 @@ def main(argv=None):
         f = float
 
     if options.filename_input1:
-        infile1 = open(options.filename_input1, "r")
+        infile1 = IOTools.openFile(options.filename_input1, "r")
     else:
         infile1 = sys.stdin
 

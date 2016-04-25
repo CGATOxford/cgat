@@ -119,12 +119,12 @@ def main(argv=sys.argv):
         tmpfile_sizes = os.path.join(tmpdir, "sizes")
 
         # write contig sizes
-        outfile_size = open(tmpfile_sizes, "w")
+        outfile_size = IOTools.openFile(tmpfile_sizes, "w")
         for contig, size in list(contig_sizes.items()):
             outfile_size.write("%s\t%s\n" % (contig, size))
         outfile_size.close()
 
-        outfile = open(tmpfile_wig, "w")
+        outfile = IOTools.openFile(tmpfile_wig, "w")
 
     else:
         outfile = options.stdout

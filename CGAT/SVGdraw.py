@@ -64,7 +64,6 @@ O'Reilly (www.oreilly.com) python books as information sources. A svg viewer
 is available from www.adobe.com
 '''
 
-import exceptions
 import sys
 
 __version__ = "1.0"
@@ -85,7 +84,7 @@ if use_dom_implementation != 0:
         from xml.dom import implementation
         from xml.dom.ext import PrettyPrint
     except:
-        raise exceptions.ImportError("PyXML is required for using the dom implementation")
+        raise ImportError("PyXML is required for using the dom implementation")
 
 # The implementation is used for the creating the XML document.
 # The prettyprint module is used for converting the xml document object to
@@ -1163,7 +1162,7 @@ class drawing:
         try:
             import xml.parsers.xmlproc.xmlval
         except:
-            raise exceptions.ImportError('PyXml is required for validating SVG')
+            raise ImportError('PyXml is required for validating SVG')
         svg = self.toXml()
         xv = xml.parsers.xmlproc.xmlval.XMLValidator()
         try:

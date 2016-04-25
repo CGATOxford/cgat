@@ -94,6 +94,7 @@ import sys
 import pandas as pd
 import CGAT.Experiment as E
 import CGAT.Timeseries as TS
+import CGAT.IOTools as IOTools
 
 
 def main(argv=None):
@@ -140,8 +141,7 @@ parses command line options in sys.argv, unless *argv* is given.
     (options, args) = E.Start(parser, argv=argv)
 
     try:
-        infile = argv[-1]
-        open(infile, "r")
+        infile = IOTools.openFile(argv[-1], "r")
     except IOError:
         infile = options.stdin
 

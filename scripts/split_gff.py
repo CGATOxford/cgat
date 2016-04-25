@@ -89,7 +89,7 @@ class OutputChunk:
 
         if self.dry_run:
             E.info("opening file %s" % filename)
-            return open("/dev/null", mode)
+            returnIOTools.openFile("/dev/null", mode)
 
         if mode in ("w", "a"):
             dirname = os.path.dirname(filename)

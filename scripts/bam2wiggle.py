@@ -281,7 +281,7 @@ def main(argv=None):
             raise OSError("could not find %s in path." % executable_name)
 
         # Open outout file
-        outfile = open(tmpfile_wig, "w")
+        outfile = IOTools.openFile(tmpfile_wig, "w")
         E.info("starting output to %s" % tmpfile_wig)
     else:
         outfile = options.stdout

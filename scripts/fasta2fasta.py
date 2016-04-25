@@ -649,7 +649,7 @@ def main(argv=None):
     if "build-map" in options.methods:
         p = options.parameters[0]
         if p:
-            outfile = open(p, "w")
+            outfile = IOTools.openFile(p, "w")
         else:
             outfile = options.stdout
 

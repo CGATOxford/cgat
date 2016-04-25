@@ -137,7 +137,7 @@ class Builder(Processor):
         self.mIdFormat = options.output_format
 
         if self.options.output_filename_pattern:
-            self.mOutFile = open(
+            self.mOutFile = IOTools.openFile(
                 self.options.output_filename_pattern % self.mName, "w")
         else:
             self.mOutFile = self.options.stdout
@@ -274,12 +274,12 @@ class BuilderTranscribedLocus(Builder):
         Builder.__init__(self, *args, **kwargs)
 
         if self.options.output_filename_pattern:
-            self.mOutFileFasta = open(
+            self.mOutFileFasta = IOTools.openFile(
                 self.options.output_filename_pattern % self.mName + ".fasta", "w")
             if self.options.output_pileup:
-                self.mOutFilePileup = open(
+                self.mOutFilePileup = IOTools.openFile(
                     self.options.output_filename_pattern % self.mName + ".pileup", "w")
-            self.mOutFileStrand = open(
+            self.mOutFileStrand = IOTools.openFile(
                 self.options.output_filename_pattern % self.mName + ".strand", "w")
         else:
             self.mOutFileFasta = self.options.stdout
@@ -1001,7 +1001,7 @@ class BuilderPolyA(Builder):
         self.mOutFile.write(
             "id\ttails\tnremoved\tnstrands\tnmotifs\tninconsistent\n")
 
-        self.mOutFileTails = open(
+        self.mOutFileTails = IOTools.openFile(
             self.options.output_filename_pattern % self.mName + ".tails", "w")
         self.mOutFileTails.write(
             "id\tpos\tstrand\tnmotifs\tmotifs\tnids\tids\n")
@@ -1190,7 +1190,7 @@ class Filter(Processor):
         Processor.__init__(self, *args, **kwargs)
 
         if self.options.output_filename_pattern:
-            self.mOutFile = open(
+            self.mOutFile = IOTools.openFile(
                 self.options.output_filename_pattern % self.mName, "w")
         else:
             self.mOutFile = self.options.stdout
@@ -1788,7 +1788,7 @@ def main(argv=None):
             import gzip
             infile = gzip.open(args[0], "r")
         else:
-            infile = open(args[0], "r")
+            infile = IOTools.openFile(args[0], "r")
     else:
         infile = sys.stdin
 
@@ -1801,7 +1801,7 @@ def main(argv=None):
 
     if options.input_filename_coverage:
         map_id2coverage = readMapId2Coverage(
-            open(options.input_filename_coverage, "r"))
+           IOTools.openFile(options.input_filename_coverage, "r"))
         E.info("read coverage information for %i ids" % len(map_id2coverage))
     else:
         map_id2coverage = None

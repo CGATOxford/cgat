@@ -77,7 +77,7 @@ class Files:
             if dirname and not os.path.exists(dirname):
                 os.makedirs(dirname)
 
-        return open(filename, mode)
+        returnIOTools.openFile(filename, mode)
 
     def Write(self, identifier, sequence):
 

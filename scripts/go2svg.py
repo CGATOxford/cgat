@@ -745,7 +745,7 @@ class GoPlot:
 
         self.mRoot.toXml(tfile)
 
-        lines = open(tfile, "r").readlines()
+        lines = IOTools.openFile(tfile, "r").readlines()
 
         outfile.write(string.join(lines, ""))
         outfile.write("\n")
@@ -856,7 +856,7 @@ def main(argv=None):
         # collect all columns
         try:
             values, nremoved, no_fdr = Collect(
-                open(filename, "r"),
+               IOTools.openFile(filename, "r"),
                 with_headers=options.headers,
                 annotator_format=options.annotator,
                 delims=options.delims,

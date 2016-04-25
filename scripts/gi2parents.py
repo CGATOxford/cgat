@@ -91,7 +91,7 @@ def main(argv=None):
 
     E.info("reading gi accession numbers")
     gi_accessions = set()
-    for line in open(options.gi_accessions).readlines():
+    for line in IOTools.openFile(options.gi_accessions).readlines():
         gi_accessions.add(line[:-1])
     E.info("read gi accession numbers")
 
@@ -110,14 +110,14 @@ def main(argv=None):
     E.info("building code map")
     code2taxa = {}
 
-    for line in open(options.taxa_code).readlines():
+    for line in IOTools.openFile(options.taxa_code).readlines():
         data = line[:-1].split("\t")
         code2taxa[data[0]] = data[1]
     E.info("built taxa code map")
 
     E.info("building taxa2name map")
     taxid2name = {}
-    for line in open(options.ncbi_map).readlines():
+    for line in IOTools.openFile(options.ncbi_map).readlines():
         data = line[:-1].split("\t")
         # keep the taxa code
         taxid2name[data[0]] = (data[1], data[3])
@@ -125,7 +125,7 @@ def main(argv=None):
 
     E.info("build taxid2parentmap")
     taxid2parents = {}
-    for line in open(options.tree).readlines():
+    for line in IOTools.openFile(options.tree).readlines():
         data = line[:-1].split("\t")
         data = [x for x in data if x != "|"]
         taxid2parents[data[0]] = data[1]

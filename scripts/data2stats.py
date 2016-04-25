@@ -101,34 +101,34 @@ def PrintValues(outfile, values,  options, prefix="", titles=None):
 
         outfile.write(
             "count\t%s" % ("\t".join(
-                ["%i" % len(v) for v in values]) + "\n")
+                ["%i" % len(v) for v in values])) + "\n")
         outfile.write(
             "min\t%s" % ("\t".join(
-                [options.value_format % min(v) for v in values]) + "\n")
+                [options.value_format % min(v) for v in values])) + "\n")
         outfile.write(
             "max\t%s" % ("\t".join(
-                [options.value_format % max(v) for v in values]) + "\n")
+                [options.value_format % max(v) for v in values])) + "\n")
         outfile.write(
             "mean\t%s" % ("\t".join(
-                [options.value_format % scipy.mean(v) for v in values]) + "\n")
+                [options.value_format % scipy.mean(v) for v in values])) + "\n")
         outfile.write(
             "median\t%s" % ("\t".join(
-                [options.value_format % scipy.median(v) for v in values]) + "\n")
+                [options.value_format % scipy.median(v) for v in values])) + "\n")
         outfile.write(
             "stddev\t%s" % ("\t".join(
-                [options.value_format % scipy.std(v) for v in values]) + "\n")
+                [options.value_format % scipy.std(v) for v in values])) + "\n")
         outfile.write(
             "sum\t%s" % ("\t".join(
                 [options.value_format %
-                    reduce(lambda x, y: x + y, v) for v in values]) + "\n")
+                    reduce(lambda x, y: x + y, v) for v in values])) + "\n")
         outfile.write(
             "q1\t%s" % ("\t".join(
                 [options.value_format %
-                    scipy.stats.scoreatpercentile(v, per=25) for v in values]) + "\n")
+                    scipy.stats.scoreatpercentile(v, per=25) for v in values])) + "\n")
         outfile.write(
             "q3\t%s" % ("\t".join(
                 [options.value_format %
-                    scipy.stats.scoreatpercentile(v, per=75) for v in values]) + "\n")
+                    scipy.stats.scoreatpercentile(v, per=75) for v in values])) + "\n")
 
 
 def main(argv=None):

@@ -667,7 +667,7 @@ def processScript(script_name, outfile, options):
         displayMap['normal'] = displayMap['show']
 
         target = Template(
-            open('/ifs/devel/andreas/cgat/scripts/cgat2rdf/galaxy.xml').read())
+           IOTools.openFile('/ifs/devel/andreas/cgat/scripts/cgat2rdf/galaxy.xml').read())
         outfile.write(target.render(data=data,
                                     displayMap=displayMap,
                                     outputs=outputs) + "\n")
@@ -749,7 +749,7 @@ def main(argv=None):
 
         if options.output_pattern:
             outfile_name = re.sub("%s", input_string, options.output_pattern)
-            outfile = open(outfile_name, "w")
+            outfile = IOTools.openFile(outfile_name, "w")
         else:
             outfile = options.stdout
 

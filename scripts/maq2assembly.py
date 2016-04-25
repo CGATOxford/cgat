@@ -88,7 +88,7 @@ class Builder:
         self.mIdFormat = options.output_format
 
         if self.options.output_filename_pattern:
-            self.mOutFile = open(
+            self.mOutFile = IOTools.openFile(
                 self.options.output_filename_pattern % self.mName, "w")
         else:
             self.mOutFile = self.options.stdout

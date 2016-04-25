@@ -47,7 +47,7 @@ class CGATBase():
         """
         try:
             # get stderr, allowing for case where it's very large
-            tmp = open(fname, 'rb')
+            tmp = IOTools.openFile(fname, 'rb')
             s = ''
             buffsize = 1048576
             try:
@@ -169,7 +169,7 @@ def __main__():
         os.unlink(tmp_bai_name)
 
     if options.html_file:
-        with open(options.html_file, "w") as outf:
+        with IOTools.openFile(options.html_file, "w") as outf:
             outf.write('<h1>%s - Output</h1>' %
                        os.path.basename(options.wrapper_command))
             for fn in glob.glob(os.path.join(options.html_dir, "*.*")):
