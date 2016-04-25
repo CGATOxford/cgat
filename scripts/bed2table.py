@@ -99,14 +99,7 @@ import CGAT.Intervals as Intervals
 import numpy
 import pysam
 
-# The following is a patch. Long term the shared
-# methods in gtf2table need to be exported to
-# a separate module.
-try:
-    from CGAT import gtf2table
-# ValueError: Attempted relative import in non-package
-except ValueError:
-    from CGAT import gtf2table
+import CGAT.GeneModelAnalysis as GeneModelAnalysis
 
 
 class Counter(object):
@@ -373,7 +366,7 @@ class CounterCompositionCpG(CounterCompositionNucleotides):
 
 
 # ------------------------------------------------------------------------
-class ClassifierChIPSeq(gtf2table.Classifier):
+class ClassifierChIPSeq(GeneModelAnalysis.Classifier):
 
     """classify ChIPSeq intervals based on a reference annotation.
 
@@ -430,7 +423,7 @@ class ClassifierChIPSeq(gtf2table.Classifier):
         gtf = GTF.Entry()
         gtf.fromBed(bed)
         gtf.feature = 'exon'
-        gtf2table.Classifier.update(self, [gtf])
+        GeneModelAnalysis.Classifier.update(self, [gtf])
 
     def count(self):
 

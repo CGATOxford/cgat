@@ -479,9 +479,13 @@ import CGAT.SequenceProperties as SequenceProperties
 import CGAT.Genomics as Genomics
 import CGAT.Intervals as Intervals
 
-import bx
-import bx.bbi.bigwig_file
-import bx.intervals.intersection
+try:
+    import bx
+    import bx.bbi.bigwig_file
+    import bx.intervals.intersection
+except ImportError:
+    # bx not py3 compatible
+    pass
 
 try:
     import alignlib_lite
@@ -492,12 +496,14 @@ import numpy
 import CGAT.IndexedGenome as IndexedGenome
 import pysam
 
-try:
-    import pyximport
-    pyximport.install(build_in_temp=False)
-    import _gtf2table
-except ImportError:
-    import CGAT._gtf2table as _gtf2table
+import CGAT.GeneModelAnalysis as GeneModelAnalysis
+
+# try:
+#     import pyximport
+#     pyximport.install(build_in_temp=False)
+#     import _gtf2table
+# except ImportError:
+#     import CGAT._gtf2table as _gtf2table
 
 
 def readIntervalsFromGFF(filename_gff, source, feature,
@@ -609,7 +615,7 @@ def readIntervalsFromGFF(filename_gff, source, feature,
     return e
 
 
-class CounterIntronsExons(_gtf2table.Counter):
+class CounterIntronsExons(GeneModelAnalysis.Counter):
 
     """count number of introns and exons.
     """
@@ -617,7 +623,7 @@ class CounterIntronsExons(_gtf2table.Counter):
     header = ("ntranscripts", "nexons", "nintrons", )
 
     def __init__(self, *args, **kwargs):
-        _gtf2table.Counter.__init__(self, *args, **kwargs)
+        GeneModelAnalysis.Counter.__init__(self, *args, **kwargs)
 
     def count(self):
         segments = self.getSegments()
@@ -631,13 +637,13 @@ class CounterIntronsExons(_gtf2table.Counter):
                           str(self.mNIntrons)))
 
 
-class CounterPosition(_gtf2table.Counter):
+class CounterPosition(GeneModelAnalysis.Counter):
 
     """output the position of the transcript."""
     header = ("contig", "strand", "start", "end")
 
     def __init__(self, *args, **kwargs):
-        _gtf2table.Counter.__init__(self, *args, **kwargs)
+        GeneModelAnalysis.Counter.__init__(self, *args, **kwargs)
 
     def count(self):
 
@@ -658,11 +664,11 @@ class CounterPosition(_gtf2table.Counter):
 # ----------------------------------------------------------------
 
 
-class CounterLengths(_gtf2table.Counter):
+class CounterLengths(GeneModelAnalysis.Counter):
     header = Stats.Summary().getHeaders()
 
     def __init__(self, *args, **kwargs):
-        _gtf2table.Counter.__init__(self, *args, **kwargs)
+        GeneModelAnalysis.Counter.__init__(self, *args, **kwargs)
 
     def count(self):
         segments = self.getSegments()
@@ -675,7 +681,7 @@ class CounterLengths(_gtf2table.Counter):
 # ----------------------------------------------------------------
 
 
-class CounterSpliceSites(_gtf2table.Counter):
+class CounterSpliceSites(GeneModelAnalysis.Counter):
 
     mIntronTypes = (("U2-GT/AG", "GT", "AG"),
                     ("U2-nc-GC/AG", "GC", "AG"),
@@ -687,7 +693,7 @@ class CounterSpliceSites(_gtf2table.Counter):
     mCheckBothStrands = True
 
     def __init__(self, *args, **kwargs):
-        _gtf2table.Counter.__init__(self, *args, **kwargs)
+        GeneModelAnalysis.Counter.__init__(self, *args, **kwargs)
 
     def count(self):
 
@@ -733,11 +739,11 @@ class CounterSpliceSites(_gtf2table.Counter):
 # ------------------------------------------------------------------------
 
 
-class CounterCompositionNucleotides(_gtf2table.Counter):
+class CounterCompositionNucleotides(GeneModelAnalysis.Counter):
     header = SequenceProperties.SequencePropertiesNA().getHeaders()
 
     def __init__(self, *args, **kwargs):
-        _gtf2table.Counter.__init__(self, *args, **kwargs)
+        GeneModelAnalysis.Counter.__init__(self, *args, **kwargs)
 
     def count(self):
         ee = self.getSegments()
@@ -751,7 +757,7 @@ class CounterCompositionNucleotides(_gtf2table.Counter):
 # ------------------------------------------------------------------------
 
 
-class CounterCompositionCpG(_gtf2table.Counter):
+class CounterCompositionCpG(GeneModelAnalysis.Counter):
 
     '''compute CpG frequencies as well as nucleotide frequencies.
 
@@ -765,7 +771,7 @@ class CounterCompositionCpG(_gtf2table.Counter):
     header = SequenceProperties.SequencePropertiesCpg().getHeaders()
 
     def __init__(self, *args, **kwargs):
-        _gtf2table.Counter.__init__(self, *args, **kwargs)
+        GeneModelAnalysis.Counter.__init__(self, *args, **kwargs)
 
     def count(self):
         ee = self.getSegments()
@@ -779,7 +785,7 @@ class CounterCompositionCpG(_gtf2table.Counter):
 # ------------------------------------------------------------------------
 
 
-class CounterOverlap(_gtf2table.Counter):
+class CounterOverlap(GeneModelAnalysis.Counter):
 
     """count overlap with segments in another file.
 
@@ -799,7 +805,7 @@ class CounterOverlap(_gtf2table.Counter):
     mUseStrand = False
 
     def __init__(self, filename_gff, source, feature, *args, **kwargs):
-        _gtf2table.Counter.__init__(self, *args, **kwargs)
+        GeneModelAnalysis.Counter.__init__(self, *args, **kwargs)
 
         if feature and source:
             self.header = ["%s:%s:%s" % (x, source, feature)
@@ -1143,7 +1149,7 @@ class CounterCoverage(CounterOverlap):
         return "\t".join((str(s), str(ncovered), values))
 
 
-class Classifier(_gtf2table.Counter):
+class Classifier(GeneModelAnalysis.Counter):
     """classify transcripts based on a reference annotation.
 
     This assumes the input is a genome annotation derived from an
@@ -1201,7 +1207,7 @@ class Classifier(_gtf2table.Counter):
 
     def __init__(self, filename_gff, *args, **kwargs):
 
-        _gtf2table.Counter.__init__(self, *args, **kwargs)
+        GeneModelAnalysis.Counter.__init__(self, *args, **kwargs)
 
         if len(filename_gff) != 1:
             raise ValueError(
@@ -1304,7 +1310,7 @@ class Classifier(_gtf2table.Counter):
         return "\t".join(h)
 
     def getHeader(self):
-        h = [_gtf2table.Counter.getHeader(self)]
+        h = [GeneModelAnalysis.Counter.getHeader(self)]
 
         for key in self.mKeys:
             h.append(self.mCounters[key].getHeader())
@@ -1313,7 +1319,7 @@ class Classifier(_gtf2table.Counter):
 
 
 # ------------------------------------------------------------------------
-class ClassifierRNASeq(_gtf2table.Counter):
+class ClassifierRNASeq(GeneModelAnalysis.Counter):
 
     """classify RNASeq transcripts based on a reference annotation.
 
@@ -1423,7 +1429,7 @@ class ClassifierRNASeq(_gtf2table.Counter):
 
     def __init__(self, filename_gff, *args, **kwargs):
 
-        _gtf2table.Counter.__init__(self, *args, **kwargs)
+        GeneModelAnalysis.Counter.__init__(self, *args, **kwargs)
 
         if len(filename_gff) != 1:
             raise ValueError("expected only one gff file")
@@ -1669,7 +1675,7 @@ class ClassifierRNASeq(_gtf2table.Counter):
 # ------------------------------------------------------------------------
 
 
-class ClassifierRNASeqSplicing(_gtf2table.Counter):
+class ClassifierRNASeqSplicing(GeneModelAnalysis.Counter):
 
     """This is IMSs new style transcript classifier. It aims to give
     classifications that make more sense to biologists involved in
@@ -1842,7 +1848,7 @@ class ClassifierRNASeqSplicing(_gtf2table.Counter):
 
     def __init__(self, filename_gff, *args, **kwargs):
 
-        _gtf2table.Counter.__init__(self, *args, **kwargs)
+        GeneModelAnalysis.Counter.__init__(self, *args, **kwargs)
 
         if len(filename_gff) != 1:
             raise ValueError("expected only one gff file")
@@ -2585,7 +2591,7 @@ class CounterBindingPattern(CounterOverlap):
 # ------------------------------------------------------------------------
 
 
-class CounterOverrun(_gtf2table.Counter):
+class CounterOverrun(GeneModelAnalysis.Counter):
 
     """count intron overrun. 
 
@@ -2612,7 +2618,7 @@ class CounterOverrun(_gtf2table.Counter):
 
     def __init__(self, filename_gff, *args, **kwargs):
 
-        _gtf2table.Counter.__init__(self, *args, **kwargs)
+        GeneModelAnalysis.Counter.__init__(self, *args, **kwargs)
 
         if len(filename_gff) != 1:
             raise ValueError("expected only one gff file")
@@ -2703,7 +2709,7 @@ class CounterOverrun(_gtf2table.Counter):
 # ------------------------------------------------------------------------
 
 
-class CounterDistance(_gtf2table.Counter):
+class CounterDistance(GeneModelAnalysis.Counter):
 
     """counter for computing the distance to features on either side 
     of a feature.
@@ -2748,7 +2754,7 @@ class CounterDistance(_gtf2table.Counter):
     mWithOverlap = False
 
     def __init__(self, filename_gff, source, feature, *args, **kwargs):
-        _gtf2table.Counter.__init__(self, *args, **kwargs)
+        GeneModelAnalysis.Counter.__init__(self, *args, **kwargs)
 
         if feature and source:
             self.header = ["%s:%s:%s" % (x, source, feature)
@@ -3472,7 +3478,7 @@ class CounterTerritories(CounterOverlap):
 # ------------------------------------------------------------------------
 
 
-class CounterQuality(_gtf2table.Counter):
+class CounterQuality(GeneModelAnalysis.Counter):
 
     header = (Stats.Summary().getHeaders() + ("values",))
 
@@ -3481,7 +3487,7 @@ class CounterQuality(_gtf2table.Counter):
     mMaxLength = 100000
 
     def __init__(self, *args, **kwargs):
-        _gtf2table.Counter.__init__(self, *args, **kwargs)
+        GeneModelAnalysis.Counter.__init__(self, *args, **kwargs)
 
     def count(self):
         ee = self.getSegments()
@@ -3511,7 +3517,7 @@ class CounterQuality(_gtf2table.Counter):
 
 
 # ------------------------------------------------------------------------
-class CounterReadExtension(_gtf2table.Counter):
+class CounterReadExtension(GeneModelAnalysis.Counter):
 
     '''compute read distribution from 3' to 5' end.
 
@@ -3540,7 +3546,7 @@ class CounterReadExtension(_gtf2table.Counter):
 
     def __init__(self, bamfiles, filename_gff, *args, **kwargs):
 
-        _gtf2table.Counter.__init__(self, *args, **kwargs)
+        GeneModelAnalysis.Counter.__init__(self, *args, **kwargs)
 
         if len(filename_gff) != 2:
             raise ValueError("expected two gff files: territories and UTRs")
@@ -3800,7 +3806,7 @@ class CounterReadExtension(_gtf2table.Counter):
 # ------------------------------------------------------------------------
 
 
-class CounterBigwigCounts(_gtf2table.Counter):
+class CounterBigwigCounts(GeneModelAnalysis.Counter):
 
     '''obtain bigwig values and return summary stats.
 
@@ -3814,7 +3820,7 @@ class CounterBigwigCounts(_gtf2table.Counter):
     mMaxLength = 100000
 
     def __init__(self, bigwig_file, *args, **kwargs):
-        _gtf2table.Counter.__init__(self, *args, **kwargs)
+        GeneModelAnalysis.Counter.__init__(self, *args, **kwargs)
         if not bigwig_file:
             raise ValueError("supply --bigwig-file options for bigwig")
         self.mBigwigFile = bigwig_file
@@ -4115,7 +4121,7 @@ def main(argv=None):
                 options=options,
                 prefix=prefix))
         elif c == "read-coverage":
-            counters.append(_gtf2table.CounterReadCoverage(
+            counters.append(GeneModelAnalysis.CounterReadCoverage(
                 bam_files,
                 options=options,
                 prefix=prefix))
@@ -4126,14 +4132,14 @@ def main(argv=None):
                 options=options,
                 prefix=prefix))
         elif c == "read-overlap":
-            counters.append(_gtf2table.CounterReadOverlap(
+            counters.append(GeneModelAnalysis.CounterReadOverlap(
                 bam_files,
                 multi_mapping=options.multi_mapping,
                 minimum_mapping_quality=options.minimum_mapping_quality,
                 options=options,
                 prefix=prefix))
         elif c == "read-counts":
-            counters.append(_gtf2table.CounterReadCounts(
+            counters.append(GeneModelAnalysis.CounterReadCounts(
                 bam_files,
                 multi_mapping=options.multi_mapping,
                 use_barcodes=options.use_barcodes,
@@ -4142,7 +4148,7 @@ def main(argv=None):
                 options=options,
                 prefix=prefix))
         elif c == "read-fullcounts":
-            counters.append(_gtf2table.CounterReadCountsFull(
+            counters.append(GeneModelAnalysis.CounterReadCountsFull(
                 bam_files,
                 multi_mapping=options.multi_mapping,
                 sample_probability=options.sample_probability,
@@ -4150,7 +4156,7 @@ def main(argv=None):
                 options=options,
                 prefix=prefix))
         elif c == "readpair-counts":
-            counters.append(_gtf2table.CounterReadPairCounts(
+            counters.append(GeneModelAnalysis.CounterReadPairCounts(
                 bam_files,
                 multi_mapping=options.multi_mapping,
                 sample_probability=options.sample_probability,
@@ -4159,7 +4165,7 @@ def main(argv=None):
                 options=options,
                 prefix=prefix))
         elif c == "readpair-fullcounts":
-            counters.append(_gtf2table.CounterReadPairCountsFull(
+            counters.append(GeneModelAnalysis.CounterReadPairCountsFull(
                 bam_files,
                 multi_mapping=options.multi_mapping,
                 sample_probability=options.sample_probability,

@@ -232,6 +232,17 @@ Timeseries = Extension(
     language="c",
 )
 
+# Nested containment lists
+GeneModelAnalysis = Extension(
+    "CGAT.GeneModelAnalysis",
+    ["CGAT/GeneModelAnalysis.pyx"],
+    include_dirs=pysam.get_include(),
+    library_dirs=[],
+    libraries=[],
+    define_macros=pysam.get_defines(),
+    language="c",
+)
+
 # automatically build pyximport script extensions
 pyx_files = glob.glob("scripts/*.pyx")
 script_extensions = []
@@ -258,7 +269,7 @@ for pyx_file in pyx_files:
     )
 
 
-ext_modules = [Components, NCL, Timeseries] + script_extensions
+ext_modules = [Components, NCL, Timeseries, GeneModelAnalysis] + script_extensions
 
 setup(
     # package information
