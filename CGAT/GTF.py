@@ -646,8 +646,8 @@ def readAsIntervals(gff_iterator,
     with_records
        If True, the entire record is added to the tuples.
     merge_genes
-       If true, the GTF records are passed through the :func:`merged_gene_iterator`
-       iterator first.
+       If true, the GTF records are passed through the :func:
+       `merged_gene_iterator` iterator first.
     with_gene_id
        If True, the gene_id is added to the tuples.
     with_transcript_id
