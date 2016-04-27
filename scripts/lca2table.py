@@ -69,6 +69,7 @@ def main(argv=None):
             hierarchy = [lca.kingdom,
                          lca.phylum,
                          lca._class,
+                         lca.order
                          lca.family,
                          lca.genus,
                          lca.species]
