@@ -62,6 +62,7 @@ def main(argv=None):
 
     if options.output_map:
         found = []
+        options.stdout.write("kingdom\tphylum\tclass\torder\tfamily\tgenus\tspecies\n")
         # only output the mapping file - do not continue
         # summarise regardless of the specified options
         for lca in LCA.iterate(options.stdin):
