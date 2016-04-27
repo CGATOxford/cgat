@@ -352,6 +352,8 @@ def iterator_sorted(gff_iterator, sort_order="gene"):
         genes = list(flat_gene_iterator(entries))
         genes.sort(key=lambda x: (x[0].contig, x[0].start))
         entries = IOTools.flatten(genes)
+    elif sort_order == "gene+exon":
+        entries.sort(key=lambda x: (x.gene_id, x.exon_number))
 
     for entry in entries:
         yield entry
