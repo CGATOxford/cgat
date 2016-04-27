@@ -36,6 +36,7 @@ rarefaction <- function(dat, from = 1, to = 5000000, step = 1000000, groups = c(
             return (result)
 }
 
+
 plotRarefaction <- function(rf, colours = c("brown", "darkGreen", "slateGrey", "darkBlue")){
            
           # plot rarefaction curve
@@ -55,6 +56,16 @@ plotSpecaccum <- function(dat){
           plot = ggplot(s2, aes(x = s.sites, y = s.richness)) + geom_line() + geom_errorbar(aes(ymax = s.richness + s.sd, ymin = s.richness - s.sd), width = 0.25)
           plot + scale_x_discrete(labels = comma) + theme(axis.text.x=element_text(angle=90))
 }
+
+
+buildDiversity <- function(dat, outfile, index = "shannon"){
+	       d <- data.frame(diversity(dat, index = index))
+	       d$sample <- rownames(d)
+	       colnames(d)[1] <- index
+	       d <- d[,c("sample", index)]
+	       write.table(d, file=outfile, sep="\t", quote=F, row.names=F)
+}
+
 
 plotDiversity <- function(dat, index = "shannon", colours = c("brown", "darkGreen", "slateGrey", "darkBlue"), groups = c()){
 
