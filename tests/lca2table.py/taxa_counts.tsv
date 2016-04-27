@@ -1,4 +1,6 @@
 level	taxa	count	proportion	rpm
+kingdom	Archaea	5	0.00583430571762	5834.30571762
+kingdom	Bacteria	852	0.994165694282	994165.694282
 class+	Actinobacteridae	5	0.454545454545	454545.454545
 class+	Coriobacteridae	6	0.545454545455	545454.545455
 family	Leptotrichiaceae	2	0.00238948626045	2389.48626045
