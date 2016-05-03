@@ -125,7 +125,7 @@ def runDETest(raw_DataFrame,
 def splitModel(model):
     '''returns the terms in the model'''
     return [x for x in
-            re.split("[\.:,~+\\s*]", re.sub("~(\s*0\s*)?", "", model)) if
+            re.split("[\.:,~+\s*]", re.sub("~(\s*)?", "", model)) if
             len(x) > 0]
 
 
