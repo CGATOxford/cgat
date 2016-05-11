@@ -1,5 +1,5 @@
 '''diff_gtf.py - compute overlap between multiple gtf files
-=========================================================
+===========================================================
 
 :Author: Andreas Heger
 :Release: $Id$
@@ -71,7 +71,7 @@ Options
 
 
 Examples
------
+--------
 
 For example if we have two gtf_files that look like::
 
@@ -107,9 +107,10 @@ important to include all files on the command line that are to be
 output. Any comparisons in ``out.tsv`` that correspond to files that
 are not given on the command line will not be output.
 
-Usage::
+Usage
 -----
 
+::
    cgat diff_gtf.py GTF GTF [GTF [GTF [...]]] [OPTIONS]
    cgat diff_gtf GTF1 --update=OUTFILE [OPTIONS]
 
@@ -128,10 +129,7 @@ Command line options
 '''
 
 import sys
-import string
 import re
-import optparse
-import collections
 import numpy
 
 import CGAT.Experiment as E

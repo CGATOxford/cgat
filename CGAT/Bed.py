@@ -20,17 +20,27 @@
 #   along with this program; if not, write to the Free Software
 #   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 ##########################################################################
-'''
-Bed.py - Tools for working with bed files
+'''Bed.py - Tools for working with bed files
 =========================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
-:Tags: Python
+This module contains methods for working with :term:`bed`
+formatted files.
 
-Code
-----
+.. note::
+   Another way to access the information in :term:`bed` formatted
+   files is through pysam_.
+
+The principal class is :class:`Bed` to represent :term:`bed` formatted
+entries.  The method :func:`iterate` iterates over a bed file and is
+aware of UCSC track information that might be embedded in the
+file. Additional functions can process intervals (:func:`merge`,
+:func:`binIntervals`, :func:`setName`, etc).
+
+The method :func:`readAndIndex` can build an in-memory index of a bed-file
+for quick cross-referencing.
+
+Reference
+---------
 
 '''
 import re
@@ -50,8 +60,44 @@ Headers = [
 
 
 class Bed(object):
+    """an interval in bed format.
 
-    """an interval in bed format."""
+    Coordinates are represented as 0-based, half-open intervals.
+
+    Fields in the record can be accessed as attributes or through
+    a dictionary type access::
+
+       print b.contig()
+       print b["contig"]
+
+    Bed-formatted records can have a variable number of columuns
+    with a minimum of 3. Accessing an optional attribute that is not present
+    will raise an IndexError.
+
+    Attributes
+    ----------
+    contig : string
+       Chromosome/contig.
+    start : int
+       Start position of the interval.
+    end : int
+       End position of the interval.
+    name : string
+       Name of the interval (optional).
+    score : float
+       Score associated with interval (optional).
+    strand : char
+       Strand of the interval (optional).
+    thickStart
+    thickEnd
+    itemRGB
+    blockCount : int
+       Number of blocks for bed intervals spanning multiple blocks (BED12).
+    blockSizes : string
+       Comma-separated list of sizes of the blocks (BED12).
+    blockStarts : string
+       Comma-separated list of start positions of the blocks (BED12).
+    """
 
     map_key2field = {'name': 0,
                      'score': 1,
@@ -63,8 +109,9 @@ class Bed(object):
                      'blockSizes': 7,
                      'blockStarts': 8}
 
+    default_value = "."
+
     def __init__(self):
-        '''empty constructor.'''
         self.contig = None
         self.start = 0
         self.end = 0
@@ -75,8 +122,27 @@ class Bed(object):
         return "\t".join((self.contig, str(self.start),
                           str(self.end)) + tuple(map(str, self.fields)))
 
+    def copy(self):
+        '''Returns a new bed object that is a copy of this one'''
+
+        new_entry = Bed()
+        new_entry.__dict__ = self.__dict__.copy()
+        return new_entry
+
     def fromGTF(self, gff, is_gtf=False, name=None):
-        """fill from gtf formatted entry."""
+        """fill fields from gtf formatted entry
+
+        Arguments
+        ---------
+        gff : a gff entry.
+           The object should contain the fields ``contig``,
+           ``start`` and ``end`` in 0-based, half-open coordinates.
+        name : bool
+           If given, attempt to set the name atttribute of the interval
+           by this attribute of the `gff` object such as ``gene_id`` or
+           ``transcript_id``.
+        """
+
         self.contig, self.start, self.end = gff.contig, gff.start, gff.end
         try:
             self.fields = [getattr(gff, name),
@@ -88,15 +154,26 @@ class Bed(object):
                            gff.strand]
 
     def toIntervals(self):
-        '''convert bed entry to a list of interval tuples. Useful for bed12
-        entries'''
+        """return intervals for BED12 entries.
+
+        If the entry is not BED12, the whole region will be returned.
+
+        Returns
+        -------
+        intervals : list
+           A list of tuples (start,end) with the block coordinates in
+           the Bed entry.
+
+        """
 
         if self.columns >= 12:
+
             blockStarts = map(int, self.blockStarts.split(","))
             starts = [self.start + blockStart for blockStart in blockStarts]
             blockLengths = map(int, self.blockSizes.split(","))
 
-            assert (len(blockStarts), len(blockLengths)) == (int(self.blockCount), int(self.blockCount)), \
+            assert (len(blockStarts), len(blockLengths)) == \
+                (int(self.blockCount), int(self.blockCount)), \
                 "Malformed Bed12 entry:\n%s"
 
             ends = [start + length for start, length
@@ -110,15 +187,22 @@ class Bed(object):
             return [(self.start, self.end)]
 
     def fromIntervals(self, intervals):
-        '''Fill co-ordinates from list of intervals. If multiple intervals are provided
-        and entry is bed12 then blocks are automatically computed '''
+        """Fill co-ordinates from list of intervals.
+
+        If multiple intervals are provided and entry is BED12 then the
+        blocks are automatically set.
+
+        Arguments
+        ---------
+        intervals : list
+           List of tuples (start, end) with block coordinates.
+        """
 
         intervals = sorted(intervals)
         self.start = intervals[0][0]
         self.end = intervals[-1][1]
-        
+
         if self.columns >= 12:
-            
             self["thickStart"] = self.start
             self["thickEnd"] = self.end
 
@@ -135,7 +219,7 @@ class Bed(object):
             if len(intervals) > 1:
                 raise ValueError(
                     "Multiple intervals provided to non-bed12 entry")
-            
+
     def __contains__(self, key):
         return self.map_key2field[key] < len(self.fields)
 
@@ -143,8 +227,20 @@ class Bed(object):
         return self.fields[self.map_key2field[key]]
 
     def __setitem__(self, key, value):
-        self.fields[self.map_key2field[key]] = value
+        try:
+            position = self.map_key2field[key]
+        except IndexError:
+            raise IndexError("Unknown key: %s" % key)
 
+        try:
+            self.fields[position] = value
+        except IndexError:
+
+            self.fields.extend([self.default_value]
+                               * (position - len(self.fields) + 1))
+
+            self.fields[position] = value
+            
     def __getattr__(self, key):
         try:
             return self.fields[self.map_key2field[key]]
@@ -158,8 +254,7 @@ class Bed(object):
 
 
 class Track(object):
-
-    '''bed track information.'''
+    """Bed track information."""
 
     def __init__(self, line):
         r = re.compile('([^ =]+) *= *("[^"]*"|[^ ]*)')
@@ -184,11 +279,21 @@ class Track(object):
 
 
 def iterator(infile):
-    """iterate over a bed formatted file.
+    """iterate over a :term:`bed` formatted file.
 
-    The iterator is :term:`track` aware.
+    Comments and empty lines are ignored. The iterator is
+    :term:`track` aware and will set the ``track`` attribute for the
+    Bed objects it yields.
 
-    This iterator yields :class:`Bed` objects.
+    Arguments
+    ---------
+    infile : File
+
+    Yields
+    ------
+    bed
+       :class:`Bed` object
+
     """
 
     track = None
@@ -215,16 +320,21 @@ def iterator(infile):
         b.track = track
         yield b
 
-# for compatibility, remove
-
 
 def bed_iterator(infile):
+    """Deprecated, use :func:`iterator`."""
     return iterator(infile)
 
 
 def setName(iterator):
-    '''yield bed entries in which name is set if unset.
-    '''
+    """yield bed entries in which name is set to the record number if
+    unset.
+
+    Yields
+    ------
+    bed
+       :class:`Bed` object
+    """
     for i, bed in enumerate(iterator):
         if "name" not in bed:
             bed.name = str(i)
@@ -232,12 +342,35 @@ def setName(iterator):
 
 
 def grouped_iterator(iterator):
-    '''yield bed results grouped by track.'''
+    """yield bed results grouped by track.
+
+    Note that the iterator supplied needs to be sorted by the track
+    attribute. This is usually the case in :term:`bed` formatted
+    files.
+
+    Yields
+    ------
+    bed
+       :class:`Bed` object
+
+    """
     return itertools.groupby(iterator, lambda x: x.track)
 
 
 def blocked_iterator(iterator):
-    '''yield blocked bed results.'''
+    '''yield blocked bed results.
+
+    Intervals with the same name are merged into a single entry. This
+    method can be used to convert BED6 formatted entries to
+    BED12. Note that the input iterator needs to be sorted by bed
+    name.
+
+    Yields
+    ------
+    bed
+       :class:`Bed` object
+
+    '''
 
     last_id = None
     blocks = []
@@ -272,12 +405,24 @@ def blocked_iterator(iterator):
 def readAndIndex(infile, with_values=False, per_track=False):
     """read and index a bed formatted file in ``infile``.
 
-    If ``with_values`` is set, the original bed entry will be kept for
-    further reference. Otherwise only the intervals will be indexed and
-    any additional fields in the bed entry will be ignored.
+    The index is not strand-aware.
 
-    The default is to use all intervals. If per_track is set,
-    separate indices will be build for each track.
+    Arguments
+    ---------
+    infile : File
+       File object to read from.
+    with_values : bool
+       If True, store the actual bed entry. Otherwise, just the
+       intervals are recorded and any additional fields will be ignored.
+    per_track : bool
+       If True build indices per track.
+
+    Returns
+    -------
+    index : dict
+       A dictionary of nested containment lists (:term:`NCL`). Each
+       key is a contig. If `per_track` is set, the dictionary has an
+       additional first level for the track.
     """
 
     if with_values:
@@ -302,20 +447,22 @@ def readAndIndex(infile, with_values=False, per_track=False):
 
     if per_track:
         indices = {}
-        for track, beds in grouped_iterator(bed_iterator(infile)):
+        for track, beds in grouped_iterator(iterator(infile)):
             if track is None:
                 return _build(beds)
             else:
                 indices[track["name"]] = _build(beds)
         return indices
     else:
-        return _build(bed_iterator(infile))
+        return _build(iterator(infile))
 
 
 def binIntervals(iterator, num_bins=5, method="equal-bases", bin_edges=None):
-    '''merge adjacent bins by score.
+    """merge adjacent intervals by the score attribute.
 
-    Several merging methods are possible:
+    This method takes all the intervals in the collection builds a histogram
+    of all the scores in the collection. The partition into the bins can use
+    one of the following merging methods:
 
     equal-bases
        merge intervals such that each bin contains the equal number of bases
@@ -323,13 +470,28 @@ def binIntervals(iterator, num_bins=5, method="equal-bases", bin_edges=None):
     equal-intervals
        merge intervals such that each bin contains the equal number intervals
 
-    This options requires the fifth field (score) of the bed input
-    file to be present.
+    This method requires the fifth field (score) of the bed input file
+    to be present.
 
-    bins should be non-overlapping.
+    Arguments
+    ---------
+    iterator
+       Iterator yielding bed intervals
+    num_bins : int
+       Number of bins to create in the histogram
+    method : string
+       Binning method
+    bin_edges : list
+       List of bin edges. These take precedence over `method`.
 
-    returns a list of intervals (:class:`Bed`) and the bin_edges
-    '''
+    Returns
+    -------
+    intervals : list
+       list of intervals (:class:`Bed`)
+    bin_edges : list
+       list of bin edges
+
+    """
 
     data = []
     beds = list(iterator)
@@ -397,9 +559,7 @@ def binIntervals(iterator, num_bins=5, method="equal-bases", bin_edges=None):
 
 
 def merge(iterator):
-    '''merge overlapping intervals.
-
-    returns a list of merged intervals.
+    '''merge overlapping intervals and returns a list of merged intervals.
     '''
 
     beds = list(iterator)
@@ -445,7 +605,10 @@ def getNumColumns(filename):
     '''return number of fields in bed-file by looking at the first
     entry.
 
-    Returns 0 if file is empty.
+    Returns
+    -------
+    ncolumns : int
+       The number of columns. If the file is empty, 0 is returned.
     '''
     with IOTools.openFile(filename) as inf:
         for line in inf:

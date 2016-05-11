@@ -18,9 +18,9 @@ import CGAT.Experiment as E
 import numpy as np
 import pandas as pd
 import itertools
+import os
 import sys
 import math
-import pandas.rpy.common as com
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.packages import importr
 from rpy2.robjects import r as R
@@ -28,6 +28,12 @@ import rpy2.robjects as ro
 import random
 import os
 import cmetrics as c2m
+
+
+def get_r_path():
+    """return path of R support functions.
+    """
+    return os.path.dirname(__file__)
 
 #################################
 # Clustering assessment functions
@@ -284,7 +290,9 @@ def deseqNormalize(infile,
                                header=0,
                                sep="\t",
                                compression=comp)
-    rdf = com.convert_to_r_dataframe(data_frame)
+    # py2ri requires activation
+    pandas2ri.activate()
+    rdf = pandas2ri.py2ri(data_frame)
 
     if not conditions:
         time_rep_comb = [x for x in itertools.product(time_points, reps)]
@@ -343,8 +351,9 @@ def deseqNormalize(infile,
     else:
         R('''trans_vst = data.frame(t(exprs(vst)), times, replicates)''')
 
-    data_file = com.load_data('trans_vst')
-
+    # load data and convert to pandas object
+    data_file = pandas2ri.ri2py(R["trans_vst"])
+    
     return data_file
 
 
@@ -410,13 +419,10 @@ def covarFilter(infile,
     df.drop(['times'], inplace=True, axis=1)
     df = df.fillna(0.0)
 
-    # pandas no longer supports explicit type conversion for dataframes
-    # now use rpy2.pandas2ri
-
-    # r_df = com.convert_to_r_dataframe(df)
+    # convert data frame and import into R namespace
+    # py2ri requires activation
     pandas2ri.activate()
-    # R.assign('diff_data', r_df)
-    R.assign('diff_data', df)
+    R.assign('diff_data', pandas2ri.py2ri(df))
 
     E.info("loading data frame")
 
@@ -446,7 +452,8 @@ def covarFilter(infile,
     R('''filtered_frame <- data.frame(diff_data[, filtered_genes],'''
       '''times, replicates)''')
 
-    filtered_frame = com.load_data('filtered_frame').T
+    # load data and convert to pandas object
+    filtered_frame = pandas2ri.ri2py(R["filtered_frame"]).T
 
     return filtered_frame
 
@@ -467,6 +474,12 @@ def clusterPCA(infile,
     Warning: this script will error if there is only one
     cluster. Make sure you have more than one cluster before
     trying to perform uninformative analyses.
+
+    Parameters:
+
+    rpath : string
+        Path of R support libraries
+
     '''
 
     header = cluster_file.split("/")[-1].split("-")[0]
@@ -475,16 +488,10 @@ def clusterPCA(infile,
     R('''sink(file='sink_file.txt')''')
     R('''suppressMessages(library("reshape2"))''')
     R('''suppressMessages(library("WGCNA"))''')
-    # source from R directory in /ifs/devel/$USER/CGATPipelines/R
-    R('''source("%s")''' %
-      os.path.join(os.path.dirname(E.__file__),
-                   "../R",
-                   "summarySE.R"))
-    R('''source("%s")''' %
-      os.path.join(os.path.dirname(E.__file__),
-                   "../R",
-                   "clusterEigengenes.R"))
-
+    # AH: these were hard-coded paths, parameterized them to point to the
+    # directory of this module's location
+    R('''source("%s")''' % os.path.join(get_r_path(), "summarySE.R"))
+    R('''source("%s")''' % os.path.join(get_r_path(), "clusterEigengenes.R"))
     R('''cluster_match <- read.table('%(cluster_file)s', h=T, '''
       '''row.names=1)''' % locals())
     R('''express_data <- read.table('%(infile)s', '''
@@ -525,7 +532,7 @@ def clusterPCA(infile,
     R('''eigenPlot(eigen_frame, image.dir="%(image_dir)s", '''
       '''condition="%(header)s")''' % locals())
 
-    eigen_frame = com.load_data("eigen_frame")
+    eigen_frame = pandas2ri.ri2py(R["eigen_frame"])
     eigen_frame.index = eigen_frame['cluster']
     eigen_frame.drop(['cluster'], inplace=True, axis=1)
 
@@ -545,7 +552,11 @@ def conditionDESeq2(data_frame, header, alpha, res_dir):
 
     E.info("Differential expression testing for %s" % header)
     cols = data_frame.columns
-    counts = com.convert_to_r_dataframe(data_frame)
+
+    # py2ri requires activation
+    pandas2ri.activate()
+    counts = pandas2ri.py2ri(data_frame)
+
     des_times = ro.IntVector([x.split(".")[1] for x in cols])
     des_reps = ro.StrVector([x.split(".")[2] for x in cols])
     des_cond = ro.StrVector([x.split(".")[0] for x in cols])
@@ -587,7 +598,7 @@ def conditionDESeq2(data_frame, header, alpha, res_dir):
     R('''dev.off()''')
     R('''sink(file=NULL)''')
 
-    df = com.load_data('res.df')
+    df = pandas2ri.ri2py(R['res.df'])
 
     return df
 
@@ -600,7 +611,11 @@ def timepointDESeq2(data_frame, header, alpha, res_dir):
 
     E.info("Differential expression testing for %s" % header)
     cols = data_frame.columns
-    counts = com.convert_to_r_dataframe(data_frame)
+
+    # py2ri requires activation
+    pandas2ri.activate()
+    counts = pandas2ri.py2ri(data_frame)
+
     des_times = ro.IntVector([x.split(".")[1] for x in cols])
     des_reps = ro.StrVector([x.split(".")[2] for x in cols])
     genes = ro.StrVector([x for x in data_frame.index])
@@ -639,7 +654,7 @@ def timepointDESeq2(data_frame, header, alpha, res_dir):
     R('''dev.off()''')
     R('''sink(file=NULL)''')
 
-    df = com.load_data('res.df')
+    df = pandas2ri.ri2py(R['res.df'])
 
     return df
 
@@ -903,7 +918,7 @@ def maSigPro(infile,
     results_frame.to_csv(results_file, sep="\t")
 
     R('''diff_genes <- data.frame(%(condition)s_fit$SELEC)''' % locals())
-    diff_genes = com.load_data('diff_genes')
+    diff_genes = pandas2ri.ri2py[R'diff_genes']
 
     return diff_genes
 
@@ -1216,7 +1231,11 @@ def treeCutting(infile,
     df = df.fillna(0.0)
     genes = df.index
     genes_r = ro.StrVector([g for g in genes])
-    rdf = com.convert_to_r_dataframe(df)
+
+    # py2ri requires activation
+    pandas2ri.activate()
+    rdf = pandas2ri.py2ri(df)
+
     R.assign("distance_data", rdf)
     R.assign("gene_ids", genes_r)
 
@@ -1244,7 +1263,7 @@ def treeCutting(infile,
       '''cluster_matched$cluster)''')
     R('''sink(file=NULL)''')
 
-    cluster_frame = com.load_data('cluster_matched')
+    cluster_frame = pandas2ri.ri2py(R["cluster_matched"])
     cluster_frame.columns = ['gene_id', 'cluster']
     cluster_frame.index = cluster_frame['gene_id']
     cluster_frame.drop(['gene_id'], inplace=True, axis=1)
@@ -1380,7 +1399,11 @@ def consensusClustering(infile,
     df = pd.read_table(infile, sep="\t", header=0, index_col=0)
     labels = df.index.tolist()
     labels_r = ro.StrVector([l for l in labels])
-    df_r = com.convert_to_r_dataframe(df)
+
+    # py2ri requires activation
+    pandas2ri.activate()
+    df_r = pandas2ri.py2ri(df)
+
     R.assign("distance.frame", df_r)
     R.assign("labels", labels_r)
 
@@ -1414,14 +1437,16 @@ def consensusClustering(infile,
       '''cluster_matched$cluster)''')
 
     # plot and save dendrogram of clustering
-    R('''png("images.dir/%(condition)s-dendrogram-consensus_clustering.png")'''
-      % locals())
-    R('''plotDendroAndColors(dendro=clustering, colors=color_cut,'''
-      '''groupLabels="Dynamic tree cut",'''
-      '''dendroLabels=F, addGuide=T, guideHang=0.05, '''
-      '''hang=0.03, main="%(condition)s")''' % locals())
-    R('''dev.off()''')
-    R('''sink(file=NULL)''')
-    cluster_frame = com.load_data('cluster_matched')
+    # AH: disabled, requires plots.dir to exist which might not be the case
+    # AH: and thus causes this method to fail. Path names need to be parameterizable.
+    # R('''png("plots.dir/%(condition)s-dendrogram-consensus_clustering.png")'''
+    #   % locals())
+    # R('''plotDendroAndColors(dendro=clustering, colors=color_cut,'''
+    #   '''groupLabels="Dynamic tree cut",'''
+    #   '''dendroLabels=F, addGuide=T, guideHang=0.05, '''
+    #   '''hang=0.03, main="%(condition)s")''' % locals())
+    # R('''dev.off()''')
+    # R('''sink(file=NULL)''')
+    cluster_frame = pandas2ri.ri2py(R["cluster_matched"])
 
     return cluster_frame

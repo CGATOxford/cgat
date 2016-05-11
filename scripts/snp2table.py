@@ -1,5 +1,4 @@
-"""
-snp2table.py - annotate variants
+"""snp2table.py - annotate variants
 ================================
 
 :Author: Andreas Heger
@@ -24,13 +23,13 @@ Usage
 
 Example::
 
-   gunzip < snps.pileup.gz 
-   | python snp2table.py  
-        --genome-file=genome 
+   gunzip < snps.pileup.gz
+   | python snp2table.py
+        --genome-file=genome
         --exons-file=exons
         --annotations-tsv-file=bases
         --junctions-bed-file=junctions
-        --log=log 
+        --log=log
    > result.out
 
 Type::
@@ -45,22 +44,23 @@ Documenation
 The following annotations are available:
 
 exons
-   Given a gtf-file with the output from ``gtf2gff.py --method=exons``, each
-   SNP that overlaps an exon is labeled according to its position within a transcript. 
-   The columns are:
+   Given a gtf-file with the output from ``gtf2gff.py
+   --method=exons``, each SNP that overlaps an exon is labeled
+   according to its position within a transcript.  The columns are:
 
    ntranscripts
       number of transrcipts in the gene that the exon belongs to.
 
    nused
-      number of transcripts that contain this exon 
-   
+      number of transcripts that contain this exon
+
    positions
       positions of exons within transcipts
 
 annotation
-   Given a fasta file with base-level annotations (output from ``gtf2fasta.py``),
-   each SNP is labeled by its effect. The columns are:
+   Given a fasta file with base-level annotations (output from
+   ``gtf2fasta.py``), each SNP is labeled by its effect. The columns
+   are:
 
    code
       one letter annotation of base. See :file:`gtf2fasta.py`.
@@ -107,15 +107,10 @@ Command line options
 
 """
 
-import os
 import sys
-import re
-import optparse
 import collections
-
-import CGAT.Experiment as E
-
 import pysam
+import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IndexedGenome as IndexedGenome
 import CGAT.Genomics as Genomics

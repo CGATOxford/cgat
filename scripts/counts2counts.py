@@ -3,7 +3,7 @@
 
 :Author: Tom Smith
 :Release: $Id$
-:Date: |today|
+--:Date: |today|
 :Tags: Python
 
 Purpose
@@ -45,7 +45,7 @@ spike-ins by cluster
 
     zcat counts.tsv.gz | cgat counts2counts
     --design-tsv-file=design.tsv --method="spike" --spike-type="row"
-    --spike-maximum=100 --spike-change-bin-width=1
+    --spike-maximum=100
     --spike-initial-bin-width=10 --spike-change-bin-max=10
     --spike-initial-bin-max=10 --spike-cluster-minimum-size=1
     --spike-cluster-maximum-size=10 --spike-cluster-maximum-width=1
@@ -54,9 +54,28 @@ spike-ins by cluster
 normalize
 +++++++++
 
+The method ``normalize`` normalizes counts between experiments to
+make them comparable.
+
    zcat counts.tsv.gz | cgat counts2counts.py --method="normalize"
    --normalization-method=deseq-size-factors
    | gzip > normalized.tsv.gz
+
+Normalization methods available are:
+
+deseq-size-factors
+    Use normalization implemented in DEseq
+total-column
+    Divide counts by column total.
+total-row
+    Divide counts by the value in a row called ``total`` and remove
+    that row.
+total-count
+    Normalise all values in a column by the ratio of the per-column
+    sum of counts and the average column count across all rows.
+
+Normalized counts in ``total-column`` and ``total-row`` are multiplied
+by 10e6.
 
 Input
 -----
@@ -129,8 +148,17 @@ The generation of spike-ins is extensively parameterised:
 
 --difference-method=[logfold / relative]
 
-    Difference will be calculated as "logfold" (log2(group2/group1))
-    or "relative" (group2 - group1).
+    Difference will be calculated as one of:
+    "logfold" - log2(mean group2/ mean group1)
+    "abs_logfold"  - abs(log2(mean group2/ mean group1))
+    "relative" - (mean group2 - mean group1)
+
+    Note: Difference method also affects how initial values are calculated:
+
+        Initial values will be calculated as:
+        "logfold" - log2(mean group1)
+        "abs_logfold"  - max(mean group1, mean group2)
+        "relative" - (mean group1)
 
 --spike-change-bin-min=[int]
 --spike-change-bin-max=[int]
@@ -158,23 +186,17 @@ The generation of spike-ins is extensively parameterised:
     containing the percentage methylation (0-100) and retain additional
     columns containing the counts of methylated/unmethylated
 
+
 '''
 
 import sys
 import os
 import pandas as pd
 import numpy as np
-
-try:
-    import CGAT.Experiment as E
-    import CGAT.Counts as Counts
-    import CGAT.Expression as Expression
-    import CGAT.IOTools as IOTools
-except ImportError:
-    import Experiment as E
-    import Expression
-    import Counts
-    import IOTools
+import CGAT.Experiment as E
+import CGAT.Counts as Counts
+import CGAT.Expression as Expression
+import CGAT.IOTools as IOTools
 
 
 def main(argv=None):
@@ -253,7 +275,8 @@ def main(argv=None):
                       [default=%default].")
 
     parser.add_option("--spike-difference-method", dest="difference",
-                      type="choice", choices=("relative", "logfold"),
+                      type="choice",
+                      choices=("relative", "logfold", "abs_logfold"),
                       help="method to use for calculating difference\
                       [default=%default].")
 
@@ -309,7 +332,10 @@ def main(argv=None):
 
     parser.add_option("--normalization-method",
                       dest="normalization_method", type="choice",
-                      choices=("deseq-size-factors", "million-counts"),
+                      choices=("deseq-size-factors",
+                               "total-count",
+                               "total-column",
+                               "total-row"),
                       help="normalization method to apply [%default]")
 
     parser.add_option("-t", "--tags-tsv-file", dest="input_filename_tags",
@@ -341,7 +367,7 @@ def main(argv=None):
         width_sbin=1,
         shuffle_suffix=None,
         keep_suffix=None,
-        normalization_method="deseq-size-factors",
+        normalization_method="deseq-size-factors"
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -353,7 +379,7 @@ def main(argv=None):
         # looks for column names which exactly match the design
         # "tracks" need to write function in Counts.py to handle
         # counts table and design table + suffix
-        counts = pd.read_csv(sys.stdin, sep="\t",  comment="#")
+        counts = pd.read_csv(options.stdin, sep="\t",  comment="#")
         inf = IOTools.openFile(options.input_filename_design)
         design = pd.read_csv(inf, sep="\t", index_col=0)
         inf.close()
@@ -373,8 +399,7 @@ def main(argv=None):
             index = 0
         if options.input_filename_tags == "-":
             counts = Counts.Counts(pd.io.parsers.read_csv(
-                sys.stdin, sep="\t", index_col=index, comment="#"))
-
+                options.stdin, sep="\t", index_col=index, comment="#"))
         else:
             counts = Counts.Counts(
                 IOTools.openFile(options.input_filename_tags, "r"),
@@ -387,12 +412,10 @@ def main(argv=None):
                 options.input_filename_design)
 
             # create Design object
-            design = Expression.ExpDesign(
+            design = Expression.ExperimentalDesign(
                 pd.read_csv(
                     IOTools.openFile(options.input_filename_design, "r"),
                     sep="\t", index_col=0, comment="#"))
-
-            design.getAttributes()
 
     if options.method == "filter":
 
@@ -432,7 +455,8 @@ def main(argv=None):
 
     elif options.method == "normalize":
 
-        counts.normalise(method=options.normalization_method)
+        counts.normalise(method=options.normalization_method,
+                         row_title="total")
 
         # write out
         counts.table.to_csv(options.stdout, sep="\t", header=True)
@@ -471,7 +495,7 @@ def main(argv=None):
                 options.shuffle_suffix, options.keep_suffix)
         else:
             # if no suffixes supplied, spike and keep tracks are the same
-            g_to_track = design.mapGroups()
+            g_to_track = design.getGroups2Samples()
             g_to_spike_tracks, g_to_keep_tracks = (g_to_track, g_to_track)
 
         # set up numpy arrays for change and initial values
@@ -527,7 +551,7 @@ def main(argv=None):
             max_ibin=options.max_ibin,
             min_sbin=options.min_sbin,
             width_sbin=options.width_sbin,
-            max_sbin=options.max_sbin,)
+            max_sbin=options.max_sbin)
 
     E.Stop()
 

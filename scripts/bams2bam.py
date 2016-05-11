@@ -1,5 +1,4 @@
-'''
-bams2bam.py - merge genomic and transcriptome mapped bamfiles
+'''bams2bam.py - merge genomic and transcriptome mapped bamfiles
 ====================================================================
 
 :Author: Andreas Heger
@@ -10,14 +9,15 @@ bams2bam.py - merge genomic and transcriptome mapped bamfiles
 Purpose
 -------
 
-This script takes as input two BAM files from an RNASeq experiment. 
-The first bam file (:file:`bamG`) should contain reads mapped against the genome
-using a mapper permitting splicing (e.g. tophat). The second bam file
-(:file:`bamT`) should contain reads mapped against known transcripts. This script
-will write a new bam file that removes reads from :term:`bamG` that 
-map to regions that are conflicting with those in :term:`bamT`.
+This script takes as input two BAM files from an RNASeq experiment.
+The first bam file (:file:`bamG`) should contain reads mapped against
+the genome using a mapper permitting splicing (e.g. tophat). The
+second bam file (:file:`bamT`) should contain reads mapped against
+known transcripts. This script will write a new bam file that removes
+reads from :term:`bamG` that map to regions that are conflicting with
+those in :term:`bamT`.
 
-.. note:: 
+.. note::
    Note that if junctions are supplied, the resultant bam files will not
    be sorted by position.
 
@@ -45,11 +45,11 @@ for command line help.
 Documentation
 -------------
 
-The script needs to look-up reads via their names. It thus builds
-an index of reads mapping 
+The script needs to look-up reads via their names. It thus builds an
+index of reads mapping
 
-This script requires the NM attributes to be set. If it is not 
-set, you will need to set a policy.
+This script requires the NM attributes to be set. If it is not set,
+you will need to set a policy.
 
 Command line options
 --------------------
@@ -58,15 +58,12 @@ Command line options
 
 import os
 import sys
-import re
-import optparse
-import time
+import pysam
 
 import CGAT.Experiment as E
 import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
 import CGAT.Bed as Bed
-import pysam
 import CGAT.IndexedGenome as IndexedGenome
 
 try:

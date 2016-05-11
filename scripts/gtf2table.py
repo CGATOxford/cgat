@@ -481,7 +481,6 @@ import CGAT.Intervals as Intervals
 
 import bx
 import bx.bbi.bigwig_file
-import bx.intervals.io
 import bx.intervals.intersection
 
 try:
@@ -1143,11 +1142,8 @@ class CounterCoverage(CounterOverlap):
 
         return "\t".join((str(s), str(ncovered), values))
 
-# ------------------------------------------------------------------------
-
 
 class Classifier(_gtf2table.Counter):
-
     """classify transcripts based on a reference annotation.
 
     This assumes the input is a genome annotation derived from an

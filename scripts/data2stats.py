@@ -31,14 +31,10 @@ Command line options
 
 '''
 import sys
-import re
 import string
-import os
-import optparse
-
-import CGAT.Experiment as E
-import CGAT.Histogram as Histogram
 import scipy
+import scipy.stats
+import CGAT.Experiment as E
 
 
 def PrintValues(outfile, values,  options, prefix="", titles=None):
@@ -101,19 +97,45 @@ def PrintValues(outfile, values,  options, prefix="", titles=None):
     else:
 
         if titles:
-            print "category\t%s" % string.join(titles, "\t")
+            outfile.write("category\t%s" % string.join(titles, "\t") + "\n")
 
-        print "count\t%s" % (string.join(map(lambda v: "%i" % len(v), values), "\t"))
-        print "min\t%s" % (string.join(map(lambda v: options.value_format % min(v), values), "\t"))
-        print "max\t%s" % (string.join(map(lambda v: options.value_format % max(v), values), "\t"))
-        print "mean\t%s" % (string.join(map(lambda v: options.value_format % scipy.mean(v), values), "\t"))
-        print "median\t%s" % (string.join(map(lambda v: options.value_format % scipy.median(v), values), "\t"))
-        print "stddev\t%s" % (string.join(map(lambda v: options.value_format % scipy.std(v), values), "\t"))
-        print "sum\t%s" % (string.join(map(lambda v: options.value_format % reduce(lambda x, y: x + y, v), values), "\t"))
-        print "q1\t%s" % (string.join(map(lambda v: options.value_format % scipy.stats.scoreatpercentile(v, per=25), values), "\t"))
-        print "q3\t%s" % (string.join(map(lambda v: options.value_format % scipy.stats.scoreatpercentile(v, per=75), values), "\t"))
-
-# ------------------------------------------------------------------------
+        outfile.write(
+            "count\t%s" % (string.join(
+                map(lambda v: "%i" % len(v), values), "\t")) + "\n")
+        outfile.write(
+            "min\t%s" % (string.join(
+                map(lambda v: options.value_format % min(v),
+                    values), "\t")) + "\n")
+        outfile.write(
+            "max\t%s" % (string.join(
+                map(lambda v: options.value_format % max(v),
+                    values), "\t")) + "\n")
+        outfile.write(
+            "mean\t%s" % (string.join(
+                map(lambda v: options.value_format % scipy.mean(v),
+                    values), "\t")) + "\n")
+        outfile.write(
+            "median\t%s" % (string.join(
+                map(lambda v: options.value_format % scipy.median(v),
+                    values), "\t")) + "\n")
+        outfile.write(
+            "stddev\t%s" % (string.join(
+                map(lambda v: options.value_format % scipy.std(v),
+                    values), "\t")) + "\n")
+        outfile.write(
+            "sum\t%s" % (string.join(
+                map(lambda v: options.value_format %
+                    reduce(lambda x, y: x + y, v), values), "\t")) + "\n")
+        outfile.write(
+            "q1\t%s" % (string.join(
+                map(lambda v: options.value_format %
+                    scipy.stats.scoreatpercentile(v, per=25),
+                    values), "\t")) + "\n")
+        outfile.write(
+            "q3\t%s" % (string.join(
+                map(lambda v: options.value_format %
+                    scipy.stats.scoreatpercentile(v, per=75),
+                    values), "\t")) + "\n")
 
 
 def main(argv=None):
@@ -126,7 +148,8 @@ def main(argv=None):
         argv = sys.argv
 
     parser = E.OptionParser(
-        version="%prog version: $Id: data2stats.py 2782 2009-09-10 11:40:29Z andreas $")
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
     parser.add_option("-c", "--columns", dest="columns", type="string",
                       help="columns to take for calculating histograms.")
@@ -136,7 +159,8 @@ def main(argv=None):
                       help="maximum value for histogram.")
     parser.add_option("--scale", dest="scale", type="float",
                       help="scale values.")
-    parser.add_option("-a", "--aggregate-column", dest="aggregate_column", type="int",
+    parser.add_option("-a", "--aggregate-column", dest="aggregate_column",
+                      type="int",
                       help="use column to aggregate.")
     parser.add_option("-i", "--no-title", dest="titles", action="store_false",
                       help="do not use supplied column titles.")
@@ -144,7 +168,8 @@ def main(argv=None):
                       help="headers.")
     parser.add_option("-r", "--rows", dest="rows", action="store_true",
                       help="data is in rows.")
-    parser.add_option("--ignore-zeros", dest="ignore_zeros", action="store_true",
+    parser.add_option("--ignore-zeros", dest="ignore_zeros",
+                      action="store_true",
                       help="ignore zero values.")
     parser.add_option("-f", "--format", dest="value_format", type="string",
                       help="number format.")
@@ -152,11 +177,14 @@ def main(argv=None):
                       help="flat format.")
     parser.add_option("--skip-header", dest="add_header", action="store_false",
                       help="do not add header to flat format.")
-    parser.add_option("--output-with-header", dest="write_header", action="store_true",
+    parser.add_option("--output-with-header", dest="write_header",
+                      action="store_true",
                       help="write header and exit.")
-    parser.add_option("--skip-empty", dest="output_empty", action="store_false",
+    parser.add_option("--skip-empty", dest="output_empty",
+                      action="store_false",
                       help="do not output empty columns.")
-    parser.add_option("--output-empty", dest="output_empty", action="store_true",
+    parser.add_option("--output-empty", dest="output_empty",
+                      action="store_true",
                       help="output empty columns.")
 
     parser.set_defaults(
@@ -188,13 +216,15 @@ def main(argv=None):
 
     # write header for flat output
     if options.write_header:
-        print "\t".join(("nval", "min", "max", "mean", "median", "stddev", "sum", "q1", "q3"))
-        sys.exit(0)
+        options.stdout.write("\t".join(("nval", "min", "max",
+                                        "mean", "median", "stddev",
+                                        "sum", "q1", "q3")) + "\n")
+        return
 
     # retrieve histogram
     lines = filter(lambda x: x[0] != "#", sys.stdin.readlines())
 
-    outfile = sys.stdout
+    outfile = options.stdout
 
     if len(lines) > 0:
 
@@ -219,10 +249,12 @@ def main(argv=None):
             # write header for flat output
             if options.flat:
                 if options.headers:
-                    x = options.headers[0]
+                    head = options.headers[0]
                 else:
-                    x = "row"
-                print "\t".join((x, "nval", "min", "max", "mean", "median", "stddev", "sum", "q1", "q3"))
+                    head = "row"
+                options.stdout.write("\t".join(
+                    (head, "nval", "min", "max", "mean", "median",
+                     "stddev", "sum", "q1", "q3")) + "\n")
                 options.add_header = False
 
             for l in lines:
@@ -257,7 +289,8 @@ def main(argv=None):
                     del lines[0]
 
                 if options.aggregate_column is not None:
-                    print "category\t%s" % string.join(options.headers, "\t")
+                    outfile.write(
+                        "category\t%s" % "\t".join(options.headers) + "\n")
 
             vals = [[] for x in range(len(options.columns))]
 
@@ -271,7 +304,7 @@ def main(argv=None):
                         val = string.atof(data[options.columns[c]])
 
                     except IndexError:
-                        print "# IndexError in line:", l[:-1]
+                        E.warn("IndexError in line: %s" % l[:-1])
                         continue
                     except ValueError:
                         continue
@@ -290,10 +323,12 @@ def main(argv=None):
                     if options.scale:
                         val *= options.scale
 
-                    if options.max_value is not None and val > options.max_value:
+                    if options.max_value is not None \
+                       and val > options.max_value:
                         val = options.max_value
 
-                    if options.min_value is not None and val < options.min_value:
+                    if options.min_value is not None \
+                       and val < options.min_value:
                         val = options.min_value
 
                     vals[c].append(val)

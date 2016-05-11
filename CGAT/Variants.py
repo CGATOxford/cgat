@@ -33,21 +33,17 @@ Code
 ----
 
 '''
-import os
-import sys
-import re
-import optparse
 import collections
 
 from CGAT import Experiment as E
-from CGAT import IOTools as IOTools
 from CGAT import Genomics as Genomics
 from CGAT import NCL as ncl
 
 Variant = collections.namedtuple("Variant",
                                  "pos, reference, genotype")
-ExtendedVariant = collections.namedtuple("Variant",
-                                         "start, end, reference, action, has_wildtype, variantseqs")
+ExtendedVariant = collections.namedtuple(
+    "Variant",
+    "start, end, reference, action, has_wildtype, variantseqs")
 
 
 def updateVariants(variants, lcontig, strand, phased=True):

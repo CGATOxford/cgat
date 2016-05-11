@@ -34,12 +34,7 @@ Command line options
 
 '''
 import sys
-import re
-import string
 import os
-import getopt
-import time
-import optparse
 import math
 import bisect
 import CGAT.Experiment as E
@@ -112,7 +107,7 @@ def main(argv=None):
     else:
         infile = sys.stdin
 
-    fields, data = CSV.ReadTable(infile)
+    fields, data = CSV.readTable(infile)
 
     c = options.column
     values = [float(x[c]) for x in data]

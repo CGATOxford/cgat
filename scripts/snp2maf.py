@@ -33,17 +33,14 @@ Command line options
 
 """
 
-import os
 import sys
 import re
-import optparse
 import collections
 import gzip
 import sqlite3
 
 import numpy
 import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Genomics as Genomics
 import CGAT.GTF as GTF

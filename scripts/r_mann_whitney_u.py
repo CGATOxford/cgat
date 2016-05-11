@@ -31,14 +31,7 @@ Command line options
 --------------------
 
 '''
-import os
 import sys
-import string
-import re
-import optparse
-import time
-import random
-import rpy2
 from rpy2.robjects import r as R
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
@@ -75,8 +68,7 @@ def main(argv=None):
     )
 
     (options, args) = E.Start(parser,
-                              add_pipe_options=True,
-                              add_psql_options=True,)
+                              add_pipe_options=True)
 
     map_category2value = {}
     if options.filename_input_map:

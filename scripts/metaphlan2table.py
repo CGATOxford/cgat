@@ -56,9 +56,7 @@ Code
 
 '''
 
-import os
 import sys
-import re
 import optparse
 import CGAT.Metaphlan as Metaphlan
 import CGAT.Experiment as E

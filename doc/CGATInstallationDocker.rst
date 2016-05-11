@@ -1,8 +1,8 @@
 .. _CGATInstallationDocker:
 
-======================
-Docker: CGAT Container
-======================
+=======================
+Docker: CGAT Containers
+=======================
 
 Docker_ is an open-source software to easily create lightweight, 
 portable, self-sufficient containers from any application. 
@@ -10,17 +10,28 @@ portable, self-sufficient containers from any application.
 Installation
 ------------
 
-CGAT provides a Docker Container with the Code Collection pre-installed.
-To use the CGAT Container you need to install Docker by following
+CGAT provides Docker Containers with the Code Collection pre-installed.
+To use a CGAT Container you need to install Docker by following
 the instructions here:
 
 http://docs.docker.com/installation/
 
-Running CGAT Container
-----------------------
+Versions explained
+------------------
 
-Once Docker is available on your system you can get the CGAT Container
-by doing::
+We have now two Docker containers available via DockerHub_:
+
+* ``cgat/scripts``: comes with the CGAT Code Collection pre-installed (released via PyPi_). This one is considered as the production version of the scripts.
+
+* ``cgat/devel``: comes with the latest development version of the CGAT Code (hosted on GitHub_) and the scripts are still under a testing stage.
+
+Below we explain how to use each of them.
+
+CGAT Code Collection
+--------------------
+
+Once Docker is available on your system you can get the CGAT Container with the 
+CGAT Code Collection pre-installed by doing::
 
   docker pull cgat/scripts
 
@@ -30,16 +41,34 @@ Now you can type::
 
 to get command-line help. Then, any script can be run by typing::
 
-  docker run cgat/scripts <script-name>
+  docker run cgat/scripts <script-name> -h
+
+
+Latest development version
+--------------------------
+
+On the other hand, if you want to use the latest available version of the scripts
+you should run::
+
+  docker pull cgat/devel
+
+Now you can type::
+
+  docker run cgat/devel --help
+
+to get command-line help. Then, any script can be run by typing::
+
+  docker run cgat/devel <script-name> -h
+
 
 Sharing files/folders between your host computer and the CGAT Container
 -----------------------------------------------------------------------
 
-There is a data volume within the CGAT Container in::
+There is a data volume within the CGAT Containers in::
 
   /shared/data
 
-In order to share data between with the CGAT container, please select
+In order to share data between with a CGAT container, please select
 a local folder on your host::
 
   /path/to/shared/folder
@@ -58,11 +87,13 @@ your docker host.
 Other details
 -------------
 
-CGAT Container has been built with Docker 1.3.2 and up to this version
+CGAT Container has been built with Docker 1.5.0 and up to this version
 the Docker client needs root permissions to run. This is a problem for 
 the end users willing to use the CGAT Container in a workstation where
 they do not have root privileges. However, it is expected that the Docker
 client will eventually find a solution to this problem in future versions.
 
 .. _Docker: https://www.docker.com
-
+.. _DockerHub: https://registry.hub.docker.com
+.. _PyPi: https://pypi.python.org/pypi/CGAT
+.. _GitHub: https://github.com/CGATOxford/cgat

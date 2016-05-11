@@ -14,7 +14,7 @@ https://www.virtualbox.org/wiki/Downloads
 
 You also need to download the CGAT virtual machine from:
 
-http://www.cgat.org/downloads/cgat-vm.vmdk
+https://www.cgat.org/downloads/public/cgat-code-preinstalled/virtual-box/cgat-vm.vdi
 
 To create a new CGAT virtual machine open VirtualBox 
 and go through these steps:
@@ -35,7 +35,7 @@ and go through these steps:
 
    - Select the option: ``Use an existing virtual hard drive file``
 
-   - Click on the dialog and open the file ``cgat-vm.vmdk`` downloaded previously.
+   - Click on the dialog and open the file ``cgat-vm.vdi`` downloaded previously.
 
 The CGAT virtual machine has been created. Power on this 
 machine by clicking ``Start``. You may now want to launch

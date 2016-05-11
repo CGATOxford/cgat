@@ -41,7 +41,6 @@ Command line options
 import sys
 import os
 import CGAT.Experiment as E
-import rpy2.robjects as ro
 from rpy2.robjects import r as R
 
 

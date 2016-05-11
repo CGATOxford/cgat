@@ -66,3 +66,10 @@ change_format:
    outputs: [stdout]
    references: [test_change_format.fastq.gz]
    options: --guess-format=sanger --target-format=integer
+
+paired_sample:
+    stdin: WTCHG_45714_249_1_sequence.short.fastq.gz
+    outputs: [stdout, out_pair_2.sample.tsv.gz]
+    references: [test_out_pair_1.sample.tsv.gz, test_out_pair_2.sample.tsv.gz]
+    options: --method=sample --sample-size 0.2 --seed=1234 --pair-fastq-file <DIR>/WTCHG_45714_249_2_sequence.short.fastq.gz --output-filename-pattern out_pair_2.sample.tsv.gz
+    description: sample pair of fastq files with a random seed

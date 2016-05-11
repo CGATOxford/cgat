@@ -18,18 +18,20 @@ reconcile
 
 Reconcile reads from a pair of fastq files.
 
-This method takes two fastq files and outputs two fastq files such that
-all reads in the output are present in both output files.
+This method takes two fastq files and outputs two fastq files such
+that all reads in the output are present in both output files.
 
 The typical use case is that two fastq files containing the first and
-second part of a read pair have been independently filtered, for example
-by quality scores, truncation, etc. As a consequence some reads might be
-missing from one file but not the other. The reconcile method will output
-two files containing only reads that are common to both files.
+second part of a read pair have been independently filtered, for
+example by quality scores, truncation, etc. As a consequence some
+reads might be missing from one file but not the other. The reconcile
+method will output two files containing only reads that are common to
+both files.
 
 The two files must be sorted by read identifier.
 
-Example input, read2 and read3 are only present in either of the files:
+Example input, read2 and read3 are only present in either of the
+files:
 
    # File1        # File 2
 
@@ -129,22 +131,26 @@ def main(argv=None):
         "with \2. If --chop-identifier is not specified "
         "then the results will be wrong [default=%default].")
 
-    parser.add_option("-u", "--unpaired", dest="unpaired", action="store_true",
-                      help="whether or not to write out unpaired reads "
-                      "to a seperate file")
+    parser.add_option(
+        "-u", "--unpaired", dest="unpaired", action="store_true",
+        help="whether or not to write out unpaired reads "
+        "to a separate file")
 
-    parser.add_option("--id-pattern-1", dest="id_pattern_1",
-                      help="If specified will use the first group from the"
-                           "pattern to determine the ID for the first read",
-                      default=None)
+    parser.add_option(
+        "--id-pattern-1", dest="id_pattern_1",
+        help="If specified will use the first group from the"
+        "pattern to determine the ID for the first read",
+        default=None)
 
-    parser.add_option("--id-pattern-2", dest="id_pattern_2",
-                      help="As above but for read 2",
-                      default=None)
+    parser.add_option(
+        "--id-pattern-2", dest="id_pattern_2",
+        help="As above but for read 2",
+        default=None)
 
-    parser.add_option("-o", "--output-filename-pattern",
-                      dest="output_pattern", type="string",
-                      help="pattern for output files [default=%default].")
+    parser.add_option(
+        "-o", "--output-filename-pattern",
+        dest="output_pattern", type="string",
+        help="pattern for output files [default=%default].")
 
     parser.set_defaults(
         method="reconcile",

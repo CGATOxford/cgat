@@ -48,17 +48,21 @@ class RangeCounter:
         if self.controlfiles:
             self.counts_bg = numpy.zeros(Intervals.getLength(ranges))
 
-    def getCounts( self, contig, ranges, length = 0 ):
+    def getTotal(self):
+        raise NotImplementedError(
+            'implementations of RangeCounter need to implement getTotal')
+
+    def getCounts(self, contig, ranges, length=0):
         '''count from a set of ranges.
 
         The ranges are scaled towards the length of the intervals that
         are being counted.
         '''
 
-        self.setup( ranges )
-        self.count( self.counts, self.countfiles, contig, ranges )
+        self.setup(ranges)
+        self.count(self.counts, self.countfiles, contig, ranges)
         if self.controlfiles:
-            self.count( self.counts_bg, self.controlfiles, contig, ranges )
+            self.count(self.counts_bg, self.controlfiles, contig, ranges)
 
         # subsample for length
         if length > 0:
@@ -95,6 +99,11 @@ class RangeCounter:
 class RangeCounterBAM(RangeCounter):
     '''count densities using bam files.
     '''
+
+    def getTotal(self, bamfile):
+        '''return total number of tags in bedfile.'''
+        return bamfile.mapped
+
     def __init__(self, *args, **kwargs ):
         '''
         :param samfiles: list of :term:`bam` formatted files
@@ -107,7 +116,7 @@ class RangeCounterBAM(RangeCounter):
 
         RangeCounter.__init__(self, *args, **kwargs )
 
-    def count(self, counts, files, contig, ranges ):
+    def count(self, counts, files, contig, ranges):
 
         if len(ranges) == 0: return
 
@@ -122,7 +131,7 @@ class RangeCounterBAM(RangeCounter):
         cdef int pos
         cdef int length
 
-        cdef Samfile samfile
+        cdef AlignmentFile samfile
 
         for samfile in files:
 
@@ -144,6 +153,11 @@ class RangeCounterBAM(RangeCounter):
                     for i from rstart <= i < rend: counts[i] += 1
 
                 current_offset += length
+
+    def getTotal(self, samfile):
+        '''return total number of mapped tags in samfile.'''
+        return samfile.mapped
+
 
 class RangeCounterBAMShift(RangeCounterBAM):
     '''count densities using bam files. 
@@ -214,7 +228,7 @@ class RangeCounterBAMShift(RangeCounterBAM):
 
         cdef int extend
         cdef int shift
-        cdef Samfile samfile
+        cdef AlignmentFile samfile
 
         for samfile, shift, extend in zip(files, self.shifts, self.extends):
 
@@ -283,7 +297,7 @@ class RangeCounterBAMMerge(RangeCounterBAM):
         cdef int pos
         cdef int length
 
-        cdef Samfile samfile
+        cdef AlignmentFile samfile
         cdef int min_insert_size = self.min_insert_size
         cdef int max_insert_size = self.max_insert_size
 
@@ -357,7 +371,7 @@ class RangeCounterBAMBaseAccuracy(RangeCounterBAM):
         cdef int pos
         cdef int length
         
-        cdef Samfile samfile
+        cdef AlignmentFile samfile
 
         for samfile in files:
 
@@ -434,13 +448,18 @@ class RangeCounterBigWig(RangeCounter):
     def __init__(self, *args, **kwargs ):
         RangeCounter.__init__(self, *args, **kwargs )
         
+    def getTotal(self, filename):
+        raise NotImplementedError(
+            "getTotal not implemented for RangeCounterBigwig")
+
     def count(self, counts, files, contig, ranges ):
         
         # collect pileup profile in region bounded by start and end.
         cdef int i
         cdef int rstart, rend, start, end, tstart, tend
 
-        if len(ranges) == 0: return
+        if len(ranges) == 0:
+            return
 
         cdef int length
         cdef int current_offset
@@ -564,7 +583,7 @@ class IntervalsCounter:
         for idx, interv in enumerate(lengths):
             self.lengths[idx].append(sum([x[1]-x[0] for x in interv]))
 
-    def aggregate( self, *counts ):
+    def aggregate(self, *counts):
 
         # save for outputting
         self.last_counts = counts
@@ -602,7 +621,7 @@ class IntervalsCounter:
                 cc = c
 
             try:
-                agg += cc
+                agg += cc.astype(agg.dtype)
             except ValueError:
                 self.nskipped += 1
 
@@ -654,16 +673,16 @@ class IntervalsCounter:
 
         return profile
 
-    def writeLengthStats( self, outfile ):
+    def writeLengthStats(self, outfile):
         '''output length stats to outfile.'''
         
-        outfile.write( "region\t%s\n" % "\t".join(Stats.Summary.fields ))
+        outfile.write("region\t%s\n" % "\t".join(Stats.Summary.fields))
         for field, l in zip(self.fields, self.lengths):
-            outfile.write( "%s\t%s\n" % (field, str(Stats.Summary( l))))
+            outfile.write("%s\t%s\n" % (field, str(Stats.Summary(l))))
 
-    def update( self, gtf ):
+    def update(self, gtf):
         
-        counted = self.count( gtf )
+        counted = self.count(gtf)
 
         if counted and self.outfile_profiles:
             name = gtf[0].transcript_id
@@ -675,7 +694,7 @@ class IntervalsCounter:
     def __str__(self):
         return "%s=%s" % (self.name, ",".join( [str(sum(x)) for x in self.aggregate_counts]) )
 
-class UnsegmentedCounter( IntervalsCounter ):
+class UnsegmentedCounter(IntervalsCounter):
     '''clone a segmented counter as a single
     unsegmented counter.
     '''
@@ -690,7 +709,7 @@ class UnsegmentedCounter( IntervalsCounter ):
         self.add( 'all', counter.getNumBins() )
 
 
-class SeparateExonCounter( IntervalsCounter ):
+class SeparateExonCounter(IntervalsCounter):
     '''count reads over 1st, middle and last exons as well as upstream/
     downstream of genes/transcripts.  Only protein-coding genes (with a
     CDS) are counted

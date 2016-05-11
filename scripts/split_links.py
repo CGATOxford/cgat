@@ -33,16 +33,8 @@ Command line options
 '''
 import os
 import sys
-import string
 import re
-import tempfile
-import subprocess
-import optparse
-import time
-import math
 import CGAT.Experiment as E
-import CGAT.WrapperAdaptiveCAI as WrapperAdaptiveCAI
-import numpy
 
 open_files = {}
 

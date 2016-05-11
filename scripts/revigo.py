@@ -1763,7 +1763,7 @@ def main(argv):
 
         term_graph.add_nodes_from(terms)
         for i, j in itertools.combinations(xrange(rows), 2):
-            w = weight = matrix[i][j]
+            w = matrix[i][j]
             if w < 0.1:
                 continue
             term_graph.add_edge(terms[i], terms[j], weight=w)
@@ -1771,9 +1771,9 @@ def main(argv):
         layout = networkx.spring_layout(term_graph)
 
         if options.reverse_palette:
-            color_scheme = eval("pylab.cm.%s_r" % options.palette)
+            color_scheme = eval("matplotlib.cm.%s_r" % options.palette)
         else:
-            color_scheme = eval("pylab.cm.%s" % options.palette)
+            color_scheme = eval("matplotlib.cm.%s" % options.palette)
 
         labels = dict([(x, go2info.get(x, x)) for x in terms])
         node_size = [-20.0 * math.log(term2pvalue[x], 10)

@@ -124,7 +124,7 @@ def main(argv=None):
         output_pattern="%s",
     )
 
-    (options, args) = E.Start(parser, add_psql_options=True)
+    (options, args) = E.Start(parser)
 
     options.filename1, options.filename2 = args
 

@@ -1,14 +1,19 @@
 '''
-Biomart.py - utility tasks for importing data from biomart
+Biomart.py - Utilities for importing data from biomart
 ==================================================================
 
-In order to find out about datasets, filters and attributes, use the
+This module provides access to biomart servers using the R biomaRt module.
 
-listDatasets(mart)
-listFilters(mart)
-listAttributes(mart)
+In order to find out about datasets, filters and attributes, use R to query
+the server::
 
-functions.
+   listDatasets(mart)
+   listFilters(mart)
+   listAttributes(mart)
+
+Reference
+---------
+
 '''
 
 import CGAT.IOTools as IOTools
@@ -25,10 +30,18 @@ def importFromBiomart(outfile,
     '''download a dataset from biomart and output as a
     tab-separated table.
 
-    *columns* is a dictionary mapping biomart columns to columns in
-    the output tables. *biomart* and *dataset* denote the database and
-    dataset to get the data from.
-
+    Arguments
+    ---------
+    outfile : string
+       Filename of output file
+    columns : dict
+       Dictionary mapping biomart columns to columns in the output table.
+    biomart : string
+       Biomart name
+    dataset : string
+       Biomart dataset
+    host : string
+       Biomart host
     '''
 
     R.library("biomaRt")
@@ -61,12 +74,30 @@ def biomart_iterator(columns,
     '''download a dataset from biomart and output as a
     tab-separated table.
 
-    *columns* is a list with field to obtain.
 
-    *biomart* and *dataset* denote the
-    database and dataset to get the data from.
+    Arguments
+    ---------
+    columns : dict
+       List of fields to obtain.
+    biomart : string
+       Biomart name
+    dataset : string
+       Biomart dataset
+    host : string
+       Biomart host
+    filters : list
+       List of filter to use
+    values : list
+       Values of the filters
+    archive : bool
+       If True, use archived version
 
-    returns a iterator over rows.
+    Returns
+    -------
+    iterator
+       Iterator over rows in biomart database. Each row
+       is dictionary mapping column names to values.
+
     '''
 
     R.library("biomaRt")

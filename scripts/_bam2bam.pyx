@@ -30,6 +30,10 @@ cdef class SetNH:
                 for read in self.stack:
                     if not read.is_unmapped:
                         t = dict(read.tags)
+                        # deal with paired end reads counted
+                        # as multi-mapping
+                        if read.is_proper_pair and nh > 1:
+                            nh -= 1
                         t['NH'] = nh
                         read.tags = list(t.iteritems())
 

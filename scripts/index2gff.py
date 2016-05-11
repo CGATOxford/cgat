@@ -24,11 +24,7 @@ Command line options
 
 """
 
-import os
 import sys
-import re
-import optparse
-
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Experiment as E
 

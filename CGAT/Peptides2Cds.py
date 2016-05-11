@@ -1,4 +1,4 @@
-'''Petides2Cds.py - 
+'''Petides2Cds.py -
 ==========================
 
 Utility functions shared by peptides2cds.py
@@ -392,4 +392,3 @@ def printPrettyAlignment(seq_wobble, seq_cds, seq_pep, map_p2c, options):
     options.stdlog.write("#" + "".join(frags_p) + "\n")
     options.stdlog.write("#" + "".join(frags_c) + "\n")
     options.stdlog.write("#\n")
-

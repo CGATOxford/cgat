@@ -88,7 +88,6 @@ def main(argv=sys.argv):
 
     ninput, noutput = 0, 0
 
-    is_gtf, name = options.is_gtf, options.name
     iterator = GTF.iterator(options.stdin)
 
     if options.track:
@@ -106,7 +105,7 @@ def main(argv=sys.argv):
             options.stdout.write("track name=%s\n" % key)
             for gff in vals:
                 ninput += 1
-                bed.fromGTF(gff, is_gtf=is_gtf, name=name)
+                bed.fromGTF(gff, name=options.name)
                 options.stdout.write(str(bed) + "\n")
                 noutput += 1
 
@@ -114,7 +113,7 @@ def main(argv=sys.argv):
         bed = Bed.Bed()
         for gff in iterator:
             ninput += 1
-            bed.fromGTF(gff, is_gtf=is_gtf, name=name)
+            bed.fromGTF(gff, name=options.name)
             options.stdout.write(str(bed) + "\n")
 
             noutput += 1

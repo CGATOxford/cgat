@@ -28,12 +28,7 @@ Command line options
 
 '''
 
-import os
 import sys
-import re
-import optparse
-import sys
-import re
 from Bio.Seq import Seq
 from Bio.Alphabet import generic_dna
 

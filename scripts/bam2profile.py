@@ -1,5 +1,5 @@
 '''
-bam2feature.py - template for CGAT scripts
+bam2profile.py - template for CGAT scripts
 ====================================================
 
 :Author:
@@ -21,7 +21,7 @@ The :term:`bam` file must have an :term:`index` file (.bai) in the same
 directory.
 
 Options
-------
+-------
 
 +-------------------+--------------------------------------------------------+
 |--condition        |used to specify whether a range or categorical filter   |

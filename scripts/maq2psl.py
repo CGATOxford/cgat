@@ -33,17 +33,11 @@ Command line options
 
 '''
 import sys
-import string
-import re
-import optparse
-
+import itertools
 import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
-import CGAT.Genomics as Genomics
 import CGAT.Blat as Blat
 import CGAT.Maq as Maq
-import bisect
-import itertools
 
 
 class Segment:

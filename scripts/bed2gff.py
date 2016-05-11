@@ -1,5 +1,4 @@
-"""
-bed2gff.py - convert bed to gff/gtf
+"""bed2gff.py - convert bed to gff/gtf
 ===================================
 
 :Author: Andreas Heger
@@ -10,13 +9,16 @@ bed2gff.py - convert bed to gff/gtf
 Purpose
 -------
 
-This script converts a :term:`bed`-formatted file to a :term:`gff` or :term:`gtf`-formatted file.
+This script converts a :term:`bed`-formatted file to a :term:`gff` or
+:term:`gtf`-formatted file.
 
-It aims to populate the appropriate fields in the :term:`gff` file with columns in the :term:`bed` file.
+It aims to populate the appropriate fields in the :term:`gff` file
+with columns in the :term:`bed` file.
 
-If ``--as-gtf`` is set and a name column in the :term:`bed` file is present, its contents will be set 
-as ``gene_id`` and ``transcript_id``. Otherwise, a numeric ``gene_id`` or ``transcript_id`` will be set 
-according to ``--id-format``.
+If ``--as-gtf`` is set and a name column in the :term:`bed` file is
+present, its contents will be set as ``gene_id`` and
+``transcript_id``. Otherwise, a numeric ``gene_id`` or
+``transcript_id`` will be set according to ``--id-format``.
 
 Usage
 -----
@@ -37,17 +39,17 @@ Example::
 |chr1  |bed  |exon  |15001  |16000  |.  |.  |.  |gene_id "None"; transcript_id "None";  |
 +------+-----+------+-------+-------+---+---+---+---------------------------------------+
 
-Example::   
-   
+Example::
+
    # Convert BED to GTF format
    cgat bed2gff.py --as-gtf < tests/bed2gff.py/bed3/bed.gz > test2.gtf
    # View converted file (excluding logging information)
    cat test2.gtf | grep -v "#" | head
 
-+------+-----+------+-------+-------+---+---+---+-----------------------------------------------+   
-chr1   |bed  |exon  |501    |1000   |.  |.  |.  |gene_id "00000001"; transcript_id "00000001";  |
 +------+-----+------+-------+-------+---+---+---+-----------------------------------------------+
-chr1   |bed  |exon  |15001  |16000  |.  |.  |.  |gene_id "00000002"; transcript_id "00000002";  |
+|chr1  |bed  |exon  |501    |1000   |.  |.  |.  |gene_id "00000001"; transcript_id "00000001";  |
++------+-----+------+-------+-------+---+---+---+-----------------------------------------------+
+|chr1  |bed  |exon  |15001  |16000  |.  |.  |.  |gene_id "00000002"; transcript_id "00000002";  |
 +------+-----+------+-------+-------+---+---+---+-----------------------------------------------+
 
 Type::
@@ -61,34 +63,23 @@ Command line options
 
 """
 import sys
-import re
-import string
-import optparse
-import time
-import os
-import itertools
-import tempfile
-import subprocess
-import shutil
-
 import CGAT.Experiment as E
-import CGAT.Stats as Stats
 import CGAT.GTF as GTF
 import CGAT.Bed as Bed
-import CGAT.IndexedFasta as IndexedFasta
-import CGAT.IOTools as IOTools
 
 
 def main(argv=sys.argv):
 
-    parser = E.OptionParser(version="%prog version: $Id: bed2gff.py 2861 2010-02-23 17:36:32Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
     parser.add_option("-a", "--as-gtf", dest="as_gtf", action="store_true",
                       help="output as gtf.")
 
-    parser.add_option("-f", "--id-format", dest="id_format", type="string",
-                      help="format for numeric identifier if --as-gtf is set and no name in bed file [%default].")
+    parser.add_option(
+        "-f", "--id-format", dest="id_format", type="string",
+        help="format for numeric identifier if --as-gtf is set and "
+        "no name in bed file [%default].")
 
     parser.set_defaults(as_gtf=False,
                         id_format="%08i",

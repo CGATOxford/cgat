@@ -36,7 +36,7 @@ def merge_pairs(Samfile input_samfile,
     cdef AlignedSegment read
     cdef int c_max_insert_size = max_insert_size
     cdef int c_min_insert_size = min_insert_size
-    cdef int start, end
+    cdef int start, end, xstart, xend
     cdef int take_columns = 6
 
     # point to array of contig lengths
@@ -57,15 +57,26 @@ def merge_pairs(Samfile input_samfile,
             nremoved_unmapped += 1
             continue
 
+        if read.pos < read.mpos:
+            # lower coordinates, ignore
+            continue
+        elif read.pos == read.mpos and flag & 64:
+            # disambiguate, take second in pair
+            continue
+        else:
+            # taking the downstream pair allows to incl
+            xstart = read.next_reference_start
+            xend = read.reference_end
+            if xstart < xend:
+                start, end = xstart, xend
+            else:
+                start, end = xend, xstart
+
         # remove unpaired
         if not flag & 2:
             nremoved_unpaired += 1
             continue
             
-        # this is second pair of read - skip
-        if flag & 128:
-            continue
-
         if read.tid != read.mrnm:
             nremoved_contig += 1
             continue
@@ -76,13 +87,6 @@ def merge_pairs(Samfile input_samfile,
            (c_min_insert_size and isize < c_min_insert_size):
             nremoved_insert += 1
             continue
-
-        if read.pos < read.mpos:
-            start = read.pos
-            end = read.mpos + read.infer_query_length(always=False)
-        else:
-            start = read.mpos
-            end = read.pos + read.infer_query_length(always=False)
 
         # truncate at contig end - overhanging reads might cause problems with chrM
         if end > contig_sizes[read.mrnm]:
@@ -108,6 +112,7 @@ def merge_pairs(Samfile input_samfile,
                            read.mapq,
                        ))
         else:
+            # As we output the downstream read, reverse orientation
             if read.is_reverse:
                 strand = '-'
             else:

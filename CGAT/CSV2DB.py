@@ -62,10 +62,14 @@ import types
 
 from CGAT import Experiment as E
 from CGAT import CSV as CSV
+from CGAT import IOTools as IOTools
 import sqlite3
 
 
-def executewait(dbhandle, statement, error, retry=False, wait=5):
+def executewait(dbhandle, statement, error,
+                retry=False,
+                wait=5,
+                args=()):
     '''execute sql statement.
 
     Retry on error, if retry is True.
@@ -76,7 +80,7 @@ def executewait(dbhandle, statement, error, retry=False, wait=5):
     i = 20
     while i > 0:
         try:
-            cc.execute(statement)
+            cc.execute(statement, args)
             return cc
         except sqlite3.OperationalError as e:
             msg = e.message
@@ -123,37 +127,48 @@ def quoteTableName(name, quote_char="_", backend="sqlite"):
         if name[0] in "0123456789":
             name = "_" + name
         return re.sub("[-(),\[\].:]", "_", name)
-    elif backend in ("mysql", "pg"):
+    elif backend in ("mysql", "postgres"):
         if name[0] in "0123456789":
             name = "_" + name
         return re.sub("[-(),\[\]]:", "_", name)
 
 
-def createTable(dbhandle, error, options,
+def createTable(dbhandle,
+                error,
+                tablename,
+                options,
+                retry=True,
+                ignore_empty=True,
+                ignore_columns=[],
+                rename_columns=[],
+                lowercase=False,
+                ignore_duplicates=True,
+                indices=[],
                 rows=None,
                 headers=None,
                 first_column=None,
-                existing_tables=[]):
+                existing_tables=set(),
+                append=False):
 
     # create table by guessing column types from data type.
     if rows:
-        map_column2type, ignored, max_values = CSV.GetMapColumn2Type(
+        map_column2type, ignored, max_values = CSV.getMapColumn2Type(
             rows,
-            ignore_empty=options.ignore_empty,
+            ignore_empty=ignore_empty,
             get_max_values=True)
         if ignored:
             E.info("ignored columns: %s" % str(ignored))
 
         headers = map_column2type.keys()
         headers.sort()
-        
+
     elif headers:
         map_column2type = dict(zip(headers, [None, ] * len(headers)))
         ignored = 0
 
-    columns_to_ignore = set([x.lower() for x in options.ignore_columns])
+    columns_to_ignore = set([x.lower() for x in ignore_columns])
     columns_to_rename = dict([x.lower().split(":")
-                             for x in options.rename_columns])
+                             for x in rename_columns])
 
     take = []
     # associate headers to field names
@@ -161,14 +176,14 @@ def createTable(dbhandle, error, options,
     present = {}
     for header_index, h in enumerate(headers):
         hh = h
-        if options.lowercase:
+        if lowercase:
             hh = string.lower(h)
 
         if hh in columns_to_ignore:
             continue
 
         if hh in present:
-            if options.ignore_duplicates:
+            if ignore_duplicates:
                 continue
             else:
                 raise ValueError("duplicate column %s" % hh)
@@ -187,7 +202,10 @@ def createTable(dbhandle, error, options,
         elif map_column2type[h] == float:
             t = "FLOAT DEFAULT '0'"
         else:
-            t = "TEXT"
+            if h in options.indices:
+                t = options.index
+            else:
+                t = options.text
 
         # remove special characters from column names
         if hh == "":
@@ -202,63 +220,67 @@ def createTable(dbhandle, error, options,
             hh = "_" + hh
         columns.append("%s %s" % (hh, t))
 
-    # delete old table if it exists
-    while 1:
-        try:
-            cc = dbhandle.cursor()
-            cc.execute("DROP TABLE IF EXISTS '%s'" % options.tablename)
-            dbhandle.commit()
-            cc.close()
-            E.info("existing table %s deleted" % options.tablename)
-        except sqlite3.OperationalError, msg:
-            E.warn(msg)
-            time.sleep(5)
-            continue
-        except error, msg:
-            E.warn("could not delete existing table %s: %s" %
-                   (options.tablename, str(msg)))
-            dbhandle.rollback()
-            if not options.retry:
-                raise error(msg)
-            elif options.tablename in existing_tables:
-                # table exists, but drop did not work (e.g. database lock)
+    if not options.append:
+        # delete old table if it exists
+        while 1:
+            try:
+                cc = dbhandle.cursor()
+                # mysql: removed '' around table name
+                statement = "DROP TABLE IF EXISTS %s" % tablename
+                E.debug(statement)
+                cc.execute(statement)
+                dbhandle.commit()
+                cc.close()
+                E.info("existing table %s deleted" % tablename)
+            except sqlite3.OperationalError, msg:
+                E.warn(msg)
                 time.sleep(5)
                 continue
-            else:
-                # table might not have existed
-                break
-        break
+            except error, msg:
+                E.warn("could not delete existing table %s: %s" %
+                       (tablename, str(msg)))
+                dbhandle.rollback()
+                if not retry:
+                    raise error(msg)
+                elif tablename in existing_tables:
+                    # table exists, but drop did not work (e.g. database lock)
+                    time.sleep(5)
+                    continue
+                else:
+                    # table might not have existed
+                    break
+            break
 
-    # create new table
-    statement = "CREATE TABLE %s ( %s );" % (
-        options.tablename, ", ".join(columns))
+        # create new table
+        statement = "CREATE TABLE %s ( %s );" % (
+            tablename, ", ".join(columns))
 
-    E.debug("table create:\n# %s" % (statement))
+        E.debug("table create:\n# %s" % (statement))
 
-    while 1:
-        try:
-            cc = dbhandle.cursor()
-            cc.execute(statement)
-            cc.close()
-            dbhandle.commit()
-        except error, msg:
-            E.warn("table creation failed: msg=%s, statement=\n  %s" %
-                   (msg, statement))
-            # TODO: check for database locked msg
-            if not options.retry:
-                raise error(msg)
-            if not re.search("locked", str(msg)):
-                raise error("%s: %s" % (msg, statement))
-            time.sleep(5)
-            continue
-        break
+        while 1:
+            try:
+                cc = dbhandle.cursor()
+                cc.execute(statement)
+                cc.close()
+                dbhandle.commit()
+            except error, msg:
+                E.warn("table creation failed: msg=%s, statement=\n  %s" %
+                       (msg, statement))
+                # TODO: check for database locked msg
+                if not retry:
+                    raise error(msg)
+                if not re.search("locked", str(msg)):
+                    raise error("%s: %s" % (msg, statement))
+                time.sleep(5)
+                continue
+            break
 
-    E.info("table %s created successfully." % options.tablename)
+        E.info("table %s created successfully." % tablename)
 
     return take, map_column2type, ignored
 
 
-def run(infile, options):
+def run(infile, options, report_step=10000):
 
     options.tablename = quoteTableName(
         options.tablename, backend=options.backend)
@@ -272,22 +294,42 @@ def run(infile, options):
     else:
         options.map = {}
 
-    existing_tables = None
+    existing_tables = set()
 
-    if options.backend == "pg":
+    quick_import_separator = "\t"
+
+    if options.database_backend == "postgres":
         import psycopg2
+        raise NotImplementedError("needs refactoring for commandline options")
         dbhandle = psycopg2.connect(options.psql_connection)
         error = psycopg2.Error
         options.null = "NULL"
         options.string_value = "'%s'"
+        options.text = "TEXT"
+        options.index = "TEXT"
+        if options.insert_quick:
+            raise ValueError("quick import not implemented.")
+
+    elif options.database_backend == "mysql":
+        import MySQLdb
+        dbhandle = MySQLdb.connect(host=options.database_host,
+                                   user=options.database_username,
+                                   passwd=options.database_password,
+                                   port=options.database_port,
+                                   db=options.database_name)
+        error = Exception
+        options.null = "NULL"
+        options.string_value = "%s"
+        options.text = "TEXT"
+        options.index = "VARCHAR(40)"
         if options.insert_quick:
             raise ValueError("quick import not implemented.")
 
     elif options.backend == "sqlite":
         import sqlite3
-        dbhandle = sqlite3.connect(options.database)
+        dbhandle = sqlite3.connect(options.database_name)
         try:
-            os.chmod(options.database, 0664)
+            os.chmod(options.database_name, 0664)
         except OSError, msg:
             E.warn("could not change permissions of database: %s" % msg)
 
@@ -303,6 +345,8 @@ def run(infile, options):
         error = sqlite3.OperationalError
         options.insert_many = True  # False
         options.null = None  # "NULL"
+        options.text = "TEXT"
+        options.index = "TEXT"
         options.string_value = "%s"  # "'%s'"
 
         statement = "SELECT name FROM sqlite_master WHERE type='table'"
@@ -310,9 +354,12 @@ def run(infile, options):
         existing_tables = set([x[0] for x in cc])
         cc.close()
 
+        # use , as separator
         quick_import_statement = \
-            "sqlite3 -header -csv -separator '\t' %s '.import %%s %s'" % \
+            "sqlite3 %s '.import %%s %s'" % \
             (options.database, options.tablename)
+
+        quick_import_separator = "|"
 
     if options.header is not None:
         options.header = [x.strip() for x in options.header.split(",")]
@@ -341,7 +388,7 @@ def run(infile, options):
                 "undefined columns in input file at row: %s" % row)
 
         try:
-            rows.append(CSV.ConvertDictionary(row, map=options.map))
+            rows.append(IOTools.convertDictionary(row, map=options.map))
         except TypeError, msg:
             E.warn(
                 "incomplete line? Type error in conversion: "
@@ -366,10 +413,19 @@ def run(infile, options):
                 take, map_column2type, ignored = createTable(
                     dbhandle,
                     error,
+                    options.tablename,
+                    options,
+                    retry=options.retry,
                     headers=reader.fieldnames,
-                    options=options,
+                    ignore_empty=options.ignore_empty,
+                    ignore_columns=options.ignore_columns,
+                    rename_columns=options.rename_columns,
+                    lowercase=options.lowercase,
+                    ignore_duplicates=options.ignore_duplicates,
+                    indices=options.indices,
                     first_column=options.first_column,
-                    existing_tables=existing_tables)
+                    existing_tables=existing_tables,
+                    append=options.append)
                 E.info("empty table created")
             return
         else:
@@ -378,10 +434,20 @@ def run(infile, options):
         take, map_column2type, ignored = createTable(
             dbhandle,
             error,
+            options.tablename,
+            options,
             rows=rows,
-            options=options,
+            retry=options.retry,
+            headers=reader.fieldnames,
+            ignore_empty=options.ignore_empty,
+            ignore_columns=options.ignore_columns,
+            rename_columns=options.rename_columns,
+            lowercase=options.lowercase,
+            ignore_duplicates=options.ignore_duplicates,
+            indices=options.indices,
             first_column=options.first_column,
-            existing_tables=existing_tables)
+            existing_tables=existing_tables,
+            append=options.append)
 
     def row_iter(rows, reader):
         for row in rows:
@@ -390,7 +456,7 @@ def run(infile, options):
                            null=options.null,
                            string_value=options.string_value)
         for data in reader:
-            yield quoteRow(CSV.ConvertDictionary(data, map=options.map),
+            yield quoteRow(IOTools.convertDictionary(data, map=options.map),
                            take,
                            map_column2type,
                            options.missing_values,
@@ -411,11 +477,11 @@ def run(infile, options):
         for d in row_iter(rows, reader):
 
             ninput += 1
-            os.write(outfile, "\t".join([str(d[x]) for x in take]) + "\n")
+            os.write(outfile, quick_import_separator.join(
+                [str(d[x]) for x in take]) + "\n")
 
-            if options.loglevel >= 1 and ninput % options.report_step == 0:
-                options.stdlog.write("# iteration %i\n" % ninput)
-                options.stdlog.flush()
+            if ninput % report_step == 0:
+                E.info("iteration %i\n" % ninput)
 
         os.close(outfile)
 
@@ -457,7 +523,7 @@ def run(infile, options):
 
             data.append([d[x] for x in take])
 
-            if ninput % options.report_step == 0:
+            if ninput % report_step == 0:
                 E.info("iteration %i" % ninput)
 
         statement = "INSERT INTO %s VALUES (%s)" % (
@@ -486,17 +552,17 @@ def run(infile, options):
         # subprocess and COPY FROM STDIN)
         statement = "INSERT INTO %s VALUES (%%(%s)s)" % (options.tablename,
                                                          ')s, %('.join(take))
-
         # output data used for guessing:
         for d in row_iter(rows, reader):
 
             ninput += 1
-
             E.debug("single insert:\n# %s" % (statement % d))
-            cc = executewait(dbhandle, statement % d, error, options.retry)
+            cc = executewait(dbhandle, statement, error,
+                             retry=options.retry,
+                             args=d)
             cc.close()
 
-            if options.loglevel >= 1 and ninput % options.report_step == 0:
+            if ninput % report_step == 0:
                 E.info("iteration %i" % ninput)
 
     E.info("building indices")
@@ -594,10 +660,6 @@ def buildParser():
                       help="try quick file based import - needs to "
                       "be supported by the backend [default=%default].")
 
-    parser.add_option("-b", "--backend", dest="backend", type="choice",
-                      choices=("pg", "sqlite"),
-                      help="database backend to choose [default=%default].")
-
     parser.add_option("-i", "--add-index", dest="indices", type="string",
                       action="append",
                       help="create an index for the named column "
@@ -614,6 +676,10 @@ def buildParser():
     parser.add_option("-z", "--from-zipped", dest="from_zipped",
                       action="store_true",
                       help="input is zipped.")
+
+    parser.add_option("--append", dest="append",
+                      action="store_true",
+                      help="append to existing table [default=%default].")
 
     parser.add_option(
         "--utf8", dest="utf", action="store_true",
@@ -644,6 +710,7 @@ def buildParser():
         allow_empty=False,
         retry=False,
         utf=False,
+        append=False,
     )
 
     return parser

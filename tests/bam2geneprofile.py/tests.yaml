@@ -4,63 +4,69 @@ version:
     references: []
     options: --version
 
-bedfileintervalaccuracy:
+test_1_bedfileintervalaccuracy:
     stdin: null 
     options: --force-output --reporter=transcript --method=geneprofile --method=tssprofile --bedfile=<DIR>/tss.bed.gz --gtf-file=<DIR>/twogenes.gtf.gz
     outputs: [tssprofile.lengths.tsv.gz, geneprofile.lengths.tsv.gz, tssprofile.matrix.tsv.gz, geneprofile.matrix.tsv.gz]
     references: [test1.tssprofile.lengths.tsv.gz, test1.geneprofile.lengths.tsv.gz, test1.tssprofile.matrix.tsv.gz, test1.geneprofile.matrix.tsv.gz]
 
 # do not need to compare pngs
-baseaccuracy:
+test_2_baseaccuracy:
     stdin: null 
     options: --force-output --method=geneprofile -b <DIR>/multipleReadsSplicedOutAllIntronsAndSecondExon.bam -g <DIR>/onegene.gtf.gz --reporter=gene --resolution-cds=1400 --use-base-accuracy
     outputs: [geneprofile.lengths.tsv.gz, geneprofile.matrix.tsv.gz]
     references: [test2.geneprofile.lengths.tsv.gz, test2.geneprofile.matrix.tsv.gz]
 
-introns:
+test_3_introns:
     stdin: null
     options: --force-output -b <DIR>/multipleReadsSplicedOutAllIntronsAndSecondExon.bam -g <DIR>/onegeneWithoutAnyCDS.gtf.gz --method=geneprofilewithintrons  --reporter=gene --resolution-cds=1200 --resolution-introns=2800
     outputs: [geneprofilewithintrons.lengths.tsv.gz, geneprofilewithintrons.matrix.tsv.gz]
     references: [test3.geneprofilewithintrons.lengths.tsv.gz, test3.geneprofilewithintrons.matrix.tsv.gz]
 
-geneprofileabsolutedistancefromthreeprimeend:
+test_4_geneprofileabsolutedistancefromthreeprimeend:
     stdin: null
     options: --force-output -b <DIR>/multipleReadsSplicedOutAllIntronsAndSecondExon.bam -g <DIR>/onegeneWithoutAnyCDS.gtf.gz --method=geneprofileabsolutedistancefromthreeprimeend --reporter=gene --normalize-transcript=total-max --extension-exons-absolute-distance-topolya 1200 --extension-introns-absolute-distance-topolya 2800 --resolution-exons-absolute-distance-topolya 1200 --resolution-introns-absolute-distance-topolya 2800
     outputs: [geneprofileabsolutedistancefromthreeprimeend.lengths.tsv.gz, geneprofileabsolutedistancefromthreeprimeend.matrix.tsv.gz]
     references: [test4.geneprofileabsolutedistancefromthreeprimeend.lengths.tsv.gz, test4.geneprofileabsolutedistancefromthreeprimeend.matrix.tsv.gz]
 
-bigwigfileintervalaccuracy:
+test_5_bigwigfileintervalaccuracy:
     stdin: null
     options: --force-output --reporter=transcript --method=geneprofile --bigwigfile=<DIR>/../bam2peakshape.py/small.bw --gtf-file=<DIR>/twogenes.gtf.gz
     outputs: [geneprofile.lengths.tsv.gz, geneprofile.matrix.tsv.gz]
     references: [test5.geneprofile.lengths.tsv.gz, test5.geneprofile.matrix.tsv.gz]
 
-controlfile:
+test_6_controlfile:
     stdin: null
     options: --force-output --reporter=transcript --method=geneprofile --bedfile=<DIR>/tss.bed.gz --control-bam-file=<DIR>/tss.bed.gz --gtf-file=<DIR>/twogenes.gtf.gz
     outputs: [geneprofile.lengths.tsv.gz, geneprofile.matrix.tsv.gz]
     references: [test6.geneprofile.lengths.tsv.gz, test6.geneprofile.matrix.tsv.gz]
 
-shiftreads:
+test_7_shiftreads:
     stdin: null
     options: --force-output --reporter=transcript --method=tssprofile --shift-size=100 --bam-file=<DIR>/multipleReadsSplicedOutAllIntronsAndSecondExon.bam --gtf-file=<DIR>/twogenes.gtf.gz
     outputs: [tssprofile.lengths.tsv.gz, tssprofile.matrix.tsv.gz]
     references: [test7.tssprofile.lengths.tsv.gz, test7.tssprofile.matrix.tsv.gz]
 
-normalizeprofileoption_normalizewithbackground:
+test_8_normalizeprofileoption_normalizewithbackground:
     stdin: null
     options: --force-output --reporter=transcript --method=geneprofile --normalize-profile=background --background-region-bins=10 --bam-file=<DIR>/multipleReadsSplicedOutAllIntronsAndSecondExon.bam --gtf-file=<DIR>/twogenes.gtf.gz
     outputs: [geneprofile.lengths.tsv.gz, geneprofile.matrix.tsv.gz]
     references: [test8.geneprofile.lengths.tsv.gz, test8.geneprofile.matrix.tsv.gz]
 
-outputallprofiles:
+test_9_outputallprofiles:
     stdin: null
     options: --force-output --reporter=transcript --method=geneprofile --output-all-profiles --bam-file=<DIR>/multipleReadsSplicedOutAllIntronsAndSecondExon.bam --gtf-file=<DIR>/twogenes.gtf.gz
     outputs: [geneprofile.lengths.tsv.gz, geneprofile.matrix.tsv.gz, geneprofile.profiles.tsv.gz]
     references: [test9.geneprofile.lengths.tsv.gz, test9.geneprofile.matrix.tsv.gz, test9.geneprofile.profiles.tsv.gz]
 
-separateexons:
+test_10_separateexons:
     stdin: null
     options: --force-output --bam-file <DIR>/multipleReadsSplicedOutAllIntronsAndSecondExon.bam --gtf-file <DIR>/onegene.gtf.gz --reporter=gene --method=separateexonprofilewithintrons --output-filename-pattern="test10.%s"
     outputs: [test10.separateexonprofilewithintrons.lengths.tsv.gz, test10.separateexonprofilewithintrons.matrix.tsv.gz]
     references: [test10.separateexonprofilewithintrons.lengths.tsv.gz, test10.separateexonprofilewithintrons.matrix.tsv.gz]
+
+test_11_normalizeprofileoption_withcontrol:
+    stdin: null
+    options: --force-output --reporter=transcript --method=geneprofile --normalize-profile=background --background-region-bins=10 --bam-file=<DIR>/multipleReadsSplicedOutAllIntronsAndSecondExon.bam --gtf-file=<DIR>/twogenes.gtf.gz --control-bam-file=<DIR>/multipleReadsSplicedOutAllIntronsAndSecondExon.bam
+    outputs: [geneprofile.lengths.tsv.gz, geneprofile.matrix.tsv.gz]
+    references: [test11.geneprofile.lengths.tsv.gz, test11.geneprofile.matrix.tsv.gz]

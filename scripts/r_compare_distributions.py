@@ -110,8 +110,7 @@ def main(argv=None):
     )
 
     (options, args) = E.Start(parser,
-                              add_pipe_options=True,
-                              add_psql_options=True,)
+                              add_pipe_options=True)
 
     kwargs = {}
     xargs = []

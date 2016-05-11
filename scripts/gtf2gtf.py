@@ -29,25 +29,28 @@ Sorting gene sets
 +++++++++++++++++
 
 ``sort``
+
    Sorts entries in gtf file by one or more fields
 
-      +-----------------+---------------------------------------+
-      | option          | order in which fields are sorted      |
-      +-----------------|---------------------------------------+
-      | gene            | gene_id, contig, start                |
-      +-----------------+---------------------------------------+
-      | gene+transcript | gene_id, transcript_id, contig, start |
-      +-----------------+---------------------------------------+
-      | contig+gene     | contig, gene_id, transcript_id, start |
-      +-----------------+---------------------------------------+
-      | transcript      | transcript_id, contig, start          |
-      +-----------------+---------------------------------------+
-      | position        | contig, start                         |
-      +-----------------+---------------------------------------+
-      | position+gene   | contig( gene_id, start )              |
-      +-----------------+---------------------------------------+
-      | gene+position   | gene_id, contig, start                |
-      +-----------------+---------------------------------------+
+   +-----------------+---------------------------------------+
+   | option          | order in which fields are sorted      |
+   +-----------------|---------------------------------------+
+   | gene            | gene_id, contig, start                |
+   +-----------------+---------------------------------------+
+   | gene+transcript | gene_id, transcript_id, contig, start |
+   +-----------------+---------------------------------------+
+   | contig+gene     | contig, gene_id, transcript_id, start |
+   +-----------------+---------------------------------------+
+   | transcript      | transcript_id, contig, start          |
+   +-----------------+---------------------------------------+
+   | position        | contig, start                         |
+   +-----------------+---------------------------------------+
+   | position+gene   | contig( gene_id, start )              |
+   +-----------------+---------------------------------------+
+   | gene+position   | gene_id, contig, start                |
+   +-----------------+---------------------------------------+
+   | gene+exon       | gene_id, exon_id                      |
+   +-----------------+---------------------------------------+
 
    N.B. position+gene sorts by gene_id, start, then subsequently sorts
    flattened gene lists by contig, start
@@ -57,12 +60,21 @@ Manipulating gene-models
 ++++++++++++++++++++++++
 
 Options that can be used to alter the features represented in a :term:`gtf`
-file.
+file. Only one method can be specified at once.
 
 Input gtfs need to be sorted so that features for a gene or transcript
 appear consecutively within the file. This can be achevied using
 ``--method=sort``.
 
+
+``genes-to-unique-chunks```
+    Divide the complete length of a gene up into chunks that represent
+    ranges of bases that are all present in the same set of transcripts.
+    E.g. for two overlapping exons an entry will be output representing
+    the overlap and a seperate entry each for the sequences only present
+    in one. Ranges which are between the first TSS and last TTS but not
+    present in any transcript (i.e. merged introns) are also output.
+    Useful for DEXSeq like splicing analysis
 
 ``find-retained-introns``
     Finds intervals within a transcript that represent retained-introns,
@@ -76,11 +88,11 @@ appear consecutively within the file. This can be achevied using
     different transcripts.
 
 ``merge-exons``
-    Merges overlapping exons for all transcripts of a gene, outputting the
-    merged exons. Can be used in conjunction with ``merge-exons-distance``
-    to set the minimum distance that may appear between two exons before
-    they are merged.If ``--with-utr`` is set, the output interval will also
-    contain UTR. Input needs to sorted by gene.
+    Merges overlapping exons for all transcripts of a gene, outputting
+    the merged exons. Can be used in conjunction with
+    ``merge-exons-distance`` to set the minimum distance that may
+    appear between two exons before they are merged.If
+    ``--mark-utr`` is set, the UTR regions will be output separately.
 
 ``merge-transcripts``
     Merges all transcripts of a gene. Outputs contains a single interval that
@@ -106,11 +118,9 @@ appear consecutively within the file. This can be achevied using
     intersect. This method only uses ``exon`` or ``CDS`` features.
 
 ``merge-introns``
-    Merges the region spanned by introns for all transcripts of a
-    gene.  Outputs a single interval that spans the region between the
-    start and end of the first and last intron, respectively. Single
-    exons genes will not be output. The input needs to be sorted by
-    gene
+    Outputs a single interval that spans the region between the start
+    of the first intron and the end of last intron. Single exons genes
+    will not be output. The input needs to be sorted by gene
 
 ``exons2introns``
     Merges overlapping introns for all transcripts of a gene,
@@ -232,6 +242,10 @@ Options for altering fields within :term:`gtf`.
     Rename duplicate gene_ids and transcript_ids by addition of
     numerical suffix
 
+``set-source-to-transcript_biotype``
+    Sets the source attribute to the ``transcript_biotype``
+    attribute. Will only set if ``transcript_biotype`` attribute is
+    present in the current record.
 
 Usage
 -----
@@ -241,7 +255,7 @@ The following example sorts the input gene set by gene
 ``method=intersect-transcripts`` that outputs genomic the genomic
 regions within a gene that is covered by all transcripts in a gene.
 Finally, the resultant transcripts are renamed with the pattern
-"MERGED_%i".
+"MERGED_%i"::
 
     cgat gtf2gtf
             --method=sort
@@ -324,6 +338,29 @@ def find_retained_introns(gene):
             yield entry
 
 
+def gene_to_blocks(gene):
+    '''Given a bundle of all exons in a gene, create a seperate exon
+    for each unqiue part of a exon, as well as one for introns. '''
+
+    exons = [(e.start, e.end)
+             for e in gene if e.feature == "exon"]
+
+    exons = list(set(sum(exons, ())))
+    exons.sort()
+
+    entry = GTF.Entry()
+    entry = entry.copy(gene[0])
+    entry.transcript_id = "merged"
+    entry.feature = "exon"
+    entry.source = "merged"
+
+    for i in range(len(exons)-1):
+        entry.start = exons[i]
+        entry.end = exons[i+1]
+        entry.attributes["exon_id"] = str(i + 1)
+        yield entry
+
+
 def main(argv=None):
 
     if not argv:
@@ -352,14 +389,24 @@ def main(argv=None):
                                "position",
                                "contig+gene",
                                "position+gene",
-                               "gene+position"),
+                               "gene+position",
+                               "gene+exon"),
                       help="sort input data [%default].")
 
-    parser.add_option("-u", "--with-utr",
-                      dest="with_utr",
+    parser.add_option("--mark-utr",
+                      dest="mark_utr",
                       action="store_true",
-                      help="include utr in merged transcripts "
+                      help="mark utr for method --merge-exons. "
                       "[%default].")
+
+    parser.add_option(
+        "--without-utr",
+        dest="with_utr",
+        action="store_false",
+        help="exclude UTR in methods --merge-exons, merge-transcripts "
+        "and intersect-transripts. Setting this option will remove "
+        "non-coding transcripts. "
+        "[%default].")
 
     parser.add_option(
         "--filter-method", dest="filter_method",
@@ -442,19 +489,25 @@ def main(argv=None):
         "--duplicate-feature",
         dest="duplicate_feature",
         type="choice",
-        choices=("gene", "transcript", "ucsc", "coordinates"),
+        choices=("gene", "transcript", "both", "ucsc", "coordinates"),
         help="remove duplicates by gene/transcript. "
         "If ``ucsc`` is chosen, transcripts ending on _dup# are "
         "removed. This is necessary to remove duplicate entries "
         "that are next to each other in the sort order "
         "[%default]")
 
+    parser.add_option("--use-gene-id", dest="use_geneid", action="store_true",
+                      help="when merging transcripts, exons or introns, use "
+                      "the parent gene_id as the transcript id.")
+
     parser.add_option("-m", "--method", dest="method", type="choice",
+                      action="append",
                       choices=(
                           "add-protein-id",
                           "exons2introns",
                           "filter",
                           "find-retained-introns",
+                          "genes-to-unique-chunks",
                           "intersect-transcripts",
                           "join-exons",
                           "merge-exons",
@@ -473,10 +526,12 @@ def main(argv=None):
                           "set-protein-to-transcript",
                           "set-score-to-distance",
                           "set-gene_biotype-to-source",
+                          "set-source-to-transcript_biotype",
                           "sort",
                           "transcript2genes",
                           "unset-genes"),
-                      help="Method to apply [%default].")
+                      help="Method to apply [%default]."
+                      "Please only select one.")
 
     parser.set_defaults(
         sort_order="gene",
@@ -489,11 +544,13 @@ def main(argv=None):
         sample_size=0,
         min_exons_length=0,
         ignore_strand=False,
-        with_utr=False,
+        mark_utr=False,
+        with_utr=True,
         invert_filter=False,
         duplicate_feature=None,
         strict=True,
         method=None,
+        use_geneid=False,
     )
 
     (options, args) = E.Start(parser, argv=argv)
@@ -502,6 +559,11 @@ def main(argv=None):
 
     if options.method is None:
         raise ValueError("please specify a --method")
+
+    if len(options.method) > 1:
+        raise ValueError("multiple --method arguements specified")
+    else:
+        options.method = options.method[0]
 
     if options.method == "set-transcript-to-gene":
 
@@ -521,8 +583,24 @@ def main(argv=None):
 
             ninput += 1
 
-            if "gene_biotype" not in gff:
+            if "gene_biotype" not in gff.attributes:
                 gff.setAttribute("gene_biotype", gff.source)
+
+            options.stdout.write("%s\n" % str(gff))
+
+            noutput += 1
+            nfeatures += 1
+
+    elif options.method == "set-source-to-transcript_biotype":
+
+        for gff in GTF.iterator(options.stdin):
+
+            ninput += 1
+
+            try:
+                gff.source = gff.transcript_biotype
+            except AttributeError:
+                pass
 
             options.stdout.write("%s\n" % str(gff))
 
@@ -955,7 +1033,7 @@ def main(argv=None):
 
             if options.filename_filter:
 
-                ids, nerrors = IOTools.ReadList(
+                ids = IOTools.readList(
                     IOTools.openFile(options.filename_filter, "r"))
                 E.info("read %i ids" % len(ids))
 
@@ -1153,6 +1231,11 @@ def main(argv=None):
             noutput += 1
 
     elif "rename-duplicates" == options.method:
+        # note: this will only rename entries with "CDS" in feature column
+
+        assert options.duplicate_feature in ["gene", "transcript", "both"],\
+            ("for renaming duplicates, --duplicate-feature must be set to one "
+             "of 'gene', transcript' or 'both'")
 
         gene_ids = list()
         transcript_ids = list()
@@ -1177,32 +1260,38 @@ def main(argv=None):
 
         for gtf in gtfs:
             if gtf.feature == "CDS":
-                if gtf.gene_id in dup_gene:
-                    gene_dict[gtf.gene_id] = gene_dict[gtf.gene_id] + 1
-                    gtf.setAttribute('gene_id',
-                                     gtf.gene_id + "." +
-                                     str(gene_dict[gtf.gene_id]))
+                if options.duplicate_feature in ["both", "gene"]:
+                    if gtf.gene_id in dup_gene:
+                        gene_dict[gtf.gene_id] = gene_dict[gtf.gene_id] + 1
+                        # TS. patch until pysam.ctabixproxies.pyx bugfixed
+                        gtf.attributes = gtf.attributes.strip()
+                        gtf.setAttribute('gene_id',
+                                         gtf.gene_id + "." +
+                                         str(gene_dict[gtf.gene_id]))
 
-                if gtf.transcript_id in dup_transcript:
-                    transcript_dict[gtf.transcript_id] = \
-                        transcript_dict[gtf.transcript_id] + 1
-                    gtf.setAttribute('transcript_id',
-                                     gtf.transcript_id + "." +
-                                     str(transcript_dict[gtf.transcript_id]))
+                if options.duplicate_feature in ["both", "transcript"]:
+                    if gtf.transcript_id in dup_transcript:
+                        transcript_dict[gtf.transcript_id] = \
+                            transcript_dict[gtf.transcript_id] + 1
+                        # TS. patch until pysam.ctabixproxies.pyx bugfixed
+                        gtf.attributes = gtf.attributes.strip()
+                        gtf.setAttribute(
+                            'transcript_id',
+                            gtf.transcript_id + "." +
+                            str(transcript_dict[gtf.transcript_id]))
 
             options.stdout.write("%s\n" % gtf)
 
-    elif options.method in ("merge-exons", "merge-introns",
+    elif options.method in ("merge-exons",
+                            "merge-introns",
                             "merge-transcripts"):
         for gffs in GTF.flat_gene_iterator(
                 GTF.iterator(options.stdin),
                 strict=options.strict):
-
             ninput += 1
 
             cds_ranges = GTF.asRanges(gffs, "CDS")
             exon_ranges = GTF.asRanges(gffs, "exon")
-
             # sanity checks
             strands = set([x.strand for x in gffs])
             contigs = set([x.contig for x in gffs])
@@ -1217,8 +1306,9 @@ def main(argv=None):
                         gffs[0].gene_id, str(contigs)))
 
             strand = Genomics.convertStrand(gffs[0].strand)
+            utr_ranges = []
 
-            if cds_ranges and options.with_utr:
+            if cds_ranges and options.mark_utr:
                 cds_start, cds_end = cds_ranges[0][0], cds_ranges[-1][1]
                 midpoint = (cds_end - cds_start) / 2 + cds_start
 
@@ -1238,14 +1328,6 @@ def main(argv=None):
                             else:
                                 feature = "UTR5"
                         utr_ranges.append((feature, start, end))
-                output_feature = "CDS"
-                output_ranges = cds_ranges
-            else:
-                output_feature = "exon"
-                output_ranges = exon_ranges
-                utr_ranges = []
-
-            result = []
 
             try:
                 biotypes = [x["gene_biotype"] for x in gffs]
@@ -1253,67 +1335,67 @@ def main(argv=None):
             except (KeyError, AttributeError):
                 biotype = None
 
-            if options.method == "merge-exons":
-                # need to combine per feature - skip
-                # utr_ranges = Intervals.combineAtDistance(
-                # utr_ranges,
-                # options.merge_exons_distance)
-
-                output_ranges = Intervals.combineAtDistance(
-                    output_ranges, options.merge_exons_distance)
-
-                for feature, start, end in utr_ranges:
+            def output_ranges(ranges, gffs, biotype=None,
+                              use_geneid=False):
+                result = []
+                for feature, start, end in ranges:
                     entry = GTF.Entry()
                     entry.copy(gffs[0])
                     entry.clearAttributes()
                     entry.feature = feature
-                    entry.transcript_id = "merged"
+                    if use_geneid:
+                        entry.transcript_id = entry.gene_id
+                    else:
+                        entry.transcript_id = "merged"
                     if biotype:
                         entry.addAttribute("gene_biotype", biotype)
                     entry.start = start
                     entry.end = end
                     result.append(entry)
+                return result
 
-                for start, end in output_ranges:
+            result = []
 
-                    entry = GTF.Entry()
-                    entry.copy(gffs[0])
-                    entry.clearAttributes()
-                    entry.transcript_id = "merged"
-                    if biotype:
-                        entry.addAttribute("gene_biotype", biotype)
-                    entry.feature = output_feature
-                    entry.start = start
-                    entry.end = end
-                    result.append(entry)
+            if options.method == "merge-exons":
+                if options.with_utr:
+                    if options.mark_utr:
+                        result.extend(output_ranges(utr_ranges, gffs, biotype,
+                                                    options.use_geneid))
+                        r = [("CDS", x, y) for x, y in
+                             Intervals.combineAtDistance(
+                                 cds_ranges, options.merge_exons_distance)]
+                    else:
+                        r = [("exon", x, y) for x, y in
+                             Intervals.combineAtDistance(
+                                 exon_ranges, options.merge_exons_distance)]
+                else:
+                    r = [("CDS", x, y) for x, y in
+                         Intervals.combineAtDistance(
+                             cds_ranges, options.merge_exons_distance)]
 
             elif options.method == "merge-transcripts":
 
-                entry = GTF.Entry()
-                entry.copy(gffs[0])
-                entry.clearAttributes()
-                entry.transcript_id = entry.gene_id
-                if biotype:
-                    entry.addAttribute("gene_biotype", biotype)
-                entry.start = output_ranges[0][0]
-                entry.end = output_ranges[-1][1]
-                result.append(entry)
-
-            elif options.method == "merge-introns":
-
-                if len(output_ranges) >= 2:
-                    entry = GTF.Entry()
-                    entry.copy(gffs[0])
-                    entry.clearAttributes()
-                    entry.transcript_id = entry.gene_id
-                    if biotype:
-                        entry.addAttribute("gene_biotype", biotype)
-                    entry.start = output_ranges[0][1]
-                    entry.end = output_ranges[-1][0]
-                    result.append(entry)
+                if options.with_utr:
+                    r = [("exon", exon_ranges[0][0],
+                          exon_ranges[-1][1])]
+                elif cds_ranges:
+                    r = [("exon", cds_ranges[0][0],
+                          cds_ranges[-1][1])]
                 else:
                     ndiscarded += 1
                     continue
+
+            elif options.method == "merge-introns":
+
+                if len(exon_ranges) >= 2:
+                    r = [("exon",
+                          exon_ranges[0][1],
+                          exon_ranges[-1][0])]
+                else:
+                    ndiscarded += 1
+                    continue
+
+            result.extend(output_ranges(r, gffs, biotype, options.use_geneid))
 
             result.sort(key=lambda x: x.start)
 
@@ -1333,6 +1415,15 @@ def main(argv=None):
                 nfeatures += 1
             if found_any:
                 noutput += 1
+
+    elif options.method == "genes-to-unique-chunks":
+
+        for gene in GTF.flat_gene_iterator(GTF.iterator(options.stdin)):
+            ninput += 1
+            for exon in gene_to_blocks(gene):
+                options.stdout.write("%s\n" % str(exon))
+                nfeatures += 1
+            noutput += 1
 
     else:
         raise ValueError("unknown method '%s'" % options.method)

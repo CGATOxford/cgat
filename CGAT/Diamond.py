@@ -1,9 +1,3 @@
-
-import sys
-import re
-import os
-import collections
-import CGAT.Experiment as E
 import random
 
 

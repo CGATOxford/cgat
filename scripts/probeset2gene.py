@@ -36,21 +36,11 @@ Command line options
 
 '''
 
-import os
 import sys
-import re
-import optparse
 import collections
 
-import CGAT.Experiment as E
-
-import CGAT.Expression as Expression
-import rpy2
 from rpy2.robjects import r as R
-
 import CGAT.Experiment as E
-import CGAT.GTF as GTF
-import CGAT.IOTools as IOTools
 
 
 def getProbeset2Gene(database):
@@ -127,7 +117,7 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = E.OptionParser(version="%prog version: $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+    parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
     parser.add_option("-d", "--database", dest="database", type="string",
@@ -136,8 +126,9 @@ def main(argv=None):
     parser.add_option("-m", "--mapping", dest="database", type="string",
                       help="bioconductor mapping to use [default=%default].")
 
-    parser.add_option("-g", "--gtf-file", dest="filename_gtf", type="string",
-                      help="filename with the gene set in gtf format [default=%default].")
+    parser.add_option(
+        "-g", "--gtf-file", dest="filename_gtf", type="string",
+        help="filename with the gene set in gtf format [default=%default].")
 
     parser.set_defaults(
         database="mouse4302.db",

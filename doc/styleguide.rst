@@ -71,6 +71,14 @@ For documenting CGAT code, we follow the conventions for documenting
 python code:
 
    * `Python Developer's guide <http://docs.python.org/devguide/documenting.html>`_
+   
+For writing doc-strings, we use the numpy guide:
+
+   * `A guide to Numpy/scipy documentation
+     <https://github.com/numpy/numpy/blob/master/doc/HOWTO_DOCUMENT.rst.txt>`_
+
+See `here <http://sphinxcontrib-napoleon.readthedocs.org/en/latest/example_numpy.html>`_
+for an example.
 
 In terms of writing scripts, we follow the following conventions:
 
@@ -316,47 +324,49 @@ Writing doc-strings
 Functions should be documented through their doc-string using
 restructured text. For example::
 
-    def computeValue( name, method, accuracy=2):  
+     def computeValue(name, method, accuracy=2):  
 
-        :param name: The name to use.
-    	:type name: str.
-	:param method: method to use.
-	:type state: choice of ('empirical', 'parametric')
-	:param accuracy:
-	:type accuracy: integer
-	:returns:  int -- the value
-	:raises: AttributeError, KeyError
+	 :param name: The name to use.
+	 :type name: str.
+	 :param method: method to use.
+	 :type state: choice of ('empirical', 'parametric')
+	 :param accuracy:
+	 :type accuracy: integer
+	 :returns:  int -- the value
+	 :raises: AttributeError, KeyError
 
-Writing documentation for scripts
----------------------------------
+ Writing documentation for scripts
+ ---------------------------------
 
-There is a minimum standard for documentation to maintain clarity of
-tools and code.  The documentation for any given script should follow
-the basic outline in :doc:`scripts/cgat_script_template`. 
+ There is a minimum standard for documentation to maintain clarity of
+ tools and code.  The documentation for any given script should follow
+ the basic outline in :doc:`scripts/cgat_script_template`.
 
-Three main headers exist:
+ Three main headers exist:
 
-`Purpose`
+ `Purpose`
     Describe the overall purpose and function of the script and the
     input and output formats.  This can be extensive and include
-    sub-headers to further describe script functionality. 
-    For example::
+    sub-headers to further describe script functionality.  For
+    example::
    
         Purpose
 	-------
 
-    	This script takes a :term:`gtf` formatted file and computes meta-gene profiles
-	over various annotations derived from the :term:`gtf` file. 
+    	This script takes a :term:`gtf` formatted file and computes
+	meta-gene profiles over various annotations derived from the
+	:term:`gtf` file.
 
-	A meta-gene profile is an abstract genomic entity over which reads stored in a 
-	:term:`bam` formatted file have been counted. A meta-gene might be an idealized
-	eukaryotic gene (upstream, exonic sequence, downstream) or any other genomic landmark 
-	of interest such as transcription start sites.
+	A meta-gene profile is an abstract genomic entity over which
+	reads stored in a :term:`bam` formatted file have been
+	counted. A meta-gene might be an idealized eukaryotic gene
+	(upstream, exonic sequence, downstream) or any other genomic
+	landmark of interest such as transcription start sites.
 
 `Usage`
-    Describe example use cases for the script with one or more options.  In addition provide
-    the head of both example input and example output files.  
-    Example input and output::
+    Describe example use cases for the script with one or more
+    options.  In addition provide the head of both example input and
+    example output files.  Example input and output::
         
         Usage
 	-----
@@ -381,11 +391,12 @@ Three main headers exist:
 		  --method=method1
 
 `Options`
-      Describe all of the options for the script.  If necessary provide extensive detail of the
-      methods of each option and how they are combined to provide the intended functionality
-      of the script.  This should include all `choice` for options with a verbose description
-      of what that `choice` does. 
-      For example::
+      
+    Describe all of the options for the script.  If necessary provide
+    extensive detail of the methods of each option and how they are
+    combined to provide the intended functionality of the script.
+    This should include all `choice` for options with a verbose
+    description of what that `choice` does.  For example::
       
         Profiles
 	--------
@@ -398,14 +409,14 @@ Three main headers exist:
             UPSTREAM - UTR5 - CDS - UTR3 - DOWNSTREAM
 	    gene models with UTR. Separate the coding section from the non-coding part.
 
-There is a fourth template-specific header; the command line options that are automatically
-generated for every CGAT script:
+There is a fourth template-specific header; the command line options
+that are automatically generated for every CGAT script:
 
 `Command line options`
-     These are automatically generated from :doc:`scripts/cgat_script_template` and
-     detail each option specified within the script.  No further details need to be
-     added to this section.
-
+     These are automatically generated from
+     :doc:`scripts/cgat_script_template` and detail each option
+     specified within the script.  No further details need to be added
+     to this section.
 
 In addition, please pay attention to the following:
 

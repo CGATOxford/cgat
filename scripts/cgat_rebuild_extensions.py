@@ -44,8 +44,6 @@ Command line options
 
 import os
 import sys
-import re
-import optparse
 import glob
 
 import CGAT.Experiment as E

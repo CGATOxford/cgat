@@ -11,48 +11,43 @@
 # All configuration values have a default; values that are commented out
 # serve to show the default.
 
-import sys, os
+import sys
+import os
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-sys.path.extend( [os.path.abspath('../CGAT'), 
-	          os.path.abspath('../scripts'),
-		  os.path.abspath('../CGATPipelines'),
-                  os.path.abspath('python') ] )
+sys.path.extend([os.path.abspath('../CGAT'),
+                 os.path.abspath('../scripts'),
+                 os.path.abspath('../CGATPipelines'),
+                 os.path.abspath('python')])
 
-# show errors
-sphinxreport_show_errors=True
+# -- General configuration ------------------------------------------------
 
-## The data directory
-data_dir = os.path.abspath('..')
-
-# -- General configuration -----------------------------------------------------
-
-# Add any Sphinx extension module names here, as strings. They can be extensions
-# coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.autodoc', 
-              'sphinx.ext.todo', 
-              'sphinx.ext.coverage', 
-              'sphinx.ext.pngmath', 
+# Add any Sphinx extension module names here, as strings. They can be
+# extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
+# ones.
+extensions = ['sphinx.ext.autodoc',
+              'sphinx.ext.todo',
+              'sphinx.ext.coverage',
+              'sphinx.ext.pngmath',
               'sphinx.ext.ifconfig',
-	      'sphinx.ext.inheritance_diagram',
-              'CGATReport.only_directives',
-              'CGATReport.report_directive',
-              'CGATReport.errors_directive',
-              'CGATReport.warnings_directive',
-              'CGATReport.roles',
-	      'sphinxcontrib.programoutput',
-	      'sphinx.ext.intersphinx' ]
+              'sphinx.ext.inheritance_diagram',
+              'sphinxcontrib.programoutput',
+              'sphinx.ext.intersphinx',
+              'sphinx.ext.napoleon']
 
 intersphinx_mapping = {'python': ('http://docs.python.org/2.7', None)}
 
+# coverage configuration
+coverage_ignore_functions = ["main"]
+
 # order of autodocumented functions
-autodoc_member_order="bysource"
+autodoc_member_order = "bysource"
 
 # autoclass configuration - use both class and __init__ method to
 # document methods.
-autoclass_content="both"
+autoclass_content = "both"
 
 # include todos
 todo_include_todos = True
@@ -64,14 +59,14 @@ templates_path = ['_templates']
 source_suffix = '.rst'
 
 # The encoding of source files.
-#source_encoding = 'utf-8'
+# source_encoding = 'utf-8'
 
 # The master toctree document.
 master_doc = 'index'
 
 # General information about the project.
 project = u'CGAT'
-copyright = u'2011, 2012, 2013, 2014 Andreas Heger'
+copyright = u'2011, 2012, 2013, 2014, 2015 Andreas Heger'
 
 
 # Included at the end of each rst file
@@ -84,6 +79,7 @@ rst_epilog = '''
 .. _Galaxy: https://main.g2.bx.psu.edu/
 .. _cython: http://cython.org/
 .. _python: http://python.org/
+.. _ipython: http://ipython.org/
 .. _pyximport: http://www.prescod.net/pyximport/
 .. _sphinx: http://sphinx-doc.org/
 .. _ruffus: http://www.ruffus.org.uk/
@@ -167,7 +163,7 @@ html_theme = 'cgat'
 # html_theme_options = {}
 
 # Add any paths that contain custom themes here, relative to this directory.
-html_theme_path=["./themes"]
+html_theme_path = ["./themes"]
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".

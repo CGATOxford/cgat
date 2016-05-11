@@ -32,7 +32,6 @@ Counts.py - methods for manipulating counts data frames
 Utility functions for dealing with counts data frames
 
 Requirements:
-* fastq-dump >= 2.1.7
 
 Code
 ----
@@ -41,11 +40,17 @@ Code
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import pandas as pd
+from rpy2.robjects import r as R
+from rpy2.robjects import pandas2ri
 import numpy as np
 import numpy.ma as ma
 import copy
 import random
 import sys
+import sklearn.preprocessing as preprocessing
+
+# activate pandas/rpy conversion
+pandas2ri.activate()
 
 
 def geometric_mean(array, axis=0):
@@ -58,13 +63,31 @@ def geometric_mean(array, axis=0):
 
 
 class Counts(object):
-    '''base class to store counts object'''
+    """base class to store counts object
 
-    def __init__(self, table):
+    Attributes
+    -----------
+
+    table : pandas DataFrame
+       dataframe object with count data
+
+    """
+
+    def __init__(self, filename_or_table):
         # read in table in the constructor for Counts
         # e.g counts = Counts(pd.read_csv(...))
-        self.table = table
-        assert self.table.shape, "Counts table is empty"
+
+        if isinstance(filename_or_table, str):
+            self.table = pd.read_csv(filename_or_table,
+                                     sep="\t",
+                                     index_col=0)
+        else:
+            self.table = filename_or_table
+
+        assert self.table.shape, "counts table is empty"
+
+    def clone(self):
+        return copy.deepcopy(self)
 
     def restrict(self, design):
         ''' remove samples not in design '''
@@ -92,7 +115,7 @@ class Counts(object):
     def removeObservationsFreq(self, min_counts_per_row=1):
         '''remove Observations (e.g genes)
 
-        * remove rows with less than x number of counts
+        * remove rows with less than x counts
         '''
 
         # Remove rows with low counts
@@ -113,20 +136,20 @@ class Counts(object):
         # percentile filtering
         percentile = float(percentile_rowsums) / 100.0
         sum_counts = self.table.sum(1)
-        take = sum_counts > sum_counts.quantile(percentile)
+        take = sum_counts >= sum_counts.quantile(percentile)
         E.info("percentile filtering at level %f: keep=%i, discard=%i" %
                (percentile_rowsums,
                 sum(take),
                 len(take) - sum(take)))
         self.table = self.table[take]
 
-    def normalise(self, method="deseq-size-factors"):
+    def normalise(self, method="deseq-size-factors", row_title="total"):
 
         '''return a table with normalized count data.
 
         Implemented methods are:
 
-        million-counts
+        total-column
 
            Divide each value by the column total and multiply by 1,000,000
 
@@ -144,7 +167,19 @@ class Counts(object):
            Simply take the median of all the quotients in a column to get
            the relative depth of the library.
 
-           Divide all values in a column by the normalization factor.
+           Divide all values in a column by the normalization factor. This
+           normalization method removes all rows with a geometric mean of
+           0.
+
+        total-row
+
+           Divide each value in a sample by the value in a particular row.
+           The name of the row is given by `row_title`.
+
+        total-count
+
+           Normalise all values in a column by the ratio of the per-column
+           sum of counts and the average column count across all rows.
 
         This method normalises the counts and returns the normalization
         factors that have been applied.
@@ -167,23 +202,405 @@ class Counts(object):
 
             normed = self.table / self.size_factors
 
-        elif method == "million-counts":
+        elif method == "total-count":
+
+            # compute column-wise sum
+            column_sums = self.table.sum(axis=0)
+            column_sums_mean = np.mean(column_sums)
+
+            self.size_factors = [(column_sums_mean / x) for x in column_sums]
+            normed = self.table * self.size_factors
+
+        elif method == "total-column":
+
             self.size_factors = self.table.sum(axis=0)
+            normed = self.table * 1000000.0 / self.size_factors
+
+        elif method == "total-row":
+
+            self.size_factors = self.table.loc[row_title]
+            self.table.drop(row_title, inplace=True)
             normed = self.table * 1000000.0 / self.size_factors
         else:
             raise NotImplementedError(
                 "normalization method '%s' not implemented" % method)
 
-        self.table = normed
         # make sure we did not lose any rows or columns
         assert normed.shape == self.table.shape
 
-    def sort(self, sort_columns, reset_index=True):
-        ''' sort counts table by columns supplied and reset '''
-        index = range(0, len(self.table.index))
-        self.table = self.table.sort(columns=sort_columns)
-        if reset_index:
-            self.table.set_index(index, inplace=True)
+        self.table = normed
+
+    def sort(self, sort_columns, inplace=True):
+        ''' sort counts table by columns'''
+
+        def sort_table(counts):
+            counts.table = counts.table.sort(columns=sort_columns)
+
+        if inplace:
+            sort_table(self)
+            return None
+
+        else:
+            tmp_counts = self.clone()
+            sort_table(tmp_counts)
+            return tmp_counts
+
+    def log(self, base=2, pseudocount=1, inplace=True):
+        ''' log transform the counts table '''
+
+        if inplace:
+            self.table = np.log(self.table + pseudocount)
+            return None
+
+        else:
+            tmp_counts = self.clone()
+            tmp_counts.table = np.log(tmp_counts.table + pseudocount)
+            return tmp_counts
+
+    def transform(self, method="vst", design=None, inplace=True, blind=True):
+        '''
+        perform transformation on counts table
+        current methods are:
+         - deseq2 variance stabalising transformation
+        - deseq rlog transformation
+
+        Need to supply a design table if not using "blind"
+        '''
+
+        assert method in ["vst", "rlog"], ("method must be one of"
+                                           "[vst, rlog]")
+
+        method2function = {"vst": "varianceStabilizingTransformation",
+                           "rlog": "rlog"}
+
+        t_function = method2function[method]
+
+        r_counts = pandas2ri.py2ri(self.table)
+
+        if not blind:
+            assert design, ("if not using blind must supply a design table "
+                            "(a CGAT.Expression.ExperimentalDesign object")
+
+            # currently this only accepts "~group" design
+            transform = R('''
+            function(df, design){
+
+            suppressMessages(library('DESeq2'))
+
+            dds <- suppressMessages(DESeqDataSetFromMatrix(
+                     countData= df, colData = design, design = ~group))
+
+            transformed <- suppressMessages(%(t_function)s(dds, blind=FALSE))
+            transformed_df <- as.data.frame(assay(transformed))
+
+            return(transformed_df)
+            }''' % locals())
+
+            r_design = pandas2ri.py2ri(design.table)
+            df = pandas2ri.ri2py(transform(r_counts, r_design))
+
+        else:
+
+            transform = R('''
+            function(df){
+
+            suppressMessages(library('DESeq2'))
+
+            design = data.frame(row.names = colnames(df),
+                                group = seq(1, length(colnames(df))))
+
+            dds <- suppressMessages(DESeqDataSetFromMatrix(
+                     countData= df, colData = design, design = ~group))
+
+            transformed <- suppressMessages(%(t_function)s(dds, blind=TRUE))
+            transformed_df <- as.data.frame(assay(transformed))
+
+            return(transformed_df)
+            }''' % locals())
+
+            df = pandas2ri.ri2py(transform(r_counts))
+
+        # losing rownames for some reason during the conversion?!
+        df.index = self.table.index
+
+        if inplace:
+            self.table = df
+            # R replaces "-" in column names with ".". Revert back!
+            self.table.columns = [x.replace(".", "-")
+                                  for x in self.table.columns]
+        else:
+            tmp_counts = self.clone()
+            tmp_counts.table = df
+            tmp_counts.table.columns = [x.replace(".", "-")
+                                        for x in tmp_counts.table.columns]
+            return tmp_counts
+
+    def plotTransformations(self, plot_filename="transformations.png"):
+        '''perform transformations and plot to compare'''
+
+        log = self.log(inplace=False)
+        vst = self.transform(inplace=False, method="vst")
+        rlog = self.transform(inplace=False, method="rlog")
+
+        def counts2meanSdPlot(df):
+            ''' takes a counts object and returns a dataframe with standard
+            deviation vs. average expression'''
+
+            mean_sd_df = pd.DataFrame({"mean": df.table.apply(np.mean, axis=1),
+                                       "std": df.table.apply(np.std, axis=1)})
+
+            mean_sd_df = mean_sd_df[mean_sd_df["mean"] > 0]
+
+            mean_sd_df.sort("mean", inplace=True)
+            return mean_sd_df
+
+        plotTransformations = R('''
+        function(log_df, rlog_df, vst_df, plot_outfile){
+
+          library(ggplot2)
+          library("gridExtra")
+
+          plotMeanSd = function(df, ymax, title){
+            df$index <- as.numeric(row.names(df))
+            df$bin = .bincode(df$index, seq(1,max(df$index),1000))
+
+            l_txt = element_text(size=20)
+            m_txt = element_text(size=15)
+
+            p = ggplot(df, aes(x=index, y=std)) +
+                geom_point(alpha=0.1)  +
+                stat_summary(mapping=aes(x=bin*1000, y=std),
+                             col="red", geom = "point",
+                             fun.y = "median", size=5) +
+            theme_minimal() +
+            ylim(0, ymax) +
+            xlab("index") + ylab("sd") +
+            theme(axis.text.x=element_text(size=15, angle=90,
+                                           hjust=1, vjust=0.5),
+                  axis.text.y=m_txt,
+                  axis.title.y=m_txt,
+                  title=m_txt) +
+            ggtitle(title)
+
+            return (p)
+        }
+
+        max_sd = max(log_df$std, rlog_df$std, vst_df$std)
+
+        p1 = plotMeanSd(log_df, max_sd, "log")
+        p2 = plotMeanSd(rlog_df, max_sd, "rlog")
+        p3 = plotMeanSd(vst_df, max_sd, "vst")
+
+        png("%(plot_filename)s",
+            width=10, height=10, units="in", res=400, pointsize=1)
+        grid.arrange(p1, p2, p3, ncol=3)
+        dev.off()
+        }''' % locals())
+
+        mean_sd_log_df = counts2meanSdPlot(log)
+        mean_sd_vst_df = counts2meanSdPlot(vst)
+        mean_sd_rlog_df = counts2meanSdPlot(rlog)
+
+        plotTransformations(mean_sd_log_df, mean_sd_rlog_df, mean_sd_vst_df)
+
+    def zNormalise(self, inplace=True):
+        ''' normalise each row to zero mean and unit variance
+        (z-score) '''
+
+        samples = self.table.columns
+        genes = self.table.index
+
+        z_df = pd.DataFrame(preprocessing.scale(
+            self.table, axis=1, with_mean=True, with_std=True, copy=False))
+
+        z_df.index = genes
+        z_df.columns = samples
+
+        if inplace:
+            self.table = z_df
+        else:
+            return Counts(z_df)
+
+    def plotDendogram(self, plot_filename=None,
+                      distance_method="euclidean",
+                      clustering_method="ward.D2"):
+
+        r_counts = pandas2ri.py2ri(self.table)
+
+        makeDendogram = R('''
+        function(counts){
+          png("%(plot_filename)s")
+          par(mar = c(1,4,1,1))
+          plot(hclust(dist(t(counts), method = "%(distance_method)s"),
+                      method = "%(clustering_method)s"), main="")
+          dev.off()
+        }''' % locals())
+
+        makeDendogram(r_counts)
+
+    def plotPCA(self, design,
+                variance_plot_filename=None, pca_plot_filename=None,
+                x_axis="PC1", y_axis="PC2", colour="group", shape="group"):
+        ''' use the prcomp function in base R to perform principal components
+        analysis.
+
+        Can specify colour and shape as either variables from design table
+        or sample names (seperated into id_1, id_2, id_3 based on samples
+        having names formated e.g Tissue-Treatment-Replicate)'''
+
+        # TS: swap this for regexes
+        assert (x_axis[0:2] == "PC" and y_axis[0:2] == "PC"),\
+            "x_axis and y_axis names must start with 'PC'"
+
+        r_counts = pandas2ri.py2ri(self.table)
+        r_design = pandas2ri.py2ri(design.table)
+
+        pc_number_1 = int(x_axis.replace("PC", ""))
+        pc_number_2 = int(y_axis.replace("PC", ""))
+
+        makePCA = R('''
+        function(counts, design){
+
+          suppressMessages(library(ggplot2))
+          suppressMessages(library(grid))
+
+          gene_pca <- prcomp(t(counts), center = TRUE)
+
+          m_text = element_text(size=12)
+          s_text = element_text(size=8)
+
+
+          variance = gene_pca$sdev^2
+          variance_explained = round(variance/sum(variance), 5)
+
+          variance_df = data.frame("Variance_explained" = variance_explained,
+                                 "PC" = seq(1, length(variance)))
+          p_variance = ggplot(variance_df, aes(x=PC, y=Variance_explained))+
+          geom_point()+
+          geom_line()+
+          theme_bw()+
+          ylab("Variance explained (%%)")+
+          theme(axis.text.x = m_text,
+                axis.title.y = m_text,
+                axis.title.x = m_text,
+                axis.text.y = m_text)
+
+          ggsave("%(variance_plot_filename)s", width=10, height=10, unit="cm")
+
+          PCs_df = data.frame(gene_pca$x)
+          PCs_df['sample'] <- rownames(PCs_df)
+          design['sample'] <- gsub("-", ".", rownames(design))
+
+          PCs_df = merge(PCs_df, design)
+
+          PCs_df$id_1 = sapply(strsplit(PCs_df$sample, "\\\."), "[", 1)
+          PCs_df$id_2 = sapply(strsplit(PCs_df$sample, "\\\."), "[", 2)
+          PCs_df$id_3 = sapply(strsplit(PCs_df$sample, "\\\."), "[", 3)
+
+          p_pca = ggplot(PCs_df, aes(x=%(x_axis)s, y=%(y_axis)s)) +
+          geom_point(size=3,
+                     aes(shape=as.factor(%(shape)s),
+                         colour=as.factor(%(colour)s))) +
+          scale_colour_discrete(name=guide_legend(title='%(colour)s')) +
+          scale_shape_discrete(name=guide_legend(title='%(shape)s')) +
+          xlab(paste0('PC%(pc_number_1)i (Variance explained = ' ,
+                       round(100 * variance_explained[%(pc_number_1)i], 1),
+                       '%%)')) +
+          ylab(paste0('PC%(pc_number_2)i (Variance explained = ' ,
+                       round(100 * variance_explained[%(pc_number_2)i], 1),
+                       '%%)')) +
+          theme_bw() +
+          theme(axis.text.x = s_text, axis.text.y = s_text,
+                title = m_text, legend.text = m_text,
+                legend.title = m_text)
+
+          ggsave("%(pca_plot_filename)s", width=10, height=10, unit="cm")
+
+        }''' % locals())
+
+        makePCA(r_counts, r_design)
+
+    def plotPairwiseCorrelations(self, outfile, subset=False):
+        ''' use the R base pairs function to plot all pairwise
+        correlations between the samples
+
+        subset will randomly subset n rows to speed up plotting'''
+
+        plotGGpairs = R('''
+        function(df){
+
+        write.table(df, file="%(outfile)s.tsv", sep="\t")
+
+        colnames(df) <- gsub("-", "_", colnames(df))
+
+        width <- height <-  length(colnames(df)) * 100
+
+        png("%(outfile)s", width=width, height=height, units = "px")
+
+        panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...){
+          usr <- par("usr"); on.exit(par(usr))
+          par(usr = c(0, 1, 0, 1))
+          r <- abs(cor(x, y))
+          txt <- format(c(r, 0.123456789), digits = digits)[1]
+          txt <- paste0(prefix, txt)
+          if(missing(cex.cor)) cex.cor <- 0.8/strwidth(txt)
+          text(0.5, 0.5, txt, cex = cex.cor * r * 50)}
+
+        panel.hist = function (x, ...) {
+          par(new = TRUE)
+          hist(x,
+               breaks=30,
+               col = "light blue",
+               probability = TRUE,
+               axes = FALSE,
+               main = "")
+          rug(x)}
+
+        pairs(df, pch=20, cex=0.1,
+              lower.panel = panel.smooth, upper.panel = panel.cor,
+              diag.panel=panel.hist)
+
+        dev.off()
+        }''' % locals())
+
+        if subset:
+            if len(self.table.index) > subset:
+                rows = random.sample(self.table.index, subset)
+                r_counts = pandas2ri.py2ri(self.table.ix[rows])
+            else:
+                r_counts = pandas2ri.py2ri(self.table)
+        else:
+            r_counts = pandas2ri.py2ri(self.table)
+
+        plotGGpairs(r_counts)
+
+    def heatmap(self, plotfile):
+        ''' plots a heatmap '''
+        # to do: add option to parse design file and add coloured row for
+        # variable specified in design file.
+
+        plotHeatmap = R('''
+        function(df){
+
+        library("Biobase")
+        library("RColorBrewer")
+        library("gplots")
+
+        hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
+        png("%(plotfile)s", width=1000, height=1000, units="px")
+        write.table(df, file="%(plotfile)s.tsv", sep="\t")
+        heatmap.2(as.matrix(df),
+                  col = hmcol, scale="none", trace="none", margin=c(18, 10),
+                  dendrogram="column", cexCol=2,
+                  labRow = "",
+                  hclustfun = function(x) hclust(x, method = 'average'),
+                  distfun = function(x) as.dist(1 - cor(t(x), method="spearman")))
+        dev.off()
+        }''' % locals())
+
+        r_counts = pandas2ri.py2ri(self.table)
+
+        plotHeatmap(r_counts)
 
     def shuffleRows(self,
                     min_cbin, max_cbin, width_cbin,
@@ -202,7 +619,7 @@ class Counts(object):
         * width_c_bins = width of bins for change values
         * max_c_bins = maximum bin for change values
         * tracks_map = dictionary mapping groups to tracks
-        * difference = "relative" or "logfold"
+        * difference = "relative", "logfold" or "abs_logfold"
         * s_max = maximum number of spikes per bin
         * i = number of iterations. More iterations = more filled bins
         '''
@@ -267,7 +684,8 @@ class Counts(object):
                      output_method, spike_type,
                      min_cbin, width_cbin, max_cbin,
                      min_ibin, width_ibin, max_ibin,
-                     min_sbin=1, width_sbin=1, max_sbin=1):
+                     min_sbin=1, width_sbin=1, max_sbin=1,
+                     append=False):
         ''' method to output spike-ins generated by shuffling rows
         (counts.shuffleRows) or clusters of rows (counts.shuffleCluster)
 
@@ -287,7 +705,7 @@ class Counts(object):
         * output_method = "append" or "seperate"
         '''
 
-        def makeHeader(groups, keep_columns=None):
+        def makeHeader(tracks_map, groups, keep_columns=None):
             if keep_columns:
                 header = keep_columns
             else:
@@ -299,20 +717,22 @@ class Counts(object):
 
         if spike_type == "row":
             index = True
-            keep_columns = ["spike"]
+            # keep_columns = ["spike"]
+            keep_columns = None
 
         elif spike_type == "cluster":
             index = False
             keep_columns = ["contig", "position"]
 
-        header = makeHeader(groups, keep_columns=keep_columns)
+        header = makeHeader(tracks_map, groups, keep_columns=keep_columns)
 
         if output_method == "append":
             self.table = self.table.ix[:, header]
             self.table.to_csv(sys.stdout, index=index, header=True, sep="\t",
                               dtype={'position': int})
         else:
-            sys.stdout.write("%s\n" % "\t".join(map(str, header)))
+            sys.stdout.write("%s\t%s\n" % (
+                "spike", "\t".join(map(str, header))))
 
         def getInitialChangeSize(key, width_ibin, min_ibin, width_cbin,
                                  min_cbin, width_s_bin, min_s_bin):
@@ -333,7 +753,9 @@ class Counts(object):
             return initial, change
 
         n = 0
+
         if spike_type == "row":
+
             for key in indices:
                 for pair in indices[key]:
                     initial, change = getInitialChange(
@@ -356,6 +778,7 @@ class Counts(object):
                     cluster_id = "_".join(
                         map(str, ("spike-in", initial, change,
                                   size, c1rs-c1s, n)))
+
                     temp_cluster_df = self.table.ix[c1s:c1e, keep_cols]
                     temp_cluster_df['contig'] = cluster_id
                     temp_cluster_swap = self.table.ix[
@@ -368,6 +791,7 @@ class Counts(object):
                                            header=False, sep="\t",
                                            dtype={'position': int})
                     n += 1
+
 
 ########################################################################
 # these functions for spike-in should be re-written to work with the ###
@@ -384,10 +808,17 @@ def means2idxarrays(g1, g2, i_bins, c_bins, difference):
         # g1 and g2 always the same length
         change = [g2[x] - g1[x] for x in range(0, len(g1))]
         initial = g1
+
     elif difference == "logfold":
         change = [np.log2((g2[x]+1.0) / (g1[x]+1.0))
                   for x in range(0, len(g1))]
         initial = [np.log2(g1[x]+1.0) for x in range(0, len(g1))]
+
+    elif difference == "abs_logfold":
+        change = [abs(np.log2((g2[x]+1.0) / (g1[x]+1.0)))
+                  for x in range(0, len(g1))]
+        initial = [max(np.log2(g1[x]+1.0), np.log2(g2[x]+1.0))
+                   for x in range(0, len(g1))]
 
     # return arrays of len(change) with the index position in c_bins
     # corresponding to the bin in which the value of change falls
@@ -648,7 +1079,7 @@ def normalizeTagData(counts, method="deseq-size-factors"):
 
     Implemented methods are:
 
-    million-counts
+    total-column
 
        Divide each value by the column total and multiply by 1,000,000
 
@@ -689,7 +1120,7 @@ def normalizeTagData(counts, method="deseq-size-factors"):
 
         normed = counts / size_factors
 
-    elif method == "million-counts":
+    elif method == "total-column":
         size_factors = counts.sum(axis=0)
         normed = counts * 1000000.0 / size_factors
     else:

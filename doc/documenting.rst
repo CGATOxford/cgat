@@ -9,7 +9,7 @@ CGAT scripts and modules use sphinx_ for documentation. The philosophy
 is to maintain documentation and code together. Thus, most
 documentation will be kept inside the actual scripts and modules,
 supported by overview documents explaining usage and higher level
-concepts.
+concepts. See the :ref:`styleguide` on how to write documentation.
 
 Building the documentation
 ==========================
@@ -30,6 +30,12 @@ The output will be in the directory :file:`_build/html`.
 
    Especially in pipelines some care is necessary to avoid failing
    with an error if no input or configuration files are present.
+
+The page :ref:`coverage` page lists undocumented functions and
+classes. To update this information, you must set the ``COMPUTE_COVERAGE``
+variable when building the documentation::
+     
+      make html COMPUTE_COVERAGE=1
 
 Writing documentation
 =====================
@@ -100,6 +106,19 @@ sphinx_
 
 sphinxcontrib-programoutput_
    Adding command line output to documenation.
+
+Trouble-shooting
+==================
+
+The build may fail with the following error::
+   
+   ImportError: Building module CGAT.NCL.cnestedlist failed: ['ImportError: /ifs/home/XXX/.pyxbld/lib.linux-x86_64-2.7/CGAT/NCL/cnestedlist.so: undefined symbol: interval_iterator_alloc\n']
+
+In this case, remove the directory ``/ifs/home/XXX/.pyxbld/`` and
+restart building the documentation::
+
+   rm -rf /ifs/home/andreas/.pyxbld/
+   make html
 
 .. _sphinxcontrib-programoutput: https://pypi.python.org/pypi/sphinxcontrib-programoutput
 .. _Restructured Text: http://docutils.sourceforge.net/rst.html

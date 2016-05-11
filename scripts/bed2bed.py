@@ -420,7 +420,7 @@ def shiftIntervals(iterator, contigs, offset):
 # IMS: new method: extend intervals by set amount
 
 
-def extendInterval(iterator, distance):
+def extendInterval(iterator, contigs, distance):
 
     ninput, noutput, nskipped = 0, 0, 0
     for bed in iterator:

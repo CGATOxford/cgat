@@ -1,5 +1,4 @@
-"""
-=================================================================
+"""=================================================================
 genome_bed.py - Create a bed file tiling a genome from a fai file
 =================================================================
 
@@ -11,9 +10,9 @@ genome_bed.py - Create a bed file tiling a genome from a fai file
 This program takes an indexed genome and creates windows of a certain
 size.
 
-It also takes two input parameters: the window/tile size (bases) and the shift size.
-By default the shift size is equal to the window size.
-The default window size is 1000.
+It also takes two input parameters: the window/tile size (bases) and
+the shift size.  By default the shift size is equal to the window
+size.  The default window size is 1000.
 
 Usage
 =====
@@ -28,24 +27,9 @@ Command line options
 
 # load modules
 
-import logging as L
 import CGAT.Experiment as E
 import sys
-import os
-import re
-import shutil
-import itertools
-import math
-import glob
-import time
-import gzip
-import collections
-import random
-import optparse
-import CGAT.GTF as GTF
-import CGAT.IOTools as IOTools
 import CGAT.IndexedFasta as IndexedFasta
-import CGAT.Bed as Bed
 
 
 def main(argv=None):
@@ -59,14 +43,18 @@ def main(argv=None):
 
     # setup command line parser
     parser = E.OptionParser(
-        version="%prog version: $Id: snp2table.py 2861 2010-02-23 17:36:32Z davids $", usage=globals()["__doc__"])
+        version="%prog version: $Id$",
+        usage=globals()["__doc__"])
 
-    parser.add_option("-g", "--genome-file", dest="genome_file", type="string",
-                      help="filename with Samtools indexed genome [default=%default].")
-    parser.add_option("-w", "--window-size", dest="window", type="int",
-                      help="Window size for tiling [default=%default].")
-    parser.add_option("-s", "--shift-size", dest="shift", type="int",
-                      help="Window shift for tiling [default=%default].")
+    parser.add_option(
+        "-g", "--genome-file", dest="genome_file", type="string",
+        help="filename with Samtools indexed genome [default=%default].")
+    parser.add_option(
+        "-w", "--window-size", dest="window", type="int",
+        help="Window size for tiling [default=%default].")
+    parser.add_option(
+        "-s", "--shift-size", dest="shift", type="int",
+        help="Window shift for tiling [default=%default].")
 
     parser.set_defaults(
         genome_file=None,

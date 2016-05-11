@@ -42,8 +42,7 @@ pre-installed::
         ./install-CGAT-tools.sh --cgat-scripts
 
 You do not need to be root for this step and the location of the installation
-can be chosen with the ``--location <path>`` option::
-
+can be chosen with the ``--location <path>`` option.
 
 Install a Python virtual environment with the CGAT code collection
 ------------------------------------------------------------------- 

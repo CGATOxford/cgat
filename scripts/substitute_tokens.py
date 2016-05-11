@@ -34,10 +34,6 @@ import sys
 import re
 import string
 import os
-import getopt
-import time
-import optparse
-
 import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
 
