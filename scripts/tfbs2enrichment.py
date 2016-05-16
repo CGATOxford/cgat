@@ -211,13 +211,13 @@ def main(argv=None):
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
 
-    PipelineTFM.testSignificanceOfMatrices(options.background,
-                                           options.foreground,
-                                           options.database,
-                                           options.match_table,
-                                           options.outfile,
-                                           options.genesets,
-                                           options.direction)
+    testSignificanceOfMatrices(options.background,
+                               options.foreground,
+                               options.database,
+                               options.match_table,
+                               options.outfile,
+                               options.genesets,
+                               options.direction)
 
     # write footer and output benchmark information.
     E.Stop()
