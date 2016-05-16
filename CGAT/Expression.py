@@ -315,7 +315,10 @@ class ExperimentalDesign(object):
 
             # check there are at least two values for each level
             for term in model_terms:
-                levels = set(self.factors.ix[:, term])
+                if self.factors is not None:
+                    levels = set(self.factors.ix[:, term])
+                else:
+                    levels = set(self.table.ix[:, term])
                 if len(levels) < 2:
                     raise ValueError("term '%s' in the model has less "
                                      "than two levels (%s) in the "
@@ -494,8 +497,9 @@ class DEResult(object):
         geom_point(size=%(point_size)f, alpha=%(point_alpha)f) +
         xlab("log2 mean expression") + ylab("log2 fold change")+
         ggtitle("%(contrast)s") +
-        scale_colour_manual(name="Significant", values=c("black", "#619CFF")) +
+        scale_colour_manual(name="Significant", values=c("black", "red")) +
         guides(colour = guide_legend(override.aes = list(size=10)))+
+        theme_bw() + 
         theme(axis.text.x = l_txt, axis.text.y = l_txt,
               axis.title.x = l_txt, axis.title.y = l_txt,
               legend.title = l_txt, legend.text = l_txt,
@@ -526,7 +530,8 @@ class DEResult(object):
         geom_point() + xlab("log2 fold change") + ylab("p-value (-log10)") +
         ggtitle("%(contrast)s") +
         scale_colour_manual(name="Significant", values=c("black", "#619CFF")) +
-        guides(colour = guide_legend(override.aes = list(size=10)))+
+        guides(colour = guide_legend(override.aes = list(size=10))) +
+        theme_bw() + 
         theme(axis.text.x = l_txt, axis.text.y = l_txt,
               axis.title.x = l_txt, axis.title.y = l_txt,
               legend.title = l_txt, legend.text = l_txt,
@@ -1020,9 +1025,11 @@ class DEExperiment_DESeq2(DEExperiment):
             model=None,
             contrasts=None,
             outfile_prefix=None,
-            fdr=0.1):
+            fdr=0.1,
+            fit_type="parametric",
+            ref_group=False):
 
-        counts.table = counts.table[design.table.index]
+        pandas2ri.activate()
 
         # create r objects
         r_counts = pandas2ri.py2ri(counts.table)
@@ -1035,6 +1042,8 @@ class DEExperiment_DESeq2(DEExperiment):
             r_factors_df = pandas2ri.py2ri(design.factors)
         else:
             r_factors_df = ro.default_py2ri(False)
+            
+        r_ref_group = ro.default_py2ri(ref_group)
 
         if contrasts is not None:
             DEtype = "GLM"
@@ -1073,13 +1082,23 @@ class DEExperiment_DESeq2(DEExperiment):
         # build design matrix
         if DEtype == "pairwise":
             buildDesign = R('''
-              function(counts, groups){
+              function(counts, groups, ref_group){
 
                 design = data.frame(row.names = colnames(counts),
-                                    condition = groups)
+                                    condition = factor(groups))
+                if (ref_group != FALSE){
+                  design$condition <- relevel(factor(design$condition),
+                                          ref = ref_group)}
                 return(design)}''')
 
-            r_design = buildDesign(r_counts, r_groups)
+            with IOTools.openFile("/ifs/projects/proj034/sRNA_Seq/full/project_pipeline/tmp", "w") as outf:
+                outf.write("%s\n" % ref_group)
+                outf.write("%s\n" % r_groups)
+                for x in r_counts, r_groups, r_ref_group:
+                    outf.write("%s\n" % type(x))
+                outf.write("%s\t%s\n" % counts.table.shape)
+
+            r_design = buildDesign(r_counts, r_groups, r_ref_group)
 
             buildCountDataSet = R('''
             function(counts, design){
@@ -1100,8 +1119,9 @@ class DEExperiment_DESeq2(DEExperiment):
             r_dds = buildCountDataSet(r_counts, r_design)
 
             performDifferentialTesting = R('''
-            function(dds){
-            dds = suppressMessages(DESeq(dds))
+            function(dds, fit_type){
+
+            dds = suppressMessages(DESeq(dds, fitType=fit_type))
 
             png("%(outfile_prefix)s_dispersion.png")
             plotDispEsts(dds)
@@ -1133,18 +1153,23 @@ class DEExperiment_DESeq2(DEExperiment):
 
             }''' % locals())
 
-            results = pandas2ri.ri2py(performDifferentialTesting(r_dds))
+            results = pandas2ri.ri2py(
+                performDifferentialTesting(r_dds, fit_type))
 
         # DEtype == "GLM"
         else:
             r_design = pandas2ri.py2ri(design.table)
 
             buildCountDataSet = R('''
-            function(counts, design, model){
+            function(counts, design, model, ref_group){
 
             for(column in colnames(design)){
               design[[column]] = factor(design[[column]])
             }
+
+            if (ref_group != FALSE){
+                design$group <- relevel(design$group,
+                                        ref = ref_group)}
 
             full_model <- formula("%(model)s")
 
@@ -1156,24 +1181,34 @@ class DEExperiment_DESeq2(DEExperiment):
             return(dds)
             }''' % locals())
 
-            r_dds = buildCountDataSet(r_counts, r_design, r_model)
+            r_dds = buildCountDataSet(counts.table, design.table,
+                                      model, ref_group)
+
             results = pandas.DataFrame()
 
             n = 0
 
             for contrast in contrasts:
                 assert contrast in design.table.columns, (
-                    "contrast: %s not found in design factors columns" % contrast)
+                    "contrast: %s not found in design" % contrast)
                 model = [x for x in model_terms if x != contrast]
-                model = "~" + "+".join(model)
+                if len(model) > 1:
+                    model = "~" + "+".join(model)
+                else:
+                    model = "~1"
 
                 performDifferentialTesting = R('''
-                function(dds){
+                function(dds, fit_type){
 
+                if (fit_type == "local"){
                 ddsLRT <- suppressMessages(
-                DESeq(dds, test="LRT", reduced=formula(%(model)s),
-                      betaPrior=TRUE))
-                #DESeq(dds, betaPrior=TRUE))
+                DESeq(dds, test="LRT", reduced=formula("%(model)s"),
+                      betaPrior=TRUE, fitType="local"))}
+
+                else if(fit_type == "parametric"){
+                ddsLRT <- suppressMessages(
+                DESeq(dds, test="LRT", reduced=formula("%(model)s"),
+                      betaPrior=TRUE))}
 
                 png("%(outfile_prefix)s_dispersion.png")
                 plotDispEsts(ddsLRT)
@@ -1183,10 +1218,9 @@ class DEExperiment_DESeq2(DEExperiment):
 
                 for(levels in combn(contrast_levels, 2, simplify=F)){
 
-
                     res = suppressMessages(results(ddsLRT, addMLE=TRUE,
-                                  contrast=c("%(contrast)s",
-                                  levels[1], levels[2])))
+                                           contrast=c("%(contrast)s",
+                                           levels[1], levels[2])))
 
                     png(paste0(c("%(outfile_prefix)s", "%(contrast)s",
                                levels[1], levels[2], "MA.png"), collapse="_"))
@@ -1210,7 +1244,9 @@ class DEExperiment_DESeq2(DEExperiment):
                 return(res)
                 }''' % locals())
 
-                tmp_results = pandas2ri.ri2py(performDifferentialTesting(r_dds))
+                tmp_results = pandas2ri.ri2py(
+                    performDifferentialTesting(r_dds, fit_type))
+
                 # tmp_results['test_id'] = tmp_results.index
 
                 # need to set index to sequence of ints to avoid duplications
@@ -1256,7 +1292,7 @@ class DEResult_DESeq2(DEResult):
         # TS: check what happens when no fold change is available
         # TS: may need an if/else in list comprehension. Raise E.warn too?
         df_dict["fold"] = [math.pow(2, float(x)) for
-                           x in self.table['log2FoldChange']]
+                           x in df_dict["l2fold"]]
 
         # set all status values to "OK"
         # TS: again, may need an if/else to check...
@@ -1280,6 +1316,9 @@ class DEExperiment_Sleuth(DEExperiment):
 
     Note: LRT does not generate fold change estimates (see DEResult_Sleuth)
 
+    use dummy_run = True if you don't want to perform differential
+    testing but want the counts/tpm outfiles
+
     '''
 
     def run(self,
@@ -1292,7 +1331,8 @@ class DEExperiment_Sleuth(DEExperiment):
             tpm=None,
             fdr=0.1,
             lrt=False,
-            reduced_model=None):
+            reduced_model=None,
+            dummy_run=False):
 
         if lrt:
             E.info("Note: LRT will not generate fold changes")
@@ -1326,6 +1366,8 @@ class DEExperiment_Sleuth(DEExperiment):
         design_df <- dplyr::select(design_df, sample = sample,
                                    %(variates)s)
         design_df <- dplyr::mutate(design_df, path = kal_dirs)
+
+        print(design_df)
 
         so <- suppressMessages(sleuth_prep(design_df, %(model)s))
         so <- suppressMessages(sleuth_fit(so))
@@ -1364,6 +1406,9 @@ class DEExperiment_Sleuth(DEExperiment):
             }''' % locals())
 
             makeTPMTable(so)
+
+        if dummy_run:
+            return None
 
         if lrt:
             differentialTesting = R('''
