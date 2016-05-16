@@ -245,7 +245,7 @@ def main(argv=None):
         deseq_fit_type="parametric",
         deseq_sharing_mode="maximum",
         edger_dispersion=0.4,
-        ref_group=None,
+        ref_group=False,
         save_r_environment=None,
         filter_min_counts_per_row=None,
         filter_min_counts_per_sample=None,
@@ -326,6 +326,7 @@ def main(argv=None):
                                  outfile_prefix=outfile_prefix)
 
     elif options.method == "deseq2":
+
         experiment = Expression.DEExperiment_DESeq2()
         results = experiment.run(counts,
                                  design,

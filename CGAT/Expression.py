@@ -315,7 +315,7 @@ class ExperimentalDesign(object):
 
             # check there are at least two values for each level
             for term in model_terms:
-                if self.factors:
+                if self.factors is not None:
                     levels = set(self.factors.ix[:, term])
                 else:
                     levels = set(self.table.ix[:, term])
@@ -497,7 +497,7 @@ class DEResult(object):
         geom_point(size=%(point_size)f, alpha=%(point_alpha)f) +
         xlab("log2 mean expression") + ylab("log2 fold change")+
         ggtitle("%(contrast)s") +
-        scale_colour_manual(name="Significant", values=c("black", "#619CFF")) +
+        scale_colour_manual(name="Significant", values=c("black", "red")) +
         guides(colour = guide_legend(override.aes = list(size=10)))+
         theme_bw() + 
         theme(axis.text.x = l_txt, axis.text.y = l_txt,
@@ -1027,9 +1027,9 @@ class DEExperiment_DESeq2(DEExperiment):
             outfile_prefix=None,
             fdr=0.1,
             fit_type="parametric",
-            ref_group=None):
+            ref_group=False):
 
-        counts.table = counts.table[design.table.index]
+        pandas2ri.activate()
 
         # create r objects
         r_counts = pandas2ri.py2ri(counts.table)
@@ -1043,10 +1043,7 @@ class DEExperiment_DESeq2(DEExperiment):
         else:
             r_factors_df = ro.default_py2ri(False)
             
-        if ref_group is not None:
-            r_ref_group = ref_group
-        else:
-            r_ref_group = ro.default_py2ri(False)
+        r_ref_group = ro.default_py2ri(ref_group)
 
         if contrasts is not None:
             DEtype = "GLM"
@@ -1184,8 +1181,9 @@ class DEExperiment_DESeq2(DEExperiment):
             return(dds)
             }''' % locals())
 
-            r_dds = buildCountDataSet(r_counts, r_design,
-                                      r_model, r_ref_group)
+            r_dds = buildCountDataSet(counts.table, design.table,
+                                      model, ref_group)
+
             results = pandas.DataFrame()
 
             n = 0
@@ -1318,6 +1316,9 @@ class DEExperiment_Sleuth(DEExperiment):
 
     Note: LRT does not generate fold change estimates (see DEResult_Sleuth)
 
+    use dummy_run = True if you don't want to perform differential
+    testing but want the counts/tpm outfiles
+
     '''
 
     def run(self,
@@ -1330,7 +1331,8 @@ class DEExperiment_Sleuth(DEExperiment):
             tpm=None,
             fdr=0.1,
             lrt=False,
-            reduced_model=None):
+            reduced_model=None,
+            dummy_run=False):
 
         if lrt:
             E.info("Note: LRT will not generate fold changes")
@@ -1364,6 +1366,8 @@ class DEExperiment_Sleuth(DEExperiment):
         design_df <- dplyr::select(design_df, sample = sample,
                                    %(variates)s)
         design_df <- dplyr::mutate(design_df, path = kal_dirs)
+
+        print(design_df)
 
         so <- suppressMessages(sleuth_prep(design_df, %(model)s))
         so <- suppressMessages(sleuth_fit(so))
@@ -1402,6 +1406,9 @@ class DEExperiment_Sleuth(DEExperiment):
             }''' % locals())
 
             makeTPMTable(so)
+
+        if dummy_run:
+            return None
 
         if lrt:
             differentialTesting = R('''
