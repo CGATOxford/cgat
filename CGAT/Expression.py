@@ -1271,8 +1271,8 @@ class DEResult_DESeq2(DEResult):
 
         n_rows = self.table.shape[0]
 
-        df_dict["treatment_name"] = self.table['control']
-        df_dict["control_name"] = self.table['treatment']
+        df_dict["treatment_name"] = self.table['treatment']
+        df_dict["control_name"] = self.table['control']
         df_dict["test_id"] = self.table['test_id']
         df_dict["contrast"] = self.table['contrast']
         df_dict["control_mean"] = self.table['baseMean']
