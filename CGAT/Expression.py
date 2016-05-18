@@ -293,18 +293,20 @@ class ExperimentalDesign(object):
         else:
             self.has_pairs = False
 
-    def validate(self, counts, model=None):
+    def validate(self, counts=None, model=None):
 
-        missing = set(self.samples).difference(set(counts.table.columns))
-        if len(missing) > 0:
-            raise ValueError("following samples in design table are missing"
-                             " from counts table: %s" % ", ".join(missing))
+        if counts is not None:
+            missing = set(self.samples).difference(set(counts.table.columns))
+            if len(missing) > 0:
+                raise ValueError(
+                    "following samples in design table are missing"
+                    " from counts table: %s" % ", ".join(missing))
 
         if model is not None:
+            # check all model terms exist
 
             model_terms = splitModel(model)
 
-            # check all model terms exist
             missing = set(model_terms).difference(
                 set(self.table.columns.tolist()))
 
@@ -315,10 +317,7 @@ class ExperimentalDesign(object):
 
             # check there are at least two values for each level
             for term in model_terms:
-                if self.factors is not None:
-                    levels = set(self.factors.ix[:, term])
-                else:
-                    levels = set(self.table.ix[:, term])
+                levels = set(self.table.ix[:, term])
                 if len(levels) < 2:
                     raise ValueError("term '%s' in the model has less "
                                      "than two levels (%s) in the "
@@ -499,7 +498,7 @@ class DEResult(object):
         ggtitle("%(contrast)s") +
         scale_colour_manual(name="Significant", values=c("black", "red")) +
         guides(colour = guide_legend(override.aes = list(size=10)))+
-        theme_bw() + 
+        theme_bw() +
         theme(axis.text.x = l_txt, axis.text.y = l_txt,
               axis.title.x = l_txt, axis.title.y = l_txt,
               legend.title = l_txt, legend.text = l_txt,
@@ -531,7 +530,7 @@ class DEResult(object):
         ggtitle("%(contrast)s") +
         scale_colour_manual(name="Significant", values=c("black", "#619CFF")) +
         guides(colour = guide_legend(override.aes = list(size=10))) +
-        theme_bw() + 
+        theme_bw() +
         theme(axis.text.x = l_txt, axis.text.y = l_txt,
               axis.title.x = l_txt, axis.title.y = l_txt,
               legend.title = l_txt, legend.text = l_txt,
@@ -1042,7 +1041,7 @@ class DEExperiment_DESeq2(DEExperiment):
             r_factors_df = pandas2ri.py2ri(design.factors)
         else:
             r_factors_df = ro.default_py2ri(False)
-            
+
         r_ref_group = ro.default_py2ri(ref_group)
 
         if contrasts is not None:
@@ -1325,7 +1324,7 @@ class DEExperiment_Sleuth(DEExperiment):
             design,
             base_dir,
             model=None,
-            contrast=None,
+            contrasts=None,
             outfile_prefix=None,
             counts=None,
             tpm=None,
@@ -1366,8 +1365,6 @@ class DEExperiment_Sleuth(DEExperiment):
         design_df <- dplyr::select(design_df, sample = sample,
                                    %(variates)s)
         design_df <- dplyr::mutate(design_df, path = kal_dirs)
-
-        print(design_df)
 
         so <- suppressMessages(sleuth_prep(design_df, %(model)s))
         so <- suppressMessages(sleuth_fit(so))
@@ -1413,74 +1410,65 @@ class DEExperiment_Sleuth(DEExperiment):
         if lrt:
             differentialTesting = R('''
             function(so){
-            so <- suppressMessages(sleuth_fit(so, formula = %(reduced_model)s,
+            so_DE <- suppressMessages(sleuth_fit(so, formula = %(reduced_model)s,
                                    fit_name = "reduced"))
-            so <- suppressMessages(sleuth_lrt(so, "reduced", "full"))
+            so_DE <- suppressMessages(sleuth_lrt(so_DE, "reduced", "full"))
 
-            return(so)
+            results_table <- sleuth_results(so_DE, test = 'reduced:full',
+                                            test_type = 'lrt')
+            return(results_table)
+
             } ''' % locals())
 
+            final_result = DEResult_Sleuth(pandas2ri.ri2py(
+                differentialTesting(so)))
+
+        # can run multiple contrasts and concatenate results
         else:
-            differentialTesting = R('''
-            function(so){
-            so <- sleuth_wt(so, which_beta = '%(contrast)s')
+            results = pandas.DataFrame()
+            n = 0
 
-            p_ma = plot_ma(so, '%(contrast)s')
-            ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_ma.png",
+            for contrast in contrasts:
+
+                differentialTesting = R('''
+                function(so){
+                so_DE <- sleuth_wt(so, which_beta = '%(contrast)s')
+
+                p_ma = plot_ma(so_DE, '%(contrast)s')
+                ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_ma.png",
+                    width=15, height=15, units="cm")
+
+                p_vars = plot_vars(so_DE, '%(contrast)s')
+                ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_vars.png",
+                    width=15, height=15, units="cm")
+
+                p_mean_var = plot_mean_var(so_DE)
+                ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_mean_var.png",
                 width=15, height=15, units="cm")
 
-            p_vars = plot_vars(so, '%(contrast)s')
-            ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_vars.png",
-                width=15, height=15, units="cm")
+                results_table <- sleuth_results(so_DE, test = '%(contrast)s')
+                return(results_table)
 
-            p_mean_var = plot_mean_var(so)
-            ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_mean_var.png",
-            width=15, height=15, units="cm")
+                } ''' % locals())
 
-            return(so)
-            } ''' % locals())
+                tmp_results = pandas2ri.ri2py(
+                    differentialTesting(so))
+                tmp_results['contrast'] = contrast
 
-        results = differentialTesting(so)
+                # need to set index to sequence of ints to avoid duplications
+                E.info(tmp_results)
+                n2 = n + tmp_results.shape[0]
+                tmp_results.index = range(n, n2)
+                n = n2
 
-        final_result = DEResult_Sleuth(so=results, contrast=contrast, lrt=lrt)
+                results = results.append(tmp_results)
+
+        final_result = DEResult_Sleuth(results)
 
         return final_result
 
 
 class DEResult_Sleuth(DEResult):
-
-    def __init__(self, so=None, contrast=None, lrt=False):
-        ''' extract the test results from the so table using the
-        sleuth_results R function. retain the so object for plotting
-        purposes
-
-        TS: LRT does not generate fold change estimates. Need to find
-        some way to generate output in line with expected final
-        results table in getResults method.
-        '''
-
-        self.contrast = contrast
-        self.lrt = lrt
-        self.so = so
-
-        R('''suppressMessages(library(sleuth))''')
-
-        if self.lrt:
-            extractSleuthResults = R('''
-            function(so){
-            results_table <- sleuth_results(so, test = 'reduced:full',
-                                            test_type = 'lrt')
-            return(results_table)
-            }''' % locals())
-
-        else:
-            extractSleuthResults = R('''
-            function(so){
-            results_table <- sleuth_results(so, test = '%(contrast)s')
-            return(results_table)
-            }''' % locals())
-
-        self.sleuthResults = pandas2ri.ri2py(extractSleuthResults(self.so))
 
     def getResults(self, fdr):
         ''' post-process test results table into generic results output
@@ -1490,23 +1478,23 @@ class DEResult_Sleuth(DEResult):
 
         df_dict = collections.defaultdict()
 
-        n_rows = self.sleuthResults.shape[0]
+        n_rows = self.table.shape[0]
 
         df_dict["treatment_name"] = ("NA",)*n_rows
         df_dict["control_name"] = ("NA",)*n_rows
-        df_dict["test_id"] = self.sleuthResults['target_id']
-        df_dict["contrast"] = self.contrast
+        df_dict["test_id"] = self.table['target_id']
+        df_dict["contrast"] = self.table['contrast']
         df_dict["control_mean"] = [math.exp(float(x)) for
-                                   x in self.sleuthResults['mean_obs']]
+                                   x in self.table['mean_obs']]
         df_dict["treatment_mean"] = df_dict["control_mean"]
         df_dict["control_std"] = (0,)*n_rows
         df_dict["treatment_std"] = (0,)*n_rows
-        df_dict["p_value"] = self.sleuthResults['pval']
-        df_dict["p_value_adj"] = adjustPvalues(self.sleuthResults['pval'])
+        df_dict["p_value"] = self.table['pval']
+        df_dict["p_value_adj"] = adjustPvalues(self.table['pval'])
         df_dict["significant"] = pvaluesToSignficant(df_dict["p_value_adj"],
                                                      fdr)
         df_dict["fold"] = [math.exp(float(x)) for
-                           x in self.sleuthResults['b']]
+                           x in self.table['b']]
         df_dict["l2fold"] = [math.log(float(x), 2) for x in df_dict['fold']]
         df_dict["transformed_l2fold"] = df_dict["l2fold"]
 
