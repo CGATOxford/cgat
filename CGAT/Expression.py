@@ -1075,6 +1075,8 @@ class DEExperiment_DESeq2(DEExperiment):
                 design.has_pairs))
         E.info(design.factors)
 
+        design.table.index = [x.replace("-", ".") for x in design.table.index]
+
         # load DESeq
         R('''suppressMessages(library('DESeq2'))''')
 
@@ -1180,7 +1182,7 @@ class DEExperiment_DESeq2(DEExperiment):
             return(dds)
             }''' % locals())
 
-            r_dds = buildCountDataSet(counts.table, design.table,
+            r_dds = buildCountDataSet(counts.table, r_design,
                                       model, ref_group)
 
             results = pandas.DataFrame()
