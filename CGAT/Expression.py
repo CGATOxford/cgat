@@ -1075,6 +1075,8 @@ class DEExperiment_DESeq2(DEExperiment):
                 design.has_pairs))
         E.info(design.factors)
 
+        design.table.index = [x.replace("-", ".") for x in design.table.index]
+
         # load DESeq
         R('''suppressMessages(library('DESeq2'))''')
 
@@ -1089,13 +1091,6 @@ class DEExperiment_DESeq2(DEExperiment):
                   design$condition <- relevel(factor(design$condition),
                                           ref = ref_group)}
                 return(design)}''')
-
-            with IOTools.openFile("/ifs/projects/proj034/sRNA_Seq/full/project_pipeline/tmp", "w") as outf:
-                outf.write("%s\n" % ref_group)
-                outf.write("%s\n" % r_groups)
-                for x in r_counts, r_groups, r_ref_group:
-                    outf.write("%s\n" % type(x))
-                outf.write("%s\t%s\n" % counts.table.shape)
 
             r_design = buildDesign(r_counts, r_groups, r_ref_group)
 
@@ -1180,7 +1175,7 @@ class DEExperiment_DESeq2(DEExperiment):
             return(dds)
             }''' % locals())
 
-            r_dds = buildCountDataSet(counts.table, design.table,
+            r_dds = buildCountDataSet(counts.table, r_design,
                                       model, ref_group)
 
             results = pandas.DataFrame()
@@ -1190,8 +1185,10 @@ class DEExperiment_DESeq2(DEExperiment):
             for contrast in contrasts:
                 assert contrast in design.table.columns, (
                     "contrast: %s not found in design" % contrast)
+
                 model = [x for x in model_terms if x != contrast]
-                if len(model) > 1:
+
+                if len(model) > 0:
                     model = "~" + "+".join(model)
                 else:
                     model = "~1"
@@ -1368,6 +1365,7 @@ class DEExperiment_Sleuth(DEExperiment):
 
         so <- suppressMessages(sleuth_prep(design_df, %(model)s))
         so <- suppressMessages(sleuth_fit(so))
+
         return(so)
         }''' % locals())
 
@@ -1447,6 +1445,7 @@ class DEExperiment_Sleuth(DEExperiment):
                 width=15, height=15, units="cm")
 
                 results_table <- sleuth_results(so_DE, test = '%(contrast)s')
+
                 return(results_table)
 
                 } ''' % locals())

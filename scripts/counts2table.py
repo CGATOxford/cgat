@@ -384,13 +384,13 @@ def main(argv=None):
 
     results.getResults(fdr=options.fdr)
 
-    results.summariseDEResults()
-
     for contrast in set(results.table['contrast']):
         results.plotVolcano(contrast, outfile_prefix=outfile_prefix)
         results.plotMA(contrast, outfile_prefix=outfile_prefix)
 
     results.table.to_csv(sys.stdout, sep="\t", na_rep="NA", index=False)
+
+    results.summariseDEResults()
 
     # write out summary tables for each comparison/contrast
     for test_group in results.Summary.keys():
