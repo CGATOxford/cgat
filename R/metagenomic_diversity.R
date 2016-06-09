@@ -41,7 +41,9 @@ plotRarefaction <- function(rf, colours = c("brown", "darkGreen", "slateGrey", "
            
           # plot rarefaction curve
           library(ggplot2)
-          plot1 <- ggplot(rf, aes(x = as.numeric(as.character(sample)), y = mean, colour = group, group = group))
+	  rf$group <- as.character(rf$group)
+	  rf$group <- factor(rf$group, levels=mixedsort(unique(rf$group)))
+          plot1 <- ggplot(rf, aes(x = as.numeric(as.character(sample)), y = mean, colour=group, group = group))
           plot2 <- plot1 + geom_line() + geom_errorbar(aes(ymax = mean + se, ymin = mean - se), width = 0.25)
           plot2 + scale_colour_manual(values = colours) + scale_x_continuous(labels = comma) + theme(axis.text.x=element_text(angle=90))
 }
@@ -75,7 +77,9 @@ plotDiversity <- function(dat, index = "shannon", colours = c("brown", "darkGree
 
           d$groups <- groups
           d <- ddply(d, .(groups), summarize, mean = mean(diversity), se = sd(diversity)/sqrt(length(diversity)))
-          plot = ggplot(d, aes(x = groups, y = mean, fill = groups)) + geom_bar(stat = "identity", position = "dodge") 
+	  d$groups <- as.character(d$groups)
+	  d$groups <- factor(d$groups, levels=mixedsort(unique(d$groups)))
+	  plot <- ggplot(d, aes(x=groups, y=mean, fill=groups)) + geom_bar(stat = "identity", position = "dodge") 
           plot + geom_errorbar(aes(ymax = mean + se, ymin = mean - se), width = 0.25) + scale_fill_manual(values = colours)
 }
 
