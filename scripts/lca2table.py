@@ -61,12 +61,12 @@ def main(argv=None):
 
     if options.output_map:
         found = []
-        options.stdout.write("""kingdom\t
-        phylum\t
-        class\t
-        order\t
-        family\t
-        genus\t
+        options.stdout.write("""kingdom\t \
+        phylum\t \
+        class\t \
+        order\t \
+        family\t \
+        genus\t \
         species\n""")
         # only output the mapping file - do not continue
         # summarise regardless of the specified options
