@@ -26,8 +26,7 @@ from rpy2.robjects.packages import importr
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import random
-
-import cmetrics as c2m
+from CGAT.Timeseries import cmetrics as c2m
 
 
 def get_r_path():
@@ -488,7 +487,6 @@ def clusterPCA(infile,
     R('''sink(file='sink_file.txt')''')
     R('''suppressMessages(library("reshape2"))''')
     R('''suppressMessages(library("WGCNA"))''')
-
     # AH: these were hard-coded paths, parameterized them to point to the
     # directory of this module's location
     R('''source("%s")''' % os.path.join(get_r_path(), "summarySE.R"))
@@ -676,9 +674,9 @@ def genSigGenes(file_list, alpha, out_dir):
             header = "%s" % header
 
         elif infle.split("/")[0].split(".")[0] == "diff_timepoints":
-            header = infle.split("/")[1].split("-")[0]
+            header = infle.split("/")[-1].split("-")[0]
             header = "%s_%s" % (header.split("_")[0],
-                                header.split("_")[2])
+                                header.split("_")[-1])
 
         in_df = pd.read_table(infle, sep="\t", header=0, index_col=0)
         sig_genes = in_df[in_df['padj'] <= alpha]
@@ -689,7 +687,7 @@ def genSigGenes(file_list, alpha, out_dir):
         condition = "%s-condition" % condition
 
     elif file_list[0].split("/")[0].split(".")[0] == "diff_timepoints":
-        condition = file_list[0].split("/")[1].split("_")[0]
+        condition = file_list[0].split("/")[-1].split(".")[0]
         condition = "%s-time" % condition
 
     drawVennDiagram(deg_dict, condition, out_dir)
@@ -727,7 +725,7 @@ def drawVennDiagram(deg_dict, header, out_dir):
         cat1, cat2, cat3 = keys
 
         R('''png("%(out_dir)s/%(header)s-venn.png", '''
-          '''width=1.8, height=1.8, res=90, units="in")''' % locals())
+          '''width=480, height=480)''' % locals())
         R('''draw.triple.venn(%(area1)d, %(area2)d, %(area3)d, '''
           '''%(n12)d, %(n23)d, %(n13)d, %(n123)d, '''
           '''c('%(cat1)s', '%(cat2)s', '%(cat3)s'), '''
@@ -755,7 +753,7 @@ def drawVennDiagram(deg_dict, header, out_dir):
         cat1, cat2, cat3, cat4 = keys
 
         R('''png("%(out_dir)s/%(header)s-venn.png",'''
-          '''width=2.3, height=2.3, res=300, units="in")''' % locals())
+          '''width=480, height=480)''' % locals())
         R('''draw.quad.venn(%(area1)d, %(area2)d, %(area3)d, %(area4)d,'''
           '''%(n12)d, %(n13)d, %(n14)d, %(n23)d, %(n24)d, %(n34)d,'''
           '''%(n123)d, %(n124)d, %(n134)d, %(n234)d, %(n1234)d,'''
@@ -803,7 +801,7 @@ def drawVennDiagram(deg_dict, header, out_dir):
         cat1, cat2, cat3, cat4, cat5 = keys
 
         R('''png("%(out_dir)s/%(header)s-venn.png", '''
-          '''height=1.8, width=1.8, res=90, units="in")''' % locals())
+          '''height=480, width=480)''' % locals())
         R('''draw.quintuple.venn(%(area1)d, %(area2)d, %(area3)d, '''
           '''%(area4)d, %(area5)d, %(n12)d, %(n13)d, %(n14)d,'''
           '''%(n15)d, %(n23)d, %(n24)d, %(n25)d, %(n34)d, %(n35)d,'''
@@ -1438,7 +1436,6 @@ def consensusClustering(infile,
       '''cluster_matched$cluster)''')
 
     # plot and save dendrogram of clustering
-
     # AH: disabled, requires plots.dir to exist which might not be the case
     # AH: and thus causes this method to fail. Path names need to be parameterizable.
     # R('''png("plots.dir/%(condition)s-dendrogram-consensus_clustering.png")'''

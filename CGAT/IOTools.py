@@ -64,6 +64,7 @@ import itertools
 import numpy
 import numpy.ma
 import shutil
+import time
 
 
 def getFirstLine(filename, nlines=1):
@@ -338,6 +339,9 @@ def shadowFile(infile, outfile):
     if outfile != infile:
         shutil.move(infile, outfile)
         touchFile(infile)
+        # reset outfile's timestamp
+        time.sleep(1)
+        touchFile(outfile)
     else:
         raise ValueError('Panic: infile and outfile names cannot be the same')
 
