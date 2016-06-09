@@ -431,6 +431,28 @@ class DEResult(object):
         '''
         pass
 
+    def calculateIHW(self, alpha=0.1):
+        ''' Use the Independent Hypothesis Weighting method from
+        IGNATIADIS et al (2016) to perform weighted FDR'''
+
+        if not ('control_mean' in self.table.columns and
+                'treatment_mean' in self.table.columns and
+                'p_value' in self.table.columns):
+            E.error("IHW requires control_mean, treatment_mean and p_value "
+                    "columns, have you first run the getResults method?")
+
+        runIHW = R('''function(df){
+        library(IHW)
+        mean_expression = (df$control_mean + df$treatment_mean)/2
+        ihw_res = ihw(df$p_value ~ mean_expression,  alpha = %(alpha)s)
+        df$p_value_adj = adj_pvalues(ihw_res)
+        return(df)
+        }''' % locals())
+
+        self.table = pandas2ri.ri2py(runIHW(pandas2ri.py2ri(self.table)))
+        self.table["significant"] = pvaluesToSignficant(
+            self.table["p_value_adj"], alpha)
+
     def summariseDEResults(self):
         ''' summarise DE results. Counts instances of possible outcomes'''
 
@@ -468,10 +490,10 @@ class DEResult(object):
                 counts.all_under = sum([x < 0 for x in tmp_table['l2fold']])
                 counts.signficant_over = sum(
                     [tmp_table['significant'][x] == 1 and
-                     tmp_table['l2fold'][x] > 1 for x in range(0, n_rows)])
+                     tmp_table['l2fold'][x] > 0 for x in range(0, n_rows)])
                 counts.signficant_under = sum(
                     [tmp_table['significant'][x] == 1 and
-                     tmp_table['l2fold'][x] < 1 for x in range(0, n_rows)])
+                     tmp_table['l2fold'][x] < 0 for x in range(0, n_rows)])
 
                 self.Summary[label] = counts
 
