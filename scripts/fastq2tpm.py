@@ -131,7 +131,7 @@ def runSailfishQuant(fasta_index, fastq_files, output_dir,
         states.append(decomp_second)
 
     elif decompress and not paired:
-        first_mates = tuple([fq for fq in fastq_files if re.search("fastq.1.gz",
+        first_mates = tuple([fq for fq in fastq_files if re.search("fastq.gz",
                                                                    fq)])
         fstr_format = " ".join(["%s" for sq in first_mates])
         fdecomp_format = fstr_format % first_mates
@@ -322,8 +322,11 @@ def main(argv=None):
     parser.add_option("--output-file", dest="outfile", type="string",
                       help="output filename")
 
+    parser.set_defaults(paired=False)
+
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
+
 
     if options.method == "make_index":
         if options.program == "kallisto":
