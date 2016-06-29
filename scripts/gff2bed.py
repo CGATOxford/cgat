@@ -58,6 +58,50 @@ import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 
 
+def transcript2bed12(transcript):
+
+    new_entry = Bed.Bed()
+    start = min(entry.start for entry in transcript)
+    end = max(entry.end for entry in transcript)
+
+    try:
+        thickStart = min(entry.start for entry in transcript 
+                         if entry.feature == "CDS")
+        thickEnd = max(entry.end for entry in transcript
+                       if entry.feature == "CDS")
+    except ValueError:
+
+        # if there is no CDS, then set first base of transcript as 
+        # start
+
+        if transcript[0].strand == "-":
+            thickStart = end
+            thickEnd = end
+        else:
+            thickStart = start
+            thickEnd = start
+
+    exons = GTF.asRanges(transcript, "exon")
+
+    exon_starts = [es - start for (es, ee) in exons]
+    exon_lengths = [ee - es for (es, ee) in exons]
+    exon_count = len(exons)
+    new_entry.contig = transcript[0].contig
+    new_entry.start = start
+    new_entry.end = end
+    new_entry["strand"] = transcript[0].strand
+    new_entry["name"] = transcript[0].transcript_id
+
+    new_entry["thickStart"] = thickStart
+    new_entry["thickEnd"] = thickEnd
+    
+    new_entry["blockCount"] = exon_count
+    new_entry["blockStarts"] = ",".join(map(str, exon_starts))
+    new_entry["blockSizes"] = ",".join(map(str, exon_lengths))
+
+    return new_entry
+
+
 def main(argv=sys.argv):
 
     parser = E.OptionParser(version="%prog version: $Id$",
@@ -79,6 +123,12 @@ def main(argv=sys.argv):
         help="use feature/source field to define BED tracks "
         "[default=%default]")
 
+    parser.add_option(
+        "--bed12-from-transcripts", dest="bed12", action="store_true",
+        default=False,
+        help="Process GTF file into Bed12 entries, with blocks as exons"
+             "and thick/thin as coding/non-coding")
+
     parser.set_defaults(
         track=None,
         name="gene_id",
@@ -89,6 +139,9 @@ def main(argv=sys.argv):
     ninput, noutput = 0, 0
 
     iterator = GTF.iterator(options.stdin)
+
+    if options.bed12:
+        iterator = GTF.transcript_iterator(iterator)
 
     if options.track:
         all_input = list(iterator)
@@ -105,7 +158,12 @@ def main(argv=sys.argv):
             options.stdout.write("track name=%s\n" % key)
             for gff in vals:
                 ninput += 1
-                bed.fromGTF(gff, name=options.name)
+                
+                if options.bed12:
+                    bed = transcript2bed12(gff)
+                else:
+                    bed.fromGTF(gff, name=options.name)
+                
                 options.stdout.write(str(bed) + "\n")
                 noutput += 1
 
@@ -113,7 +171,12 @@ def main(argv=sys.argv):
         bed = Bed.Bed()
         for gff in iterator:
             ninput += 1
-            bed.fromGTF(gff, name=options.name)
+
+            if options.bed12:
+                bed = transcript2bed12(gff)
+            else:
+                bed.fromGTF(gff, name=options.name)
+            
             options.stdout.write(str(bed) + "\n")
 
             noutput += 1
