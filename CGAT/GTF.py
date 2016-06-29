@@ -352,6 +352,8 @@ def iterator_sorted(gff_iterator, sort_order="gene"):
         genes = list(flat_gene_iterator(entries))
         genes.sort(key=lambda x: (x[0].contig, x[0].start))
         entries = IOTools.flatten(genes)
+    elif sort_order == "gene+exon":
+        entries.sort(key=lambda x: (x.gene_id, x.exon_number))
 
     for entry in entries:
         yield entry
@@ -642,8 +644,8 @@ def readAsIntervals(gff_iterator,
     with_records
        If True, the entire record is added to the tuples.
     merge_genes
-       If true, the GTF records are passed through the :func:`merged_gene_iterator`
-       iterator first.
+       If true, the GTF records are passed through the :func:
+       `merged_gene_iterator` iterator first.
     with_gene_id
        If True, the gene_id is added to the tuples.
     with_transcript_id

@@ -53,8 +53,37 @@ def main(argv=None):
                       choices=("level-counts", "taxa-counts", "individual"),
                       help="summarise the taxa counts - no. phyla etc")
 
+    parser.add_option("--output-map", dest="output_map", action="store_true",
+                      help="ouput map of taxonomy")
+
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
+
+    if options.output_map:
+        found = []
+        options.stdout.write("""kingdom\t \
+        phylum\t \
+        class\t \
+        order\t \
+        family\t \
+        genus\t \
+        species\n""")
+        # only output the mapping file - do not continue
+        # summarise regardless of the specified options
+        for lca in LCA.iterate(options.stdin):
+            hierarchy = [lca.kingdom,
+                         lca.phylum,
+                         lca._class,
+                         lca.order,
+                         lca.family,
+                         lca.genus,
+                         lca.species]
+            if hierarchy in found:
+                continue
+            else:
+                found.append(hierarchy)
+                options.stdout.write("\t".join(hierarchy) + "\n")
+        return
 
     if options.summarise == "level-counts":
         level_counts = collections.defaultdict(set)

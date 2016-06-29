@@ -50,10 +50,10 @@ class LCA(object):
                 tax = "_".join(tax)
             else:
                 tax = tax[0]
-            if "Kingdom+" in level:
+            if "SuperKingdom+" in level:
                 self.kingdom_plus = tax
-            elif "Kingdom" in level:
-                self.kingdon = tax
+            elif "SuperKingdom" in level:
+                self.kingdom = tax
             elif "Phylum+" in level:
                 self.phylum_plus = level
             elif "Phylum" in level:

@@ -219,7 +219,7 @@ def getNumReads(bamfile):
         Number of reads
     '''
 
-    lines = pysam.idxstats(bamfile)
+    lines = pysam.idxstats(bamfile).splitlines()
 
     try:
         nreads = sum(
@@ -233,3 +233,13 @@ def getNumReads(bamfile):
     return nreads
 
 
+def isStripped(bamfile):
+    '''
+    Check if the sequence is stripped in a bam file.
+    '''
+    bam = pysam.Samfile(bamfile)
+    read = bam.next()
+    if read.seq is None:
+        return True
+    else:
+        return False

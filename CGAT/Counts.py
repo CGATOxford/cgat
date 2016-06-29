@@ -466,8 +466,8 @@ class Counts(object):
 
           gene_pca <- prcomp(t(counts), center = TRUE)
 
-          m_text = element_text(size=15)
-          s_text = element_text(size=10)
+          m_text = element_text(size=12)
+          s_text = element_text(size=8)
 
 
           variance = gene_pca$sdev^2
@@ -478,7 +478,7 @@ class Counts(object):
           p_variance = ggplot(variance_df, aes(x=PC, y=Variance_explained))+
           geom_point()+
           geom_line()+
-          theme_classic()+
+          theme_bw()+
           ylab("Variance explained (%%)")+
           theme(axis.text.x = m_text,
                 axis.title.y = m_text,
@@ -498,16 +498,18 @@ class Counts(object):
           PCs_df$id_3 = sapply(strsplit(PCs_df$sample, "\\\."), "[", 3)
 
           p_pca = ggplot(PCs_df, aes(x=%(x_axis)s, y=%(y_axis)s)) +
-          geom_point(aes(shape=as.factor(%(shape)s),
+          geom_point(size=3,
+                     aes(shape=as.factor(%(shape)s),
                          colour=as.factor(%(colour)s))) +
-          scale_colour_discrete(name=guide_legend(title='%(shape)s')) +
-          scale_shape_discrete(name=guide_legend(title='%(colour)s')) +
+          scale_colour_discrete(name=guide_legend(title='%(colour)s')) +
+          scale_shape_discrete(name=guide_legend(title='%(shape)s')) +
           xlab(paste0('PC%(pc_number_1)i (Variance explained = ' ,
                        round(100 * variance_explained[%(pc_number_1)i], 1),
                        '%%)')) +
           ylab(paste0('PC%(pc_number_2)i (Variance explained = ' ,
                        round(100 * variance_explained[%(pc_number_2)i], 1),
                        '%%)')) +
+          theme_bw() +
           theme(axis.text.x = s_text, axis.text.y = s_text,
                 title = m_text, legend.text = m_text,
                 legend.title = m_text)
@@ -635,7 +637,6 @@ class Counts(object):
                    for key2 in np.digitize(c_bins, c_bins)}
 
         min_occup = min(bin_counts.flatten())
-
         for iteration in range(0,  i):
             E.info("performing shuffling iteration number %i.." % (
                 iteration + 1))
@@ -654,7 +655,6 @@ class Counts(object):
                 group2_mean = self.table.ix[group2_rand,
                                             tracks_map[groups[1]]].apply(
                                                 np.mean, axis=1).tolist()
-
                 # retrieve the index for the bin in
                 # which each index value falls
                 change_idx, initial_idx = means2idxarrays(

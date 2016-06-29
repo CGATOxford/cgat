@@ -49,6 +49,8 @@ Sorting gene sets
    +-----------------+---------------------------------------+
    | gene+position   | gene_id, contig, start                |
    +-----------------+---------------------------------------+
+   | gene+exon       | gene_id, exon_id                      |
+   +-----------------+---------------------------------------+
 
    N.B. position+gene sorts by gene_id, start, then subsequently sorts
    flattened gene lists by contig, start
@@ -66,7 +68,7 @@ appear consecutively within the file. This can be achevied using
 
 
 ``genes-to-unique-chunks```
-    Divide the complete length of a gene up into chunks that represent 
+    Divide the complete length of a gene up into chunks that represent
     ranges of bases that are all present in the same set of transcripts.
     E.g. for two overlapping exons an entry will be output representing
     the overlap and a seperate entry each for the sequences only present
@@ -85,7 +87,7 @@ appear consecutively within the file. This can be achevied using
     overlapping, or even identical feature can be output if they belong to
     different transcripts.
 
-``merge-exons`` 
+``merge-exons``
     Merges overlapping exons for all transcripts of a gene, outputting
     the merged exons. Can be used in conjunction with
     ``merge-exons-distance`` to set the minimum distance that may
@@ -240,6 +242,10 @@ Options for altering fields within :term:`gtf`.
     Rename duplicate gene_ids and transcript_ids by addition of
     numerical suffix
 
+``set-source-to-transcript_biotype``
+    Sets the source attribute to the ``transcript_biotype``
+    attribute. Will only set if ``transcript_biotype`` attribute is
+    present in the current record.
 
 Usage
 -----
@@ -383,7 +389,8 @@ def main(argv=None):
                                "position",
                                "contig+gene",
                                "position+gene",
-                               "gene+position"),
+                               "gene+position",
+                               "gene+exon"),
                       help="sort input data [%default].")
 
     parser.add_option("--mark-utr",
@@ -489,6 +496,10 @@ def main(argv=None):
         "that are next to each other in the sort order "
         "[%default]")
 
+    parser.add_option("--use-gene-id", dest="use_geneid", action="store_true",
+                      help="when merging transcripts, exons or introns, use "
+                      "the parent gene_id as the transcript id.")
+
     parser.add_option("-m", "--method", dest="method", type="choice",
                       action="append",
                       choices=(
@@ -515,6 +526,7 @@ def main(argv=None):
                           "set-protein-to-transcript",
                           "set-score-to-distance",
                           "set-gene_biotype-to-source",
+                          "set-source-to-transcript_biotype",
                           "sort",
                           "transcript2genes",
                           "unset-genes"),
@@ -538,6 +550,7 @@ def main(argv=None):
         duplicate_feature=None,
         strict=True,
         method=None,
+        use_geneid=False,
     )
 
     (options, args) = E.Start(parser, argv=argv)
@@ -570,8 +583,24 @@ def main(argv=None):
 
             ninput += 1
 
-            if "gene_biotype" not in gff:
+            if "gene_biotype" not in gff.attributes:
                 gff.setAttribute("gene_biotype", gff.source)
+
+            options.stdout.write("%s\n" % str(gff))
+
+            noutput += 1
+            nfeatures += 1
+
+    elif options.method == "set-source-to-transcript_biotype":
+
+        for gff in GTF.iterator(options.stdin):
+
+            ninput += 1
+
+            try:
+                gff.source = gff.transcript_biotype
+            except AttributeError:
+                pass
 
             options.stdout.write("%s\n" % str(gff))
 
@@ -1263,7 +1292,6 @@ def main(argv=None):
 
             cds_ranges = GTF.asRanges(gffs, "CDS")
             exon_ranges = GTF.asRanges(gffs, "exon")
-
             # sanity checks
             strands = set([x.strand for x in gffs])
             contigs = set([x.contig for x in gffs])
@@ -1307,17 +1335,21 @@ def main(argv=None):
             except (KeyError, AttributeError):
                 biotype = None
 
-            def output_ranges(ranges, gffs, biotype=None):
+            def output_ranges(ranges, gffs, biotype=None,
+                              use_geneid=False):
                 result = []
                 for feature, start, end in ranges:
                     entry = GTF.Entry()
                     entry.copy(gffs[0])
                     entry.clearAttributes()
                     entry.feature = feature
-                    entry.transcript_id = "merged"
+                    if use_geneid:
+                        entry.transcript_id = entry.gene_id
+                    else:
+                        entry.transcript_id = "merged"
                     if biotype:
                         entry.addAttribute("gene_biotype", biotype)
-                        entry.start = start
+                    entry.start = start
                     entry.end = end
                     result.append(entry)
                 return result
@@ -1325,10 +1357,10 @@ def main(argv=None):
             result = []
 
             if options.method == "merge-exons":
-
                 if options.with_utr:
                     if options.mark_utr:
-                        result.extend(output_ranges(utr_ranges, gffs, biotype))
+                        result.extend(output_ranges(utr_ranges, gffs, biotype,
+                                                    options.use_geneid))
                         r = [("CDS", x, y) for x, y in
                              Intervals.combineAtDistance(
                                  cds_ranges, options.merge_exons_distance)]
@@ -1363,7 +1395,7 @@ def main(argv=None):
                     ndiscarded += 1
                     continue
 
-            result.extend(output_ranges(r, gffs, biotype))
+            result.extend(output_ranges(r, gffs, biotype, options.use_geneid))
 
             result.sort(key=lambda x: x.start)
 
