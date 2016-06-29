@@ -530,7 +530,7 @@ def CombineOverlaps(old_gff, method="combine"):
             if method[0] == "c":
                 last_e.start = min(last_e.start, e.start)
                 last_e.end = max(last_e.end, e.end)
-                last_e.mInfo += " ; " + e.mInfo
+                last_e.attributes += " ; " + e.attributes
 
     new_gff.append(last_e)
 
