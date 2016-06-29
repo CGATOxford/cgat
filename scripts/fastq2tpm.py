@@ -327,7 +327,6 @@ def main(argv=None):
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
 
-
     if options.method == "make_index":
         if options.program == "kallisto":
             runKallistoIndex(fasta_file=options.fa_index,
