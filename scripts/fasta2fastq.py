@@ -22,16 +22,28 @@ Note: This may lead to many more reads which align to the mRNA than the
 apparent ground truth count. It is therefore best to keep the pre-mRNA fraction
 low (recommend 0.01).
 
+--counts-method determine whether the --min-counts and --max--counts methods
+relate to the number of reads or copies per entry. If copies, then the number
+of reads/read pairs per transcript will be determined by the copy number, the
+length of the transcript and the fragment length. E.g for copy number = 2,
+transcript length = 1000 bp, read length = 100 bp, paired end, 300bp insert
+size, the number of reads will be 2 * (1000 / (( 2 * 100) + 300)) = 4
+
 Options
 -------
 
 --output-paired-end
    generate paired-end reads (defaults to single end)
 
---reads-per-entry-min
+--counts-method
+  simulate a ground truth number of reads or copies per transcript
+  if reads, then min and max specify the number of reads per entry
+  if copies, then min and specify the sequencing depth per entry
+
+--counts-min
    the minimum number of reads to simulate for each fasta entry
 
---reads-per-entry-max
+--counts-max
    the maximum number of reads to simulate for each fasta entry
 
 --sequence-error-phred
@@ -212,14 +224,20 @@ def main(argv=None):
         help="insert length standard deviation [default = %default].")
 
     parser.add_option(
-        "--reads-per-entry-min", dest="min_reads_per_entry", type="int",
-        help="minimum number of reads/read pairs per fasta entry "
-        "[default = %default].")
+        "--counts-method", dest="counts_method", type="choice",
+        choices=("reads", "copies"),
+        help="simulate a ground truth number of reads per entry or"
+        "copies per entry [default = %default].")
 
     parser.add_option(
-        "--reads-per-entry-max", dest="max_reads_per_entry", type="int",
+        "--counts-min", dest="counts_min", type="float",
+        help="minimum number of reads/read pairs per fasta entry"
+        "or copies per entry [default = %default].")
+
+    parser.add_option(
+        "--counts-max", dest="counts_max", type="float",
         help="maximum number of reads/read pairs per fasta entry "
-        "[default = %default].")
+        "or copies per entry [default = %default].")
 
     parser.add_option(
         "--output-read-length", dest="read_length", type="int",
@@ -238,7 +256,7 @@ def main(argv=None):
         help="filename for second fastq outfile [default=%default].")
 
     parser.add_option(
-        "--premrna-fraction", dest="premrna_fraction", type="string",
+        "--premrna-fraction", dest="premrna_fraction", type="float",
         help="the fraction of reads to simulate from pre-mRNA"
         "[default= % default].")
 
@@ -251,8 +269,9 @@ def main(argv=None):
         paired=False,
         insert_mean=0,
         insert_sd=1,
-        min_reads_per_entry=1,
-        max_reads_per_entry=1,
+        counts_method="reads",
+        counts_min=1,
+        counts_max=1,
         read_length=50,
         fastq2_out=None,
         output_counts=None,
@@ -285,14 +304,13 @@ def main(argv=None):
     # set a cut off of twice the read/pair length for short entries
     if options.paired:
         minimum_entry_length = (
-            2 * (options.read_length * 2) + options.insert_mean)
+            2 * ((options.read_length * 2) + options.insert_mean))
     else:
         minimum_entry_length = 2 * options.read_length
 
-    counts_out = IOTools.openFile(options.output_counts, "w")
-    counts_out.write("%s\n" % "\t".join(("id", "read_count")))
-
     c = collections.Counter()
+    counts = collections.Counter()
+    copies = collections.Counter()
 
     for f_entry in iterator:
 
@@ -304,14 +322,8 @@ def main(argv=None):
             entry = f_entry[0]
             pre_entry = f_entry[1]
 
-            # to derive probability that read comes from the a pre-mRNA
-            # or mRNA, we need to take the lengths into account
-            mrna_length = len(entry.sequence)
-            pre_mrna_length = len(pre_entry.sequence)
-            pre_prob = (float(pre_mrna_length)/mrna_length *
-                        options.premrna_fraction)
         else:
-            entry = f_entry[0]
+            entry = f_entry
 
         # reject short fasta entries
         if len(entry.sequence) < minimum_entry_length:
@@ -323,32 +335,55 @@ def main(argv=None):
         else:
             c['not_skipped'] += 1
 
-        entry_id = getTitle(entry)
+        if options.paired:
+            fragment_length = (
+                (2 * options.read_length) + options.insert_mean)
+        else:
+            fragment_length = options.read_length
 
-        count = random.randint(options.min_reads_per_entry,
-                               options.max_reads_per_entry + 1)
+        reads_per_entry = float(len(entry.sequence)) / fragment_length
 
-        if "N" in entry.sequence:
-            E.warn("fasta entry %s contains unknown bases ('N')" % entry_id)
+        if options.counts_method == "reads":
+            n_reads = random.randint(options.counts_min,
+                                     options.counts_max + 1)
 
-        for i in range(0, count):
+            n_copies = float(n_reads) / reads_per_entry
 
             if options.premrna_fraction:
+                n_reads_pre = int(round(n_reads * options.premrna_fraction))
 
-                pre_mrna = np.random.choice([0, 1], p=[1-pre_prob, pre_prob])
-                if pre_mrna:
-                    sequence = pre_entry.sequence.upper()
-                    c['pre_mrna'] += 1
-                    count -= 1
-                else:
-                    sequence = entry.sequence.upper()
-                    c['mrna'] += 1
+        elif options.counts_method == "copies":
 
-            else:
-                sequence = entry.sequence.upper()
-                c['mrna'] += 1
+            # random float [0-1]
+            rand = np.random.random_sample()
+            n_copies = (options.counts_min +
+                        (rand * (options.counts_max - options.counts_min)))
 
-            read = generateRead(entry=sequence,
+            n_reads = int(round(n_copies * reads_per_entry, 0))
+
+            # as n_reads must be rounded to int, need to redefine n_copies
+            n_copies = float(n_reads) / reads_per_entry
+
+            if options.premrna_fraction:
+                reads_per_pre_entry = (float(len(pre_entry.sequence)) /
+                                       fragment_length)
+                n_copies_pre = n_copies * options.premrna_fraction
+                n_reads_pre = int(round(n_copies_pre * reads_per_pre_entry, 0))
+                # as n_reads_pre must be rounded to int, need to
+                # redefine n_copies_pre
+                n_copies_pre = float(n_reads_pre) / reads_per_pre_entry
+
+        entry_id = getTitle(entry)
+
+        counts[entry_id] = n_reads
+        copies[entry_id] = n_copies
+
+        if "N" in entry.sequence.upper():
+            E.warn("fasta entry %s contains unknown bases ('N')" % entry_id)
+
+        for i in range(0, n_reads):
+
+            read = generateRead(entry=entry.sequence.upper(),
                                 read_length=options.read_length,
                                 error_rate=options.phred,
                                 paired=options.paired,
@@ -356,9 +391,7 @@ def main(argv=None):
                                 insert_sd=options.insert_sd)
 
             if options.paired:
-
                 r1, r2 = read
-
                 h1 = "@%s_%i/1" % (entry_id, i)
                 h2 = "@%s_%i/2" % (entry_id, i)
 
@@ -366,23 +399,58 @@ def main(argv=None):
                 outf2.write("\n".join((h2, r2, "+", qual)) + "\n")
 
             else:
-
                 h = "@%s_%i/1" % (entry_id, i)
 
                 options.stdout.write("\n".join((h, read, "+", qual)) + "\n")
 
-        counts_out.write("%s\n" % "\t".join(map(str, (entry_id, count))))
+        if options.premrna_fraction:
+            c['pre_counts'] += n_reads_pre
+            c['pre_copies'] += n_copies_pre
+
+            for i in range(0, n_reads_pre):
+
+                read = generateRead(entry=pre_entry.sequence.upper(),
+                                    read_length=options.read_length,
+                                    error_rate=options.phred,
+                                    paired=options.paired,
+                                    insert_mean=options.insert_mean,
+                                    insert_sd=options.insert_sd)
+
+                if options.paired:
+                    r1, r2 = read
+                    h1 = "@%s_pre-mRNA_%i/1" % (entry_id, i)
+                    h2 = "@%s_pre-mRNA_%i/2" % (entry_id, i)
+
+                    options.stdout.write("\n".join((h1, r1, "+", qual)) + "\n")
+                    outf2.write("\n".join((h2, r2, "+", qual)) + "\n")
+
+                else:
+                    h = "@%s_pre-mRNA_%i/1" % (entry_id, i)
+
+                    options.stdout.write("\n".join((h, read, "+", qual)) + "\n")
 
     if options.paired:
         outf2.close()
 
-    counts_out.close()
+    with IOTools.openFile(options.output_counts, "w") as counts_out:
+
+        counts_out.write("%s\n" % "\t".join(("id", "read_count", "tpm")))
+
+        sum_copies = sum(copies.values())
+        sum_counts = sum(counts.values())
+
+        for entry_id, count in counts.iteritems():
+            tpm = 1000000 * (float(copies[entry_id]) / sum_copies)
+            counts_out.write(
+                "%s\n" % "\t".join(map(str, (entry_id, count, tpm))))
 
     E.info("Reads simulated for %i fasta entries, %i entries skipped"
            % (c['not_skipped'], c['skipped']))
 
-    E.info("Reads simulated from %i mRNA and %i pre-mRNA entries"
-           % (c['mrna'], c['pre_mrna']))
+    E.info("Simulated: %i reads (%i mRNA, %i pre-mRNA), "
+           "%f transcripts (%f mRNA, %f pre-mRNA)" % (
+               sum_counts + c['pre_counts'], sum_counts, c['pre_counts'],
+               sum_copies + c['pre_copies'], sum_copies, c['pre_copies']))
 
     E.Stop()
 
