@@ -90,6 +90,12 @@ sanitize-genome
 As above, but instead of removing intervals overlapping the ends of
 contigs, truncates them.  Also removes empty intervals.
 
+filter-names
+++++++++++++
+
+Output intervals whose names are in list of desired names. Names are 
+supplied as a file with one name on each line.
+
 shift
 +++++
 
@@ -150,6 +156,14 @@ import CGAT.Bed as Bed
 import CGAT.Intervals as Intervals
 from collections import defaultdict as defaultdict
 import pysam
+
+
+def filterNames(iterator, names):
+    """ Select only those intervals whose name is in names """
+
+    for bed in iterator:
+        if bed.name in names:
+            yield bed
 
 
 def merge(iterator,
@@ -427,13 +441,13 @@ def extendInterval(iterator, contigs, distance):
         ninput += 1
 
         if bed.contig not in contigs:
-            nskipped_contig += 1
+            nskipped += 1
             continue
         if bed.start < 0 or bed.end < 0:
-            nskipped_range += 1
+            nskipped += 1
             continue
         if bed.end > contigs[bed.contig]:
-            nskipped_range += 1
+            nskipped += 1
             continue
 
         newstart = bed.start - distance
@@ -464,7 +478,8 @@ def main(argv=sys.argv):
     parser.add_option("-m", "--method", dest="methods", type="choice",
                       action="append",
                       choices=("merge", "filter-genome", "bins",
-                               "block", "sanitize-genome", "shift", "extend"),
+                               "block", "sanitize-genome", "shift", "extend",
+                               "filter-names"),
                       help="method to apply [default=%default]")
 
     parser.add_option("--num-bins", dest="num_bins", type="int",
@@ -521,6 +536,9 @@ def main(argv=sys.argv):
 
     parser.add_option("-b", "--bam-file", dest="bam_file", type="string",
                       help="bam-formatted filename with genome.")
+
+    parser.add_option("--filter-names-file", dest="names", type="string",
+                      help="list of names to keep. One per line")
 
     parser.set_defaults(methods=[],
                         merge_distance=0,
@@ -600,6 +618,11 @@ def main(argv=sys.argv):
             if not contigs:
                 raise ValueError("please supply genome file")
             processor = extendInterval(processor, contigs, options.offset)
+        elif method == "filter-names":
+            if not options.names:
+                raise ValueError("please supply list of names to filter")
+            names = [name.strip() for name in open(options.names)]
+            processor = filterNames(processor, names)
 
     noutput = 0
     for bed in processor:
