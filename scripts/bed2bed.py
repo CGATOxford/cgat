@@ -538,7 +538,7 @@ def main(argv=sys.argv):
                       help="bam-formatted filename with genome.")
 
     parser.add_option("--filter-names-file", dest="names", type="string",
-                       help="list of names to keep. One per line")
+                      help="list of names to keep. One per line")
 
     parser.set_defaults(methods=[],
                         merge_distance=0,
