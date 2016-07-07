@@ -1351,7 +1351,7 @@ class DEExperiment_Sleuth(DEExperiment):
             lrt=False,
             reduced_model=None,
             dummy_run=False,
-            genewise=False
+            genewise=False,
             gene_biomart=None):
 
         if lrt:
