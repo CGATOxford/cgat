@@ -105,8 +105,8 @@ class Record:
         if sum([x in ["0", "1", "2", "3", "."]
                 for x in self.seq[1:]]) == len(self.seq[1:]):
             datatypes.add("colorspace")
-        elif sum([x.upper() in [string.ascii_uppercase]
-                  for x in self.seq[1:]]) == len(self.seq[1:]):
+        elif sum([x.upper() in string.ascii_uppercase
+                  for x in self.seq]) == len(self.seq):
             datatypes.add("basecalls")
 
         return datatypes

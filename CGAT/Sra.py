@@ -115,7 +115,7 @@ def extract(sra, outdir, tool="fastq-dump"):
     possible tools are fastq-dump and abi-dump. Use abi-dump for colorspace"""
 
     if tool == "fastq-dump":
-        tool.append(" --split-files")
+        tool += " --split-files"
 
     statement = """%(tool)s --gzip --outdir %(outdir)s %(sra)s""" % locals()
 
