@@ -1351,7 +1351,8 @@ class DEExperiment_Sleuth(DEExperiment):
             lrt=False,
             reduced_model=None,
             dummy_run=False,
-            genewise=False):
+            genewise=False
+            gene_biomart=None):
 
         if lrt:
             E.info("Note: LRT will not generate fold changes")
@@ -1377,8 +1378,14 @@ class DEExperiment_Sleuth(DEExperiment):
         variates = "c(%s)" % ",".join(model_terms)
 
         if genewise:
+            assert gene_biomart, ("for genewise analysis, "
+                                  "must provide a 'gene_biomart'")
+
             createSleuthObject = R('''
             function(design_df){
+
+            library(biomaRt)
+
             sample_id = design_df$sample
             kal_dirs <- sapply(sample_id,
                 function(id) file.path('%(base_dir)s', id))
@@ -1388,7 +1395,7 @@ class DEExperiment_Sleuth(DEExperiment):
             design_df <- dplyr::mutate(design_df, path = kal_dirs)
 
             mart <- biomaRt::useMart(biomart = "ENSEMBL_MART_ENSEMBL",
-            dataset = "hsapiens_gene_ensembl",
+            dataset = "%(gene_biomart)s",
             host = 'ensembl.org')
 
             t2g <- biomaRt::getBM(
