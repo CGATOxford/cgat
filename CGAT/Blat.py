@@ -371,11 +371,10 @@ class Match:
         """return a map between query to target."""
 
         self.mNMatches = map_query2target.getNumAligned()
-        f = alignlib_lite.py_AlignmentFormatBlat(map_query2target)
+        f = str(alignlib_lite.py_AlignmentFormatBlat(map_query2target))
 
         self.mQueryFrom, self.mQueryTo, self.mSbjctFrom, self.mSbjctTo, \
-            self.mQueryBlockStarts, self.mSbjctBlockStarts, self.mBlockSizes = str(
-                f).split("\t")
+            self.mQueryBlockStarts, self.mSbjctBlockStarts, self.mBlockSizes = f.split("\t")
 
         if self.mBlockSizes:
             self.mBlockSizes = list(map(int, self.mBlockSizes[:-1].split(",")))

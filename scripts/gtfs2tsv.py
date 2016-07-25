@@ -189,8 +189,8 @@ def getFile(options, section):
 
 def writeDiff(outfile, symbol, genes):
 
-    for gene in genes:
-        for exon in gene:
+    for gene in sorted(genes):
+        for exon in sorted(gene):
             outfile.write("%s\t%s\n" % (symbol, str(exon)))
 
 
@@ -302,7 +302,7 @@ def main(argv=None):
     if overlapping_genes:
         outfile = getFile(options, "genes_ovl")
         outfile.write("gene_id1\tgene_id2\n")
-        for a, b in overlapping_genes:
+        for a, b in sorted(overlapping_genes):
             outfile.write("%s\t%s\n" % (a, b))
         if outfile != options.stdout:
             outfile.close()
@@ -315,7 +315,7 @@ def main(argv=None):
         b = set([x[0] for x in overlapping_genes])
         d = genes1.difference(b)
         outfile.write("gene_id1\n")
-        outfile.write("\n".join(d) + "\n")
+        outfile.write("\n".join(sorted(d)) + "\n")
         if outfile != options.stdout:
             outfile.close()
         outfile_total.write("%s\t%i\t%i\t%5.2f\t%i\t%5.2f\n" % (
@@ -327,7 +327,7 @@ def main(argv=None):
         b = set([x[1] for x in overlapping_genes])
         d = genes2.difference(b)
         outfile.write("gene_id2\n")
-        outfile.write("\n".join(d) + "\n")
+        outfile.write("\n".join(sorted(d)) + "\n")
         if outfile != options.stdout:
             outfile.close()
 

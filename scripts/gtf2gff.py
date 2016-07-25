@@ -492,7 +492,7 @@ def buildTerritories(iterator, fasta, method, options):
         else:
             end += options.radius
 
-        gff.gene_id = ":".join(set([x.gene_id for x in matches]))
+        gff.gene_id = ":".join(sorted(set([x.gene_id for x in matches])))
         gff.transcript_id = gff.gene_id
         gff.start, gff.end = start, end
 

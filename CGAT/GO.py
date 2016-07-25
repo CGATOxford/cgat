@@ -1110,7 +1110,7 @@ def outputResults(outfile,
 
     nselected = 0
 
-    for k, v in pairs:
+    for k, v in sorted(pairs):
 
         code = GetCode(v)
 
@@ -1150,7 +1150,7 @@ def outputResults(outfile,
                 g = [x for x in go2genes[k] if x in foreground]
                 if gene2name:
                     g = [gene2name.get(x, '?') for x in g]
-                g = ";".join(g)
+                g = ";".join(sorted(g))
             else:
                 g = ""
             outfile.write("\t%s" % g)
@@ -1223,7 +1223,7 @@ def getSamples(gene2go, foreground, background, options, test_ontology,
                              "CI95lower", "CI95upper",
                              "pover", "punder", "goid",
                              "category", "description")) + "\n")
-    for k in list(counts.keys()):
+    for k in sorted(list(counts.keys())):
 
         c = counts[k]
 
@@ -1267,7 +1267,7 @@ def computeFDRs(go_results,
                 gene2go,
                 go2info):
 
-    pairs = list(go_results.mResults.items())
+    pairs = sorted(go_results.mResults.items())
 
     E.info("calculating the FDRs using method `%s`" % options.qvalue_method)
 
@@ -1553,10 +1553,10 @@ def pairwiseGOEnrichment(results_per_genelist, labels, test_ontology, go2info,
 
     min_observed_counts = options.pairs_min_observed_counts
 
-    for x, genelist1 in enumerate(dicts):
+    for x, genelist1 in enumerate(sorted(dicts)):
 
         x_go_categories = set(genelist1.keys())
-        for y, genelist2 in enumerate(dicts[:x]):
+        for y, genelist2 in enumerate(sorted(dicts[:x])):
 
             iteration += 1
             if iteration % 10 == 0:

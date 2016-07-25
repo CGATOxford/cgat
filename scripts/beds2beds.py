@@ -142,6 +142,7 @@ def combineMergedIntervals(bedfiles):
 
     # get all intervals
     data_per_contig = collections.defaultdict(list)
+
     for bedfile in bedfiles:
         for contig in bedfile.contigs:
             i = []
@@ -154,7 +155,7 @@ def combineMergedIntervals(bedfiles):
         data_per_contig[contig] = Intervals.combine(data_per_contig[contig])
 
     # filter intervals - take only those present in all bedfiles
-    for contig, data in data_per_contig.items():
+    for contig, data in sorted(data_per_contig.items()):
         for start, end in data:
             if isContainedInAll(contig, start, end, bedfiles):
                 yield contig, start, end
@@ -246,6 +247,7 @@ def main(argv=None):
                 tag = ":".join([tags[x] for x in combination])
                 E.debug("combination %s started" % tag)
                 E.debug("other: %s" % ":".join([tags[x] for x in other]))
+
                 other_bed = [bedfiles[x] for x in other]
                 outf = IOTools.openFile(
                     E.getOutputFile(tag), "w", create_dir=True)

@@ -103,19 +103,18 @@ def segmentWindowsCpG(infile, window_size=100, min_cpg=1):
     cpgs, contig_sizes = segmentWithCpG(infile, with_contig_sizes=True)
 
     # save cpgs to temporary file
-    fh, fn = tempfile.mkstemp()
-    os.write(fh, "\n".join(["%s\t%i\t%i\n" % (contig, start, end)
-                            for contig, start, end, gc in cpgs]))
-    os.write(fh, "\n")
-    os.close(fh)
+    tempf = tempfile.NamedTemporaryFile(mode="w", delete=False)
+    tempf.write("\n".join(["%s\t%i\t%i\n" % (contig, start, end)
+                           for contig, start, end, gc in cpgs]) + "\n")
+    tempf.close()
 
-    cpgs = pybedtools.BedTool(fn)
+    cpgs = pybedtools.BedTool(tempf.name)
     cpgs.set_chromsizes(contig_sizes)
     extended = cpgs.slop(b=window_size // 2)
     merged = extended.merge(o="count", c=3)
     filtered = merged.filter(lambda x: int(x.name) >= min_cpg)
 
-    os.unlink(fn)
+    os.unlink(tempf.name)
 
     # return CpG content (not C+C content)
     return [(x.chrom, x.start, x.stop, float(x.name) / (x.stop - x.start) / 2)

@@ -83,7 +83,7 @@ def relative_abundance_iterator(infile):
 
     # return the taxonomic group and the specific
     # names within the taxonomic group
-    for group in list(taxons.keys()):
+    for group in sorted(taxons.keys()):
         for abundance in zip(taxons[group], abundances[group]):
             if group == "k":
                 group = "kingdom"

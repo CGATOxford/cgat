@@ -102,8 +102,8 @@ def main(argv=None):
 
     E.info("concatenating bed files")
     # concatenate the list of files
-    tmp = tempfile.NamedTemporaryFile(delete=False)
-    tmp_merge = tempfile.NamedTemporaryFile(delete=False)
+    tmp = tempfile.NamedTemporaryFile(delete=False, mode="w")
+    tmp_merge = tempfile.NamedTemporaryFile(delete=False, mode="w")
     infs = options.infiles
     for inf in infs:
         for bed in Bed.iterator(IOTools.openFile(inf)):
@@ -146,7 +146,7 @@ def main(argv=None):
     options.stdout.write("contig\tstart\tend\tcount\n")
 
     E.info("outputting result")
-    for interval, count in counts.items():
+    for interval, count in sorted(counts.items()):
         options.stdout.write(
             "\t".join(map(str, interval)) + "\t" + str(count) + "\n")
 

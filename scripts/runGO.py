@@ -463,7 +463,7 @@ def main(argv=None):
 
     #############################################################
     # get go categories for genes
-    for test_ontology in options.ontology:
+    for test_ontology in sorted(options.ontology):
 
         # store results for aggregate output of multiple gene lists
         all_results = []
@@ -510,7 +510,7 @@ def main(argv=None):
                    "to %i categories (%i maps)" % (
                        ngenes, ncategories, nmaps))
 
-        for genelist_name, foreground in genelists.items():
+        for genelist_name, foreground in sorted(genelists.items()):
 
             msgs = []
             E.info("processing %s with %i genes" %
@@ -544,6 +544,11 @@ def main(argv=None):
             E.info("(unfiltered) foreground=%i, background=%i" %
                    (len(foreground), len(background)))
 
+            # sort foreground and background, important for reproducibility
+            # under random seed
+            foreground = sorted(foreground)
+            background = sorted(background)
+
             #############################################################
             # sanity checks:
             # are all of the foreground genes in the dataset
@@ -575,7 +580,7 @@ def main(argv=None):
                             options.filename_map_slims, "w")
 
                     outfile.write("GO\tGOSlim\n")
-                    for go, go_slim in list(go_slims.items()):
+                    for go, go_slim in sorted(list(go_slims.items())):
                         outfile.write("%s\t%s\n" % (go, go_slim))
 
                     if outfile != options.stdout:
@@ -613,11 +618,11 @@ def main(argv=None):
                 options.stdout.write(
                     "# genes in GO category %s\n" % options.get_genes)
                 options.stdout.write("gene\tset\n")
-                for x in fg:
+                for x in sorted(fg):
                     options.stdout.write("%s\t%s\n" % ("fg", x))
-                for x in bg:
+                for x in sorted(bg):
                     options.stdout.write("%s\t%s\n" % ("bg", x))
-                for x in ng:
+                for x in sorted(ng):
                     options.stdout.write("%s\t%s\n" % ("ng", x))
 
                 E.info("nfg=%i, nbg=%i, nng=%i" % (len(fg), len(bg), len(ng)))

@@ -28,8 +28,11 @@ Command line options
 
 import sys
 import CGAT.Experiment as E
-from bx.align import maf
-from bx.align.tools import get_components_for_species
+try:
+    from bx.align import maf
+    from bx.align.tools import get_components_for_species
+except AttributeError:
+    pass
 
 import CGAT.Blat as Blat
 

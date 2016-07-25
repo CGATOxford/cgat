@@ -129,9 +129,9 @@ def main(argv=None):
             xstart = xend
 
         entry = Blat.Match()
-        entry.mQueryId = gff.transcript_id
-        entry.mSbjctId = gff.contig
-        entry.strand = gff.strand
+        entry.mQueryId = gffs[0].transcript_id
+        entry.mSbjctId = gffs[0].contig
+        entry.strand = gffs[0].strand
 
         if genome_fasta:
             if entry.mSbjctId in genome_fasta:

@@ -983,13 +983,13 @@ def genResampleData(data_frame,
     random.seed(seed)
     for it in range(1, replicates + 1):
         df = pd.DataFrame()
-        df_dict = {}
+        df_list = []
         for i in times:
             k = str(random.randint(1,
                                    len(sample_reps)))
             series = vst_long.loc[str(i), 'R%s' % k]
-            df_dict[str(i)] = series
-        df = pd.DataFrame(df_dict)
+            df_list.append((str(i), series))
+        df = pd.DataFrame.from_items(df_list)
         cols = df.columns.tolist()
         cols = [int(x) for x in cols]
         cols.sort()
@@ -1002,7 +1002,7 @@ def genResampleData(data_frame,
         seg_file = "%s/%s.tsv" % (out_dir, table)
         df.to_csv(seg_file, sep="\t")
 
-    sys.stdout.write("%i replicate datasets generated\n" % replicates)
+    E.info("%i replicate datasets generated" % replicates)
 
 
 def temporalCorrelate(series1, series2):

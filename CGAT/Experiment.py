@@ -1169,6 +1169,9 @@ class Counter(object):
     def iteritems(self):
         return iter(self._counts.items())
 
+    def items(self):
+        return iter(self._counts.items())
+
     def asTable(self):
         '''return values as tab-separated table (without header).
 

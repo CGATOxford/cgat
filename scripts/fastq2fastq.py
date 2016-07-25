@@ -134,7 +134,6 @@ import os
 import sys
 import re
 import random
-import itertools
 import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
 import CGAT.Fastq as Fastq
@@ -228,6 +227,9 @@ def main(argv=None):
 
     c = E.Counter()
 
+    if options.method is None:
+        raise ValueError("no method specified, please use --method")
+
     if options.method == "change-format":
         for record in Fastq.iterate_convert(options.stdin,
                                             format=options.target_format,
@@ -269,7 +271,6 @@ def main(argv=None):
                     c.output += 1
                     outfile1.write("%s\n" % record1)
                     outfile2.write("%s\n" % record2)
-        
         else:
             for record in Fastq.iterate(options.stdin):
                 c.input += 1

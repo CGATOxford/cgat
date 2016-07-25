@@ -770,11 +770,11 @@ class Counts(object):
                     n += 1
 
         elif spike_type == "cluster":
-            for key in list(indices.keys()):
+            for key in sorted(indices.keys()):
                 initial, change, size = getInitialChangeSize(
                     key, width_ibin, min_ibin, width_cbin,
                     min_cbin, width_sbin, min_sbin)
-                for values in indices[key]:
+                for values in sorted(indices[key]):
                     (c1s, c1e, c2s, c2e, c1rs, c1re,
                      c2rs, c2re) = values
                     cluster_id = "_".join(

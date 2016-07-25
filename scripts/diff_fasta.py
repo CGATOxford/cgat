@@ -195,7 +195,7 @@ def main(argv=None):
     write_seqdiff = "seqdiff" in options.output
     write_diff = "diff" in options.output or write_seqdiff
 
-    for k in seqs1:
+    for k in sorted(seqs1):
         if k not in seqs2:
             nmissed1 += 1
             if write_missed1:
@@ -287,7 +287,7 @@ def main(argv=None):
             if write_seqdiff:
                 options.stdout.write("< %s\n> %s\n" % (seqs1[k], seqs2[k]))
 
-    for k in list(seqs2.keys()):
+    for k in sorted(list(seqs2.keys())):
         if k not in found2:
             nmissed2 += 1
             if write_missed2:

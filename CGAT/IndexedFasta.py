@@ -338,7 +338,7 @@ class MultipleFastaIterator:
             if self.format == "tar.gz" or self.format == "tar" or \
                (self.format == "auto" and filename.endswith("tar.gz")):
                 if filename == "-":
-                    tf = tarfile.open(fileobj=sys.stdin, mode="r|*")
+                    tf = tarfile.open(fileobj=sys.stdin.buffer, mode="r|*")
                 else:
                     tf = tarfile.open(filename, mode="r")
                 for f in tf:
@@ -689,6 +689,9 @@ class CGATIndexedFasta:
             self.mIndex = dbm.open(filename_index, "n")
         elif os.path.exists(filename_index):
             self.mIndex = dbm.open(filename_index, "r")
+            if len(self.mIndex) == 0:
+                raise ValueError(
+                    "length of index is 0, possibly a python version problem")
             self.mIsLoaded = True
             return
         else:
@@ -957,17 +960,18 @@ class CGATIndexedFasta:
         except (struct.error, TypeError):
             pos_id, pos_seq, lcontig, points = data
 
-        rpos = random.randint(0, lcontig)
+        start, end = 0, 0 
         if size >= lcontig:
-            start = 0
             end = lcontig
         else:
-            if random.choice(("True", "False")):
-                start = rpos
-                end = min(rpos + size, lcontig)
-            else:
-                start = max(0, rpos - size)
-                end = rpos
+            while end - start == 0:
+                rpos = random.randint(0, lcontig)
+                if random.choice(("True", "False")):
+                    start = rpos
+                    end = min(rpos + size, lcontig)
+                else:
+                    start = max(0, rpos - size)
+                    end = rpos
 
         return token, strand, start, end
 

@@ -155,7 +155,7 @@ def main(argv=None):
 
     E.info("writing results")
     # write out the results
-    headers = list(result.keys())
+    headers = sorted(result.keys())
     rows = set()
     for kmer_counts in list(result.values()):
         for kmer, count in kmer_counts.items():
@@ -171,7 +171,7 @@ def main(argv=None):
     for header in headers:
         totals[header] = sum([result[header][tuple(row)] for row in rows])
 
-    for row in rows:
+    for row in sorted(rows):
         if options.proportion:
             options.stdout.write("\t".join(
                 [row] + [str(float(result[header][tuple(row)]) / totals[header]) for header in headers]) + "\n")

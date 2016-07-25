@@ -133,9 +133,6 @@ parses command line options in sys.argv, unless *argv* is given.
                       type="string", help="directory to output"
                       " resampled files to")
 
-    parser.add_option("--seed", dest="seed", type="string",
-                      help="seed for pseudo-random number generator")
-
     # add common options (-h/--help, ...) and parse command line
 
     (options, args) = E.Start(parser, argv=argv)
@@ -166,7 +163,7 @@ parses command line options in sys.argv, unless *argv* is given.
                        condition=options.condition,
                        ref_gtf=options.gtf_file,
                        out_dir=options.output_dir,
-                       seed=int(options.seed))
+                       seed=int(options.random_seed))
 
     # Write footer and output benchmark information.
     E.Stop()

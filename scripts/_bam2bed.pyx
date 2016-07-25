@@ -29,6 +29,8 @@ def merge_pairs(Samfile input_samfile,
     cdef int nremoved_insert = 0
     cdef int nremoved_contig = 0
     cdef int nremoved_unpaired = 0
+    cdef int nremoved_coordinate = 0
+    cdef int nremoved_take_only_second = 0
     cdef int noutput = 0
     cdef int flag
     cdef int isize
@@ -48,7 +50,6 @@ def merge_pairs(Samfile input_samfile,
         take_columns = bed_format
 
     for read in input_samfile:
-
         ninput += 1
 
         flag = read._delegate.core.flag 
@@ -58,10 +59,12 @@ def merge_pairs(Samfile input_samfile,
             continue
 
         if read.pos < read.mpos:
-            # lower coordinates, ignore
+            # lower coordinate than mate, ignore
+            nremoved_coordinate += 1
             continue
         elif read.pos == read.mpos and flag & 64:
-            # disambiguate, take second in pair
+            # disambiguate, ignore first in pair
+            nremoved_take_only_second += 1
             continue
         else:
             # taking the downstream pair allows to incl
@@ -131,6 +134,8 @@ def merge_pairs(Samfile input_samfile,
     c.removed_contig = nremoved_contig
     c.removed_unmapped = nremoved_unmapped
     c.removed_unpaired = nremoved_unpaired
+    c.removed_take_only_second = nremoved_take_only_second
+    c.removed_coordinate = nremoved_coordinate
     c.output = noutput
 
     return c

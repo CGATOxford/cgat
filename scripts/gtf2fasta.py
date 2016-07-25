@@ -342,13 +342,15 @@ def annotateGenome(iterator, fasta, options, default_code=DEFAULT_CODE):
     annotations = {}
     contig_sizes = fasta.getContigSizes(with_synonyms=False)
     E.info("allocating memory for %i contigs and %i bytes" %
-           (len(contig_sizes), sum(contig_sizes.values()) * array.array("c").itemsize))
+           (len(contig_sizes), sum(contig_sizes.values()) * array.array("B").itemsize))
     # AString.AString( "a").itemsize ))
 
     for contig, size in list(contig_sizes.items()):
         E.debug("allocating %s: %i bases" % (contig, size))
         # annotations[contig] = AString.AString( default_code * size )
-        annotations[contig] = array.array("c", default_code * size)
+        # annotations[contig] = array.array("", default_code * size)
+        # Go to list for py3 compatibility, patch
+        annotations[contig] = [default_code] * size
 
     E.info("allocated memory for %i contigs" % len(fasta))
 
@@ -484,7 +486,8 @@ def annotateGenome(iterator, fasta, options, default_code=DEFAULT_CODE):
 
     E.info("started output")
     for k in sorted(annotations.keys()):
-        options.stdout.write(">%s\n%s\n" % (k, annotations[k].tostring()))
+        # options.stdout.write(">%s\n%s\n" % (k, annotations[k].tostring()))
+        options.stdout.write(">%s\n%s\n" % (k, "".join(annotations[k])))
 
 
 def main(argv=None):

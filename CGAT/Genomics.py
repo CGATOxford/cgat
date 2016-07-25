@@ -1138,11 +1138,11 @@ def translate(sequence,
         if prefer_lowercase:
             is_lower = False
             for c in sequence[x:x + 3]:
-                is_lower = is_lower or c in string.lowercase
+                is_lower = is_lower or c in "acgtnx"
         else:
             is_lower = True
             for c in sequence[x:x + 3]:
-                is_lower = is_lower and c in string.lowercase
+                is_lower = is_lower and c in "acgtnx"
 
         if is_lower:
             residues.append(MapCodon2AA(sequence[x:x + 3].upper(),
@@ -1153,7 +1153,7 @@ def translate(sequence,
                                         is_seleno=is_seleno,
                                         ignore_n=ignore_n).upper())
 
-    return residues.join("")
+    return "".join(residues)
 
 
 def TranslateDNA2Protein(*args, **kwargs):

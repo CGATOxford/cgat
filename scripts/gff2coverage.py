@@ -281,7 +281,7 @@ def main(argv=None):
 
         gff = GTF.readFromFile(options.stdin)
 
-        gff.sort(lambda x, y: cmp((x.contig, x.start), (y.contig, y.start)))
+        gff.sort(key=lambda x: (x.contig, x.start))
 
         chunk = []
         last_contig = None

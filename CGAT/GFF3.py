@@ -7,8 +7,9 @@ functionality to allow working with :term:`GFF3` formatted files.
 
 """
 
-from CGAT import GTF as GTF
+import collections
 import itertools
+from CGAT import GTF as GTF
 
 
 class Entry(GTF.Entry):
@@ -26,7 +27,7 @@ class Entry(GTF.Entry):
         attributes = attributes.split("#")[0]
         # separate into fields
         fields = [x.strip() for x in attributes.split(";")]
-        self.attributes = {}
+        self.attributes = collections.OrderedDict()
 
         for f in fields:
 

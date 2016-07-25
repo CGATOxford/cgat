@@ -208,7 +208,7 @@ def merge(iterator,
             if bed.contig != last.contig:
 
                 for s in to_join:
-                    if to_join[s]:
+                    if sorted(to_join[s]):
                         yield to_join[s]
                     to_join[s] = []
                     max_end[s] = 0
@@ -226,7 +226,7 @@ def merge(iterator,
             max_end[strand] = max(bed.end, max_end[strand])
             to_join[strand].append(bed)
 
-        for strand in to_join:
+        for strand in sorted(to_join):
             if to_join[strand]:
                 yield to_join[strand]
         raise StopIteration
@@ -240,22 +240,19 @@ def merge(iterator,
         if remove_inconsistent:
             names = set([x.name for x in to_join])
             if len(names) > 1:
-                c.skipped_inconcistent_intervals += 1
+                c.skipped_inconsistent_intervals += 1
                 continue
 
         if resolve_blocks:
-            
             # keep track of number of intervals in each entry
             for bed in to_join:
                 bed["score"] = 1
-  
             merged = True
             while merged:
-                
                 joined = []
                 not_joined = []
                 merged = False
-                
+
                 while len(to_join) > 0:
                     bed1, to_join = to_join[0], to_join[1:]
                     intervals1 = bed1.toIntervals()
@@ -276,12 +273,12 @@ def merge(iterator,
 
                 to_join = joined
                 joined = []
-                
+
             to_join = sorted(to_join, key=lambda x: int(x.start))
-            
+
             # keep only those with the created from the merge of the minimum
             # number of intervals
-            
+
             for bed in to_join:
 
                 if bed["score"] < min_intervals:
@@ -291,7 +288,7 @@ def merge(iterator,
                 yield bed
                 c.output += 1
         else:
-                        
+
             if len(to_join) < min_intervals:
                 c.skipped_min_intervals += 1
                 continue

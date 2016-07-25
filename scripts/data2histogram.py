@@ -262,11 +262,14 @@ def main(argv=None):
             options.stdout.write("bin\t" + "\t".join(titles) + "\n")
 
         if len(hists) == 1:
-            Histogram.Print(hists[0], nonull=options.nonull)
+            Histogram.Print(hists[0], nonull=options.nonull,
+                            format_bin=options.bin_format)
         else:
             combined_histogram = Histogram.Combine(
                 hists, missing_value=options.missing_value)
-            Histogram.Print(combined_histogram, nonull=options.nonull)
+            Histogram.Print(combined_histogram,
+                            nonull=options.nonull,
+                            format_bin=options.bin_format)
 
     E.Stop()
 

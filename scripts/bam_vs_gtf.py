@@ -282,7 +282,7 @@ def main(argv=None):
 
     outfile = options.stdout
     outfile.write("category\tcounts\n")
-    for k, v in c.items():
+    for k, v in sorted(c.items()):
         outfile.write("%s\t%i\n" % (k, v))
 
     # write footer and output benchmark information.
