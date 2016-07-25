@@ -10,7 +10,7 @@ r_table2scatter.py - R based plots and stats
 Purpose
 -------
 
-This script reads a table from a file or stdin. 
+This script reads a table from a file or stdin.
 It can compute various stats (correlations, ...)
 and/or plot the data using R.
 
@@ -56,7 +56,7 @@ def readTable(lines,
     """read a matrix. There probably is a routine for this in Numpy, which
     I haven't found yet.
 
-    The advantage of using rpy's mechanism is to allow for 
+    The advantage of using rpy's mechanism is to allow for
     missing values.
 
     row_names: column with row names
@@ -615,9 +615,11 @@ title(main='%s');
                 R("""layout(matrix(seq(1,%i), %i, %i, byrow = TRUE))""" %
                   (w * h, w, h))
                 for a, b in pairs:
-                    new_matrix = [x for x in zip(list(matrix[a].values())[0], list(matrix[b].values())[0]) if x[0] not in (float("nan"), PosInf, NegInf) and
-                                        x[1] not in (
-                                            float("nan"), PosInf, NegInf)]
+                    new_matrix = [x for x in zip(
+                        list(matrix[a].values())[0],
+                        list(matrix[b].values())[0])
+                                  if x[0] not in (float("nan"), PosInf, NegInf) and
+                                  x[1] not in (float("nan"), PosInf, NegInf)]
                     try:
                         R("""plot(matrix[,%i], matrix[,%i], main='%s versus %s', cex=0.5, pch=".", xlab='%s', ylab='%s' )""" % (
                             a + 1, b + 1, headers[b], headers[a], xlabel, ylabel))

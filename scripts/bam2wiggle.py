@@ -425,6 +425,7 @@ def main(argv=None):
                 # patch: there was a problem with bam files and reads
                 # overextending at the end. These are usually Ns, but
                 # need to check as otherwise wigToBigWig fails.
+                print ("{} {} {} {}".format("db", start, end, val))
                 if lcontig <= end:
                     E.warn("read extending beyond contig: %s: %i > %i" %
                            (contig, end, lcontig))
@@ -439,6 +440,9 @@ def main(argv=None):
         # Close output file
         if type(outf) == type(SpanWriter):
             outf.flush(outfile)
+        else:
+            outfile.flush()
+
         E.info("finished output")
 
         # Report counters

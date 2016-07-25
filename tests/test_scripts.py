@@ -19,6 +19,8 @@ CGAT_TASK_STEPSIZE
 
 """
 
+from __future__ import print_function
+
 import subprocess
 import tempfile
 import os
@@ -133,7 +135,7 @@ def check_script(test_name, script, stdin,
                                cwd=tmpdir)
 
     if DEBUG:
-        print ("tmpdir={}".format(tmpdir), end=" ", flush=True)
+        print ("tmpdir={}".format(tmpdir), end=" ")
 
     process_stdout, process_stderr = process.communicate()
 

@@ -120,12 +120,13 @@ import sys
 import string
 import re
 import random
+from future.moves.itertools import zip_longest
+
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Genomics as Genomics
 import CGAT.FastaIterator as FastaIterator
 import CGAT.Masker as Masker
-import itertools
 
 
 def getCodons(sequence, gap_chars="-."):
@@ -484,7 +485,7 @@ def main(argv=None):
                 if sequence == hm_sequence:
                     pass
                 else:
-                    for x, y in itertools.zip_longest(sequence, hm_sequence):
+                    for x, y in zip_longest(sequence, hm_sequence):
                         if y == "N":
                             new_sequence += x.lower()
                         else:

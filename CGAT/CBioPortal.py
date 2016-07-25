@@ -65,8 +65,8 @@ examples::
 or more tersely::
 
    portal.CBioProtal()
-   portal.getPercentAltered(study = "prad_mskcc", case_set_id = "prad_all_complete", 
-                            gene_list = ["TP53","BCL2","MYC"], 
+   portal.getPercentAltered(study = "prad_mskcc", case_set_id = "prad_all_complete",
+                            gene_list = ["TP53","BCL2","MYC"],
                             genetic_profile_id =["prad_mskcc_mrna"])
 
 Any warnings returned by the query are stored in CBioPortal.last_warnings.
@@ -82,7 +82,7 @@ Reference
 ---------
 
 '''
-import urllib.request, urllib.error, urllib.parse
+from future.moves.urllib.request import urlopen
 import re
 import optparse
 import sys
@@ -176,7 +176,7 @@ class CBioPortal():
 
                 return query1 + query2
 
-        data = urllib.request.urlopen(query)
+        data = urlopen(query)
 
         line = data.readline()
         self.last_query = query
@@ -395,7 +395,7 @@ class CBioPortal():
             gene_symbol: HUGO Gene Symbol.
             case_id: Case ID.
             sequencing_center: Sequencer Center responsible for identifying
-                this mutation. 
+                this mutation.
                                For example: broad.mit.edu.
             mutation_status: somatic or germline mutation status. all mutations
                          returned will be of type somatic.
@@ -610,7 +610,7 @@ class CBioPortal():
         gene_list = ",".join(gene_list)
         command = "%s/link.do?cancer_study_id=%s&gene_list=%s&report=oncoprint_html" % (
             url, study, gene_list)
-        return urllib.request.urlopen(command).read()
+        return urlopen(command).read()
 
     def setDefaultStudy(self, study=None, study_name=None):
         '''sets a new study as the default study. Will check that the study

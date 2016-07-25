@@ -74,7 +74,7 @@ normalize-by-max
 kullback-leibler
    compute kullback-leibler divergence between two columns. Compute
    both D(a||b), D(b||a) and (D(a||b) + D(b||a)) / 2
-   
+
 rank
    substitute cells with their ranks in a column
 
@@ -107,6 +107,7 @@ import collections
 import CGAT.Experiment as E
 import CGAT.CSV as CSV
 import CGAT.Stats as Stats
+import CGAT.IOTools as IOTools
 import scipy
 from functools import reduce
 
@@ -203,7 +204,7 @@ def readAndGroupTable(infile, options):
         new_fields = [fields[options.group_column]]
         for c in options.columns:
             new_fields += list(["%s_%s" %
-                                   (fields[c], x) for x in Stats.DistributionalParameters().getHeaders()])
+                                (fields[c], x) for x in Stats.DistributionalParameters().getHeaders()])
 
     # convert values to floats (except for group_column)
     # Delete rows with unconvertable values and not in options.columns
@@ -235,7 +236,7 @@ def readAndGroupTable(infile, options):
 
 
 def readAndExpandTable(infile, options):
-    '''splits fields in table at separator. 
+    '''splits fields in table at separator.
 
     If a field in a row contains multiple values,
     the row is expanded into multiple rows such
@@ -759,7 +760,7 @@ def main(argv=None):
                 format = options.format
                 if format is None:
                     format = "%f"
-                    
+
                 for x in range(0, len(options.columns) - 1):
                     for y in range(x + 1, len(options.columns)):
                         c1 = options.columns[x]
@@ -849,7 +850,7 @@ def main(argv=None):
                 other_table_name = options.parameters[0]
                 del options.parameters[0]
                 other_fields, other_table = CSV.readTable(
-                   IOTools.openFile(other_table_name, "r"),
+                    IOTools.openFile(other_table_name, "r"),
                     with_header=options.has_headers,
                     as_rows=False)
 

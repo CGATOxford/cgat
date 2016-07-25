@@ -162,16 +162,17 @@ class Counts:
         return "\t".join(["pl%s\tpr%s" % (x, x) for x in ("overlap", "identical", "half", "unique", "split")])
 
     def asPercent(self):
-        return "\t".join([self.mPercentFormat % (100.0 * x) for x in (float(self.noverlap) / self.nleft,
-                              float(self.noverlap) / self.nright,
-                              float(self.nidentical) / self.nleft,
-                              float(self.nidentical) / self.nright,
-                              float(self.nhalf) / self.nleft,
-                              float(self.nhalf) / self.nright,
-                              float(self.nunique_left) / self.nleft,
-                              float(self.nunique_right) / self.nright,
-                              float(self.nsplit_left) / self.nleft,
-                              float(self.nsplit_right) / self.nright)])
+        return "\t".join([self.mPercentFormat % (100.0 * x) for x in (
+            float(self.noverlap) / self.nleft,
+            float(self.noverlap) / self.nright,
+            float(self.nidentical) / self.nleft,
+            float(self.nidentical) / self.nright,
+            float(self.nhalf) / self.nleft,
+            float(self.nhalf) / self.nright,
+            float(self.nunique_left) / self.nleft,
+            float(self.nunique_right) / self.nright,
+            float(self.nsplit_left) / self.nleft,
+            float(self.nsplit_right) / self.nright)])
 
 
 def getFile(options, section):

@@ -1,9 +1,8 @@
 '''counts2counts.py - perform transformations on counts tables
 ==============================================================
 
-:Author: Tom Smith
 :Release: $Id$
---:Date: |today|
+:Date: |today|
 :Tags: Python
 
 Purpose
@@ -501,9 +500,11 @@ def main(argv=None):
             g_to_spike_tracks, g_to_keep_tracks = (g_to_track, g_to_track)
 
         # set up numpy arrays for change and initial values
-        change_bins = np.arange(options.min_cbin, options.max_cbin,
+        change_bins = np.arange(options.min_cbin,
+                                options.max_cbin,
                                 options.width_cbin)
-        initial_bins = np.arange(options.min_ibin, options.max_ibin,
+        initial_bins = np.arange(options.min_ibin,
+                                 options.max_ibin,
                                  options.width_ibin)
 
         E.info("Column boundaries are: %s" % str(change_bins))

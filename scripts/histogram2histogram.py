@@ -136,9 +136,9 @@ def main(argv=None):
             percent_cumul_up = float(cumul_up) / total
             percent_cumul_down = float(cumul_down) / total
 
-            print(form % \
-                (bin, val, percent, cumul_up, percent_cumul_up,
-                 cumul_down, percent_cumul_down))
+            print(form %
+                  (bin, val, percent, cumul_up, percent_cumul_up,
+                   cumul_down, percent_cumul_down))
 
             cumul_down -= val
 

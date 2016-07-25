@@ -75,8 +75,15 @@ import CGAT.IOTools as IOTools
 import CGAT.Genomics as Genomics
 from .AString import AString
 import pysam
-import future
 from future.moves import dbm
+
+IS_PY3 = sys.version_info.major >= 3
+
+
+if IS_PY3:
+    from io import StringIO
+else:
+    from cStringIO import StringIO
 
 
 class Uncompressor:
@@ -151,14 +158,15 @@ def writeFragments(outfile_fasta,
 
 def gzip_mangler(s):
 
-    xfile = io.StringIO()
-
+    xfile = StringIO()
     gzipfile = gzip.GzipFile(fileobj=xfile, mode="wb")
     gzipfile.write(s)
     gzipfile.close()
 
     m = xfile.getvalue()
     xfile.close()
+    # write identifier
+
     return m
 
 
@@ -170,6 +178,7 @@ def gzip_demangler(s):
     else:
         gzipfile = gzip.GzipFile(fileobj=io.BytesIO(s), mode="rb")
     m = gzipfile.readline()
+
     return m
 
 
@@ -338,7 +347,10 @@ class MultipleFastaIterator:
             if self.format == "tar.gz" or self.format == "tar" or \
                (self.format == "auto" and filename.endswith("tar.gz")):
                 if filename == "-":
-                    tf = tarfile.open(fileobj=sys.stdin.buffer, mode="r|*")
+                    if IS_PY3:
+                        tf = tarfile.open(fileobj=sys.stdin.buffer, mode="r|*")
+                    else:
+                        tf = tarfile.open(fileobj=sys.stdin, mode="r|*")
                 else:
                     tf = tarfile.open(filename, mode="r")
                 for f in tf:
@@ -544,7 +556,6 @@ def createDatabase(db, iterator,
 
                 outfile_index.write("\t%i\n" % lsequence)
 
-            # write identifier
             identifier_pos = outfile_fasta.tell()
             outfile_fasta.write(mangler(">%s\n" % out_identifier))
             sequence_pos = outfile_fasta.tell()
@@ -935,8 +946,10 @@ class CGATIndexedFasta:
         elif as_array:
             return p
         else:
-            # cast to string
-            return p[:]
+            if IS_PY3:
+                return p.tostring().decode("ascii")
+            else:
+                return p.tostring()
 
     def getRandomCoordinates(self, size):
         """returns coordinates for a random fragment of size #.

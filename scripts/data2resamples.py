@@ -1,5 +1,4 @@
-'''
-data2resamples.py - template for CGAT scripts
+'''data2resamples.py - template for CGAT scripts
 ====================================================
 
 :Author: Mike Morgan
@@ -10,22 +9,22 @@ data2resamples.py - template for CGAT scripts
 Purpose
 -------
 
-Generate ``n`` resampled data sets.  Randomly resampling a single replicate
-with replacement at each time point.
+Generate ``n`` resampled data sets.  Randomly resampling a single
+replicate with replacement at each time point.
 
 Usage
 -----
 
-To generate n number of resampled pseudo-data sets.  For each time point a
-random replicate is selected and the expression profiles for all genes
-generated as a single file.  File names are output with an iteration number
-for identification in later stages.  This is akin to bootstrapping
-the samples rather than the genes.  Data can later be combined by either
-averaging across data-sets or using consensus clustering as implemented in
-pipeline_timeseries.py.
+To generate n number of resampled pseudo-data sets.  For each time
+point a random replicate is selected and the expression profiles for
+all genes generated as a single file.  File names are output with an
+iteration number for identification in later stages.  This is akin to
+bootstrapping the samples rather than the genes.  Data can later be
+combined by either averaging across data-sets or using consensus
+clustering as implemented in pipeline_timeseries.py.
 
-File names are based on the condition, repicates, resample number and input gtf
-file.
+File names are based on the condition, repicates, resample number and
+input gtf file.
 
 Options
 -------

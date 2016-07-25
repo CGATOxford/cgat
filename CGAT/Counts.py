@@ -936,7 +936,7 @@ def thresholdBins(indices, counts, s_min):
     '''use counts (np array) to remove bins from indices based on
     threshold (s_min)'''
     output_indices_keep = copy.copy(indices)
-    for key in list(indices.keys()):
+    for key in sorted(indices.keys()):
         if counts[key] < s_min:
             output_indices_keep.pop(key)
 

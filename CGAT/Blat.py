@@ -180,7 +180,7 @@ class Match:
             self.strand = "-"
 
     def switchTargetStrand(self):
-        """switch the target strand. 
+        """switch the target strand.
 
         Use in cases in which a feature has been defined on the
         negative target strand with reverse coordinates. The result
@@ -294,8 +294,8 @@ class Match:
     def getBlocks(self):
         """return a list of aligned blocks."""
         return list(zip(self.mQueryBlockStarts,
-                   self.mSbjctBlockStarts,
-                   self.mBlockSizes))
+                        self.mSbjctBlockStarts,
+                        self.mBlockSizes))
 
     def __str__(self):
         return "\t".join(map(str, (
@@ -391,8 +391,8 @@ class Match:
 
         self.mQueryFrom, self.mQueryTo, self.mSbjctFrom, self.mSbjctTo = \
             list(map(int,
-                (self.mQueryFrom, self.mQueryTo,
-                 self.mSbjctFrom, self.mSbjctTo)))
+                     (self.mQueryFrom, self.mQueryTo,
+                      self.mSbjctFrom, self.mSbjctTo)))
 
         # queryfrom and queryto are always forward strand coordinates
         if use_strand and self.strand == "-":
@@ -874,7 +874,7 @@ def getComponents(matches, max_distance=0, min_overlap=0, by_query=False):
     """return overlapping matches.
 
     max_distance
-       allow reads to be joined if they are # residues apart. 
+       allow reads to be joined if they are # residues apart.
        Adjacent reads are 1 residue apart, overlapping reads are 0 residues
        apart
     min_overlap

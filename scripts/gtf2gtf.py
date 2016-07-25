@@ -1253,7 +1253,7 @@ def main(argv=None):
 
         gene_dict = dict(list(zip(dup_gene, ([0] * len(dup_gene)))))
         transcript_dict = dict(list(zip(dup_transcript,
-                                   ([0] * len(dup_transcript)))))
+                                        ([0] * len(dup_transcript)))))
 
         for gtf in gtfs:
             if gtf.feature == "CDS":

@@ -877,14 +877,16 @@ def main(argv=None):
                             prefix=prefix))
 
         elif c == "classifier":
-            counters.append(GeneModelAnalysis.Classifier(filename_gff=options.filename_gff,
-                                       fasta=fasta,
-                                       options=options, prefix=prefix))
+            counters.append(GeneModelAnalysis.Classifier(
+                filename_gff=options.filename_gff,
+                fasta=fasta,
+                options=options, prefix=prefix))
 
         elif c == "classifier-rnaseq":
-            counters.append(GeneModelAnalysis.ClassifierRNASeq(filename_gff=options.filename_gff,
-                                             fasta=fasta,
-                                             options=options, prefix=prefix))
+            counters.append(GeneModelAnalysis.ClassifierRNASeq(
+                filename_gff=options.filename_gff,
+                fasta=fasta,
+                options=options, prefix=prefix))
         elif c == "classifier-rnaseq-splicing":
             counters.append(GeneModelAnalysis.ClassifierRNASeqSplicing(
                 filename_gff=options.filename_gff,

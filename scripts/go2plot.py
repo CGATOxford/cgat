@@ -1,5 +1,5 @@
 '''
-go2plot.py - 
+go2plot.py -
 ======================================================
 
 :Author: Andreas Heger
@@ -11,7 +11,7 @@ Purpose
 -------
 
 .. todo::
-   
+
    describe purpose of the script.
 
 Usage
@@ -31,6 +31,8 @@ Command line options
 --------------------
 
 '''
+from __future__ import print_function
+
 import sys
 import math
 import CGAT.Experiment as E
@@ -93,10 +95,10 @@ def makeheader(input, annlist, numcols, numpages):
     else:
         print("%!PS-Adobe-2.0")
         print("%%Pages: ", numpages)
-    print("%%BoundingBox: ", \
-          10, \
-          posy(collen + 4) + 60, \
-          int(10 + (numcols - 1) * maincolsep + labelsize / 3 + (numcols) * posx(len(input))),\
+    print("%%BoundingBox: ",
+          10,
+          posy(collen + 4) + 60,
+          int(10 + (numcols - 1) * maincolsep + labelsize / 3 + (numcols) * posx(len(input))),
           int(posy(0) + labelsize) + 60)
     print("""
 /makebox {
@@ -170,9 +172,9 @@ def makecolor(color):
         color = min(1, 1 - 2 * color)
         col0 = [0.1, 0.2, 0.05]
         col1 = [0.9, 1, 0.2]
-    print(col0[0] + color * (col1[0] - col0[0]),\
-        col0[1] + color * (col1[1] - col0[1]),\
-        col0[2] + color * (col1[2] - col0[2]))
+    print(col0[0] + color * (col1[0] - col0[0]),
+          col0[1] + color * (col1[1] - col0[1]),
+          col0[2] + color * (col1[2] - col0[2]))
 
 
 def makeps(i, j, element):

@@ -2,7 +2,6 @@
 cgat_script_template.py
 =============================================
 
-:Author: 
 :Release: $Id$
 :Date: |today|
 :Tags: Python
@@ -30,8 +29,8 @@ Command line options
 
 import sys
 import re
-import urllib.request, urllib.error, urllib.parse
-import urllib.request, urllib.parse, urllib.error
+from future.moves.urllib.parse import urlencode
+from future.moves.urllib.request import urlopen
 import xml.etree.ElementTree as ET
 
 import CGAT.Experiment as E
@@ -63,13 +62,13 @@ def main(argv=None):
               'usehistory': 'y',
               }
 
-    params = urllib.parse.urlencode(params)
+    params = urlencode(params)
     query_filter = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi'
     query_retrieve = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi'
     query_fetch = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi'
     query_summary = 'http://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi'
 
-    data = urllib.request.urlopen(query_filter, params)
+    data = urlopen(query_filter, params)
     etree = ET.parse(data)
     root = etree.getroot()
 
@@ -84,10 +83,10 @@ def main(argv=None):
               'db': 'pubmed',
               }
 
-    params = urllib.parse.urlencode(params)
+    params = urlencode(params)
     # necessary to preserve 1to1 links
     params += "&" + "&".join(["id=%s" % x for x in uids])
-    data = urllib.request.urlopen(query_retrieve, params)
+    data = urlopen(query_retrieve, params)
 
     etree = ET.parse(data)
     root = etree.getroot()
@@ -104,8 +103,8 @@ def main(argv=None):
     params = {'db': 'gds',
               'id': ",".join(uids)}
 
-    params = urllib.parse.urlencode(params)
-    data = urllib.request.urlopen(query_fetch, params).read()
+    params = urlencode(params)
+    data = urlopen(query_fetch, params).read()
 
     map_uid2accession = {}
     map_uid2description = {}
@@ -148,8 +147,8 @@ def main(argv=None):
                   'id': pmid,
                   'retmode': 'xml'}
 
-        params = urllib.parse.urlencode(params)
-        data = urllib.request.urlopen(query_fetch, params)
+        params = urlencode(params)
+        data = urlopen(query_fetch, params)
 
         etree = ET.parse(data)
         root = etree.getroot()

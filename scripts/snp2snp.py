@@ -79,7 +79,7 @@ def validateSNPs(options, fastafile):
             :8]
         pos, consensus_quality, genotype_quality, mapping_quality, read_depth = \
             list(map(int, (pos, consensus_quality,
-                      genotype_quality, mapping_quality, read_depth)))
+                           genotype_quality, mapping_quality, read_depth)))
 
         if reference == "*":
             # todo: treat indels

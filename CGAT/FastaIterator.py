@@ -90,6 +90,9 @@ class FastaIterator:
     def __next__(self):
         return next(self.iterator)
 
+    def next(self):
+        return next(self.iterator)
+
 
 def iterate(infile, comment="#", fold=False):
     '''iterate over fasta data in infile

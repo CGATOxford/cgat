@@ -80,10 +80,10 @@ Command line options
 '''
 
 import sys
-import itertools
+from future.moves.itertools import zip_longest
+
 import CGAT.IOTools as IOTools
 import CGAT.Fastq as Fastq
-
 import CGAT.Experiment as E
 
 
@@ -128,8 +128,8 @@ def main(argv=None):
 
     E.info("iterating over fastq files")
     f1_count = 0
-    for f1, f2 in itertools.zip_longest(Fastq.iterate(fastq1),
-                                         Fastq.iterate(fastq2)):
+    for f1, f2 in zip_longest(Fastq.iterate(fastq1),
+                              Fastq.iterate(fastq2)):
         if not (f1 and f2) or (not f2 and f1):
             try:
                 raise PairedReadError(

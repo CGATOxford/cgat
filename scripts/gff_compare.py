@@ -32,6 +32,8 @@ Command line options
 --------------------
 
 '''
+from __future__ import print_function
+
 import sys
 import re
 import CGAT.Experiment as E
@@ -457,8 +459,8 @@ def main(argv=None):
 # CC: (sensitivity + specificity) / 2
 #
 # Values are calculated where both exon boundaries of a target exon have to be
-# correct (category "full") and where only one exon boundary has to be correct (catgory "half").""" %\
-            (options.max_exon_slippage))
+# correct (category "full") and where only one exon boundary has to be correct (catgory "half").""" %
+              (options.max_exon_slippage))
 
         headers = ("category", "contig", "strand", "tp", "fp", "tn",
                    "fn", "sp", "sn", "cc", "me", "we", "me", "we")
@@ -733,7 +735,7 @@ def main(argv=None):
 
                 spec, sens = CalculateSpecificitySensitivity(tp, fp, tn, fn)
                 cc = (spec + sens) / 2.0
-                print("full\t%s\t%s\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%s\t%s" % \
+                print("full\t%s\t%s\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%s\t%s" %
                       (this_name, this_strand,
                        tp, fp, tn, fn,
                        spec, sens, cc,
@@ -743,7 +745,7 @@ def main(argv=None):
                 spec, sens = CalculateSpecificitySensitivity(
                     ptp, pfp, ptn, pfn)
                 cc = (spec + sens) / 2.0
-                print("half\t%s\t%s\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%s\t%s" %\
+                print("half\t%s\t%s\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%s\t%s" %
                       (this_name, this_strand,
                        ptp, pfp, ptn, pfn,
                        spec, sens, cc,
@@ -763,7 +765,7 @@ def main(argv=None):
 
         spec, sens = CalculateSpecificitySensitivity(ttp, tfp, ttn, tfn)
         cc = (spec + sens) / 2.0
-        print("full\t%s\t%s\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%5.2f\t%5.2f" % \
+        print("full\t%s\t%s\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%5.2f\t%5.2f" %
               ("all", "all", ttp, tfp, ttn, tfn,
                spec, sens, cc,
                tmissed_exons, twrong_exons,
@@ -772,7 +774,7 @@ def main(argv=None):
 
         spec, sens = CalculateSpecificitySensitivity(tptp, tpfp, tptn, tpfn)
         cc = (spec + sens) / 2.0
-        print("half\t%s\t%s\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%5.2f\t%5.2f" %\
+        print("half\t%s\t%s\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%5.2f\t%5.2f" %
               ("all", "all", tptp, tpfp, tptn, tpfn,
                spec, sens, cc,
                tmissed_exons, twrong_exons,
@@ -803,8 +805,8 @@ def main(argv=None):
 # CC: (sensitivity + specificity) / 2
 #
 # Values are calculated where both exon boundaries of a target exon have to be
-# correct (category "full") and where only one exon boundary has to be correct (catgory "half").""" %\
-            (options.max_exon_slippage))
+# correct (category "full") and where only one exon boundary has to be correct (catgory "half").""" %
+              (options.max_exon_slippage))
 
         out_options = []
         if options.write_missed_genes:
@@ -834,9 +836,9 @@ def main(argv=None):
                                 outfile=open(options.outfile_pattern % "target", "w"))
 
         if options.loglevel >= 1:
-            print("# reference: genes=%6i, matches=%6i, partial=%6i, extra=%6i" % \
+            print("# reference: genes=%6i, matches=%6i, partial=%6i, extra=%6i" %
                   (ref_total, ref_match, ref_partial, ref_extra))
-            print("# target   : genes=%6i, matches=%6i, partial=%6i, extra=%6i" % \
+            print("# target   : genes=%6i, matches=%6i, partial=%6i, extra=%6i" %
                   (target_total, target_match, target_partial, target_extra))
 
         headers = ("category", "tp", "fp", "tn", "fn",
@@ -856,7 +858,7 @@ def main(argv=None):
         if tp + fp == 0:
             fp = nreferences
 
-        print("full\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%5.2f\t%5.2f" % \
+        print("full\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%5.2f\t%5.2f" %
               (tp, fp, tn, fn,
                spec, sens, cc,
                missed_genes, wrong_genes,
@@ -872,7 +874,7 @@ def main(argv=None):
 
         spec, sens = CalculateSpecificitySensitivity(tp, fp, tn, fn)
         cc = (spec + sens) / 2.0
-        print("half\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%5.2f\t%5.2f" % \
+        print("half\t%i\t%i\t%i\t%i\t%5.2f\t%5.2f\t%5.2f\t%i\t%i\t%5.2f\t%5.2f" %
               (tp, fp, tn, fn,
                spec, sens, cc,
                missed_genes, wrong_genes,

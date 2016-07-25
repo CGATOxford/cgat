@@ -122,6 +122,9 @@ class VCFFile:
             raise StopIteration
         return VCFEntry(data, self.samples)
 
+    def next(self):
+        return self.__next__()
+
 if __name__ == "__main__":
 
     inf = VCFFile(sys.stdin)

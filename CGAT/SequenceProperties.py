@@ -413,7 +413,7 @@ class SequencePropertiesCpg(SequencePropertiesNA, SequencePropertiesDN):
         if self.mLength > 0:
             self.mCpG_density = (float(self.mCountsDinuc["CG"]) /
                                  (float(self.mLength) / 2.0))
-            if (self.mCountsNA["C"] * self.mCountsNA["G"]) / self.mLength > 0:
+            if (float(self.mCountsNA["C"] * self.mCountsNA["G"])) / self.mLength > 0:
                 self.mCpG_ObsExp = ((float(self.mCountsDinuc["CG"])) /
                                     ((float(self.mCountsNA["C"]) *
                                       float(self.mCountsNA["G"])) /

@@ -315,7 +315,6 @@ class SamplerPermutation(Sampler):
 
 
 class SamplerBlocks(Sampler):
-
     """move blocks of fragments to take into account clustering."""
 
     def sample(self):
@@ -325,8 +324,7 @@ class SamplerBlocks(Sampler):
 
 
 class SamplerGaps(Sampler):
-
-    """rearrange gaps within a block randomly. 
+    """rearrange gaps within a block randomly.
 
     This sampler will preserve same of the clustering structure of segments."""
 
@@ -1226,7 +1224,7 @@ def main(argv=sys.argv):
         plt.figure()
         plt.title("segments per label")
         plt.barh(list(range(0, len(labels))), [segments_per_label[x]
-                                         for x in labels], height=0.5)
+                                               for x in labels], height=0.5)
         plt.yticks(list(range(0, len(labels))), labels)
         plt.ylabel("segments per label")
         plt.xlabel("absolute frequency")

@@ -139,6 +139,9 @@ class multiway_groupby(object):
 
         return targetkey, result
 
+    def next(self):
+        return self.__next__()
+
 
 def main(argv=None):
     """script main.

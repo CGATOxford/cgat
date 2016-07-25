@@ -104,6 +104,9 @@ class counter_gff:
 
         return entry
 
+    def next(self):
+        return self.__next__()
+
     def __iter__(self):
         return self
 
@@ -144,6 +147,9 @@ class counter_exons:
 
         return entry
 
+    def next(self):
+        return self.__next__()
+
     def __iter__(self):
         return self
 
@@ -183,8 +189,6 @@ class counter_exons:
                                    Stats.Summary(intron_sizes),
                                    Stats.Summary(transcript_lengths),
                                    )))
-
-# ------------------------------------------------------------------------
 
 
 def main(argv=sys.argv):

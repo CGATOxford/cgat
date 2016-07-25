@@ -36,6 +36,7 @@ import sys
 import glob
 import imp
 import collections
+import CGAT.IOTools as IOTools
 
 
 def mapKeyword2Script(path):
@@ -102,7 +103,7 @@ def main(argv=None):
             print('CGAT tools are grouped by keywords. The following keywords')
             print('are defined:\n')
             print(("%s\n" % printListInColumns(list(map_keyword2script.keys()),
-                                              3)))
+                                               3)))
 
         if 'all' in argv[2:]:
             print("The list of all available commands is:\n")

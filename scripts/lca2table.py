@@ -352,8 +352,9 @@ def main(argv=None):
                     [level,
                      taxa,
                      str(count),
-                     str(float(count)/total_level),
-                     str(float(count)/(float(total_level)/1000000))]) + "\n")
+                     "{:.8}".format(float(count)/total_level),
+                     "{:.8}".format(float(count)/(float(total_level)/1000000))])
+                                     + "\n")
 
         E.info(c)
 

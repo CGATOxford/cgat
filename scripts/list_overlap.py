@@ -54,6 +54,7 @@ Command line options
 --------------------
 
 '''
+from __future__ import print_function
 
 import sys
 import os.path as op

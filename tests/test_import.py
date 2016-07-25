@@ -45,6 +45,7 @@ EXCLUDE = (
     # (it seems using C compiler for C++ code).
     'pipeline_intervals',
     'PipelinePeakcalling',
+    'IndexedFasta',  # fails with relative import error in py2
     'pipeline_peakcalling',
     'bam2transcriptContribution',
     'beds2counts',

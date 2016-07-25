@@ -91,10 +91,10 @@ class VariantGetterSqlite(VariantGetter):
 
         self.dbhandle = sqlite3.connect(dbname)
 
-        self.statement = '''SELECT 
-                   pos, reference, genotype 
+        self.statement = '''SELECT
+                   pos, reference, genotype
                    FROM %(tablename)s
-                   WHERE contig = '%(contig)s' AND 
+                   WHERE contig = '%(contig)s' AND
                    pos BETWEEN %(start)s and %(end)s
                 '''
 
@@ -298,7 +298,7 @@ def buildVariantSequences(indexed_variants, sequences):
     '''build variant sequences by inserting ``variants`` into ``sequences``.
 
     For each sequence, two alleles are returned. Both alleles are initialized
-    as wildtype sequences. In the absence of any phasing information, variants 
+    as wildtype sequences. In the absence of any phasing information, variants
     are preferably added to the second allele, such that the wild-type status
     of the first allele is preserved as much as possible
 
@@ -348,14 +348,14 @@ def buildAlleles(transcript,
 
     1. The exonic sequences are examinated for stop codons.
 
-    If they contain a stop-codon in the last exon, the sequence 
-    will be truncated at the stop. If a stop-codon exists
-    in exons before the last codon, the allele is thought to
-    have been knocked out due to NMD and it is set to 0.
+    If they contain a stop-codon in the last exon, the sequence will
+    be truncated at the stop. If a stop-codon exists in exons before
+    the last codon, the allele is thought to have been knocked out due
+    to NMD and it is set to 0.
 
-    2. If a splice-site is disrupted, the transcript is 
-    truncated (it is not extended to the first stop, as
-    splicing might be recovered).
+    2. If a splice-site is disrupted, the transcript is truncated (it
+    is not extended to the first stop, as splicing might be
+    recovered).
 
     If ``variant_exons`` and ``variant_introns`` are set to
     None, the two wildtype alleles will be returned.
@@ -379,6 +379,7 @@ def buildAlleles(transcript,
     might change within an exon, too.
 
     returns two alleles
+
     '''
 
     result = []
@@ -496,13 +497,13 @@ def buildAlleles(transcript,
                     print(x + exon.start, ":%s:" % c)
             print()
             print(exons[exon_key])
-            print("genome_pos=", genome_pos, \
-                ",exon=%i-%i" % (genome_pos, genome_pos + len(exon_seq)), \
-                ", len(exon_seq)=", len(exon_seq), \
-                ", len(exon)=", exon.end - exon.start, \
-                ", offsets=%i,%i," % (start_offset, end_offset), \
-                ", offset at start=", _getOffset( exon.start, offsets), \
-                ", offset at end=", _getOffset(exon.end, offsets))
+            print("genome_pos=", genome_pos,
+                  ",exon=%i-%i" % (genome_pos, genome_pos + len(exon_seq)),
+                  ", len(exon_seq)=", len(exon_seq),
+                  ", len(exon)=", exon.end - exon.start,
+                  ", offsets=%i,%i," % (start_offset, end_offset),
+                  ", offset at start=", getOffset(exon.start, offsets),
+                  ", offset at end=", getOffset(exon.end, offsets))
 
         for exon in transcript[1:]:
 
@@ -602,12 +603,12 @@ def buildAlleles(transcript,
                             print(x + last_end, ":%s:" % c)
                     print()
                     print(introns[intron_key])
-                    print("genome_pos=", genome_pos, \
-                        ",intron=%i-%i" % (genome_pos, genome_pos + len(intron_seq)), \
-                        ", len(intron_seq)=", len(intron_seq), \
-                        ", len(intron)=", exon.start - last_end, \
-                        ", offset at start=", _getOffset( last_end, offsets), \
-                        ", offset at end=", _getOffset(exon.start, offsets))
+                    print("genome_pos=", genome_pos,
+                          ",intron=%i-%i" % (genome_pos, genome_pos + len(intron_seq)),
+                          ", len(intron_seq)=", len(intron_seq),
+                          ", len(intron)=", exon.start - last_end,
+                          ", offset at start=", _getOffset(last_end, offsets),
+                          ", offset at end=", _getOffset(exon.start, offsets))
                 else:
                     print("empty intron")
 
@@ -651,13 +652,13 @@ def buildAlleles(transcript,
                         print(x + exon.start, ":%s:" % c)
                 print()
                 print(exons[exon_key])
-                print("genome_pos=", genome_pos, \
-                    ",exon=%i-%i" % (genome_pos, genome_pos + len(exon_seq)), \
-                    ", len(exon_seq)=", len(exon_seq), \
-                    ", len(exon)=", exon.end - exon.start, \
-                    ", offsets=%i,%i," % (start_offset, end_offset), \
-                    ", offset at start=", _getOffset( exon.start, offsets), \
-                    ", offset at end=", _getOffset(exon.end, offsets))
+                print("genome_pos=", genome_pos,
+                      ",exon=%i-%i" % (genome_pos, genome_pos + len(exon_seq)),
+                      ", len(exon_seq)=", len(exon_seq),
+                      ", len(exon)=", exon.end - exon.start,
+                      ", offsets=%i,%i," % (start_offset, end_offset),
+                      ", offset at start=", getOffset(exon.start, offsets),
+                      ", offset at end=", getOffset(exon.end, offsets))
 
             genome_pos += len(exon_seq)
 

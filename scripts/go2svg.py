@@ -421,7 +421,7 @@ class GoPlot:
                 math.floor((len(self.mThresholdsColour) + 1) / 2.0))
 
             d = list(map(lambda x, y: (x - y) / num_steps,
-                    self.mMiddleColour, self.startColour))
+                         self.mMiddleColour, self.startColour))
             for x in range(num_steps):
                 self.mColours.append((self.startColour[0] + x * d[0],
                                       self.startColour[1] + x * d[1],
@@ -430,7 +430,7 @@ class GoPlot:
             # self.mColours.append( self.mMiddleColour )
 
             d = list(map(lambda x, y: (x - y) / num_steps,
-                    self.mStopColour, self.mMiddleColour))
+                         self.mStopColour, self.mMiddleColour))
             for x in range(1, num_steps):
                 self.mColours.append((self.mMiddleColour[0] + x * d[0],
                                       self.mMiddleColour[1] + x * d[1],
@@ -856,7 +856,7 @@ def main(argv=None):
         # collect all columns
         try:
             values, nremoved, no_fdr = Collect(
-               IOTools.openFile(filename, "r"),
+                IOTools.openFile(filename, "r"),
                 with_headers=options.headers,
                 annotator_format=options.annotator,
                 delims=options.delims,

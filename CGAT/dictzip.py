@@ -147,12 +147,12 @@ class GzipFile:
             self.buffersize = buffersize
             # dictzip's default chunk size of 58315 is too conservative
             if chunksize > 65400:
-                raise IOError("Chunk size " + \
-                    str(chunksize) + " is too large; maximum is 65400")
+                raise IOError("Chunk size " +
+                              str(chunksize) + " is too large; maximum is 65400")
             if self.dictzip and buffersize // chunksize > 32764:
-                raise IOError("Buffer size " + \
-                    str(buffersize) + \
-                    " is too large; may result in too many chunks")
+                raise IOError("Buffer size " +
+                              str(buffersize) +
+                              " is too large; may result in too many chunks")
 
             self._init_write(filename)
 
@@ -287,15 +287,15 @@ class GzipFile:
             if xtra[ptr] != 'R' or xtra[ptr + 1] != 'A':
                 continue     # magic word for dictzip data is 'R'andom 'A'ccess
             if xtra[ptr + 4] != '\001' or xtra[ptr + 5] != '\000':
-                raise IOError("Unrecognized DictZip version: " + \
-                    str(ord(xtra[ptr + 4]) + 256 * ord(xtra[ptr + 5])))
+                raise IOError("Unrecognized DictZip version: " +
+                              str(ord(xtra[ptr + 4]) + 256 * ord(xtra[ptr + 5])))
             # chunk length
             chlen = ord(xtra[ptr + 6]) + 256 * ord(xtra[ptr + 7])
             # chunk count
             chcnt = ord(xtra[ptr + 8]) + 256 * ord(xtra[ptr + 9])
             if chcnt * 2 != sublen - 6:
-                raise IOError("Invalid DictZip header: wrong number of chunks:" + \
-                    str(chcnt) + " expected " + str((sublen - 6) // 2))
+                raise IOError("Invalid DictZip header: wrong number of chunks:" +
+                              str(chcnt) + " expected " + str((sublen - 6) // 2))
             flushpoints = [0]
             for idx in range(chcnt):
                 flushpoints.append(
