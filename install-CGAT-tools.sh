@@ -689,6 +689,8 @@ if [ $TRAVIS_INSTALL ] ; then
 
   OS="travis"
   conda_install
+  # AH: patch until pysam 0.9.1 in cgat channel
+  conda update pysam
   conda_test
 
 else 
