@@ -178,10 +178,22 @@ def check_script(test_name, script, stdin,
                 if a != b:
                     fail = True
                     msg = ("files %s and %s are not the same\n"
-                           "%s\nmd5: output=%s reference=%s") %\
+                           "%s\nmd5: output=%i, %s reference=%i, %s") %\
                         (output, reference, statement,
+                         len(a),
                          compute_checksum(output),
+                         len(b),
                          compute_checksum(reference))
+
+                    diffs = []
+                    for aa, bb in zip(a, b):
+                        if aa != bb:
+                            diffs.append((aa, bb))
+                            if len(diffs) > 10:
+                                break
+
+                    msg += "first 10 differences: {}".format(
+                        "\n--\n".join(["\n".join(x) for x in diffs]))
                     break
 
     t2 = time.time()

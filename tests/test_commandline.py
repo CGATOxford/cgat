@@ -53,6 +53,8 @@ EXPRESSIONS = (
 EXCLUDE = ("__init__.py",
            "version.py",
            "cgat.py",
+           "gtf2table.py",  # fails with pysam include issue
+           "bed2table.py",  # fails with pysam include issue
            "fasta2bed.py",   # fails because of pybedtools rebuild
            )
 
