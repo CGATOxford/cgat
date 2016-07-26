@@ -236,7 +236,7 @@ Timeseries = Extension(
 GeneModelAnalysis = Extension(
     "CGAT.GeneModelAnalysis",
     ["CGAT/GeneModelAnalysis.pyx"],
-    include_dirs=pysam.get_include(),
+    include_dirs=pysam.get_include() + [numpy.get_include()],
     library_dirs=[],
     libraries=[],
     define_macros=pysam.get_defines(),
