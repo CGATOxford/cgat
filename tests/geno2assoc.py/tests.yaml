@@ -1,0 +1,41 @@
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+test_ld:
+    stdin: null
+    outputs: [<DIR>/test_ld.ld.gz]
+    references: [chr20.ld.gz]
+    options: --program=plink2  --input-file-format=plink_binary  --method=ld  --ld-statistic=r2  --ld-min=0.2  --ld-format=table  --memory="60G"  --threads=1  --output-file-pattern=<DIR>/test_ld  <DIR>/chr20.bed,<DIR>/chr20.bim,<DIR>/chr20.fam
+
+test_logistic:
+    stdin: null
+    outputs: [<DIR>/test_out.assoc.logistic]
+    references: [pseudo.assoc.logistic]
+    options: --program=plink2  --input-file-format=plink_binary  --phenotypes-file=pseudo.pheno  --pheno=1  --covariates-file=pseudo.covar  --covariate-column=BATCH,,f.22009.0.1,f.22009.0.2,f.22009.0.3,f.22009.0.4,f.22009.0.5  --method=association  --keep=pseudo.keep  --association-method=logistic  --genotype-rate=0.01  --hardy-weinberg=1e-50  --min-allele-frequency=0.3  --output-file-pattern=test_out  --memory="60G" --log=test_logistic.log  chr20.fam,chr20.bim,chr20.bed
+
+test_haplotypeblocks:
+    stdin: null
+    outputs: [<DIR>/test_out.blocks, <DIR>/test_out.blocks.det]
+    references: [pseudo.blocks, pseudo.blocks.det]
+    options: --program=plink2  --input-file-format=plink_binary   --method=estimate_haplotypes  --haplotype-frequency=0.1  --haplotype-size=1000  --keep=pseudo.keep  --association-method=logistic  --genotype-rate=0.01  --hardy-weinberg=1e-50  --min-allele-frequency=0.3  --output-file-pattern=test_out  --memory="60G"  --log=pseudo_haplotypes.log chr20.fam,chr20.bim,chr20.bed
+
+test_epistasis:
+    stdin: null
+    outputs: [<DIR>/test_out.epi.cc, <DIR>/test_out.epi.cc.summary]
+    references: [pseudo.epi.cc, pseudo.epi.cc.summary]
+    options: --program=plink2  --input-file-format=plink_binary   --method=epistasis --epistasis-method=epistasis  --set-file=<DIR>/snp.set  --set-method="set-by-all"  --epistasis-threshold=0.001  --epistasis-report-threshold=1.0   --keep=pseudo.keep  --genotype-rate=0.01  --hardy-weinberg=1e-50  --min-allele-frequency=0.3  --output-file-pattern=pseudo  --memory="60G"  --log=pseudo_epistasis.log chr20.fam,chr20.bim,chr20.bed
+
+test_updategender:
+    stdin: null
+    outputs: [<DIR>/test_out.raw]
+    references: [pseudo_gender.raw]
+    options: --program=plink2  --input-file-format=plink_binary  --method=format --format-method=change_format  --update-sample-attribute=gender  --format-parameter=<DIR>/pseudo.gender  --reformat-type=raw  --output-file-pattern=test_out  --memory="60G"  chr20.fam,chr20.bim,chr20.bed
+
+test_grm:
+    stdin: null
+    outputs: [<DIR>/test_out.grm.bin, <DIR>/test_out.grm.N.bin, <DIR>/test_out.grm.id]
+    references: [pseudo_matrix.grm.bin, pseudo_matrix.grm.N.bin, pseudo_matrix.grm.id]
+    options: --program=gcta  --input-file-format=plink_binary --keep-individuals=pseudo.keep  --method=matrix --matrix-compression=bin  --matrix-form=grm  --output-file-pattern=test_out --log=matrix.log  --memory="60G"  chr20.fam,chr20.bed,chr20.bim

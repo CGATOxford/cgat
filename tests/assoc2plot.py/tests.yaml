@@ -1,0 +1,23 @@
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+test_manhattan:
+    stdin: null
+    outputs: [stdout]
+    references: [gwas.results]
+    options: --plot-type=manhattan  --resolution=genome_wide  --save-path=<DIR>/manhattan.png  --log=manhattan.log  <DIR>/chr1.results,<DIR>/chr2.results,<DIR>/chr3.results,<DIR>/chr4.results,<DIR>/chr5.results,<DIR>/chr6.results,<DIR>/chr7.results,<DIR>/chr8.results,<DIR>/chr9.results,<DIR>/chr10.results,<DIR>/chr11.results,<DIR>/chr12.results,<DIR>/chr13.results,<DIR>/chr14.results,<DIR>/chr15.results,<DIR>/chr16.results,<DIR>/chr17.results,<DIR>/chr18.results,<DIR>/chr19.results,<DIR>/chr20.results,<DIR>/chr21.results,<DIR>/chr22.results
+
+test_qqplot:
+    stdin: null
+    outputs: [<DIR>/qq_out.png]
+    references: [qqplot.png]
+    options: --plot-type=qqplot  --resolution=genome_wide  --save-path=<DIR>/qq_out.png  --log=qqplot.log  <DIR>/chr1.results,<DIR>/chr2.results,<DIR>/chr3.results,<DIR>/chr4.results,<DIR>/chr5.results,<DIR>/chr6.results,<DIR>/chr7.results,<DIR>/chr8.results,<DIR>/chr9.results,<DIR>/chr10.results,<DIR>/chr11.results,<DIR>/chr12.results,<DIR>/chr13.results,<DIR>/chr14.results,<DIR>/chr15.results,<DIR>/chr16.results,<DIR>/chr17.results,<DIR>/chr18.results,<DIR>/chr19.results,<DIR>/chr20.results,<DIR>/chr21.results,<DIR>/chr22.results
+
+test_epiplot:
+    stdin: null
+    outputs: [<DIR>/epiout_manhattan.png, <DIR>/epiout_qqplot.png]
+    references: [epitest_manhattan.png, epitest_qqplot.png]
+    options: --plot-type=epistasis  --resolution=chromosome  --save-path=<DIR>/epiout  --log=epiplot.log  <DIR>/epistasis.epi.cc
