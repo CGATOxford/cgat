@@ -143,7 +143,7 @@ def concatenateTables(outfile, options, args):
         if min(ncolumns) != max(ncolumns):
             raise ValueError('tables have unequal number of columns '
                              '(min=%i, max=%i)' %
-                             (min(ncolumns) != max(ncolumns)))
+                             (min(ncolumns),  max(ncolumns)))
         # create a pseudo dictionary of columns
         titles = collections.OrderedDict(
             [(x, x) for x in range(min(ncolumns))])

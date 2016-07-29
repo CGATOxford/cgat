@@ -532,7 +532,7 @@ def CombineOverlaps(old_gff, method="combine"):
             if method[0] == "c":
                 last_e.start = min(last_e.start, e.start)
                 last_e.end = max(last_e.end, e.end)
-                last_e.mInfo += " ; " + e.mInfo
+                last_e.attributes += " ; " + e.attributes
 
     new_gff.append(last_e)
 
@@ -565,7 +565,7 @@ def SortPerContig(gff):
 def toIntronIntervals(chunk):
     '''convert a set of gtf elements within a transcript to intron coordinates.
 
-    Will raise an error if more than one transcript is submitted.
+    Will use first transcript_id found.
 
     Note that coordinates will still be forward strand coordinates
     '''
@@ -577,8 +577,6 @@ def toIntronIntervals(chunk):
     for gff in chunk:
         assert gff.strand == strand, "features on different strands."
         assert gff.contig == contig, "features on different contigs."
-        assert gff.transcript_id == transcript_id, \
-            "more than one transcript submitted"
 
     intervals = Intervals.combine([(x.start, x.end)
                                    for x in chunk if x.feature == "exon"])

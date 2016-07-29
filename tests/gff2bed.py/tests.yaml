@@ -17,4 +17,9 @@ convert_gtf_feature:
     references: [mm9_ens67_geneset_100_feature.bed]
     options: --is-gtf --set-name=gene_id --track=feature
     
+convert_to_bed12:
+    stdin: mm9_ens67_geneset_100.gtf
+    outputs: [stdout]
+    references: [mm9_ens67_geneset_100_transcript_bed12.bed]
+    options: --bed12-from-transcripts
     

@@ -1350,7 +1350,8 @@ class DEExperiment_Sleuth(DEExperiment):
             fdr=0.1,
             lrt=False,
             reduced_model=None,
-            dummy_run=False):
+            dummy_run=False,
+            genewise=False):
 
         if lrt:
             E.info("Note: LRT will not generate fold changes")
@@ -1375,21 +1376,50 @@ class DEExperiment_Sleuth(DEExperiment):
                        if x != "0"]
         variates = "c(%s)" % ",".join(model_terms)
 
-        createSleuthObject = R('''
-        function(design_df){
-        sample_id = design_df$sample
-        kal_dirs <- sapply(sample_id,
-                           function(id) file.path('%(base_dir)s', id))
+        if genewise:
+            createSleuthObject = R('''
+            function(design_df){
+            sample_id = design_df$sample
+            kal_dirs <- sapply(sample_id,
+                function(id) file.path('%(base_dir)s', id))
 
-        design_df <- dplyr::select(design_df, sample = sample,
-                                   %(variates)s)
-        design_df <- dplyr::mutate(design_df, path = kal_dirs)
+            design_df <- dplyr::select(design_df, sample = sample,
+                                       %(variates)s)
+            design_df <- dplyr::mutate(design_df, path = kal_dirs)
 
-        so <- suppressMessages(sleuth_prep(design_df, %(model)s))
-        so <- suppressMessages(sleuth_fit(so))
+            mart <- biomaRt::useMart(biomart = "ENSEMBL_MART_ENSEMBL",
+            dataset = "hsapiens_gene_ensembl",
+            host = 'ensembl.org')
 
-        return(so)
-        }''' % locals())
+            t2g <- biomaRt::getBM(
+                attributes = c("ensembl_transcript_id","ensembl_gene_id",
+                               "external_gene_name"), mart = mart)
+            t2g <- dplyr::rename(t2g, target_id = ensembl_transcript_id,
+                                 ens_gene = ensembl_gene_id,
+                                 ext_gene = external_gene_name)
+            so <- sleuth_prep(design_df, %(model)s,
+                              target_mapping = t2g, aggregation_column = 'ens_gene')
+            so <- suppressMessages(sleuth_fit(so))
+
+            return(so)
+            }''' % locals())
+
+        else:
+            createSleuthObject = R('''
+            function(design_df){
+            sample_id = design_df$sample
+            kal_dirs <- sapply(sample_id,
+                function(id) file.path('%(base_dir)s', id))
+
+            design_df <- dplyr::select(design_df, sample = sample,
+                                       %(variates)s)
+            design_df <- dplyr::mutate(design_df, path = kal_dirs)
+
+            so <- suppressMessages(sleuth_prep(design_df, %(model)s))
+            so <- suppressMessages(sleuth_fit(so))
+
+            return(so)
+            }''' % locals())
 
         so = createSleuthObject(r_design_df)
 

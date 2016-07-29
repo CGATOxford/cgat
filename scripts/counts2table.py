@@ -24,7 +24,8 @@ data to apply some common filtering methods.
 The methods implemented are:
 
 sleuth
-   Application of sleuth
+   Application of sleuth. Use --sleuth-genewise to test at gene rather
+   than transcript level
 
 deseq2
    Application of DESeq2
@@ -267,6 +268,11 @@ def main(argv=None):
                       help=("use the independent hypothesis weighting method "
                             "to obtain weighted FDR"))
 
+    parser.add_option("--sleuth-genewise",
+                      dest="sleuth_genewise",
+                      action="store_true",
+                      help=("run genewise, rather than transcript level testing"))
+
     parser.set_defaults(
         input_filename_tags="-",
         input_filename_result=None,
@@ -295,7 +301,8 @@ def main(argv=None):
         sleuth_counts_dir=None,
         outfile_sleuth_count=None,
         outfile_sleuth_tpm=None,
-        use_ihw=False
+        use_ihw=False,
+        sleuth_genewise=False
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -324,7 +331,8 @@ def main(argv=None):
                                  outfile_prefix=outfile_prefix,
                                  counts=options.outfile_sleuth_count,
                                  tpm=options.outfile_sleuth_tpm,
-                                 fdr=options.fdr)
+                                 fdr=options.fdr,
+                                 genewise=options.sleuth_genewise)
 
     else:
         # create Counts object
