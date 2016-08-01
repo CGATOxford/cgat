@@ -128,20 +128,20 @@ def main(argv=None):
 
         var = pd.Series(df[options.dichot_var].copy(), dtype=np.int64)
         ref = np.int64(options.ref_level)
-        mask = var.isin([ref])
-        # set NA or unobserved to missing, assume missing value is -9 (Plink standard)
-        nas = np.isnan(var)
-        var[~mask] = 1
-        var[mask] = 2
-        var[nas] = -9
+
         # there maybe multiple missing/unobserved data categories to deal with
-        missing = options.missing_label.split(",")
-        if len(missing) > 1:
-            miss_mask = var.isin(missing)
-        else:
-            miss_mask = var.isin(missing)
-        var[miss_mask] = -9
         # output in plink format
+        missing = options.missing_label.split(",")
+        miss_mask = var.isin([int(x) for x in missing])
+        var[miss_mask] = np.nan
+
+        mask = var.isin([ref])
+        var[mask] = 2
+        nas = np.isnan(var)
+        var[~(mask) & ~(nas)] = 1
+
+        # set NA or unobserved to missing, assume missing value is -9 (Plink standard)
+        var[nas] = -9
         p_df = df.loc[:, ("FID", "IID", options.dichot_var)]
         p_df[options.dichot_var] = pd.Series(var, dtype=np.int64)
         p_df.index = p_df["FID"]
