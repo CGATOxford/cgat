@@ -139,7 +139,7 @@ class FileGroup(object):
             self.fam_file = [ff for ff in infiles if re.search(".fam",
                                                                ff)][0]
             self.bim_file = [fb for fb in infiles if re.search(".bim",
-                                                              fb)][0]
+                                                               fb)][0]
             self.bed_file = [bf for bf in infiles if re.search(".bed",
                                                                bf)][0]
             # check files exist (i.e. are not the default None values)
@@ -241,7 +241,7 @@ class FileGroup(object):
             self.id_file = [ig for ig in infiles if re.search(".rel.id",
                                                               ig)][0]
             self.rel_file = [gn for gn in infiles if re.search(".rel.N.bin",
-                                                             gn)][0]
+                                                               gn)][0]
             # check files exits
             try:
                 assert self.id_file
@@ -253,7 +253,6 @@ class FileGroup(object):
             except AssertionError:
                 raise ValueError("rel.N file is missing, please "
                                  "specify")
-
 
     def set_phenotype(self, pheno_file=None, pheno=1):
         '''
@@ -396,7 +395,7 @@ class GCTA(GWASProgram):
           [str/list]
         * autosome_number - for non-human species, the number of chromosomes to
           be considered autosomes
-        * exclude_snps - text file list of variant IDs to exclude from analysis.
+        * exclude_snps - text file list of variant IDs to exclude from analysis
           [file]
         * extract - text file list of variant IDs to include in analysis,
           ignores all others. [file]
@@ -518,7 +517,7 @@ class GCTA(GWASProgram):
                 E.warn("%s filter not recognised, please see "
                        "documentation for allowed filters" % each)
                 pass
-                
+
         self.filters.append(" ".join(filters))
         self.statement["filters"] = " ".join(self.filters)
 
@@ -565,7 +564,7 @@ class GCTA(GWASProgram):
           GCTA method to use for REML estimation of h2.  Includes:
           * snpBLUP - calculate the SNP BLUPs from the genotype
             data and the estimated total genetic value/ breeding value
-          * fixed_cor - 
+          * fixed_cor -
           * priors - provide initial priors for the variance components
             estimation
           * unconstrained - allow variance estimates to fall outside
@@ -702,7 +701,7 @@ class GCTA(GWASProgram):
                             statement.append(sub_task[value])
                     except KeyError:
                         raise KeyError("% Task not recognised, see docs for details of "
-                                       "recognised tasks" % task)                    
+                                       "recognised tasks" % task)
                 except KeyError:
                     raise KeyError("Task not recognised, see docs for details of "
                                    "recognised tasks")
@@ -746,7 +745,7 @@ class GCTA(GWASProgram):
         elif compression is None and not options:
             state = mapf["no_compress"]
 
-        self.statement["matrix"] = state       
+        self.statement["matrix"] = state
 
     def build_statement(self, infiles, outfile, threads=None,
                         memory=None, parallel=None):
@@ -761,7 +760,7 @@ class GCTA(GWASProgram):
             statement.append(self.statement["program"])
         except KeyError:
             raise AttributeError("Input files and format not detected")
-            
+
         try:
             statement.append(self.statement["filters"])
         except KeyError:
@@ -771,7 +770,7 @@ class GCTA(GWASProgram):
             statement.append(self.statement["tasks"])
         except KeyError:
             pass
-        
+
         try:
             statement.append(self.statement["matrix"])
         except KeyError:
@@ -824,8 +823,8 @@ class Plink2(GWASProgram):
         statement.append(self.executable)
 
         if infiles.name:
-            inputs =self. _build_single_file_input(infiles,
-                                                   infiles.file_format)
+            inputs = self. _build_single_file_input(infiles,
+                                                    infiles.file_format)
             statement.append(inputs)
 
         else:
@@ -844,7 +843,7 @@ class Plink2(GWASProgram):
             pass
 
         self.statement["program"] = " ".join(statement)
- 
+
     def hamming_matrix(self, shape, compression, options):
         '''
         Calculate genomic pair-wise distance matrix between
@@ -969,14 +968,14 @@ class Plink2(GWASProgram):
             state = self._matrices(matrix_type="grm", shape=shape,
                                    compression=compression)
 
-        self.statement["matrix"] = state       
+        self.statement["matrix"] = state
 
     def apply_filters(self, filter_type, filter_value):
         '''
         arguments supported by this function.
 
         * genotype_rate - exclude SNPs with a genotyping rate below this
-          value. [float]        
+          value. [float]
         * min_allele_frequency - only include SNPs with cohort/case allele
           frequency above this threshold. [float]
         * max_allele_frequency - include all SNPs with a MAF equal to or below
@@ -1017,7 +1016,7 @@ class Plink2(GWASProgram):
             self._construct_filters(extract=filter_value)
         elif filter_type == "chromosome":
             self._construct_filters(chromosome=filter_value)
-        elif filter_type  == "exclude_chromosome":
+        elif filter_type == "exclude_chromosome":
             self._constuct_filters(exclude_chromosome=filter_value)
         elif filter_type == "autosome":
             self._construct_filters(autosome=filter_value)
@@ -1084,7 +1083,7 @@ class Plink2(GWASProgram):
         elif file_format == "oxford" or file_format == "oxford_binary":
             statement = " --data %s" % infiles.name
         elif file_format == "GRM_plink":
-            statement = " --grm.bin  %s " %infiles.name
+            statement = " --grm.bin  %s " % infiles.name
         elif file_format == "GRM_binary":
             statement = " --grm-bin %s " % infiles.name
         elif file_format == "vcf":
@@ -1302,7 +1301,7 @@ class Plink2(GWASProgram):
                 E.warn("%s filter not recognised, please see "
                        "documentation for allowed filters" % each)
                 pass
-                
+
         self.filters.append(" ".join(filters))
         self.statement["filters"] = " ".join(self.filters)
 
@@ -1364,7 +1363,7 @@ class Plink2(GWASProgram):
         multiple tasks can be added by separate calls to this function.
         For instance, adding phenotype and gender information using the
         update_samples task whilst change the file format.
-        
+
 
         Tasks
         -----
@@ -1487,7 +1486,7 @@ class Plink2(GWASProgram):
                             statement.append(sub_task[value])
                     except KeyError:
                         raise KeyError("No sub task found, see docs for details of "
-                                       "recognised tasks")                    
+                                       "recognised tasks")
                 except KeyError:
                     raise KeyError("Task not recognised, see docs for details of "
                                    "recognised tasks")
@@ -1500,7 +1499,6 @@ class Plink2(GWASProgram):
             self.statement["tasks"] = " ".join([curr_tasks, new_tasks])
         except KeyError:
             self.statement["tasks"] = " ".join(statement)
-
 
     def _output_statistics(self, **kwargs):
         '''
@@ -1732,7 +1730,7 @@ class Plink2(GWASProgram):
                        "replicability" % random_seed)
             if n_perms:
                 statement.append(" mperm=%i --seed %s " % (n_perms,
-                                                              random_seed))
+                                                           random_seed))
             else:
                 statement.append(" perm --seed %s " % (random_seed))
         else:
@@ -1771,7 +1769,6 @@ class Plink2(GWASProgram):
                            "specifiy them exactly")
                     covariates = None
                     covariates_file = None
-            
 
         if covariates and covariates_file:
             statement.append(" --covar %s %s " % (covariates_file,
@@ -1786,7 +1783,6 @@ class Plink2(GWASProgram):
 
         self.statement["assoc"] = " ".join(statement)
 
-
     def PCA(self, n_pcs="20"):
         '''
         Perform PCA analysis on previosly generated GRM, output the number n
@@ -1794,7 +1790,6 @@ class Plink2(GWASProgram):
         '''
 
         self._run_tasks(pca=n_pcs)
-
 
     def _dimension_reduction(self, **kwargs):
         '''
@@ -1814,7 +1809,7 @@ class Plink2(GWASProgram):
         '''
         Detect epistatic interactions between SNPs using either an inaccurate
         scan (fast-epistasis) or a fully saturated linear model
-    
+
         Methods
         -------
         fast_epistasis - uses an "imprecise but fast" scan of all 3x3 joint genotype
@@ -1888,7 +1883,6 @@ class Plink2(GWASProgram):
 
         * matrix_type - matrix to compute.  Can be either IBS, 1 - IBS,
           Hamming, GRM
-          
         '''
 
         statement = []
@@ -1916,7 +1910,7 @@ class Plink2(GWASProgram):
         All arguments are passed as key word arguments, except
         cases detailed in `Parameters` where they are passed with
         the ``parameter`` argument.
-        
+
         Methods
         -------
         * ld_prune - generate a list of SNPs in linkage equilibrium by
@@ -1998,7 +1992,7 @@ class Plink2(GWASProgram):
                 except KeyError:
                     pass
 
-            except KeyError:                        
+            except KeyError:
                 raise AttributeError("No window size found.  Please input "
                                      "a window size to prune over")
             try:
@@ -2018,7 +2012,7 @@ class Plink2(GWASProgram):
         except KeyError:
             pass
 
-        for task,value in task_dict.iteritems():
+        for task, value in task_dict.iteritems():
             try:
                 sub_task = qc_dict[task]
                 try:
@@ -2044,7 +2038,7 @@ class Plink2(GWASProgram):
             statement.append(self.statement["program"])
         except KeyError:
             raise AttributeError("Input files and format not detected")
-            
+
         try:
             statement.append(self.statement["QC"])
         except KeyError:
@@ -2059,7 +2053,7 @@ class Plink2(GWASProgram):
             statement.append(self.statement["tasks"])
         except KeyError:
             pass
-        
+
         try:
             statement.append(self.statement["stats"])
         except KeyError:
@@ -2116,10 +2110,11 @@ class Plink2(GWASProgram):
             if os.path.isabs(outfile):
                 outpath = outfile
             else:
-                outpath = "/".join([os.getcwd(), outfile])              
+                outpath = "/".join([os.getcwd(), outfile])
 
             for i in range(1, parallel+1):
-                p_state = statement[:] # copy list, assigning just makes a pointer
+                # copy list, assigning just makes a pointer
+                p_state = statement[:]
                 p_state.append(" --parallel %i %i " % (i, parallel))
                 p_state.append(" --out %s.%i " % (outpath, i))
                 statements.append(" ".join(p_state))
@@ -2168,7 +2163,6 @@ class GWASResults(object):
             self.infiles = None
             # results is a pandas dataframe to operate on
             self.results = self.get_results(assoc_file, **kwargs)
-
 
     def parse_genome_wide(self, association_files):
         '''
@@ -2225,7 +2219,7 @@ class GWASResults(object):
                 results_frame = pd.read_table(association_file,
                                               sep="\t", header=None,
                                               index_col=None)
-            
+
             # results from fast epistasis are different to others
             if results_frame.shape[1] == 7:
                 results_frame.columns = ["CHR1", "SNP1", "CHR",
@@ -2342,7 +2336,7 @@ class GWASResults(object):
                 results_frame["BETA"] = [np.float64(ox) for ox in results_frame["BETA"]]
             except KeyError:
                 results_frame["B"][results_frame["B"] == "NA"] = 0.0
-                results_frame["B"] = [np.float64(ox) for ox in results_frame["B"]]              
+                results_frame["B"] = [np.float64(ox) for ox in results_frame["B"]]
 
         return results_frame
 
@@ -2435,7 +2429,7 @@ class GWASResults(object):
         manhattan_save = "_".join([save_path, "manhattan.png"])
         self.plotManhattan(manhattan_save,
                            resolution=resolution,
-                           write_merged=False)        
+                           write_merged=False)
 
     def getHits(self, threshold=0.00000005):
         '''
@@ -2491,12 +2485,11 @@ class GWASResults(object):
                     E.info("Lead SNP for regions is: {}".format(locus.iloc[0]["SNP"]))
                     left_end = min(chr_df.loc[chr_df.index >= index_bp - 1500000, "BP"])
                     right_end = max(chr_df.loc[chr_df.index <= index_bp + 1500000, "BP"])
-       
-                    range_df = chr_df.loc[left_end : right_end, :]
+
+                    range_df = chr_df.loc[left_end: right_end, :]
                     max_stat = max(abs(range_df["STAT"]))
 
                     yield contig, range_df
-
 
     def extractSNPs(self, snp_ids):
         '''
@@ -2574,20 +2567,19 @@ class GWASResults(object):
             # files may or may not be tab-delimited
             try:
                 _df = pd.read_table(freq_file,
-                                     sep="\s*", header=0,
-                                     index_col=None,
-                                     engine='python')
+                                    sep="\s*", header=0,
+                                    index_col=None,
+                                    engine='python')
             except StopIteration:
                 _df = pd.read_table(freq_file,
-                                     sep="\t", header=0,
-                                     index_col=None)
+                                    sep="\t", header=0,
+                                    index_col=None)
 
             merge_df = pd.merge(self.results, _df,
                                 left_on=["CHR", "SNP"],
                                 right_on=["CHR", "SNP"],
                                 how='left')
-            df_container.append(merge_df)            
-        
+            df_container.append(merge_df)
 
         count = 0
         for df in df_container:
@@ -2598,7 +2590,7 @@ class GWASResults(object):
                 gwas_df = gwas_df.append(df)
 
         E.info("Calculating Z scores and SEs")
-        z_scores = -0.862 + np.sqrt(0.743 - 0.2404 *\
+        z_scores = -0.862 + np.sqrt(0.743 - 0.2404 *
                                     np.log(gwas_df.loc[:, "P"]))
         se = np.log(gwas_df.loc[:, "OR"])/z_scores
         gwas_df.loc[:, "Z"] = z_scores
@@ -2627,7 +2619,7 @@ def plotMapPhenotype(data, coords, coord_id_col, lat_col,
     '''
     Generate a map of the UK, with phenotype data overlaid
     '''
-    
+
     # merge co-ordinate data with phenotype data
     merged_df = pd.merge(left=coords, right=data, left_on=coord_id_col,
                          right_on=coord_id_col, how='inner')
@@ -2704,8 +2696,8 @@ def plotMapPhenotype(data, coords, coord_id_col, lat_col,
         R('''legend('topleft', legend=unique(pheno.df$cat_var),'''
           '''fill=unique(pheno.df$cat_var))''' % locals())
         R('''dev.off()''')
-        
-    
+
+
 def plotPhenotype(data, plot_type, x, y=None, group=None,
                   save_path=None, labels=None, xlabels=None,
                   ylabels=None, glabels=None, var_type="continuous"):
@@ -2732,7 +2724,6 @@ def plotPhenotype(data, plot_type, x, y=None, group=None,
         else:
             pass
 
-
     elif not y and var_type == "continuous":
         var = data.loc[:, x].copy()
         data.loc[:, x] = pd.Series(var, dtype=np.float64)
@@ -2755,7 +2746,6 @@ def plotPhenotype(data, plot_type, x, y=None, group=None,
         else:
             pass
 
-
     elif y and var_type == "integer":
         xvar = np.nan_to_num(data.loc[:, x].copy())
         yvar = np.nan_to_num(data.loc[:, y].copy())
@@ -2768,7 +2758,6 @@ def plotPhenotype(data, plot_type, x, y=None, group=None,
             data.loc[:, group] = pd.Series(gvar, dtype=str)
         else:
             pass
-
 
     elif y and var_type == "continuous":
         # NAs and NaNs should be handled by ggplot
@@ -2783,7 +2772,6 @@ def plotPhenotype(data, plot_type, x, y=None, group=None,
             data.loc[:, group] = pd.Series(gvar, dtype=str)
         else:
             pass
-
 
     R('''suppressPackageStartupMessages(library(ggplot2))''')
     # put the pandas dataframe in to R with rpy2
@@ -2820,7 +2808,7 @@ def plotPhenotype(data, plot_type, x, y=None, group=None,
                 pass
         except AttributeError:
             xlabels = None
-            
+
     else:
         pass
 
@@ -2904,7 +2892,7 @@ def plotPhenotype(data, plot_type, x, y=None, group=None,
             # need to add in guide/legend title
 
     else:
-        R('''p <- ggplot(data=data_f)''')  
+        R('''p <- ggplot(data=data_f)''')
 
         if plot_type == "histogram":
             if group:
@@ -2956,7 +2944,7 @@ def plotPhenotype(data, plot_type, x, y=None, group=None,
                 title = labs[1]
                 R('''p <- p + labs(x="%(xlab)s", '''
                   '''title="%(title)s")''' % locals())
-            
+
     # the default theme is bw
     R('''p <- p + theme_bw()''')
 
@@ -2982,7 +2970,7 @@ def parseFlashPCA(pcs_file, fam_file):
 
     fam_df = pd.read_table(fam_file, sep="\t",
                            header=None, index_col=None)
-    
+
     fam_df.columns = ["FID", "IID", "PAR", "MAT", "GENDER",
                       "PHENO"]
     pc_df[["FID", "IID"]] = fam_df.iloc[:, :2]
@@ -3090,8 +3078,8 @@ def countByVariantAllele(ped_file, map_file):
     homA2 = np.zeros((len(variant_ids), len(variant_ids)),
                      dtype=np.int64)
 
-    het  = np.zeros((len(variant_ids), len(variant_ids)),
-                     dtype=np.int64)
+    het = np.zeros((len(variant_ids), len(variant_ids)),
+                   dtype=np.int64)
 
     tcount = 0
     with open(ped_file, "r") as pfile:
@@ -3105,8 +3093,6 @@ def countByVariantAllele(ped_file, map_file):
             gender = indiv_split[4]
             phen = indiv_split[5]
             genos = indiv_split[6:]
-            #genos = ["".join([alleles[i],
-            #                  alleles[i+1]]) for i in range(0, len(alleles), 2)]
             tcount += 1
             # get genotype counts
             for i in range(len(genos)):
@@ -3122,7 +3108,7 @@ def countByVariantAllele(ped_file, map_file):
     allele_counts = ((2 * homA2) + het)/float(2 * tcount)
     mafs = 1 - allele_counts.diagonal()
     maf_df = pd.DataFrame(zip(variant_ids, mafs), columns=["SNP", "MAF"],
-                          index=[x for x,y in enumerate(variant_ids)])
+                          index=[x for x, y in enumerate(variant_ids)])
     maf_df["A2_HOMS"] = (2 * homA1).diagonal()
     maf_df["A2_HETS"] = het.diagonal()
     maf_df.index = maf_df["SNP"]
@@ -3175,7 +3161,7 @@ def calcMaxAlleleFreqDiff(ped_file, map_file, group_file,
     # group labels need to be of the same type, convert all
     # group values to string
     group_df = pd.read_table(group_file, sep="\t", header=0,
-                             index_col=None, 
+                             index_col=None,
                              converters={"GROUP": str,
                                          "FID": str,
                                          "IID": str})
@@ -3218,8 +3204,8 @@ def calcMaxAlleleFreqDiff(ped_file, map_file, group_file,
     ref_homA2 = np.zeros((len(variant_ids), len(variant_ids)),
                          dtype=np.int64)
 
-    ref_het  = np.zeros((len(variant_ids), len(variant_ids)),
-                        dtype=np.int64)
+    ref_het = np.zeros((len(variant_ids), len(variant_ids)),
+                       dtype=np.int64)
 
     test_homA1 = np.zeros((len(variant_ids), len(variant_ids)),
                           dtype=np.int64)
@@ -3227,8 +3213,8 @@ def calcMaxAlleleFreqDiff(ped_file, map_file, group_file,
     test_homA2 = np.zeros((len(variant_ids), len(variant_ids)),
                           dtype=np.int64)
 
-    test_het  = np.zeros((len(variant_ids), len(variant_ids)),
-                         dtype=np.int64)
+    test_het = np.zeros((len(variant_ids), len(variant_ids)),
+                        dtype=np.int64)
     tcount = 0
     rcount = 0
     ncount = 0
@@ -3247,8 +3233,6 @@ def calcMaxAlleleFreqDiff(ped_file, map_file, group_file,
             gender = indiv_split[4]
             phen = indiv_split[5]
             genos = indiv_split[6:]
-            #genos = ["".join([alleles[i],
-            #                  alleles[i+1]]) for i in range(0, len(alleles), 2)]
 
             # check for ref and test conditions
             # ignore individuals in neither camp
@@ -3291,7 +3275,6 @@ def calcMaxAlleleFreqDiff(ped_file, map_file, group_file,
                     E.info("%i samples counted."
                            "Approximately 75% samples counted" % tcount + rcount + ncount)
 
-                
     E.info("Counted alleles for %i test cases, %i ref cases,"
            " %i neither reference nor test." % (tcount, rcount,
                                                 ncount))
@@ -3301,27 +3284,27 @@ def calcMaxAlleleFreqDiff(ped_file, map_file, group_file,
 
     ref_mafs = 1 - ref_allele_counts.diagonal()
     test_mafs = 1 - ref_allele_counts.diagonal()
-  
-    ref_maf_df = pd.DataFrame(zip(variant_ids, ref_mafs), 
+
+    ref_maf_df = pd.DataFrame(zip(variant_ids, ref_mafs),
                               columns=["SNP", "ref_MAF"],
-                              index=[x for x,y in enumerate(variant_ids)])
+                              index=[x for x, y in enumerate(variant_ids)])
     ref_maf_df["ref_A2_HOMS"] = (2 * ref_homA1).diagonal()
     ref_maf_df["ref_A2_HETS"] = ref_het.diagonal()
     ref_maf_df.index = ref_maf_df["SNP"]
     ref_maf_df.drop(["SNP"], axis=1, inplace=True)
 
-    test_maf_df = pd.DataFrame(zip(variant_ids, test_mafs), 
+    test_maf_df = pd.DataFrame(zip(variant_ids, test_mafs),
                                columns=["SNP", "test_MAF"],
-                               index=[x for x,y in enumerate(variant_ids)])
+                               index=[x for x, y in enumerate(variant_ids)])
     test_maf_df["test_A2_HOMS"] = (2 * test_homA1).diagonal()
     test_maf_df["test_A2_HETS"] = test_het.diagonal()
     test_maf_df.index = test_maf_df["SNP"]
     test_maf_df.drop(["SNP"], axis=1, inplace=True)
 
     freq_diffs = pd.merge(ref_maf_df, test_maf_df,
-                         left_index=True, right_index=True,
-                         how='inner')
-    
+                          left_index=True, right_index=True,
+                          how='inner')
+
     freq_diffs["MAF_diff"] = freq_diffs["ref_MAF"] - freq_diffs["test_MAF"]
 
     E.info("allele frequencies calculated over %i SNPs and "
@@ -3409,8 +3392,6 @@ def calcPenetrance(ped_file, map_file, mafs=None,
                     select = None
                 genos = np.array(indiv_split[6:])
                 genos = genos[var_idx]
-                #genos = ["".join([alleles[i],
-                #                  alleles[i+1]]) for i in range(0, len(alleles), 2)]
                 tcount += 1
 
                 het = np.zeros(len(genos), dtype=np.float64)
@@ -3555,7 +3536,7 @@ def summaryPenetrance(maf_df, case_counts,
 
     het_counts = np.sum(case_counts, axis=0)
     het_series = pd.Series({x: y for x, y in zip(variants,
-                                                  het_counts)})
+                                                 het_counts)})
     out_df = pd.DataFrame(columns=["homozygote_cases",
                                    "heterozygote_cases"],
                           index=maf_df.index)
@@ -3571,16 +3552,16 @@ def summaryPenetrance(maf_df, case_counts,
 
 def plotPenetrances(plotting_df):
     '''
-    Plot the proportion of cases/phenotype explained by 
+    Plot the proportion of cases/phenotype explained by
     individuals carrying allele vs. population allele frequency.
-   
+
     Generate final output summary table (should be in separate function)
     '''
 
     # only need to plot variants with MAF >= 0.01
     low_frq = plotting_df["MAF"] < 0.01
     hi_df = plotting_df[~low_frq]
-    
+
     # get into R and use ggplot for MAF vs homozygosity amongs cases
     r_plot = py2ri.py2ri_pandasdataframe(hi_df)
     R.assign("hom.df", r_plot)
@@ -3612,7 +3593,7 @@ def findDuplicateVariants(bim_file, take_last=False):
             lines += 1
 
     E.info("%i variants found" % lines)
-    
+
     # setup index arrays
     var_array = np.empty(lines, dtype=object)
     ref_alleles = np.empty(lines, dtype=object)
@@ -3633,9 +3614,9 @@ def findDuplicateVariants(bim_file, take_last=False):
             ref_alleles[idx] = ref_allele
             minor_alleles[idx] = minor_allele
             pos_array[idx] = pos
-            
+
             idx += 1
-   
+
     # find duplicates using pandas series
     pos_series = pd.Series(pos_array)
     dup_last = pos_series[pos_series.duplicated(take_last=True)]
@@ -3696,7 +3677,7 @@ def findDuplicateVariants(bim_file, take_last=False):
     E.info("%i triallelic variants found" % len(tri_alleles))
     E.info("%i duplicate position variants found" % len(dups_alleles))
     E.info("%i overlapping SNVs and INDELs found" % len(overlap_vars))
-    
+
     return dups_alleles, tri_alleles, overlap_vars
 
 
@@ -3753,8 +3734,7 @@ def flagExcessHets(hets_file, plot=True, plot_path=None):
           '''linetype=2, col="#838B83")''' % (lower, upper))
         R('''png("%s/het_rate-hist.png")''' % plot_path)
         R('''print(p)''')
-        R('''dev.off()''')        
-        
+        R('''dev.off()''')
 
     return all_flags
 
@@ -3807,7 +3787,7 @@ def flagGender(gender_file, plot=True, plot_path=None):
           '''theme_bw() + facet_grid(. ~ GENDER)''')
         R('''png("%s/gender_check-hist.png")''' % plot_path)
         R('''print(p)''')
-        R('''dev.off()''')        
+        R('''dev.off()''')
 
     else:
         pass
@@ -3842,7 +3822,7 @@ def _compare_ibds(ibd_entry, threshold=0.03125):
         return True
 
 
-def flagRelated(ibd_file, chunk_size=None, 
+def flagRelated(ibd_file, chunk_size=None,
                 threshold=0.03125, plot=True,
                 plotting_path=None):
     '''
@@ -3889,7 +3869,7 @@ def flagRelated(ibd_file, chunk_size=None,
         comp = "gzip"
     else:
         pass
-    
+
     E.info("reading file in chunks of %i lines" % chunk_size)
     if chunk_size:
         # read in and operate on chunks
@@ -3899,9 +3879,9 @@ def flagRelated(ibd_file, chunk_size=None,
         count = 0
         for chunk in df_iter:
             count += 1
-            entrys = chunk[["FID1", "IID1", 
-                           "FID2", "IID2",
-                           "PI_HAT"]]
+            entrys = chunk[["FID1", "IID1",
+                            "FID2", "IID2",
+                            "PI_HAT"]]
             ibds.append(entrys)
             relate_mask = entrys.apply(_compare_ibds, axis=1)
             related = entrys[relate_mask]
@@ -3909,7 +3889,7 @@ def flagRelated(ibd_file, chunk_size=None,
             related_list.append(related)
     else:
         pass
-    
+
     df = pd.concat(ibds, axis=0, keys=None)
 
     if plot:
@@ -3927,7 +3907,7 @@ def flagRelated(ibd_file, chunk_size=None,
           '''linetype=4, colour="#838B83")''' % locals())
         R('''png("%s/IBD-hist.png")''' % plotting_path)
         R('''print(p)''')
-        R('''dev.off()''')        
+        R('''dev.off()''')
     else:
         pass
 
@@ -3991,7 +3971,7 @@ def flagInbred(inbred_file, inbreeding_coefficient,
           '''linetype=4, colour="#838B83")''' % locals())
         R('''png("%s/inbreeding-hist.png")''' % plot_path)
         R('''print(p)''')
-        R('''dev.off()''')        
+        R('''dev.off()''')
     else:
         pass
 
@@ -4059,7 +4039,7 @@ def mergeQcExclusions(hets_file=None, inbred_file=None,
     else:
         related_df = None
         E.warn("No individuals excluded on relatedness")
-                                
+
     if gender_file:
         gender_df = pd.read_table(gender_file, sep="\t",
                                   header=0, index_col=None)
@@ -4088,11 +4068,11 @@ def mergeQcExclusions(hets_file=None, inbred_file=None,
         raise ValueError("no QC files detected - do some QC!!")
     else:
         pass
-        
+
     # assume all df have FID and IID columns
     real_df = [x for x in df_list if x is not None]
     real_df = [x[["FID", "IID"]] for x in real_df]
-    
+
     full_df = pd.concat(real_df, keys=None, axis=0)
     exclusions = full_df.drop_duplicates(subset=["FID",
                                                  "IID"],
@@ -4139,7 +4119,7 @@ def selectLdFromTabix(ld_dir, chromosome, snp_pos,
     tab_query = """
     tabix %(ld_dir)s/%(tab_indx)s %(contig)i:%(start)i-%(end)i |
     awk '{if($7 >= %(ld_threshold)s) print $0}'"""
-    
+
     tab_indx = [tx for tx in tab_dir if re.search(chromosome,
                                                   tx)][-1]
 
@@ -4203,7 +4183,7 @@ def selectLdFromDB(database, table_name,
       The table to query containing LD information
 
     index_snp: string
-      SNP ID to select LD values from the SQL 
+      SNP ID to select LD values from the SQL
       database on
 
     index_label: str
@@ -4237,7 +4217,7 @@ def selectLdFromDB(database, table_name,
     ld_df = pdsql.read_sql(sql=state, con=database,
                            index_col=index_label)
 
-    return ld_df    
+    return ld_df
 
 
 def calcLdScores(ld_table, snps,
@@ -4409,7 +4389,7 @@ def snpPriorityScore(gwas_results, chromosome, ld_dir=None,
     # to break - why are there still duplicates??
     chr_df.drop_duplicates(subset="BP", keep="last",
                            inplace=True)
-   
+
     priority_list = []
     ld_scores = {}
     es_scores = {}
@@ -4434,7 +4414,7 @@ def snpPriorityScore(gwas_results, chromosome, ld_dir=None,
                                           chromosome=chromosome,
                                           snp_pos=snp_pos)
 
-        ldsnps = ld_values.loc[: ,"SNP_A"].values
+        ldsnps = ld_values.loc[:, "SNP_A"].values
         ldsnps = {sx for sx in ldsnps}
 
         ldscore = calcLdScores(ld_table=ld_values,
@@ -4456,7 +4436,7 @@ def snpPriorityScore(gwas_results, chromosome, ld_dir=None,
                 pass
             z_func = lambda x: - 0.862 + sqrt(0.743 - 2.404 * np.log(x))
             gwas_results["Z"] = z_func(gwas_results["P"])
-            gwas_results["SE"] = abs(np.log(gwas_results["OR"])/gwas_results["Z"])        
+            gwas_results["SE"] = abs(np.log(gwas_results["OR"])/gwas_results["Z"])
             escore = gwas_results["SE"] * abs(np.log(gwas_results["OR"]))
 
         es_scores[snp] = escore
@@ -4469,7 +4449,7 @@ def snpPriorityScore(gwas_results, chromosome, ld_dir=None,
                                pd.Series(priority_scores)]).T
     SNP_scores.columns = ["LDScore", "WeightEffectSize", "PriorityScore"]
     SNP_scores.sort_values(by="PriorityScore", inplace=True)
-    
+
     return SNP_scores
 
 
@@ -4566,6 +4546,7 @@ def calcPriorsOnSnps(snp_list, distribution, params=None):
             prior_probs[snp] = 0.5
 
     return prior_probs
+
 
 def estimateDistributionParameters(data,
                                    distribution,
@@ -4747,7 +4728,7 @@ def getLdValues(database, table_name, index_snp, ld_threshold=0.5):
       The table to query containing LD information
 
     index_snp: string
-      SNP ID to select LD values from the SQL 
+      SNP ID to select LD values from the SQL
       database on
 
     ld_threshold: float
@@ -4781,14 +4762,14 @@ def getLdValues(database, table_name, index_snp, ld_threshold=0.5):
     # drop duplicate indices
     ld_df.drop_duplicates(subset="SNP",
                           keep="last",
-                          inplace=True)                          
+                          inplace=True)
 
     E.info("%i records found matching query" % len(ld_df))
 
     return ld_df
 
 
-def PICSscore(gwas_results, chromosome, database=None, 
+def PICSscore(gwas_results, chromosome, database=None,
               table_name=None, priors=None, clean=True,
               ld_threshold=0.5, ld_dir=None):
     '''
@@ -4835,7 +4816,7 @@ def PICSscore(gwas_results, chromosome, database=None,
       model these should be removed.
 
     ld_threshold: float
-      Threshold above which to select SNPs in LD 
+      Threshold above which to select SNPs in LD
       with the lead SNP
 
     Returns
@@ -4929,7 +4910,7 @@ def LdRank(gwas_results, chromosome,
       file.
 
     ld_threshold: float
-      Threshold above which to select SNPs in LD 
+      Threshold above which to select SNPs in LD
       with the lead SNP
 
     top_snps: float
@@ -5005,7 +4986,7 @@ def LdRank(gwas_results, chromosome,
 
     top = int(ceil(size * top_snps))
 
-    top_ld = ld_values.iloc[0:top,]
+    top_ld = ld_values.iloc[0:top, ]
 
     return top_ld
 
@@ -5013,7 +4994,7 @@ def LdRank(gwas_results, chromosome,
 def calcApproxBayesFactor(log_or, standard_error,
                           prior_variance):
     '''
-    Calculate the approximate Bayes Factor (ABF) from Wakefield 
+    Calculate the approximate Bayes Factor (ABF) from Wakefield
     Am. J. Hum. Genet.(2015) for a SNP.  The ABF is calculated
     from the effect size (log OR), variance (Standard error ^2)
     and a prior weight on the variance (W).
@@ -5099,7 +5080,7 @@ def ABFScore(gwas_results, region_size, chromosome,
     except StopIteration:
         gwas_df = pd.read_table(gwas_results, index_col=None,
                                 sep="\t", header=0)
-        
+
     if clean:
         pass
     else:
@@ -5138,7 +5119,7 @@ def ABFScore(gwas_results, region_size, chromosome,
     start = index_bp - region_size/2
     end = index_bp + region_size/2
     chr_df.index = chr_df["BP"]
-    
+
     E.info("Fine mapping region defined as %i - %i "
            "on chromosome %i" % (start, end, int(chromosome)))
 
@@ -5272,7 +5253,7 @@ def getEigenScores(eigen_dir, bim_file, snp_file):
 
     snp_list = getSnpIds(snp_file)
     E.info("SNP set of %i SNPs" % len(snp_list))
-    
+
     snp_dict = {}
     E.info("Parsing SNP co-ordinates")
     # tried straightforward file parsing, took too long
@@ -5303,7 +5284,7 @@ def getEigenScores(eigen_dir, bim_file, snp_file):
             tab_indx = [tx for tx in tab_dir if re.search(recontig,
                                                           tx)][-1]
 
-            # redefine float types as int for output 
+            # redefine float types as int for output
             # prettify and reduce downstream bugs with assumed
             # data types
             snp_frame.loc[:, "BP"] = snp_frame["BP"].astype(np.int64)
@@ -5314,7 +5295,7 @@ def getEigenScores(eigen_dir, bim_file, snp_file):
                 A2 = snp_frame.loc[snp, "A2"]
                 start = snp_frame.loc[snp, "BP"]
                 end = start
-               
+
                 proc = subprocess.Popen(tab_query % locals(),
                                         shell=True,
                                         stdout=subprocess.PIPE)
@@ -5323,7 +5304,7 @@ def getEigenScores(eigen_dir, bim_file, snp_file):
                     eigen_score = score_line[0].split("\t")[-1].rstrip("\n")
                 else:
                     eigen_score = np.nan
-            
+
                 score_dict = {"CHR": contig,
                               "BP": start,
                               "A1": A1,
@@ -5340,7 +5321,7 @@ def getEigenScores(eigen_dir, bim_file, snp_file):
 
 def getSNPs(map_file, snp_list):
     '''
-    Given a SNP list with GWAS results, 
+    Given a SNP list with GWAS results,
     extract the relevant index
 
     Arguments
@@ -5368,7 +5349,7 @@ def getSNPs(map_file, snp_list):
                                "pos": attrs[-1].strip("\n")}
 
     variant_ids = [vj for vi, vj in enumerate(variants.keys()) if vj in snp_list]
-    variant_idx = [i for i,j in enumerate(variants.keys()) if j in snp_list]
+    variant_idx = [i for i, j in enumerate(variants.keys()) if j in snp_list]
     var_idx = dict(zip(variant_ids, variant_idx))
 
     return var_idx
@@ -5419,7 +5400,7 @@ def flipRiskAlleles(snp_index, snp_results, genos):
     np.place(flip_array, flip_array == "22", ["88"])
     np.place(flip_array, flip_array == "11", ["99"])
     np.place(flip_array, flip_array == "88", ["11"])
-    np.place(flip_array, flip_array == "99", ["22"])    
+    np.place(flip_array, flip_array == "99", ["22"])
 
     genarray[:, flip] = flip_array
 
@@ -5468,7 +5449,7 @@ def parsePed(ped_file, delim="\t", compound_geno="False"):
             samples.append(ped_dict)
 
     ped_frame = pd.DataFrame(samples)
-    
+
     return ped_frame
 
 
@@ -5511,7 +5492,7 @@ def countRiskAlleles(ped_frame, snp_index, report, flag):
     # group by phenotype column
     phen_groups = ped_frame.groupby(by="PHEN")
     for name, group in phen_groups:
-        genos = group.loc[:,snp_index]
+        genos = group.loc[:, snp_index]
 
         # convert to 0,1,2 coding for ease of counting
         # treat 00 as missing/NA
@@ -5593,7 +5574,7 @@ def plotRiskFrequency(bins, frequencies, savepath=None, ytitle=None):
       '''xlim(c(0, dim(hist.df)[1])) + ylim(c(0, 1)) + '''
       '''labs(x="Number of Risk Alleles", '''
       '''y="%(ytitle)s")''' % locals())
-    
+
     R('''png("%(savepath)s")''' % locals())
     R('''print(p_hist)''')
     R('''dev.off()''')
@@ -5668,7 +5649,7 @@ def makeCredibleSet(probs_file, credible_set=0.95, lead_snp_indx=2,
         pass
 
     # check probabilities have been properly interpreted as floats
-    #prob_df["Posterior"].astype(np.float64)
+    # prob_df["Posterior"].astype(np.float64)
     prob_df.loc[:, "Posterior"] = pd.to_numeric(prob_df["Posterior"])
 
     # need to allow for non-rs IDs. check length of split file name
@@ -5693,7 +5674,7 @@ def makeCredibleSet(probs_file, credible_set=0.95, lead_snp_indx=2,
         E.info("Lead SNP is the same as top posterior signal SNP")
     else:
         pass
-        
+
     # often if the top SNP posterior probability is >= 80%
     # the remaining variants have extremely small probs
     # in that case we're only practically interested in the
@@ -5723,7 +5704,7 @@ def makeCredibleSet(probs_file, credible_set=0.95, lead_snp_indx=2,
                                                      posterior_set.shape[0]))
 
     return posterior_set
-                                                 
+
 
 def summariseResults(file_list):
     '''
