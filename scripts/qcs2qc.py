@@ -34,7 +34,7 @@ Command line options
 
 import sys
 import CGAT.Experiment as E
-import PipelineGWAS as gwas
+import CGAT.PipelineGWAS as gwas
 
 
 def main(argv=None):
