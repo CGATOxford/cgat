@@ -57,6 +57,7 @@ from rpy2.robjects.packages import importr
 
 def pythonWrapper4Pet(dataframe, snps, covars,
                       trait1, trait2, model1,
+                      scriptsdir,
                       model2, resamples=999):
     '''
     This is just Python wrapper around the R code
@@ -84,7 +85,7 @@ def pythonWrapper4Pet(dataframe, snps, covars,
     E.info("Running {} regression for trait 2: {}".format(model2,
                                                           trait2))
 
-    R('''source("/ifs/devel/projects/proj045/gwas_pipeline/R_scripts/PET_functions.R")''')
+    R('''source("%(scriptsdir)s/PET_functions.R")''' % locals())
     E.info("Pushing data objects into the R environment")
     # push everything into the R environment
     r_df = py2ri.py2ri_pandasdataframe(dataframe)
@@ -131,6 +132,9 @@ def main(argv=None):
     # setup command line parser
     parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
+
+    parser.add_option("--R-scripts", dest="scripts_r", type="string",
+                      help="PATH to R scripts and functions")
 
     parser.add_option("--trait1", dest="trait1", type="string",
                       help="name/column header of trait 1 in the "
@@ -195,6 +199,7 @@ def main(argv=None):
     out_df = pythonWrapper4Pet(dataframe=df,
                                snps=snps,
                                covars=options.covars,
+                               scriptsdir=options.scripts_r,
                                trait1=options.trait1,
                                trait2=options.trait2,
                                model1=options.trait1_mod,

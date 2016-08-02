@@ -73,6 +73,8 @@ Options
 
 `--trait1/1-prevalence` - The population prevalence of the trait if binary
 
+`--R-script` - Localtion of R script for running colocalisation analysis
+
 
 Type::
 
@@ -94,7 +96,7 @@ import pandas as pd
 
 
 def testColoc(trait1, trait2, trait1_type, trait2_type,
-              maf_table, gene_list=None,
+              scriptsdir, maf_table, gene_list=None,
               trait1_prev=None, trait2_prev=None,
               chromosome=None, start=None, end=None):
     '''
@@ -156,7 +158,7 @@ def testColoc(trait1, trait2, trait1_type, trait2_type,
     # push all elements into the R environment
     R('''sink(file="sink.text")''')
     R('''suppressPackageStartupMessages(library(coloc))''')
-    R('''source("/ifs/devel/projects/proj045/gwas_pipeline/R_scripts/coloQtl.R")''')
+    R('''source("%(scriptsdir)s/coloQtl.R")''' % locals())
 
     E.info("Pushing results tables into R environment")
     py2ri.activate()
@@ -224,6 +226,9 @@ def main(argv=None):
     # setup command line parser
     parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
+
+    parser.add_option("--R-script", dest="scripts_r", type="string",
+                      help="PATH to location of R scripts and functions")
 
     parser.add_option("--trait1-results", dest="trait1_res", type="string",
                       help="summary statistics for trait 1")
@@ -431,6 +436,7 @@ def main(argv=None):
                        trait2=trait2_results,
                        trait1_type=options.trait1_type,
                        trait2_type=options.trait2_type,
+                       scriptsdir=options.scripts_r,
                        gene_list=gene_list,
                        maf_table=maf_table,
                        trait1_prev=options.trait1_prev,
