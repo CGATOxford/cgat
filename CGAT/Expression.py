@@ -1,4 +1,4 @@
-##########################################################################
+#########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -1466,11 +1466,11 @@ class DEExperiment_Sleuth(DEExperiment):
         if lrt:
             differentialTesting = R('''
             function(so){
-            so_DE <- suppressMessages(sleuth_fit(so, formula = %(reduced_model)s,
+            so <- suppressMessages(sleuth_fit(so, formula = %(reduced_model)s,
                                    fit_name = "reduced"))
-            so_DE <- suppressMessages(sleuth_lrt(so_DE, "reduced", "full"))
+            so <- suppressMessages(sleuth_lrt(so, "reduced", "full"))
 
-            results_table <- sleuth_results(so_DE, test = 'reduced:full',
+            results_table <- sleuth_results(so, test = 'reduced:full',
                                             test_type = 'lrt')
             return(results_table)
 
@@ -1488,21 +1488,21 @@ class DEExperiment_Sleuth(DEExperiment):
 
                 differentialTesting = R('''
                 function(so){
-                so_DE <- sleuth_wt(so, which_beta = '%(contrast)s')
+                so <- sleuth_wt(so, which_beta = '%(contrast)s')
 
-                p_ma = plot_ma(so_DE, '%(contrast)s')
+                p_ma = plot_ma(so, '%(contrast)s')
                 ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_ma.png",
                     width=15, height=15, units="cm")
 
-                p_vars = plot_vars(so_DE, '%(contrast)s')
+                p_vars = plot_vars(so, '%(contrast)s')
                 ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_vars.png",
                     width=15, height=15, units="cm")
 
-                p_mean_var = plot_mean_var(so_DE)
+                p_mean_var = plot_mean_var(so)
                 ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_mean_var.png",
                 width=15, height=15, units="cm")
 
-                results_table <- sleuth_results(so_DE, test = '%(contrast)s')
+                results_table <- sleuth_results(so, test = '%(contrast)s')
 
                 return(results_table)
 
@@ -1511,7 +1511,7 @@ class DEExperiment_Sleuth(DEExperiment):
                 tmp_results = pandas2ri.ri2py(
                     differentialTesting(so))
                 tmp_results['contrast'] = contrast
-
+                
                 # need to set index to sequence of ints to avoid duplications
                 n2 = n + tmp_results.shape[0]
                 tmp_results.index = range(n, n2)
