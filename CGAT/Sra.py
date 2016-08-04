@@ -64,7 +64,7 @@ def peek(sra, outdir=None):
         The quality score format in the :term:`fastq` formatted files.
 
     """
-    
+
     if outdir is None:
         workdir = tempfile.mkdtemp()
     else:
@@ -104,18 +104,22 @@ def peek(sra, outdir=None):
 
     # check format of fastqs in .sra
     fastq_format = Fastq.guessFormat(IOTools.openFile(f[0], "r"), raises=False)
+    fastq_datatype = Fastq.guessDataType(IOTools.openFile(f[0], "r"), raises=True)
 
     if outdir is None:
         shutil.rmtree(workdir)
 
-    return f, fastq_format
+    return f, fastq_format, fastq_datatype
 
 
-def extract(sra, outdir):
-    """return statement for extracting the SRA file in `outdir`."""
+def extract(sra, outdir, tool="fastq-dump"):
+    """return statement for extracting the SRA file in `outdir`.
+    possible tools are fastq-dump and abi-dump. Use abi-dump for colorspace"""
 
-    statement = """fastq-dump --split-files --gzip -Q 33 --outdir
-                 %(outdir)s %(sra)s""" % locals()
+    if tool == "fastq-dump":
+        tool += " --split-files -Q 33"
+
+    statement = """%(tool)s --gzip --outdir %(outdir)s %(sra)s""" % locals()
 
     return statement
 

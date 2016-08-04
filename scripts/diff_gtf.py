@@ -11,7 +11,7 @@ Purpose
 
 This script compares multiple set of gtf files. It computes
 the overlap between bases, exons and genes between each pair
-of gtf files. 
+of gtf files.
 
 If results from a previous run are present, existing
 pairs are not re-computed but simply echoed.

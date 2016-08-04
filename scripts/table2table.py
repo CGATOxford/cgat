@@ -74,7 +74,7 @@ normalize-by-max
 kullback-leibler
    compute kullback-leibler divergence between two columns. Compute
    both D(a||b), D(b||a) and (D(a||b) + D(b||a)) / 2
-   
+
 rank
    substitute cells with their ranks in a column
 

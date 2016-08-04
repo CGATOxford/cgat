@@ -41,6 +41,8 @@ Reference
 
 '''
 
+import string
+
 from math import log
 
 import CGAT.Experiment as E
@@ -50,7 +52,7 @@ import CGAT.IOTools as IOTools
 # ranges are conservative - they are open-ended
 RANGES = {
     'sanger': (33, 75),
-    'illumina-1.8': (33, 76),
+    'illumina-1.8': (33, 79),
     'solexa': (59, 106),
     'phred64': (64, 106),
 }
@@ -92,6 +94,22 @@ class Record:
             if mi >= m1 and ma < m2:
                 r.append(format)
         return r
+
+    def guessDataType(self):
+        '''return the datatype. This is done by inspecting the
+        sequence for basecalls/colorspace ints'''
+
+        datatypes = set()
+
+        # don't check the first character as it may be a basecall even with cs
+        if sum([x in ["0", "1", "2", "3", "."]
+                for x in self.seq[1:]]) == len(self.seq[1:]):
+            datatypes.add("colorspace")
+        elif sum([x.upper() in string.ascii_uppercase
+                  for x in self.seq]) == len(self.seq):
+            datatypes.add("basecalls")
+
+        return datatypes
 
     def trim(self, trim3, trim5=0):
         """remove nucleotides/quality scores from the 3' and 5' ends."""
@@ -351,6 +369,50 @@ def guessFormat(infile, max_lines=10000, raises=True):
     else:
         raise ValueError(
             "could not guess format - could be one of %s." % str(quals))
+
+
+def guessDataType(infile, max_lines=10000, raises=True):
+    '''guess datatype of FASTQ File from [colourspace, basecalls]
+
+    Arguments
+    ---------
+    infile : File
+    File or file-like object to iterate over
+    max_lines : int
+       Number of lines to examine for guessing the datatype
+    raises : bool
+       Raise ValueError if format is ambiguous
+
+    Returns
+    -------
+    formats : list
+       list of datatypes compatible with the file (should only ever be one!)
+
+    Raises
+    ------
+    ValueError
+        If the ranges of the fastq records are not compatible.
+
+    '''
+
+    datatype = set(("colorspace", "basecalls"))
+
+    myiter = iterate(infile)
+    for c, record in enumerate(myiter):
+        datatype.intersection_update(record.guessDataType())
+
+        if len(datatype) == 0:
+            raise ValueError("could not guess datatype")
+        if len(datatype) == 1:
+            break
+        if c > max_lines:
+            break
+
+    if len(datatype) == 1:
+        return list(datatype)[0]
+    else:
+        raise ValueError(
+            "could not guess datatype - could be one of %s." % str(datatype))
 
 
 def getOffset(format, raises=True):
