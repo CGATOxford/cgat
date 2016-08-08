@@ -1,4 +1,4 @@
-##########################################################################
+#########################################################################
 #
 #   MRC FGU Computational Genomics Group
 #
@@ -756,7 +756,6 @@ class DEExperiment_edgeR(DEExperiment):
 
         # TS - for debugging, remove from final version
         E.info("design_table:")
-        E.info(r_design)
 
         # fit model
         fitModel = R('''
@@ -1095,7 +1094,6 @@ class DEExperiment_DESeq2(DEExperiment):
                'additional_factors:' %
                (design.groups, design.pairs, design.has_replicates,
                 design.has_pairs))
-        E.info(design.factors)
 
         design.table.index = [x.replace("-", ".") for x in design.table.index]
 
@@ -1196,7 +1194,6 @@ class DEExperiment_DESeq2(DEExperiment):
 
             return(dds)
             }''' % locals())
-
             r_dds = buildCountDataSet(counts.table, r_design,
                                       model, ref_group)
 
@@ -1351,7 +1348,8 @@ class DEExperiment_Sleuth(DEExperiment):
             lrt=False,
             reduced_model=None,
             dummy_run=False,
-            genewise=False):
+            genewise=False,
+            gene_biomart=None):
 
         if lrt:
             E.info("Note: LRT will not generate fold changes")
@@ -1377,8 +1375,14 @@ class DEExperiment_Sleuth(DEExperiment):
         variates = "c(%s)" % ",".join(model_terms)
 
         if genewise:
+            assert gene_biomart, ("for genewise analysis, "
+                                  "must provide a 'gene_biomart'")
+
             createSleuthObject = R('''
             function(design_df){
+
+            library(biomaRt)
+
             sample_id = design_df$sample
             kal_dirs <- sapply(sample_id,
                 function(id) file.path('%(base_dir)s', id))
@@ -1388,8 +1392,9 @@ class DEExperiment_Sleuth(DEExperiment):
             design_df <- dplyr::mutate(design_df, path = kal_dirs)
 
             mart <- biomaRt::useMart(biomart = "ENSEMBL_MART_ENSEMBL",
-            dataset = "hsapiens_gene_ensembl",
-            host = 'ensembl.org')
+            #dataset = "hsapiens_gene_ensembl",
+            dataset = "%(gene_biomart)s",
+            host="www.ensembl.org")
 
             t2g <- biomaRt::getBM(
                 attributes = c("ensembl_transcript_id","ensembl_gene_id",
@@ -1407,6 +1412,7 @@ class DEExperiment_Sleuth(DEExperiment):
         else:
             createSleuthObject = R('''
             function(design_df){
+
             sample_id = design_df$sample
             kal_dirs <- sapply(sample_id,
                 function(id) file.path('%(base_dir)s', id))
@@ -1415,8 +1421,8 @@ class DEExperiment_Sleuth(DEExperiment):
                                        %(variates)s)
             design_df <- dplyr::mutate(design_df, path = kal_dirs)
 
-            so <- suppressMessages(sleuth_prep(design_df, %(model)s))
-            so <- suppressMessages(sleuth_fit(so))
+            so <- sleuth_prep(design_df, %(model)s)
+            so <- sleuth_fit(so)
 
             return(so)
             }''' % locals())
@@ -1460,11 +1466,11 @@ class DEExperiment_Sleuth(DEExperiment):
         if lrt:
             differentialTesting = R('''
             function(so){
-            so_DE <- suppressMessages(sleuth_fit(so, formula = %(reduced_model)s,
+            so <- suppressMessages(sleuth_fit(so, formula = %(reduced_model)s,
                                    fit_name = "reduced"))
-            so_DE <- suppressMessages(sleuth_lrt(so_DE, "reduced", "full"))
+            so <- suppressMessages(sleuth_lrt(so, "reduced", "full"))
 
-            results_table <- sleuth_results(so_DE, test = 'reduced:full',
+            results_table <- sleuth_results(so, test = 'reduced:full',
                                             test_type = 'lrt')
             return(results_table)
 
@@ -1482,21 +1488,21 @@ class DEExperiment_Sleuth(DEExperiment):
 
                 differentialTesting = R('''
                 function(so){
-                so_DE <- sleuth_wt(so, which_beta = '%(contrast)s')
+                so <- sleuth_wt(so, which_beta = '%(contrast)s')
 
-                p_ma = plot_ma(so_DE, '%(contrast)s')
+                p_ma = plot_ma(so, '%(contrast)s')
                 ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_ma.png",
                     width=15, height=15, units="cm")
 
-                p_vars = plot_vars(so_DE, '%(contrast)s')
+                p_vars = plot_vars(so, '%(contrast)s')
                 ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_vars.png",
                     width=15, height=15, units="cm")
 
-                p_mean_var = plot_mean_var(so_DE)
+                p_mean_var = plot_mean_var(so)
                 ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_mean_var.png",
                 width=15, height=15, units="cm")
 
-                results_table <- sleuth_results(so_DE, test = '%(contrast)s')
+                results_table <- sleuth_results(so, test = '%(contrast)s')
 
                 return(results_table)
 
@@ -1505,9 +1511,8 @@ class DEExperiment_Sleuth(DEExperiment):
                 tmp_results = pandas2ri.ri2py(
                     differentialTesting(so))
                 tmp_results['contrast'] = contrast
-
+                
                 # need to set index to sequence of ints to avoid duplications
-                E.info(tmp_results)
                 n2 = n + tmp_results.shape[0]
                 tmp_results.index = range(n, n2)
                 n = n2
