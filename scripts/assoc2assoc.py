@@ -121,7 +121,8 @@ def main(argv=None):
             # this keeps outputing the first column as unamed: 0,
             # need to remove this
             try:
-                region.drop([region.columns[0]], inplace=True, axis=1)
+                if region.columns[0] != "A1":
+                    region.drop([region.columns[0]], inplace=True, axis=1)
             except:
                 pass
 
