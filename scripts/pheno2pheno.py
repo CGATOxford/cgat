@@ -222,7 +222,7 @@ def main(argv=None):
             # columns need to be FID, IID, ...
             cols.remove("IID")
             new_cols = cols
-            new_cols.insert(1, "IID")
+            new_cols.insert(0, "IID")
             df = df[new_cols]
             df.to_csv(options.stdout, index_col=0,
                       index_label="FID", sep="\t")
