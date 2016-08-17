@@ -2340,7 +2340,7 @@ class GWASResults(object):
         return results_frame
 
     def plotManhattan(self, save_path, resolution="chromosome",
-                      write_merged=True):
+                      write_merged=True, sig_level=8):
         '''
         Generate a basic manhattan plot of the association results
         Just deal with chromosome-by-chromosome for now.
@@ -2370,7 +2370,7 @@ class GWASResults(object):
             R('''assoc.df$BPI <- bp_indx''')
             R('''p <- ggplot(assoc.df, aes(x=BPI, y=-log10(P), colour=CHR)) + '''
               '''geom_point(size=1) + colScale + '''
-              '''geom_hline(yintercept=8, linetype="dashed", colour="blue") + '''
+              '''geom_hline(yintercept=6, linetype="dashed", colour="blue") + '''
               '''theme_bw() + labs(x="Chromosome position (bp)", '''
               '''y="-log10 P-value") + facet_grid(~CHR, scale="free_x") + '''
               '''theme(axis.text.x = element_text(size=8))''')
@@ -2428,6 +2428,7 @@ class GWASResults(object):
         manhattan_save = "_".join([save_path, "manhattan.png"])
         self.plotManhattan(manhattan_save,
                            resolution=resolution,
+                           sig_level=6,
                            write_merged=False)
 
     def getHits(self, threshold=0.00000005):

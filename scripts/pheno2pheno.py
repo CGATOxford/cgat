@@ -216,6 +216,14 @@ def main(argv=None):
             df.index = df["FID"]
             df.drop(["FID"], inplace=True, axis=1)
 
+            # IID also need to be one of the first 2 columns
+            cols = df.columns.tolist()
+
+            # columns need to be FID, IID, ...
+            cols.remove("IID")
+            new_cols = cols
+            new_cols.insert(1, "IID")
+            
             df.to_csv(options.stdout, index_col=0,
                       index_label="FID", sep="\t")
         else:
