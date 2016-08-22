@@ -81,7 +81,7 @@ def main(argv=None):
             new_fields.append("%.2f" % (
                 float(hours) * 3600.0 + float(minutes) * 60.0 + float(seconds)))
 
-        print ("\t".join(new_fields))
+        options.stdout.write(("\t".join(new_fields)) + "\n")
 
     # write footer and output benchmark information.
     E.Stop()

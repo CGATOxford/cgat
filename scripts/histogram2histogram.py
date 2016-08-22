@@ -109,7 +109,7 @@ def main(argv=None):
             else:
                 value = float(d)
         except ValueError:
-            print ("\t".join(
+            print("\t".join(
                 (d, "counts", "frequency",
                  "cumulative counts", "increasing cumulative frequency",
                  "cumulative counts", "decreasing cumulative frequency")))

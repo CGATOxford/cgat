@@ -135,7 +135,7 @@ def check_script(test_name, script, stdin,
                                cwd=tmpdir)
 
     if DEBUG:
-        print ("tmpdir={}".format(tmpdir), end=" ")
+        print("tmpdir={}".format(tmpdir), end=" ")
 
     process_stdout, process_stderr = process.communicate()
 
