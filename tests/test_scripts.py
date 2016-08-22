@@ -315,6 +315,8 @@ def test_scripts():
                   test_script,
                   current_dir)
 
+            # TODO: remove
+            break
 
 def _read(fn):
     if fn.endswith(".gz"):
