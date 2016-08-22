@@ -32,7 +32,6 @@ import yaml
 import time
 import hashlib
 import sys
-from distutils.version import LooseVersion
 import platform
 
 import TestUtils
