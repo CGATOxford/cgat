@@ -208,7 +208,13 @@ def testColoc(trait1, trait2, trait1_type, trait2_type,
           '''prev=trait1.prev)''' % locals())
 
         R('''genes <- rownames(res.df)''')
-        genes = [gx for gx in R["genes"]]
+        try:
+            genes = [gx for gx in R["genes"]]
+        except TypeError:
+            E.warn("There are insufficient SNPs shared with the input "
+                   "eQTL results to determine colocalisation")
+            R('''genes <- dim(res.df)[1]''')
+            genes = R["genes"]
 
     else:
         R('''res.df <- TwoTraitSnpColocQtl(trait1_table=r.trait1,'''
