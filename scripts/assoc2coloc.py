@@ -30,7 +30,7 @@ P - p-value of association for the trait
 
 e.g.
 
-  SNP    NMIS    P
+  SNP    NMISS   P
   snp1   1489    1E-10
   snp2   1478    0.579
   snp3   1490    3.1E-4
@@ -59,6 +59,9 @@ Options
 `--trait1/2-type` - trait type for trait1/2, either `cc` for case-control,
                   or `quant` for quantitative traits.
 
+`--trait1/2-size` -  sample size for trait1/2.  Used to set NMISS column if it is
+                  not present.
+
 `--gene-list` - list of genes to restrict analysis to.  Only relevant when
                 at least one of the traits is quantitative and relates to
                 a QTL analysis, e.g. eQTL, pQTL.
@@ -71,7 +74,7 @@ Options
 
 `--trait1/2-p-column` - provide an alternative P-value column header
 
-`--trait1/1-prevalence` - The population prevalence of the trait if binary
+`--trait1/2-prevalence` - The population prevalence of the trait if binary
 
 `--R-script` - Localtion of R script for running colocalisation analysis
 
@@ -255,6 +258,14 @@ def main(argv=None):
                       choices=["quant", "cc"], help="Trait 2 type, either "
                       "quantitative (quant) or binary (cc)")
 
+    parser.add_option("--trait1-size", dest="trait1_size", type="int",
+                      help="sample size for trait1 analysis, only use this "
+                      "if the NMISS column is missing")
+
+    parser.add_option("--trait2-size", dest="trait2_size", type="int",
+                      help="sample size for trait2 analysis, only use this "
+                      "if the NMISS column is missing")
+
     parser.add_option("--trait1-p-column", dest="trait1_pcol", type="string",
                       help="Column header for P-value column in trait 1 "
                       "results file, if not `P`")
@@ -300,6 +311,9 @@ def main(argv=None):
     else:
         trait1_comp = None
 
+    t1_nsize = False
+    t2_nsize = False
+
     E.info("Parsing trait 1 file: {}".format(options.trait1_res))
     try:
         trait1_peek = pd.read_table(options.trait1_res, nrows=5,
@@ -314,8 +328,14 @@ def main(argv=None):
             assert len_cols == 3
             trait1_sep = "\s*"
         except AssertionError:
-            raise IOError("Trait-1 input file does not contain "
-                          "SNP, NMISS or P columns")
+            if options.trait1_size:
+                t1_nsize = True
+                trait1_sep = "\s*"
+                E.warn("NMISS column is not present, "
+                       "using input sample size {}".format(options.trait1_size))
+            else:
+                raise IOError("Trait-1 input file does not contain "
+                              "SNP, NMISS or P columns")
     except StopIteration:
         trait1_peek = pd.read_table(options.trait1_res, nrows=5,
                                     sep="\t", header=0,
@@ -328,8 +348,14 @@ def main(argv=None):
             assert len_cols == 3
             trait1_sep = "\t"
         except AssertionError:
-            raise IOError("Trait-1 input file does not contain "
-                          "SNP, NMISS or P columns")
+            if options.trait1_size:
+                t1_nsize = True
+                trait1_sep = "\t"
+                E.warn("NMISS column is not present, "
+                       "using input sample size {}".format(options.trait1_size))
+            else:
+                raise IOError("Trait-1 input file does not contain "
+                              "SNP, NMISS or P columns")
 
     if options.trait2_res.endswith(".gz"):
         trait2_comp = "gzip"
@@ -350,8 +376,14 @@ def main(argv=None):
             assert len_cols == 3
             trait2_sep = "\s*"
         except AssertionError:
-            raise IOError("Trait-2 input file does not contain "
-                          "SNP, NMISS or P columns")
+            if options.trait2_size:
+                t2_nsize = True
+                trait2_sep = "\s*"
+                E.warn("NMISS column is not present, "
+                       "using input sample size {}".format(options.trait2_size))
+            else:
+                raise IOError("Trait-2 input file does not contain "
+                              "SNP, NMISS or P columns")
     except StopIteration:
         trait2_peek = pd.read_table(options.trait2_res, nrows=5,
                                     sep="\t", header=0,
@@ -364,8 +396,14 @@ def main(argv=None):
             assert len_cols == 3
             trait2_sep = "\t"
         except AssertionError:
-            raise IOError("Trait-2 input file does not contain "
-                          "SNP, NMISS or P columns")
+            if options.trait2_size:
+                t2_nsize = True
+                trait2_sep = "\t"
+                E.warn("NMISS column is not present, "
+                       "using input sample size {}".format(options.trait2_size))
+            else:
+                raise IOError("Trait-2 input file does not contain "
+                              "SNP, NMISS or P columns")
 
     E.info("Parsing MAF table file: {}".format(options.maf_table))
     if options.maf_table.endswith(".gz"):
@@ -410,6 +448,16 @@ def main(argv=None):
 
     if options.trait2_pcol != "P":
         trait2_results.loc[:, "P"] = trait2_results.loc[:, options.trait2_pcol]
+    else:
+        pass
+
+    if t1_nsize:
+        trait1_results.loc[:, "NMISS"] = options.trait1_size
+    else:
+        pass
+
+    if t2_nsize:
+        trait2_results.loc[:, "NMISS"] = options.trait2_size
     else:
         pass
 
