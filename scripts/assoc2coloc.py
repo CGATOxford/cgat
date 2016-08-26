@@ -170,7 +170,7 @@ def testColoc(trait1, trait2, trait1_type, trait2_type,
     '''
 
     # push all elements into the R environment
-    R('''sink(file="sink.text")''')
+    #R('''sink(file="sink.text")''')
     R('''suppressPackageStartupMessages(library(coloc))''')
     R('''source("%(scriptsdir)s/coloQtl.R")''' % locals())
 
@@ -206,7 +206,6 @@ def testColoc(trait1, trait2, trait1_type, trait2_type,
           '''results_table=r.trait1, MAF_table=r.mafs, '''
           '''eqtl_table=r.trait2, trait_type="%(trait1_type)s", '''
           '''prev=trait1.prev)''' % locals())
-
         R('''genes <- rownames(res.df)''')
         try:
             genes = [gx for gx in R["genes"]]
@@ -230,7 +229,7 @@ def testColoc(trait1, trait2, trait1_type, trait2_type,
 
     coloc_results.columns = ["nSNPs", "H0.PP", "H1.PP", "H2.PP", "H3.PP", "H4.PP"]
 
-    R('''sink(file=NULL)''')
+    #R('''sink(file=NULL)''')
 
     return coloc_results
 

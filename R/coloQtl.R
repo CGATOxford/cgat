@@ -10,7 +10,7 @@ geneListSnpColocQtl <- function(gene_list, results_table, MAF_table, eqtl_table,
     share.snps <- intersect(results_table$SNP, gene$SNP)
     
     # make sure they actually share some SNPs
-    if(dim(gene)[1] > 0 & length(share.snps) > 0){
+    if(dim(gene)[1] > 0 & length(share.snps) > 6){
       res_match <- results_table[results_table$SNP %in%share.snps, ]
       gene_match <- gene[gene$SNP %in% res_match$SNP, ]
       all_snps <- intersect(res_match$SNP, gene_match$SNP)
@@ -22,27 +22,33 @@ geneListSnpColocQtl <- function(gene_list, results_table, MAF_table, eqtl_table,
       # this seems to have a hissy fit over the SNPs that
       # match, even if > 1 SNP are in the two data sets.
       # Does this require a minimum number of SNPs to match??
-      tryCatch({gene.res <- coloc.abf(dataset1=list(pvalues=res_match$P,
+      gene.res <- tryCatch({coloc.abf(dataset1=list(pvalues=res_match$P,
                                                     N=max(res_match$NMISS),
                                                     type=trait_type, s=prev,
                                                     snp=all_snps),
                                       dataset2=list(pvalues=gene_match$P,
                                                     N=max(gene_match$NMISS),
                                                     type="quant", snp=all_snps),
-                                      MAF=mafs)
-                results_list[[gene_list[i]]] <-c(gene.res$summary)
+                                      MAF=mafs)$summary
                             },
                            warning = function(warn){
                              print(paste("MY_WARNNG: ", warn))
                            },
                            error = function(err){
                              print(paste("MY_ERROR: ", err))
+                             gene.res <- c(length(all_snps), 0, 0, 0, 0, 0)
+                             return(gene.res)
                            },
                            finally = {
                              print("Insufficient matching SNPs")
                              gene.res <- c(length(all_snps), 0, 0, 0, 0, 0)
-                             results_list[[gene_list[i]]] <-c(gene.res)
+                             return(gene.res)
                            })
+      results_list[[gene_list[i]]] <-c(gene.res)
+    }
+    else {
+        gene.res <- c(0, 0, 0, 0, 0, 0)
+	results_list[[gene_list[i]]] <- gene.res
     }
     result.df <- do.call(rbind, results_list)
   }
@@ -68,10 +74,6 @@ TwoTraitSnpColocQtl <- function(trait1_table, trait2_table, MAF_table,
     trait2_match <- trait2_table[trait2_table$SNP %in% trait1_match$SNP, ]
     mafs <- MAF_table[MAF_table$SNP %in% trait1_match$SNP, ]$MAF
 
-    print(length(mafs))
-    print(length(trait1_match$P))
-    print(length(trait2_match$P))
-    print(length(all_snps))
     res <- coloc.abf(dataset1=list(pvalues=trait1_match$P,
                                         N=max(trait1_match$NMISS),
                                         type=trait1_type, s=prev1, snp=all_snps),
