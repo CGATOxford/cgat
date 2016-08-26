@@ -26,6 +26,11 @@ The methods implemented are:
 sleuth
    Application of sleuth. Use --sleuth-genewise to test at gene rather
    than transcript level
+   For genewise analysis, also require --gene-biomart option
+   Use following R code to identify the correct database
+   (e.g hsapiens_gene_ensembl)
+   > library(biomaRt)
+   > listDatasets(useEnsembl(biomart="ensembl"))
 
 deseq2
    Application of DESeq2
@@ -273,6 +278,11 @@ def main(argv=None):
                       action="store_true",
                       help=("run genewise, rather than transcript level testing"))
 
+    parser.add_option("--gene-biomart",
+                      dest="gene_biomart",
+                      type="string",
+                      help=("name of ensemble gene biomart"))
+
     parser.set_defaults(
         input_filename_tags="-",
         input_filename_result=None,
@@ -302,7 +312,8 @@ def main(argv=None):
         outfile_sleuth_count=None,
         outfile_sleuth_tpm=None,
         use_ihw=False,
-        sleuth_genewise=False
+        sleuth_genewise=False,
+        gene_biomart=None
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -332,7 +343,8 @@ def main(argv=None):
                                  counts=options.outfile_sleuth_count,
                                  tpm=options.outfile_sleuth_tpm,
                                  fdr=options.fdr,
-                                 genewise=options.sleuth_genewise)
+                                 genewise=options.sleuth_genewise,
+                                 gene_biomart=options.gene_biomart)
 
     else:
         # create Counts object

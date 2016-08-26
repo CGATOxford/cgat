@@ -28,8 +28,21 @@ Options
 
 --input-fasta
 
+--method (choice)
+  "transcript" - count unique kmers per transcript
+  "gene" - count unique kmers per gene (requires --genemap)
+
+--genemap
+  file mapping transcript_ids to gene_id in following (tab-separated)
+  format:
+
+  transcript_1   g_1
+  transcript_2   g_1
+  transcript_3   g_2
+  transcript_4   g_3
+
 --kmer-size
-   size of kmer - the larger the more memory required
+   size of kmer - the larger the more memory required!
 
 --subset
    only compute the unique kmers over the first n entries.
@@ -80,28 +93,34 @@ class KmerCounter(object):
 
         self.kmer2entry = {}
 
-    def shred(self, seq, k_length):
-        ''' shred sequence into kmers and update kmer dictionary '''
+    def shred(self, seqs, k_length):
+        ''' shred sequences into kmers and update kmer dictionary '''
 
-        kmers = set([seq[i:i+k_length] for i in range(0, len(seq)-k_length)])
+        kmers = set()
+        for seq in seqs:
+            kmers.update(set([seq[i:i+k_length]
+                              for i in range(0, len(seq)-k_length)]))
 
         for kmer in kmers:
             if kmer in self.kmer2entry:
-                self.kmer2entry[kmer] = 0
+                self.kmer2entry[kmer] = "non-unique"
             else:
-                self.kmer2entry[kmer] = 1
+                self.kmer2entry[kmer] = "unique"
 
-    def countUniqueKmers(self, seq, k_length):
-        ''' shred sequence and count unique and non-unique k-mers'''
+    def countUniqueKmers(self, seqs, k_length):
+        ''' shred sequences and count unique and non-unique k-mers'''
 
         unique_kmers = 0
         non_unique_kmers = 0
 
-        kmers = set([seq[i:i+k_length] for i in range(0, len(seq)-k_length)])
+        kmers = set()
+        for seq in seqs:
+            kmers.update(set([seq[i:i+k_length]
+                              for i in range(0, len(seq)-k_length)]))
 
         for kmer in kmers:
 
-            if self.kmer2entry[kmer] == 1:
+            if self.kmer2entry[kmer] == "unique":
                 unique_kmers += 1
             else:
                 non_unique_kmers += 1
@@ -125,6 +144,13 @@ def main(argv=None):
     parser.add_option("--input-fasta", dest="fasta", type="str",
                       help="name of fasta infile")
 
+    parser.add_option("--method", dest="method", type="choice",
+                      choices=("transcript", "gene"),
+                      help="count unique kmers per transcript or gene")
+
+    parser.add_option("--genemap", dest="genemap", type="str",
+                      help="file mapping transcripts to genes")
+
     parser.add_option("-k", "--kmer-size", dest="kmer", type="int",
                       help="supply kmer length")
 
@@ -133,6 +159,8 @@ def main(argv=None):
 
     parser.set_defaults(
         fasta=None,
+        method="transcript",
+        genemap=None,
         kmer=10,
         subset=None)
 
@@ -152,42 +180,157 @@ def main(argv=None):
     options.stdout.write("%s\n" % "\t".join((
         "id", "unique_kmers", "non_unique_kmers", "fraction_unique")))
 
-    # iterate transcripts, shred and identify unique kmers
-    E.info("shredding fasta to identify unique kmers")
-    for entry in Iterator:
-        if total_entries % 1000 == 0:
-            E.info("1st shred complete for %i entries" % total_entries)
+    # iterate fasta entries, shred and identify kmers
 
-        if options.subset and total_entries >= options.subset:
-            break
+    if options.method == 'gene':
+        E.info("shredding genes to identify unique kmers")
 
-        k.shred(entry.sequence.upper(), options.kmer)
-        total_entries += 1
+        assert options.genemap, (
+            "to perform a gene-level unique kmer count, "
+            "you must supply a transcript2gene map (--genemap)")
+        t2g = {}
+        with IOTools.openFile(options.genemap, "r") as inf:
+            for line in inf:
+                transcript, gene = line.strip().split("\t")
+                t2g[transcript] = gene
+
+        genes = set()
+        current_gene = None
+        sequences = []
+
+        for entry in Iterator:
+
+            if options.subset and total_entries >= options.subset:
+                break
+
+            transcript_id = entry.title.split()[0]
+            gene_id = t2g[transcript_id]
+
+            if gene_id != current_gene:
+                if not current_gene:
+                    current_gene = gene_id
+                    continue
+
+                # check this is the first time we've dealt with this gene?
+                assert current_gene not in genes, (
+                    "the fasta does not appear to be sorted in gene order, the"
+                    " same gene is observed in non-consecutive positions!")
+
+                genes.add(current_gene)
+
+                k.shred(sequences, options.kmer)
+
+                if total_entries % 1000 == 0:
+                    E.info("1st shred complete for %i genes" % total_entries)
+
+                total_entries += 1
+
+                sequences = [entry.sequence.upper()]
+                current_gene = gene_id
+
+            else:
+                sequences.append(entry.sequence.upper())
+
+        # catch last gene
+        if not options.subset or options.subset and total_entries < options.subset:
+            k.shred(sequences, options.kmer)
+
+        E.info("1st shred complete for %i genes" % total_entries)
+
+    elif options.method == 'transcript':
+        E.info("shredding transcripts to identify unique kmers")
+        for entry in Iterator:
+            if total_entries % 1000 == 0:
+                E.info("1st shred complete for %i transcripts" % total_entries)
+
+            if options.subset and total_entries >= options.subset:
+                break
+
+            k.shred([entry.sequence.upper()], options.kmer)
+            total_entries += 1
+        E.info("1st shred complete for %i transcripts" % total_entries)
 
     total_entries = 0
     Iterator = FastaIterator.iterate(IOTools.openFile(options.fasta))
 
-    # iterate transcripts, shread and count unique kmers
-    E.info("re-shredding fasta to count unique kmers")
+    # iterate fasta entries, shread and count unique kmers
+    if options.method == 'gene':
+        E.info("re-shredding fasta to count gene unique kmers")
 
-    for entry in Iterator:
-        if total_entries % 1000 == 0:
-            E.info("2nd shred complete for %i entries" % total_entries)
+        genes = set()
+        current_gene = None
+        sequences = []
 
-        transcript_id = entry.title.split()[0]
+        for entry in Iterator:
 
-        if options.subset and total_entries >= options.subset:
-            break
+            if options.subset and total_entries >= options.subset:
+                break
 
-        total_entries += 1
+            transcript_id = entry.title.split()[0]
+            gene_id = t2g[transcript_id]
 
-        unique, non_unique = k.countUniqueKmers(
-            entry.sequence.upper(), options.kmer)
+            if gene_id != current_gene:
+                if not current_gene:
+                    current_gene = gene_id
+                    continue
 
-        fraction = np.divide(float(unique), (unique + non_unique))
+                # check this is the first time we've dealt with this gene?
+                assert current_gene not in genes, (
+                    "the fasta does not appear to be sorted in gene order, the"
+                    " same gene is observed in non-consecutive positions!")
+                genes.add(current_gene)
 
-        options.stdout.write("%s\n" % "\t".join(
-            map(str, (transcript_id, unique, non_unique, fraction))))
+                unique, non_unique = k.countUniqueKmers(
+                    sequences, options.kmer)
+
+                fraction = np.divide(float(unique), (unique + non_unique))
+
+                options.stdout.write("%s\n" % "\t".join(
+                    map(str, (current_gene, unique, non_unique, fraction))))
+
+                if total_entries % 1000 == 0:
+                    E.info("2nd shred complete for %i genes" % total_entries)
+
+                total_entries += 1
+
+                sequences = [entry.sequence.upper()]
+                current_gene = gene_id
+                total_entries += 1
+
+            else:
+                sequences.append(entry.sequence.upper())
+
+        # catch last gene
+        if not options.subset or options.subset and total_entries < options.subset:
+            unique, non_unique = k.countUniqueKmers(
+                sequences, options.kmer)
+
+            fraction = np.divide(float(unique), (unique + non_unique))
+
+            options.stdout.write("%s\n" % "\t".join(
+                map(str, (gene_id, unique, non_unique, fraction))))
+
+    if options.method == 'transcript':
+        E.info("re-shredding fasta to count transcript unique kmers")
+        for entry in Iterator:
+
+            if total_entries % 1000 == 0:
+                E.info("2nd shred complete for %i transcripts" % total_entries)
+
+            if options.subset and total_entries >= options.subset:
+                break
+
+            transcript_id = entry.title.split()[0]
+
+            total_entries += 1
+
+            unique, non_unique = k.countUniqueKmers(
+                [entry.sequence.upper()], options.kmer)
+
+            fraction = np.divide(float(unique), (unique + non_unique))
+
+            options.stdout.write("%s\n" % "\t".join(
+                map(str, (transcript_id, unique, non_unique, fraction))))
 
     E.info("found %i kmers" % len(k.kmer2entry))
     E.info("written kmer counts for %i contigs" % total_entries)
