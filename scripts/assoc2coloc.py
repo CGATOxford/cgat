@@ -66,6 +66,11 @@ Options
                 at least one of the traits is quantitative and relates to
                 a QTL analysis, e.g. eQTL, pQTL.
 
+`--trait1/2-snplist` - provide a file with a single SNP ID on each row, use
+                     this to restrict the results from trait1/2 to those SNPs.
+                     This is especially useful if there are multiple independent
+                     association signals at the same locus.
+
 `--chromosome` - chromosome to restrict analysis to.  This is particularly
                  useful when ised in conjunction with `--gene-list`.
 
@@ -127,6 +132,12 @@ def testColoc(trait1, trait2, trait1_type, trait2_type,
     gene_list: list
       A list of genes to restirct analysis to.  Either trait 1
       or trait 2 must be a quantitative trait
+
+    snp_list: list
+      A set of SNPs to restrict the primary trait results to.
+      Usually this will be the SNPs that represent a single
+      signal of association, particularly for regions where
+      multiple independent signals exist.
 
     trait1_prev: float
       Prevalence of trait1 if binary
@@ -246,6 +257,14 @@ def main(argv=None):
     parser.add_option("--maf-snp-column", dest="maf_snpcol", type="string",
                       help="column header containing SNP IDs")
 
+    parser.add_option("--trait1-snplist", dest="trait1_snplist", type="string",
+                      help="restrict the analysis to this set of SNPs "
+                      "for trait1")
+
+    parser.add_option("--trait2-snplist", dest="trait2_snplist", type="string",
+                      help="restrict the analysis to this set of SNPs "
+                      "for trait2")
+
     parser.add_option("--gene-list", dest="gene_list", type="string",
                       help="list of genes to test eQTL-trait overlap with. "
                       "Either trait1 or trait2 must contain a GENE column.")
@@ -332,7 +351,7 @@ def main(argv=None):
                 t1_nsize = True
                 trait1_sep = "\s*"
                 E.warn("NMISS column is not present, "
-                       "using input sample size {}".format(options.trait1_size))
+                       "using input sample size n={}".format(options.trait1_size))
             else:
                 raise IOError("Trait-1 input file does not contain "
                               "SNP, NMISS or P columns")
@@ -352,7 +371,7 @@ def main(argv=None):
                 t1_nsize = True
                 trait1_sep = "\t"
                 E.warn("NMISS column is not present, "
-                       "using input sample size {}".format(options.trait1_size))
+                       "using input sample size n={}".format(options.trait1_size))
             else:
                 raise IOError("Trait-1 input file does not contain "
                               "SNP, NMISS or P columns")
@@ -380,7 +399,7 @@ def main(argv=None):
                 t2_nsize = True
                 trait2_sep = "\s*"
                 E.warn("NMISS column is not present, "
-                       "using input sample size {}".format(options.trait2_size))
+                       "using input sample size n={}".format(options.trait2_size))
             else:
                 raise IOError("Trait-2 input file does not contain "
                               "SNP, NMISS or P columns")
@@ -400,7 +419,7 @@ def main(argv=None):
                 t2_nsize = True
                 trait2_sep = "\t"
                 E.warn("NMISS column is not present, "
-                       "using input sample size {}".format(options.trait2_size))
+                       "using input sample size n={}".format(options.trait2_size))
             else:
                 raise IOError("Trait-2 input file does not contain "
                               "SNP, NMISS or P columns")
@@ -479,6 +498,29 @@ def main(argv=None):
                 gene_list.add(gene.rstrip("\n"))
     else:
         gene_list = None
+
+    # restrict analysis to a specific set of SNP
+    # good for picking just SNPs part of independent association
+    # signals
+    if options.trait1_snplist:
+        t1_snplist = set()
+        with open(options.trait1_snplist, "r") as t1_sfile:
+            for t1snp in t1_sfile.readlines():
+                t1_snplist.add(t1snp.rstrip("\n"))
+
+        trait1_results = trait1_results.loc[trait1_results["SNP"].isin(t1_snplist)]
+    else:
+        pass
+
+    if options.trait2_snplist:
+        t2_snplist = set()
+        with open(options.trait2_snplist, "r") as t2_sfile:
+            for t2snp in t2_sfile.readlines():
+                t2_snplist.add(t2snp.rstrip("\n"))
+
+        trait2_results = trait2_results.loc[trait2_results["SNP"].isin(t2_snplist)]
+    else:
+        pass
 
     out_df = testColoc(trait1=trait1_results,
                        trait2=trait2_results,
