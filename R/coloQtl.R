@@ -44,14 +44,15 @@ geneListSnpColocQtl <- function(gene_list, results_table, MAF_table, eqtl_table,
                              gene.res <- c(length(all_snps), 0, 0, 0, 0, 0)
                              return(gene.res)
                            })
-      results_list[[gene_list[i]]] <-c(gene.res)
+      results_list[[gene_list[i]]] <- gene.res
     }
     else {
         gene.res <- c(0, 0, 0, 0, 0, 0)
 	results_list[[gene_list[i]]] <- gene.res
-    }
-    result.df <- do.call(rbind, results_list)
+    } 
   }
+  result.df <- data.frame(do.call(rbind, results_list))
+  row.names(result.df) <- gene_list[i]
   return(result.df)
 }
 

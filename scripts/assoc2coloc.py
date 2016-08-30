@@ -223,9 +223,17 @@ def testColoc(trait1, trait2, trait1_type, trait2_type,
 
         R('''genes <- dim(res.df)[1]''')
         genes = R["genes"]
-
-    coloc_results = py2ri.ri2py_dataframe(R["res.df"])
-    coloc_results.index = genes
+    try:
+        coloc_results = py2ri.ri2py_dataframe(R["res.df"])
+        coloc_results.index = genes
+    except TypeError:
+        # if there are no results only a single vector of 0's
+        # is returned.  Mush this into a dataframe to output
+        E.warn("No colocalisation performed, outputting empty table")
+        colo_vec = [fx for fx in R["res.df"]]
+        coloc_results = pd.DataFrame(columns=["" for fx in colo_vec],
+                                     index=[0,])
+        coloc_results.iloc[0, :] = colo_vec
 
     coloc_results.columns = ["nSNPs", "H0.PP", "H1.PP", "H2.PP", "H3.PP", "H4.PP"]
 
