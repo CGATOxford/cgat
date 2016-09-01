@@ -41,8 +41,6 @@ geneListSnpColocQtl <- function(gene_list, results_table, MAF_table, eqtl_table,
                            },
                            finally = {
                              print("Insufficient matching SNPs")
-                             gene.res <- c(length(all_snps), 0, 0, 0, 0, 0)
-                             return(gene.res)
                            })
       results_list[[gene_list[i]]] <- gene.res
     }
@@ -52,7 +50,6 @@ geneListSnpColocQtl <- function(gene_list, results_table, MAF_table, eqtl_table,
     } 
   }
   result.df <- data.frame(do.call(rbind, results_list))
-  row.names(result.df) <- gene_list[i]
   return(result.df)
 }
 
