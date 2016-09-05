@@ -280,6 +280,9 @@ else
 
 fi
 
+# SLV: workaround until bx-python is available with Python 3
+pip install bx-python
+
 # if installation is 'devel' (outside of travis), checkout latest version from github
 if [ "$OS" != "travis" ] ; then
 
