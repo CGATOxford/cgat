@@ -2969,7 +2969,8 @@ def parseFlashPCA(pcs_file, fam_file):
                               header=None, index_col=None)
 
     # add a header to the pc_df file
-    headers = ["PC%i" % n + 1 for n, m in enumerate(pc_df.columns)]
+    headers = ["PC%i" % int(n) + 1 for n,
+               m in enumerate(pc_df.columns)]
 
     pc_df.columns = headers
 
