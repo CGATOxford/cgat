@@ -670,9 +670,9 @@ do
       INSTALL_ZIP=1
       shift ;
 
-  elif [ "$1" == "--zip" ] ; then
+  elif [ "$1" == "--python" ] ; then
 
-      if [ "$2" != "2" -o "$2" != "3" ] ; then
+      if [ $2 -ne 2 ] && [ $2 -ne 3 ] ; then
           help_message
       else
           INSTALL_PYTHON_VERSION=$2
