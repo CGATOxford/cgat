@@ -2961,8 +2961,13 @@ def parseFlashPCA(pcs_file, fam_file):
     as the input order in the .fam file
     '''
 
-    pc_df = pd.read_table(pcs_file, sep=None,
-                          header=None, index_col=None)
+    try:
+        pc_df = pd.read_table(pcs_file, sep="\t",
+                              header=None, index_col=None)
+    except StopIteration:
+        pc_df = pd.read_table(pcs_file, sep="\S+",
+                              header=None, index_col=None)
+
     # add a header to the pc_df file
     headers = ["PC%i" % m for n, m in enumerate(pc_df.columns)]
 
