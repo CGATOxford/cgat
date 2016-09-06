@@ -4611,7 +4611,7 @@ def estimateDistributionParameters(data,
 
 
 def calculatePicsValues(snp_id, index_log10p, ld_values,
-                        priors=None, k=2):
+                        priors=None, k=2, analysis_snps=None):
     '''
     Use the PICS method to assign probability to SNPs as
     being causal for association signals at a locus,
@@ -4659,6 +4659,12 @@ def calculatePicsValues(snp_id, index_log10p, ld_values,
       LD.  Increasing k downweights the LD difference between
       the index SNP and SNP of interest.
 
+    analysis_snps: list
+      The LD query may return SNPs that do not appear in the
+      analysis.  This may cause problems downstream, therefore
+      output and probability calculation should be limited
+      to these variants.
+
     Returns
     -------
     PICS: pandas.Core.Series
@@ -4681,29 +4687,33 @@ def calculatePicsValues(snp_id, index_log10p, ld_values,
     # e.g. 0.0001
 
     for snp in ld_values.index:
-        try:
-            r2 = ld_values.loc[snp]["R2"]
-            r = sqrt(r2)
-            mu = r2 * index_log10p
-            sigma = sqrt(1 - (r ** k)) * (sqrt(index_log10p)/2)
-            if sigma == 0:
-                sigma = 0.0001
-            else:
-                pass
-            # use log likelihoods, these are more numerically
-            # stable and avoid the multiplication of very small
-            # numbers
-            # if priors are not set, force uninformative prior
-            # i.e. if not conjugate with likelihood
-            likelihood = np.log(stats.norm(mu, sigma).pdf(index_log10p))
+        if snp in analysis_snps:
             try:
-                prior = np.log(priors[snp])
-            except:
-                prior = np.log(1.0)
-                prob_dict[snp] = np.exp(likelihood + prior)
-        except KeyError:
-            E.warn("SNP %s not found in LD with %s" % (snp,
-                                                       snp_id))
+                r2 = ld_values.loc[snp]["R2"]
+                r = sqrt(r2)
+                mu = r2 * index_log10p
+                sigma = sqrt(1 - (r ** k)) * (sqrt(index_log10p)/2)
+                if sigma == 0:
+                    sigma = 0.0001
+                else:
+                    pass
+                # use log likelihoods, these are more numerically
+                # stable and avoid the multiplication of very small
+                # numbers
+                # if priors are not set, force uninformative prior
+                # i.e. if not conjugate with likelihood
+                likelihood = np.log(stats.norm(mu, sigma).pdf(index_log10p))
+                try:
+                    prior = np.log(priors[snp])
+                except:
+                    prior = np.log(1.0)
+                    prob_dict[snp] = np.exp(likelihood + prior)
+            except KeyError:
+                E.warn("SNP %s not found in LD with %s" % (snp,
+                                                           snp_id))
+        else:
+            E.warn("SNP {} is not found in the analysis, "
+                   "it will not be included in the output".format(snp))
 
     # calculate normalized probabilities, where sum of all probs=1
     # use numpy sum to handle NaN values
@@ -4881,7 +4891,8 @@ def PICSscore(gwas_results, chromosome, database=None,
                                       index_log10p=indexp,
                                       ld_values=ld_values,
                                       priors=priors,
-                                      k=2)
+                                      k=2,
+                                      analysis_snps=gwas_df.index)
     return PICS_scores
 
 

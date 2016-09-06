@@ -220,6 +220,10 @@ def main(argv=None):
         # PICS scores expects the gwas results file to
         # only contain the region of interest, which
         # represents an independent association signal
+        # if a SNP has not been genotyped,
+        # but it is in strong LD, it will cause problems
+        # downstream <- only allow SNPs that
+        # are present in the analysis
         snpscores = gwas.PICSscore(gwas_results=infile,
                                    database=options.database,
                                    table_name=options.table,
