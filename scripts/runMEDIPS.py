@@ -211,6 +211,10 @@ def main(argv=None):
                       ups are the result of PCR overamplification"
                       "[default=%default].")
 
+    parser.add_option("--chroms", dest="chroms", type="str",
+                      help="Comma delimited list of chromosomes to include"
+                      "[default=%default].")
+
     parser.set_defaults(
         input_format="bam",
         ucsc_genome="Hsapiens.UCSC.hg19",
@@ -230,7 +234,8 @@ def main(argv=None):
         fdr_threshold=0.1,
         fdr_method="BH",
         bwa=False,
-        unique=0.001
+        unique=0.001,
+        chroms=None
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -289,6 +294,11 @@ def main(argv=None):
 
     do_all = "all" in options.toolset
 
+    if options.chroms is None:
+        chrstring = ""
+    else:
+        chroms = options.chroms.split(",")
+        chrstring = ' chr.select=c(\"%s\"), ' % '\",\"'.join(chroms)
     # load MEDIPS
     R.library('MEDIPS')
     genome_file = 'BSgenome.%s' % options.ucsc_genome
@@ -320,6 +330,7 @@ def main(argv=None):
             nit = %(saturation_iterations)i,
             paired = %(paired)s,
             bwa = %(BWA)s,
+            %(chrstring)s
             nrit = 1)''' % locals())
 
             R.png(E.getOutputFile("%s_saturation.png" % fn))
@@ -354,6 +365,7 @@ def main(argv=None):
             extend=%(extend)i,
             paired=%(paired)s,
             bwa=%(BWA)s,
+            %(chrstring)s
             uniq=%(uniq)s)''' % locals())
 
             R.png(E.getOutputFile("%s_cpg_coverage_pie.png" % fn))
@@ -397,6 +409,7 @@ def main(argv=None):
             extend=%(extend)i,
             paired=%(paired)s,
             bwa=%(BWA)s,
+            %(chrstring)s
             uniq=%(uniq)s)''' % locals())
 
             outfile.write("%s" % fn)
@@ -427,6 +440,7 @@ def main(argv=None):
                 window_size=%(window_size)i,
                 paired=%(paired)s,
                 bwa=%(BWA)s,
+                %(chrstring)s
                 uniq=%(uniq)s)''' % locals())
             R('''treatment_set = c(%s)''' %
               ",".join(["treatment_R%i" % x
@@ -444,6 +458,7 @@ def main(argv=None):
                     window_size=%(window_size)i,
                     paired=%(paired)s,
                     bwa=%(BWA)s,
+                    %(chrstring)s
                     uniq=%(uniq)s)''' % locals())
                 R('''control_set = c(%s)''' %
                   ",".join(["control_R%i" % x
@@ -483,10 +498,8 @@ def main(argv=None):
                 ISet2 = NULL,
                 p.adj = "%(fdr_method)s",
                 diff.method = "edgeR",
-                prob.method = "poisson",
                 MeDIP = %(medip)s,
                 CNV = F,
-                type = "rpkm",
                 minRowSum = 1)''' % locals())
 
                 # Note: several Gb in size
