@@ -215,6 +215,7 @@ echo " CONDA_INSTALL_DIR: "$CONDA_INSTALL_DIR
 echo " CONDA_INSTALL_TYPE: "$CONDA_INSTALL_TYPE
 echo " PYTHONPATH: "$PYTHONPATH
 echo " INSTALL_PYTHON_VERSION: "$INSTALL_PYTHON_VERSION
+echo " INSTALL_BRANCH: "$INSTALL_BRANCH
 echo
 
 } # print_env_vars
@@ -290,12 +291,12 @@ if [ "$OS" != "travis" ] ; then
       if [ $INSTALL_ZIP ] ; then
 	 # get the latest version from Git Hub in zip format
 	 cd $CGAT_HOME
-         wget --no-check-certificate https://github.com/CGATOxford/cgat/archive/master.zip
+         wget https://github.com/CGATOxford/cgat/archive/$INSTALL_BRANCH.zip
          unzip master.zip
 	 cd cgat-master/
       else
          # get latest version from Git Hub with git clone
-         git clone https://github.com/CGATOxford/cgat.git $CGAT_HOME/cgat-code
+         git clone --branch=$INSTALL_BRANCH https://github.com/CGATOxford/cgat.git $CGAT_HOME/cgat-code
          cd $CGAT_HOME/cgat-code
       fi
 
@@ -547,7 +548,10 @@ echo " The default Python version for CGAT is 2.7 but we are moving the code to 
 echo " If you want to try our code running with Python 3, please type:"
 echo " ./install-CGAT-tools.sh --cgat-devel --python 3 [--location </full/path/to/folder/without/trailing/slash>]"
 echo
-echo " On the other hand, if you are looking for other advanced installation options please visit:"
+echo " It is also possible to install/test a specific branch of the code on github:"
+echo " ./install-CGAT-tools.sh --cgat-devel --python 3 --branch <name-of-branch> [--location </full/path/to/folder/without/trailing/slash>]"
+echo
+echo " On the other hand, if you are looking for other alternative installation options please visit:"
 echo " https://www.cgat.org/downloads/public/cgat/documentation/CGATInstallation.html"
 echo 
 echo " To test the installation:"
@@ -597,8 +601,10 @@ CGAT_HOME=
 INSTALL_ZIP=
 # which python version to use
 INSTALL_PYTHON_VERSION=
+# which github branch to use (default: master)
+INSTALL_BRANCH="master"
 # variable to store input parameters
-INPUT_ARGS=$(getopt -n "$0" -o h0123456789:zp: --long "help,
+INPUT_ARGS=$(getopt -n "$0" -o h0123456789:zp:b: --long "help,
                                                        travis,
                                                        install-os-packages,
                                                        cgat-scripts,
@@ -610,7 +616,8 @@ INPUT_ARGS=$(getopt -n "$0" -o h0123456789:zp: --long "help,
                                                        uninstall,
                                                        location:,
                                                        zip,
-                                                       python:"  -- "$@")
+                                                       python:,
+                                                       branch:"  -- "$@")
 eval set -- "$INPUT_ARGS"
 
 # process all the input parameters first
@@ -684,7 +691,12 @@ do
           INSTALL_PYTHON_VERSION=$2
           shift 2 ;
       fi
-     
+
+  elif [ "$1" == "--branch" ] ; then
+
+      INSTALL_BRANCH="$2"
+      shift 2 ;
+
   else
 
     help_message
