@@ -280,9 +280,6 @@ else
 
 fi
 
-# SLV: workaround until bx-python is available with Python 3
-pip install bx-python
-
 # if installation is 'devel' (outside of travis), checkout latest version from github
 if [ "$OS" != "travis" ] ; then
 
@@ -304,6 +301,9 @@ if [ "$OS" != "travis" ] ; then
 
       # activate cgat environment
       source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_TYPE
+
+      # SLV: workaround until bx-python is available with Python 3
+      pip install bx-python
 
       # Set up other environment variables
       setup_env_vars
@@ -374,6 +374,9 @@ if [ $TRAVIS_INSTALL ] ; then
 
    # enable Conda env
    source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_TYPE
+
+   # SLV: workaround until bx-python is available with Python 3
+   pip install bx-python
 
    # python preparation
    cd $CGAT_HOME
