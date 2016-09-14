@@ -202,6 +202,19 @@ def main(argv=None):
                       help="FDR method to apply for selecting DMR "
                       "[default=%default].")
 
+    parser.add_option("--bwa", dest="bwa", action="store_true",
+                      help="alignment generated with bwa"
+                      "[default=%default].")
+
+    parser.add_option("--unique", dest="unique", type="float",
+                      help="Threshold p-value to determine which read pile\
+                      ups are the result of PCR overamplification"
+                      "[default=%default].")
+
+    parser.add_option("--chroms", dest="chroms", type="str",
+                      help="Comma delimited list of chromosomes to include"
+                      "[default=%default].")
+
     parser.set_defaults(
         input_format="bam",
         ucsc_genome="Hsapiens.UCSC.hg19",
@@ -220,6 +233,9 @@ def main(argv=None):
         is_medip=True,
         fdr_threshold=0.1,
         fdr_method="BH",
+        bwa=False,
+        unique=0.001,
+        chroms=None
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -278,6 +294,11 @@ def main(argv=None):
 
     do_all = "all" in options.toolset
 
+    if options.chroms is None:
+        chrstring = ""
+    else:
+        chroms = options.chroms.split(",")
+        chrstring = ' chr.select=c(\"%s\"), ' % '\",\"'.join(chroms)
     # load MEDIPS
     R.library('MEDIPS')
     genome_file = 'BSgenome.%s' % options.ucsc_genome
@@ -287,8 +308,13 @@ def main(argv=None):
     extend = options.extend
     shift = options.shift
     saturation_iterations = options.saturation_iterations
-    # TRUE is the default in MEDIPS
-    uniq = "TRUE"
+
+    uniq = float(options.unique)
+
+    if options.bwa is True:
+        BWA = "TRUE"
+    else:
+        BWA = "FALSE"
 
     if "saturation" in options.toolset or do_all:
         E.info("saturation analysis")
@@ -303,6 +329,8 @@ def main(argv=None):
             uniq=%(uniq)s,
             nit = %(saturation_iterations)i,
             paired = %(paired)s,
+            bwa = %(BWA)s,
+            %(chrstring)s
             nrit = 1)''' % locals())
 
             R.png(E.getOutputFile("%s_saturation.png" % fn))
@@ -312,7 +340,7 @@ def main(argv=None):
               E.getOutputFile("%s_saturation_estimation.tsv" % fn))
 
             outfile = IOTools.openFile(
-                E.getOutputFile("%s_saturation.tsv" % fn, "w"))
+                E.getOutputFile("%s_saturation.tsv" % fn), "w")
             outfile.write("category\tvalues\n")
             outfile.write(
                 "estimated_correlation\t%s\n" %
@@ -336,6 +364,8 @@ def main(argv=None):
             shift=%(shift)i,
             extend=%(extend)i,
             paired=%(paired)s,
+            bwa=%(BWA)s,
+            %(chrstring)s
             uniq=%(uniq)s)''' % locals())
 
             R.png(E.getOutputFile("%s_cpg_coverage_pie.png" % fn))
@@ -378,6 +408,8 @@ def main(argv=None):
             shift=%(shift)i,
             extend=%(extend)i,
             paired=%(paired)s,
+            bwa=%(BWA)s,
+            %(chrstring)s
             uniq=%(uniq)s)''' % locals())
 
             outfile.write("%s" % fn)
@@ -407,6 +439,8 @@ def main(argv=None):
                 extend=%(extend)i,
                 window_size=%(window_size)i,
                 paired=%(paired)s,
+                bwa=%(BWA)s,
+                %(chrstring)s
                 uniq=%(uniq)s)''' % locals())
             R('''treatment_set = c(%s)''' %
               ",".join(["treatment_R%i" % x
@@ -423,6 +457,8 @@ def main(argv=None):
                     extend=%(extend)i,
                     window_size=%(window_size)i,
                     paired=%(paired)s,
+                    bwa=%(BWA)s,
+                    %(chrstring)s
                     uniq=%(uniq)s)''' % locals())
                 R('''control_set = c(%s)''' %
                   ",".join(["control_R%i" % x
@@ -462,10 +498,8 @@ def main(argv=None):
                 ISet2 = NULL,
                 p.adj = "%(fdr_method)s",
                 diff.method = "edgeR",
-                prob.method = "poisson",
                 MeDIP = %(medip)s,
                 CNV = F,
-                type = "rpkm",
                 minRowSum = 1)''' % locals())
 
                 # Note: several Gb in size
@@ -556,6 +590,5 @@ def main(argv=None):
 
     # write footer and output benchmark information.
     E.Stop()
-
 if __name__ == "__main__":
     sys.exit(main(sys.argv))
