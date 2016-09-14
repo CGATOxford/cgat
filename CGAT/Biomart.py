@@ -100,7 +100,6 @@ def biomart_iterator(columns,
 
     '''
 
-
     R.library("biomaRt")
 
     mart = R.useMart(biomart=biomart,
