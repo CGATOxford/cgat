@@ -36,6 +36,19 @@ rarefaction <- function(dat, from = 1, to = 5000000, step = 1000000, groups = c(
             return (result)
 }
 
+processRarefactionResults <- function(dat, rf){
+
+	# process rarefaction for samples that don't hit the max counts
+	sums <- data.frame(colSums(dat))
+
+	for (i in 1:nrow(rf)){
+	    if (sums[rf[i,]$group,] < as.numeric(as.character(rf[i,]$sample))){
+	        rf[i,]$mean <- NA
+	    }
+	}
+	write.table(rf, file="test.tsv",sep="\t", row.names=F, quote=F)
+	return (rf)
+}
 
 plotRarefaction <- function(rf, colours = c("brown", "darkGreen", "slateGrey", "darkBlue")){
            
