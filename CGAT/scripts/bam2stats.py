@@ -301,7 +301,7 @@ try:
     pyximport.install(build_in_temp=False)
     import _bam2stats
 except ImportError:
-    import CGAT._bam2stats as _bam2stats
+    import CGAT.scripts._bam2stats as _bam2stats
 
 FLAGS = {
     1: 'paired',

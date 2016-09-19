@@ -71,7 +71,7 @@ try:
     pyximport.install(build_in_temp=False)
     import _bams2bam
 except ImportError:
-    import CGAT._bams2bam as _bams2bam
+    import CGAT.scripts._bams2bam as _bams2bam
 
 
 def main(argv=None):

@@ -120,7 +120,7 @@ try:
     pyximport.install(build_in_temp=False)
     import _bam2bed
 except ImportError:
-    import CGAT._bam2bed as _bam2bed
+    import CGAT.scripts._bam2bed as _bam2bed
 
 
 def main(argv=None):

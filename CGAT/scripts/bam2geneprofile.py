@@ -322,7 +322,7 @@ try:
     pyximport.install(build_in_temp=False)
     import _bam2geneprofile
 except ImportError:
-    import CGAT._bam2geneprofile as _bam2geneprofile
+    import CGAT.scripts._bam2geneprofile as _bam2geneprofile
 
 
 def main(argv=None):

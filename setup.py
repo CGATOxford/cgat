@@ -232,7 +232,7 @@ GeneModelAnalysis = Extension(
 )
 
 # automatically build pyximport script extensions
-pyx_files = glob.glob("scripts/*.pyx")
+pyx_files = glob.glob("CGAT/scripts/*.pyx")
 script_extensions = []
 pysam_dirname = os.path.dirname(pysam.__file__)
 include_dirs = [numpy.get_include()] + pysam.get_include()
@@ -249,7 +249,7 @@ for pyx_file in pyx_files:
     script_name = os.path.basename(pyx_file)
     script_prefix = script_name[:-4]
     script_extensions.append(
-        Extension("CGAT.%s" % (script_prefix),
+        Extension("CGAT.scripts.%s" % (script_prefix),
                   sources=[pyx_file],
                   extra_link_args=extra_link_args,
                   include_dirs=include_dirs,

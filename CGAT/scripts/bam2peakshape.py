@@ -178,7 +178,7 @@ try:
     pyximport.install(build_in_temp=False)
     import _bam2peakshape
 except ImportError:
-    import CGAT._bam2peakshape as _bam2peakshape
+    import CGAT.scripts._bam2peakshape as _bam2peakshape
 
 
 def buildOptionParser(argv):
