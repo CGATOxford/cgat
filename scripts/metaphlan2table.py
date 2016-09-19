@@ -72,8 +72,9 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = optparse.OptionParser(version="%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $",
-                                   usage=globals()["__doc__"])
+    parser = optparse.OptionParser(
+        version="%prog version: $Id: script_template.py 2871 2010-03-03 10:20:44Z andreas $",
+        usage=globals()["__doc__"])
 
     parser.add_option("-t", "--sequence-type", dest="type", type="choice",
                       choices=("read_map", "rel_ab"), help="type of file to be parsed to a table")

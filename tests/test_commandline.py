@@ -53,23 +53,24 @@ PARSER = None
 EXPRESSIONS = (
     ('scripts', 'scripts/*.py'),)
 
-EXCLUDE = ["__init__.py",
-           "version.py",
-           "cgat.py",
-           "gtf2table.py",  # fails with pysam include issue
-           "bed2table.py",  # fails with pysam include issue
-           "fasta2bed.py",   # fails because of pybedtools rebuild
-       ]
+EXCLUDE = [
+    "__init__.py",
+    "version.py",
+    "cgat.py",
+    "gtf2table.py",  # fails with pysam include issue
+    "bed2table.py",  # fails with pysam include issue
+    "fasta2bed.py",   # fails because of pybedtools rebuild
+]
 
 if IS_PY3:
     # issues with pyximport scripts, cause subsequent scripts to fail
     # with script not found.
     EXCLUDE.extend([
-           "bam2bam.py",
-           "bam2stats.py",
-           "bam2bed.py",
-           "bam2geneprofile.py",
-           "bam2peakshape.py"])  
+        "bam2bam.py",
+        "bam2stats.py",
+        "bam2bed.py",
+        "bam2geneprofile.py",
+        "bam2peakshape.py"])
 
 
 # Filename with the black/white list of options.
@@ -252,4 +253,3 @@ def test_cmdline():
         # each script
         if os.path.exists(pyxfile):
             sys.meta_path = []
-

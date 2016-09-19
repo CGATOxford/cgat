@@ -121,9 +121,10 @@ def check_script(test_name, script, stdin,
         options = ""
 
     options = re.sub("\n", "", options)
+    short_name = os.path.basename(script)[:-3]
 
     # use /bin/bash in order to enable "<( )" syntax in shells
-    statement = ("/bin/bash -c '%(stdin)s python %(script)s "
+    statement = ("/bin/bash -c '%(stdin)s cgat %(short_name)s "
                  " %(options)s"
                  " > %(stdout)s'") % locals()
 
@@ -315,8 +316,6 @@ def test_scripts():
                   test_script,
                   current_dir)
 
-            # TODO: remove
-            break
 
 def _read(fn):
     if fn.endswith(".gz"):

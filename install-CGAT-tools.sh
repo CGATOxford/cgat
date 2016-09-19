@@ -379,9 +379,9 @@ if [ $TRAVIS_INSTALL ] ; then
    # SLV: workaround until bx-python is available with Python 3
    pip install bx-python
 
-   # python preparation
+   # python preparation, do install
    cd $CGAT_HOME
-   python setup.py develop
+   python setup.py install
 
    # run nosetests
    if [ $TEST_IMPORT ] ; then
