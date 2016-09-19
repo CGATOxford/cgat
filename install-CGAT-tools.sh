@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+log() {
+   echo "# `date` -- $1"
+}
+
 # message to display when the OS is not correct
 sanity_check_os() {
    echo
@@ -74,17 +78,13 @@ detect_os
 
 if [ "$OS" == "ubuntu" ] || [ "$OS" == "travis" ] ; then
 
-   echo
-   echo " Installing packages for Ubuntu "
-   echo
+   log "installing packages for Ubuntu "
 
    sudo apt-get --quiet install -y gcc g++ zlib1g-dev libssl-dev libssl1.0.0 libbz2-dev libfreetype6-dev libpng12-dev libblas-dev libatlas-dev liblapack-dev gfortran libpq-dev r-base-dev libreadline-dev libmysqlclient-dev libboost-dev libsqlite3-dev;
 
 elif [ "$OS" == "sl" ] || [ "$OS" == "centos" ] ; then
 
-   echo 
-   echo " Installing packages for Scientific Linux / CentOS "
-   echo
+   log "installing packages for Scientific Linux / CentOS "
 
    yum -y install gcc zlib-devel openssl-devel bzip2-devel gcc-c++ freetype-devel libpng-devel blas atlas lapack gcc-gfortran postgresql-devel R-core-devel readline-devel mysql-devel boost-devel sqlite-devel
 
@@ -236,6 +236,8 @@ conda clean --packages -y
 # proceed with conda installation
 conda_install() {
 
+log "installing conda"
+
 detect_cgat_installation
 
 if [ -n "$UNINSTALL_DIR" ] ; then
@@ -257,18 +259,23 @@ get_cgat_env
 mkdir -p $CGAT_HOME
 cd $CGAT_HOME
 
+log "downloading miniconda"
 # download and install conda
 wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh
+
+log "installing miniconda"
 bash Miniconda-latest-Linux-x86_64.sh -b -p $CONDA_INSTALL_DIR
 export PATH="$CONDA_INSTALL_DIR/bin:$PATH"
 hash -r
 
 # install cgat environment
+log "updating conda environment"
 conda update -q conda --yes
 conda info -a
 
 printenv
 
+log "installing conda CGAT environment"
 # keep rpy2-2.4 for production scripts
 if [ "$CONDA_INSTALL_TYPE" == "cgat-scripts" ] ; then
 
@@ -280,6 +287,8 @@ else
    conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE python=$INSTALL_PYTHON_VERSION --override-channels --channel https://conda.anaconda.org/cgat --channel defaults --channel https://conda.anaconda.org/conda-forge --channel https://conda.anaconda.org/r --channel https://conda.anaconda.org/bioconda --yes
 
 fi
+
+log "installing CGAT code into conda environment"
 
 # if installation is 'devel' (outside of travis), checkout latest version from github
 if [ "$OS" != "travis" ] ; then
@@ -365,6 +374,8 @@ fi # if travis install
 # test code with conda install
 conda_test() {
 
+log "starting conda_test"
+
 # get environment variables: CGAT_HOME, CONDA_INSTALL_DIR, CONDA_INSTALL_TYPE
 get_cgat_env
 
@@ -374,15 +385,19 @@ setup_env_vars
 if [ $TRAVIS_INSTALL ] ; then
 
    # enable Conda env
+   log "activating CGAT conda environment"
    source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_TYPE
 
    # SLV: workaround until bx-python is available with Python 3
+   log "pip-installing additional packages"
    pip install bx-python
 
    # python preparation, do install
+   log "install CGAT code into conda environment"
    cd $CGAT_HOME
    python setup.py develop
 
+   log "starting tests"
    # run nosetests
    if [ $TEST_IMPORT ] ; then
       nosetests -v tests/test_import.py ;
