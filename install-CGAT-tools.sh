@@ -381,7 +381,7 @@ if [ $TRAVIS_INSTALL ] ; then
 
    # python preparation, do install
    cd $CGAT_HOME
-   python setup.py install
+   python setup.py develop
 
    # run nosetests
    if [ $TEST_IMPORT ] ; then
