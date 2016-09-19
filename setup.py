@@ -63,7 +63,7 @@ IS_OSX = sys.platform == 'darwin'
 ########################################################################
 ########################################################################
 # collect CGAT version
-sys.path.insert(0, "scripts")
+sys.path.insert(0, "CGAT")
 import version
 
 version = version.__version__
@@ -100,9 +100,6 @@ for tool, toolkit, expected in external_dependencies:
 ###############################################################
 # Define dependencies
 #
-# Perform a CGAT Code Collection Installation
-INSTALL_CGAT_CODE_COLLECTION = True
-
 major, minor1, minor2, s, tmp = sys.version_info
 
 if (major == 2 and minor1 < 7) or major < 2:
@@ -172,17 +169,8 @@ if major == 2:
 elif major == 3:
     pass
 
-if INSTALL_CGAT_CODE_COLLECTION:
-    cgat_packages = find_packages(exclude=["CGATPipelines*", "scripts*"])
-else:
-    cgat_packages = find_packages(exclude=["scripts*"])
-
-# rename scripts to CGATScripts
-cgat_packages.append("CGATScripts")
-
-cgat_package_dirs = {'CGAT': 'CGAT',
-                     'CGATScripts': 'scripts',
-                     'CGATPipelines': 'CGATPipelines'}
+cgat_packages = find_packages()
+cgat_package_dirs = {'CGAT': 'CGAT'}
 
 ##########################################################
 ##########################################################
@@ -287,12 +275,9 @@ setup(
     # package contents
     packages=cgat_packages,
     package_dir=cgat_package_dirs,
-    # package_data = {'CGATScripts':['./scripts/*.py', './scripts/*.pyx',
-    #                                './scripts/*.pyxbld', './scripts/*.pl'],
-    #                },
     include_package_data=True,
     entry_points={
-        'console_scripts': ['cgat = CGATScripts.cgat:main']
+        'console_scripts': ['cgat = scripts.cgat:main']
     },
     # dependencies
     install_requires=install_requires,

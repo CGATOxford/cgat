@@ -272,7 +272,7 @@ def main(argv=None):
         timer = timeit.Timer(
             stmt="IndexedFasta.benchmarkRandomFragment(fasta=fasta, size=%i)" %
             (options.benchmark_fragment_size),
-            setup="from __main__ import IndexedFasta\n"
+            setup="from CGAT import IndexedFasta\n"
             "fasta=IndexedFasta.IndexedFasta('%s')" % (args[0]))
 
         t = timer.timeit(number=options.benchmark_num_iterations)

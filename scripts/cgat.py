@@ -37,6 +37,7 @@ import glob
 import imp
 import collections
 import CGAT.IOTools as IOTools
+import CGAT
 
 
 def mapKeyword2Script(path):
@@ -91,7 +92,8 @@ def main(argv=None):
 
     argv = sys.argv
 
-    path = os.path.abspath(os.path.dirname(__file__))
+    path = os.path.join(os.path.abspath(os.path.dirname(CGAT.__file__)),
+                        "scripts")
 
     if len(argv) == 1 or argv[1] == "--help" or argv[1] == "-h":
         print((globals()["__doc__"]))
