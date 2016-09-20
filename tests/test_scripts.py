@@ -195,7 +195,7 @@ def check_script(test_name, script, stdin,
                     msg += "first 10 differences: {}".format(
                         "\n--\n".join(
                             ["\n".join(map(str, (x)))
-                                       for x in diffs]))
+                             for x in diffs]))
                     break
 
     t2 = time.time()
