@@ -2,7 +2,7 @@
 # use container-based infrastructure on Travis
 # http://docs.travis-ci.com/user/workers/container-based-infrastructure/
 # http://blog.travis-ci.com/2014-12-17-faster-builds-with-container-based-infrastructure/
-sudo: false
+#sudo: false
 
 # use VM infrastructure on Travis
 # exit code 137 indicates that your build is now taking more memory
