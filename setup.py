@@ -266,7 +266,7 @@ setup(
     description='CGAT : the Computational Genomics Analysis Toolkit',
     author='Andreas Heger',
     author_email='andreas.heger@gmail.com',
-    license="BSD",
+    license="MIT",
     platforms=["any"],
     keywords="computational genomics",
     long_description='CGAT : the Computational Genomics Analysis Toolkit',
