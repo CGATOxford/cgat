@@ -253,7 +253,7 @@ else
 
    #conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE=0.2 --override-channels --channel https://conda.anaconda.org/cgat --channel defaults --channel https://conda.anaconda.org/bioconda --channel https://conda.anaconda.org/r --yes
 
-   conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE=0.3 --override-channels --channel https://conda.anaconda.org/cgat --channel defaults --channel https://conda.anaconda.org/bioconda --channel https://conda.anaconda.org/r --yes
+   conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE --override-channels --channel https://conda.anaconda.org/cgat --channel defaults --channel https://conda.anaconda.org/bioconda --channel https://conda.anaconda.org/r --yes
 
 
 fi
