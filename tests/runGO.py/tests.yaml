@@ -20,6 +20,7 @@ genelists_BH:
             --gene2name-map-tsv-file=%DIR%/gene2name.tsv 
 
 genelists_empirical:
+    skip_travis: true
     stdin: null
     outputs: [stdout]
     references: [genelists_empirical.tsv.gz]
