@@ -42,6 +42,7 @@ PYTHON_VERSION = platform.python_version()
 IS_PY3 = sys.version_info.major >= 3
 
 TRAVIS = os.environ.get("TRAVIS", False) == "true"
+JENKINS = os.environ.get("JENKINS", False) == "true"
 
 SUBDIRS = ("gpipe", "optic")
 
@@ -300,9 +301,10 @@ def test_scripts():
                             if PYTHON_VERSION.startswith(x)]
                 if len(versions) > 0:
                     continue
-            if "skip_travis" in values:
-                if TRAVIS:
-                    continue
+            if "skip_travis" in values and TRAVIS:
+                continue
+            if "skip_jenkins" in values and JENKINS:
+                continue
  
             # deal with scripts in subdirectories. These are prefixed
             # by a "<subdir>_" for example: optic_compare_projects.py

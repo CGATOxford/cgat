@@ -21,6 +21,7 @@ genelists_BH:
 
 genelists_empirical:
     skip_travis: true
+    skip_jenkins: true
     stdin: null
     outputs: [stdout]
     references: [genelists_empirical.tsv.gz]
