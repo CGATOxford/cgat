@@ -1319,6 +1319,65 @@ class DEResult_DESeq2(DEResult):
         # self.table.set_index("test_id", inplace=True)
 
 
+class DEExperiment_DEXSeq(DEExperiment):
+    '''DEExperiment object to run DEXSeq on counts data'''
+
+    def run(self,
+            design,
+            base_dir,
+            model=None,
+            flattenedfile=None,
+            outfile_prefix=None,
+            fdr=0.1):
+
+        pandas2ri.activate()
+
+        # create r objects
+        E.info('running DEXSeq: groups=%s, pairs=%s, replicates=%s, pairs=%s,'
+               ' additional_factors:' %
+               (design.groups, design.pairs, design.has_replicates,
+                design.has_pairs))
+
+        # load DEXSeq
+        R('''suppressMessages(library('DEXSeq'))''')
+
+        # change group to condition
+        sampleTable = design.table.rename(columns={'group': 'condition'})
+
+        allfiles = [file for file in os.listdir(base_dir)]
+        countfiles = []
+        for item in list(design.table.index):
+            countfiles += [base_dir+"/"+x for x in allfiles if item in x]
+
+        buildCountDataSet = R('''
+        function(countFiles, gff, sampleTable, model){
+
+        full_model <- formula("%(model)s")
+
+        dxd <- suppressMessages(DEXSeqDataSetFromHTSeq(
+                     countFiles,
+                     sampleData=sampleTable,
+                     flattenedfile=gff,
+                     design=full_model))
+
+        dxd = estimateSizeFactors(dxd)
+        dxd = estimateDispersions(dxd)
+
+        png("%(outfile_prefix)s_dispersion.png")
+        plotDispEsts(dxd)
+        dev.off()
+
+        dxd = testForDEU(dxd)
+
+        result = DEXSeqResults(dxd)
+        result = as.data.frame(result)
+
+        return(result)
+        }''' % locals())
+        result = pandas2ri.ri2py(
+            buildCountDataSet(countfiles, flattenedfile, sampleTable, model))
+
+
 class DEExperiment_Sleuth(DEExperiment):
     '''DEExperiment object to run sleuth on kallisto bootstrap files
     Unlike the other DEExperiment instances, this does not operate on
