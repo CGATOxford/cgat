@@ -376,7 +376,7 @@ def main(argv=None):
                         sep="\t", index_col=0, comment="#"))
 
         # validate design against counts and model
-        design.validate(model=options.model)
+        # design.validate(model=options.model)
 
         experiment = Expression.DEExperiment_DEXSeq()
         results = experiment.run(design,
