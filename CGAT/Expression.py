@@ -1511,7 +1511,7 @@ class DEExperiment_Sleuth(DEExperiment):
                 tmp_results = pandas2ri.ri2py(
                     differentialTesting(so))
                 tmp_results['contrast'] = contrast
-                
+
                 # need to set index to sequence of ints to avoid duplications
                 n2 = n + tmp_results.shape[0]
                 tmp_results.index = range(n, n2)
@@ -1958,7 +1958,7 @@ class SAM(object):
 def loadTagData(tags_filename, design_filename):
     '''load tag data for deseq/edger analysis.
 
-    *Infile* is a tab-separated file with counts.
+    *tags_file* is a tab-separated file with counts.
 
     *design_file* is a tab-separated file with the
     experimental design with a minimum of four columns::
@@ -3145,7 +3145,7 @@ def runDESeq2(outfile,
 
     # Check for model and that model terms are in metadata table
     if model:
-        assert contrasts, "Must specifiy contrasts is model design provided"
+        assert contrasts, "Must specifiy contrasts if model design provided"
         terms = set([x for x in re.split("\W", model) if x != ''])
         assert terms.issubset(mdata), \
             "DESeq2: design formula has terms not present in colData"
