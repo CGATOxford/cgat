@@ -1349,10 +1349,7 @@ class DEExperiment_DEXSeq(DEExperiment):
         for item in list(design.table.index):
             countfiles += [base_dir+"/"+x for x in allfiles if item in x]
 
-
-        E.info("%s" % countfiles)
-        E.info("%s" % model)
-        E.info("%s" % flattenedfile)
+        E.info("Processing Samples. Sample table:")
         E.info("%s" % sampleTable)
         buildCountDataSet = R('''
         function(countFiles, gff, sampleTable, model){
@@ -1381,6 +1378,8 @@ class DEExperiment_DEXSeq(DEExperiment):
         }''' % locals())
         result = pandas2ri.ri2py(
             buildCountDataSet(countfiles, flattenedfile, sampleTable, model))
+
+        self.table = result
 
 
 class DEExperiment_Sleuth(DEExperiment):
