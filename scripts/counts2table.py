@@ -41,6 +41,9 @@ deseq
 edger
    Application of EdgeR
 
+dexseq
+   Application of DEXSeq
+
 ttest
    Application of Welch's ttest to FPKM values
 
@@ -179,7 +182,7 @@ def main(argv=None):
                       "[default=%default].")
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices=("sleuth", "edger", "deseq2", "mock"),
+                      choices=("sleuth", "edger", "deseq2", "mock", "dexseq"),
                       help="differential expression method to apply "
                       "[default=%default].")
 
@@ -408,10 +411,20 @@ def main(argv=None):
                                      design,
                                      model=options.model,
                                      contrasts=options.contrasts,
-                                     outfile_prefix=outfile_prefix,
+                                     outfileprefix=outfile_prefix,
                                      fdr=options.fdr,
                                      fit_type=options.deseq2_fit_type,
                                      ref_group=options.ref_group)
+
+        elif options.method == "dexseq":
+
+            experiment = Expression.DEExperiment_DEXSeq()
+            results = experiment.run(counts,
+                                     design,
+                                     model=options.model,
+                                     contrasts=options.contrasts,
+                                     outfileprefix=outfile_prefix,
+                                     fdr=options.fdr)
 
     results.getResults(fdr=options.fdr)
 
