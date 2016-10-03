@@ -315,6 +315,9 @@ if [ "$OS" != "travis" ] ; then
       # SLV: workaround until bx-python is available with Python 3
       pip install bx-python
 
+      # AH: workaround to get pysam 0.9.1.4 into environment
+      pip install --upgrade --use-wheel --no-index --find-links=https://www.cgat.org/downloads/public/pysam/wheels pysam
+
       # Set up other environment variables
       setup_env_vars
 
