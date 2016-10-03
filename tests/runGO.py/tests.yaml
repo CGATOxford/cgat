@@ -19,6 +19,7 @@ genelists_BH:
             --fdr-method=BH 
             --gene2name-map-tsv-file=%DIR%/gene2name.tsv 
 
+# output not identical in travis/jenkins environments
 genelists_empirical:
     skip_travis: true
     skip_jenkins: true

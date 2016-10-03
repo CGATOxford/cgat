@@ -42,7 +42,7 @@ PYTHON_VERSION = platform.python_version()
 IS_PY3 = sys.version_info.major >= 3
 
 TRAVIS = os.environ.get("TRAVIS", False) == "true"
-JENKINS = os.environ.get("JENKINS", False) == "true"
+JENKINS = os.environ.get("USER", "") == "jenkins"
 
 SUBDIRS = ("gpipe", "optic")
 
