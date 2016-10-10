@@ -49,6 +49,8 @@ Sorting gene sets
    +-----------------+---------------------------------------+
    | gene+position   | gene_id, contig, start                |
    +-----------------+---------------------------------------+
+   | gene+exon       | gene_id, exon_id                      |
+   +-----------------+---------------------------------------+
 
    N.B. position+gene sorts by gene_id, start, then subsequently sorts
    flattened gene lists by contig, start
@@ -387,7 +389,8 @@ def main(argv=None):
                                "position",
                                "contig+gene",
                                "position+gene",
-                               "gene+position"),
+                               "gene+position",
+                               "gene+exon"),
                       help="sort input data [%default].")
 
     parser.add_option("--mark-utr",

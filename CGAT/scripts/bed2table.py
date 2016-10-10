@@ -36,6 +36,11 @@ classifier-chipseq
    classify chipseq intervals. Requires a :term:`gff`
    file with genomic annotations (see :doc:`gtf2gff`.)
 
+motif
+
+   Search for a specified motif e.g. using --motif-sequence=TTTT.
+
+
 Usage
 -----
 
@@ -87,6 +92,7 @@ Command line options
 ---------------------
 
 '''
+import re
 import sys
 import collections
 import CGAT.GTF as GTF
@@ -340,6 +346,25 @@ class CounterCompositionNucleotides(Counter):
 # ------------------------------------------------------------------------
 
 
+class CounterMotif(Counter):
+
+    headers = ['motif_counts']
+
+    def __init__(self, motif, *args, **kwargs):
+        Counter.__init__(self, *args, **kwargs)
+        self.motif = motif
+
+    def count(self, bed):
+        s = self.fasta.getSequence(bed.contig, "+", bed.start, bed.end)
+        self.result = len([x for x in
+                           re.finditer(r'(?=(%s))' % self.motif, s)])
+
+    def __str__(self):
+        return str(self.result)
+
+# -------------------------------------------------------------------------
+
+
 class CounterCompositionCpG(CounterCompositionNucleotides):
 
     '''compute CpG frequencies as well as nucleotide frequencies.
@@ -421,6 +446,7 @@ class ClassifierChIPSeq(GeneModelAnalysis.Classifier):
 
         # convert to a gtf entry
         gtf = GTF.Entry()
+
         gtf.fromBed(bed)
         gtf.feature = 'exon'
         GeneModelAnalysis.Classifier.update(self, [gtf])
@@ -533,8 +559,14 @@ def main(argv=None):
                  "peaks",
                  "composition-na",
                  "composition-cpg",
-                 "classifier-chipseq"),
+                 "classifier-chipseq",
+                 "motif"),
         help="select counters to apply [default=%default].")
+
+    parser.add_option(
+        "--motif-sequence", dest="motif_sequence", type="string",
+        help="specify a sequence to search for"
+        "[default=%default].")
 
     parser.add_option(
         "-o", "--offset", dest="offsets", type="int", action="append",
@@ -580,6 +612,7 @@ def main(argv=None):
         bed_headers=None,
         filename_gff=[],
         has_header=False,
+        motif_sequence=None
     )
 
     (options, args) = E.Start(parser)
@@ -601,6 +634,9 @@ def main(argv=None):
             if not line.startswith("#"):
                 break
         bed_headers = line[:-1].split("\t")
+
+    if "motif" in options.counters and not options.motif_sequence:
+        raise ValueError("if using motif must specify a motif-sequence")
 
     # get files
     if options.genome_file:
@@ -653,6 +689,10 @@ def main(argv=None):
                 options=options,
                 prefix=None))
             del options.filename_gff[0]
+
+        elif c == "motif":
+            counters.append(CounterMotif(fasta=fasta,
+                                         motif=options.motif_sequence))
 
     extra_fields = None
 

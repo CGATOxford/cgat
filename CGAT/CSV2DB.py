@@ -357,7 +357,7 @@ def run(infile, options, report_step=10000):
         # use , as separator
         quick_import_statement = \
             "sqlite3 %s '.import %%s %s'" % \
-            (options.database, options.tablename)
+            (options.database_name, options.tablename)
 
         quick_import_separator = "|"
 

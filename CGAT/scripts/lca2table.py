@@ -53,12 +53,52 @@ def main(argv=None):
                       choices=("level-counts", "taxa-counts", "individual"),
                       help="summarise the taxa counts - no. phyla etc")
 
+    parser.add_option("--output-map", dest="output_map", action="store_true",
+                      help="ouput map of taxonomy")
+
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
+
+    if options.output_map:
+        found = []
+        options.stdout.write("""Domain\t \
+        kingdom\t \
+        phylum\t \
+        class\t \
+        order\t \
+        family\t \
+        genus\t \
+        species\n""")
+        # only output the mapping file - do not continue
+        # summarise regardless of the specified options
+        for lca in LCA.iterate(options.stdin):
+
+            # if bacteria or archaea the kingdom will
+            # be the domain
+            if lca.domain == "Bacteria" or lca.domain == "Archaea":
+                kingdom = lca.domain
+            else:
+                kingdom = lca.kingdom
+
+            hierarchy = [lca.domain,
+                         kingdom,
+                         lca.phylum,
+                         lca._class,
+                         lca.order,
+                         lca.family,
+                         lca.genus,
+                         lca.species]
+            if hierarchy in found:
+                continue
+            else:
+                found.append(hierarchy)
+                options.stdout.write("\t".join(hierarchy) + "\n")
+        return
 
     if options.summarise == "level-counts":
         level_counts = collections.defaultdict(set)
         total = 0
+        nreads_domain = 0
         nreads_kingdom = 0
         nreads_kingdom_plus = 0
         nreads_phylum = 0
@@ -79,6 +119,12 @@ def main(argv=None):
         c = E.Counter()
         for lca in LCA.iterate(options.stdin):
             total += 1
+            if lca.domain != "NA":
+                nreads_domain += 1
+                level_counts["domain"].add(lca.domain)
+            else:
+                c.kingdom_unmapped += 1
+
             if lca.kingdom != "NA":
                 nreads_kingdom += 1
                 level_counts["kingdom"].add(lca.kingdom)
@@ -163,19 +209,23 @@ def main(argv=None):
             else:
                 c.species_plus_unmapped += 1
 
-            if lca.subspecies != "NA":
-                nreads_subspecies += 1
-                level_counts["subspecies"].add(lca.subspecies)
-            else:
-                c.subspecies_unmapped += 1
+            # removed subspecies mapping for the time
+            # being
+            
+            # if lca.subspecies != "NA":
+            #     nreads_subspecies += 1
+            #     level_counts["subspecies"].add(lca.subspecies)
+            # else:
+            #     c.subspecies_unmapped += 1
 
-            if lca.subspecies_plus != "NA":
-                nreads_subspecies_plus += 1
-                level_counts["subspecies+"].add(lca.subspecies_plus)
-            else:
-                c.subspecies_plus_unmapped += 1
+            # if lca.subspecies_plus != "NA":
+            #     nreads_subspecies_plus += 1
+            #     level_counts["subspecies+"].add(lca.subspecies_plus)
+            # else:
+            #     c.subspecies_plus_unmapped += 1
 
-        options.stdout.write("\t".join(["nkingdom",
+        options.stdout.write("\t".join(["ndomain",
+                                        "nkingdom",
                                         "nkingdom+",
                                         "nphylum",
                                         "nphylum+",
@@ -189,8 +239,6 @@ def main(argv=None):
                                         "ngenus+",
                                         "nspecies",
                                         "nspecies+",
-                                        "nsubspecies",
-                                        "nsubspecies+",
                                         "nseqkingdom",
                                         "nseqkingdom+",
                                         "nseqphylum",
@@ -204,12 +252,11 @@ def main(argv=None):
                                         "nseqgenus",
                                         "nseqgenus+",
                                         "nseqspecies",
-                                        "nseqspecies+",
-                                        "nseqsubspecies",
-                                        "nseqsubspecies+"]) + "\n")
+                                        "nseqspecies+"]) + "\n")
 
         options.stdout.write("\t".join(map(
-            str, [len(level_counts["kingdom"]),
+            str, [len(level_counts["domain"]),
+                  len(level_counts["kingdom"]),
                   len(level_counts["kingdom+"]),
                   len(level_counts["phylum"]),
                   len(level_counts["phylum+"]),
@@ -223,8 +270,7 @@ def main(argv=None):
                   len(level_counts["genus+"]),
                   len(level_counts["species"]),
                   len(level_counts["species+"]),
-                  len(level_counts["subspecies"]),
-                  len(level_counts["subspecies+"]),
+                  nreads_domain,
                   nreads_kingdom,
                   nreads_phylum,
                   nreads_phylum_plus,
@@ -237,13 +283,12 @@ def main(argv=None):
                   nreads_genus,
                   nreads_genus_plus,
                   nreads_species,
-                  nreads_species_plus,
-                  nreads_subspecies,
-                  nreads_subspecies_plus])) + "\n")
+                  nreads_species_plus])) + "\n")
     elif options.summarise == "taxa-counts":
         unmapped = collections.defaultdict(int)
         total = 0
-        taxa_counts = {"kingdom": collections.defaultdict(int),
+        taxa_counts = {"domain": collections.defaultdict(int),
+                       "kingdom": collections.defaultdict(int),
                        "kingdom+": collections.defaultdict(int),
                        "phylum": collections.defaultdict(int),
                        "phylum+": collections.defaultdict(int),
@@ -256,13 +301,16 @@ def main(argv=None):
                        "genus": collections.defaultdict(int),
                        "genus+": collections.defaultdict(int),
                        "species": collections.defaultdict(int),
-                       "species+": collections.defaultdict(int),
-                       "subspecies": collections.defaultdict(int),
-                       "subspecies+": collections.defaultdict(int)}
+                       "species+": collections.defaultdict(int)}
 
         c = E.Counter()
         for lca in LCA.iterate(options.stdin):
             total += 1
+            if lca.domain != "NA":
+                taxa_counts["domain"][lca.domain] += 1
+            else:
+                c.kingdom_unmapped += 1
+                unmapped["domain"] += 1
             if lca.kingdom != "NA":
                 taxa_counts["kingdom"][lca.kingdom] += 1
             else:
@@ -333,16 +381,6 @@ def main(argv=None):
             else:
                 c.species_plus_unmapped += 1
                 unmapped["species+"] += 1
-            if lca.subspecies != "NA":
-                taxa_counts["subspecies"][lca.subspecies] += 1
-            else:
-                c.subspecies_unmapped += 1
-                unmapped["subspecies"] += 1
-            if lca.subspecies_plus != "NA":
-                taxa_counts["subspecies+"][lca.subspecies_plus] += 1
-            else:
-                c.subspecies_plus_unmapped += 1
-                unmapped["subspecies+"] += 1
 
         options.stdout.write("level\ttaxa\tcount\tproportion\trpm\n")
         for level, taxa_count in sorted(taxa_counts.items()):
@@ -362,6 +400,7 @@ def main(argv=None):
         # each read is output with its respective
         # taxon assignments
         options.stdout.write("\t".join(["id",
+                                        "domain",
                                         "kingdom",
                                         "kingdom+",
                                         "phylum",
@@ -375,11 +414,10 @@ def main(argv=None):
                                         "genus",
                                         "genus+",
                                         "species",
-                                        "species+",
-                                        "subspecies",
-                                        "subspecies+"]) + "\n")
+                                        "species+"]) + "\n")
         for lca in LCA.iterate(options.stdin):
             options.stdout.write("\t".join([lca.identifier,
+                                            lca.domain,
                                             lca.kingdom,
                                             lca.kingdom_plus,
                                             lca.phylum,
@@ -393,9 +431,7 @@ def main(argv=None):
                                             lca.genus,
                                             lca.genus_plus,
                                             lca.species,
-                                            lca.species_plus,
-                                            lca.subspecies,
-                                            lca.subspecies_plus]) + "\n")
+                                            lca.species_plus]) + "\n")
 
     # write footer and output benchmark information.
     E.Stop()

@@ -33,7 +33,7 @@ These include methods for
   :func:`checkPresenceOfFiles`
 
 * manipulating file, such as :func:`openFile`, :func:`zapFile`,
-  :func:`cloneFile`, :func:`touchFile`.
+  :func:`cloneFile`, :func:`touchFile`, :func:`shadowFile`.
 
 * converting values for input/output, such as :func:`val2str`,
   :func:`str2val`, :func:`prettyPercent`, :func:`human2bytes`,
@@ -52,18 +52,20 @@ Reference
 
 '''
 
-import string
-import re
-import os
 import collections
 import glob
-import stat
 import gzip
-import subprocess
 import itertools
 import numpy
 import numpy.ma
+import os
+import re
+import shutil
+import stat
+import string
+import subprocess
 import sys
+import time
 
 
 def getFirstLine(filename, nlines=1):
@@ -277,13 +279,17 @@ def force_str(iterator, encoding="ascii"):
             yield line
 
 
-def zapFile(filename):
+def zapFile(filename, outfile=None):
     '''replace *filename* with empty file.
 
     File attributes such as accession times are preserved.
 
     If the file is a link, the link will be broken and replaced with
     an empty file having the same attributes as the file linked to.
+
+    It also takes an optional outfile. If the outfile has zero byte,
+        it usually means there's an error in generating the outfile,
+        and it will throw an error and stop.
 
     Returns
     -------
@@ -293,6 +299,10 @@ def zapFile(filename):
        If the file was a link, the file being linked to.
 
     '''
+    # outfile as zero byte? Let's throw an error and stop
+    if outfile and os.path.getsize(outfile) == 0:
+        raise ValueError('%s has size zero!' % outfile)
+
     # stat follows times to links
     original = os.stat(filename)
 
@@ -336,6 +346,24 @@ def cloneFile(infile, outfile):
         os.symlink(target, outfile)
     except OSError:
         pass
+
+
+def shadowFile(infile, outfile):
+    '''move ```infile``` as ```outfile```, and
+    touch ```infile```.
+    This could be useful when one wants to skip
+    some steps in a pipeline.
+    Note that zapFile is not needed when shadowFile
+    is used
+    '''
+    if outfile != infile:
+        shutil.move(infile, outfile)
+        touchFile(infile)
+        # reset outfile's timestamp
+        time.sleep(1)
+        touchFile(outfile)
+    else:
+        raise ValueError('Panic: infile and outfile names cannot be the same')
 
 
 def val2str(val, format="%5.2f", na="na"):
@@ -407,7 +435,8 @@ def which(program):
        The full path to the program. Returns None if not found.
 
     """
-    # see http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
+    # see http://stackoverflow.com/questions/377017/test-if-
+    #  executable-exists-in-python
 
     def is_exe(fpath):
         return os.path.exists(fpath) and os.access(fpath, os.X_OK)

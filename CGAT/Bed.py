@@ -230,7 +230,7 @@ class Bed(object):
         try:
             position = self.map_key2field[key]
         except IndexError:
-            raise IndexError("Unknown key: %s" % s)
+            raise IndexError("Unknown key: %s" % key)
 
         try:
             self.fields[position] = value
@@ -436,7 +436,9 @@ def readAndIndex(infile, with_values=False, per_track=False):
             if e.contig not in idx:
                 idx[e.contig] = idx_factory()
             try:
-                if with_values:
+                if with_values == "name":
+                    idx[e.contig].add(e.start, e.end, e.name)
+                elif with_values is True:
                     idx[e.contig].add(e.start, e.end, e)
                 else:
                     idx[e.contig].add(e.start, e.end)
