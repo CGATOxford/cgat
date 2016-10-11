@@ -262,13 +262,6 @@ def main(argv=None):
 
     feature = options.feature
 
-#    for item in iterator:
-# print len(item) # 3, 2
-#	for i in item:
-# print len(i) # 9, 9, 9, 9, 9
-#	   print i.contig
-#	   print i.strand
-#	   print i.transcript_id
 
     # iterator is a list containing groups (lists) of features.
     # Each group of features have in common the same transcript ID, in case of

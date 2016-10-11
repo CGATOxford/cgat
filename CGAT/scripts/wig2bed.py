@@ -44,7 +44,6 @@ import CGAT.IOTools as IOTools
 import bx
 import bx.bbi.bigwig_file
 
-# block iterator for bigwig data
 
 
 def block_iterator(infile, contig, size, chunk_size=10000000):

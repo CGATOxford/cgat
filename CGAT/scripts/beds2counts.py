@@ -59,7 +59,6 @@ Command line options
 import tempfile
 import sys
 
-# importing pybedtools within sphinx does not work
 try:
     import pybedtools
 except ImportError:

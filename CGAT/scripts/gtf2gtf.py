@@ -289,9 +289,6 @@ import CGAT.Genomics as Genomics
 import CGAT.Intervals as Intervals
 import CGAT.IOTools as IOTools
 
-# ------------------------------------------------------------
-# This script needs some attention.
-# ------------------------------------------------------------
 
 
 def find_retained_introns(gene):

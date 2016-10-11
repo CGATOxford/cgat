@@ -50,7 +50,6 @@ baseml: compute baseml rates
 counts: compute residue counts (percent G+C, ...)
 match:  compute match statistics (pid, coverage)
 """
-# ------------------------------------------------------------------------
 
 
 class Counter:
@@ -96,7 +95,6 @@ class SbjctsCounter(SequenceProperties.SequencePropertiesNA):
         SequenceProperties.SequencePropertiesNA.loadSequence(self, seq2)
 
 
-# ------------------------------------------------------------------------
 def main(argv=None):
     """script main.
 
@@ -168,29 +166,7 @@ def main(argv=None):
 
     ninput, noutput, nskipped = 0, 0, 0
 
-# setup totals
-#     totals = {}
-#     for section in options.sections:
-#         if section == "length":
-#             s = SequencePropertiesLength()
-#         elif section == "na":
-#             s = SequencePropertiesNA()
-#         elif section == "aa":
-#             s = SequencePropertiesAA()
-#         elif section == "degeneracy":
-#             s = SequencePropertiesDegeneracy()
-#         elif section == "bias":
-#             s = SequencePropertiesBias( reference_codons )
-#         elif section == "codons":
-#             s = SequencePropertiesCodons()
-#         elif section == "codon-usage":
-#             s = SequencePropertiesCodonUsage()
-#         elif section == "codon-translator":
-#             s = SequencePropertiesCodonTranslator()
-#         else:
-#             raise "unknown section %s" % section
 
-#         totals[section] = s
 
     for match in iterator:
         ninput += 1

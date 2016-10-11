@@ -91,8 +91,6 @@ import CGAT.IOTools as IOTools
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IndexedGenome as IndexedGenome
 
-# ignore warnings from networkx/matplotlib that a display
-# can not be found
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
     import networkx

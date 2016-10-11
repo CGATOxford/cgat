@@ -65,9 +65,6 @@ operation somewhere.
 
 '''
 
-# TS NOTE: this is a very memory hungry script. On the human
-# protein-coding transcriptome (~140,000 transcripts) with 31mer, it
-# requires ~ 20G RAM!
 
 import sys
 import numpy as np
@@ -78,7 +75,6 @@ import CGAT.IOTools as IOTools
 import CGAT.Experiment as E
 
 
-# TS. temp function to monitor usage
 def using(point=""):
     usage = resource.getrusage(resource.RUSAGE_SELF)
     return '''%s: usertime=%s systime=%s mem=%s mb

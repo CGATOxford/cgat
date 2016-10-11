@@ -206,7 +206,6 @@ class Chain:
             treg, qreg = self.tugr, self.qugr
         return(treg, qreg)
 
-# -----------------------------------------------------------------------------
 
 
 class Bitsets_Container:
@@ -407,7 +406,6 @@ class CounterPerChromosomePair(CounterPerChromosome):
         self._write_tabbed(
             ''.join(["chrom_pair_cov_", self.name]), self.cov_table, E)
 
-# -----------------------------------------------------------------------------
 
 
 class CounterOfGappedChainLengths(ChainCounter):
@@ -463,7 +461,6 @@ class CounterOfGappedChainLengths(ChainCounter):
             lines.append(self._wrap_basic_stats(self.stats[i], tabbed=True))
             self._write_tabbed('_'.join([i, "lengths", self.name]), lines, E)
 
-# -----------------------------------------------------------------------------
 
 
 class CounterPercentIdentify(ChainCounter):

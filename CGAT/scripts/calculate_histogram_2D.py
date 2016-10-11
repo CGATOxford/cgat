@@ -40,7 +40,6 @@ USAGE = """python calculate_histogram.py < stdin > stdout
 
 -1, --column1    column to take [default = 0]
 -2, --column2    column to take [default = 1]
-# at start of line is a comment
 """
 
 param_column1 = 0
@@ -49,7 +48,6 @@ param_bin_size1 = 1
 param_bin_size2 = 1
 param_titles = True
 
-# ------------------------------------------------------------------------
 
 
 def main(argv=None):

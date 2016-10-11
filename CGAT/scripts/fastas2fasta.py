@@ -63,7 +63,6 @@ import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.FastaIterator as FastaIterator
 
-# ------------------------------------------------------------
 
 
 def main(argv=None):

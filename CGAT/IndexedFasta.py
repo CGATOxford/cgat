@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''IndexedFasta.py - fast random access in fasta files
 ===================================================
 
@@ -609,8 +587,6 @@ def createDatabase(db, iterator,
             for val in vals:
                 outfile_index.write("%s\t%s\n" % (key, val))
 
-# map of names
-# order is suffix data, suffix index, noSeek
 NAME_MAP = {
     'uncompressed': ('fasta', 'idx', False),
     'lzo': ('lzo',   'cdx', True),
@@ -1091,12 +1067,6 @@ def IndexedFasta(dbname, *args, **kwargs):
     else:
         return CGATIndexedFasta(dbname, *args, **kwargs)
 
-###############################################################################
-###############################################################################
-###############################################################################
-# converter functions. Some code duplication could be avoided but
-# I preferred to keep the functions lean.
-###############################################################################
 
 
 def _one_forward_closed(x, y, c, l):
@@ -1218,7 +1188,6 @@ def getConverter(format):
             else:
                 return _zero_both_open
 
-# Test function for benchmarking purposes
 
 
 def benchmarkRandomFragment(fasta, size):

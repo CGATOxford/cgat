@@ -109,7 +109,6 @@ class Counter:
                                           )
 
 
-# ------------------------------------------------------------
 def main(argv=None):
 
     if argv is None:

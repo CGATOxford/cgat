@@ -756,9 +756,6 @@ def annotateRegulons(iterator, fasta, tss, options):
     E.info("ngenes=%i, ntranscripts=%i, nregulons=%i" %
            (ngenes, ntranscripts, nregulons))
 
-####################################################################
-####################################################################
-####################################################################
 
 
 def annotateGREATDomains(iterator, fasta, options):
@@ -1081,7 +1078,6 @@ def annotateGenes(iterator, fasta, options):
     E.info("ngenes=%i, ntranscripts=%i, nskipped=%i\n" %
            (ngenes, ntranscripts, nskipped))
 
-# ------------------------------------------------------------
 
 
 def main(argv=None):

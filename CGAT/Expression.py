@@ -1,25 +1,3 @@
-#########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''
 Expression.py - wrap various differential expression tools
 ===========================================================
@@ -102,12 +80,8 @@ except ImportError:
     from . import IOTools
     from . import Stats
 
-# activate pandas/rpy conversion
 pandas2ri.activate()
 
-# AH: Only do this on demand, module might not be
-#     be able to be imported if there are any issues.
-# grdevices = importr('grDevices')
 
 
 def runDETest(raw_DataFrame,
@@ -1564,7 +1538,6 @@ class DEResult_Sleuth(DEResult):
         # self.table.set_index("test_id", inplace=True)
 
 
-###############################################################################
 
 
 def buildProbeset2Gene(infile,
@@ -1952,9 +1925,6 @@ class SAM(object):
         return genes, cutoff, fdr_values
 
 
-#########################################################################
-#########################################################################
-#########################################################################
 def loadTagData(tags_filename, design_filename):
     '''load tag data for deseq/edger analysis.
 
@@ -2484,8 +2454,6 @@ def runEdgeR(outfile,
     outf.write("category\tcounts\n%s\n" % counts.asTable())
     outf.close()
 
-# needs to put into class
-##
 
 
 def deseqPlotSizeFactors(outfile):
@@ -3674,9 +3642,6 @@ def runTTest(outfile,
     writeExpressionResults(outfile, results)
 
 
-#####################################################################
-# Pandas-based functions and matplotlib-based plotting functions ####
-#####################################################################
 
 def loadTagDataPandas(tags_filename, design_filename):
     '''load tag data for deseq/edger analysis.

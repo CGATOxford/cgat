@@ -148,7 +148,6 @@ parses command line options in sys.argv, unless *argv* is given.
     parser.add_option("--image-dir", dest="images_dir", type="string",
                       help="directory to write plots/figures to")
 
-# add common options (-h/--help, ...) and parse command line
 
     (options, args) = E.Start(parser, argv=argv)
 

@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''
 GO.py - compute GO enrichment from gene lists
 =============================================
@@ -52,11 +30,6 @@ from CGAT import CSV as CSV
 from rpy2.robjects import r as R
 
 MIN_FLOAT = sys.float_info.min
-# The following code was taken from:
-#
-# http://mail.python.org/pipermail/python-list/2006-January/359797.html
-#
-#
 
 
 def lnchoose(n, m):
@@ -231,7 +204,6 @@ class GOEntry:
             elif term == "is_obsolete":
                 self.mIsObsolete = True
 
-# ------------------------------------------------------------------------
 
 
 def readOntology(infile):
@@ -270,7 +242,6 @@ def readOntology(infile):
 
     return result
 
-# ------------------------------------------------------------------------
 
 
 class GOSample:
@@ -288,7 +259,6 @@ class GOSample:
         self.mProbabilitiesUnderRepresentation = mprobunders
         self.mCounts = counts
 
-# ------------------------------------------------------------------------
 
 
 class GOResult:
@@ -395,7 +365,6 @@ class GOResults:
             lines.append("%s\t%s" % (k, str(v)))
         return "\n".join(lines)
 
-# ------------------------------------------------------------------------
 
 
 class GOInfo:
@@ -421,7 +390,6 @@ class GOInfo:
     def getHeaders(self):
         return ["goid", "go_catagory", "go_description"]
 
-# ------------------------------------------------------------------------
 
 
 class GOMatch(GOInfo):
@@ -439,7 +407,6 @@ class GOMatch(GOInfo):
     def __str__(self):
         return "\t".join(map(str, (self.mGOId, self.mGOType, self.mDescription, self.mEvidence)))
 
-# ---------------------------------------------------------------------
 
 
 def FilterByGOIds(gene2go, go2info):
@@ -467,7 +434,6 @@ def FilterByGOIds(gene2go, go2info):
 
     return filtered_gene2go
 
-# ---------------------------------------------------------------------
 
 
 def MapGO2Slims(gene2go, go2slim, ontology=None):
@@ -512,7 +478,6 @@ def MapGO2Slims(gene2go, go2slim, ontology=None):
 
     return filtered_gene2go
 
-# ------------------------------------------------------------------------
 
 
 def GetGOSlims(infile):
@@ -537,7 +502,6 @@ def GetGOSlims(infile):
 
     return go2go
 
-# ------------------------------------------------------------------------
 
 
 def GetGOFrequencies(gene2go, genes):
@@ -566,7 +530,6 @@ def GetGOFrequencies(gene2go, genes):
 
     return total, counts, found_genes
 
-# ------------------------------------------------------------------------
 
 
 def AnalyseGO(gene2go,
@@ -646,7 +609,6 @@ def AnalyseGO(gene2go,
 
     return result
 
-# ------------------------------------------------------------------------
 
 
 def GetGOStatement(go_type, database, species):
@@ -832,7 +794,6 @@ def DumpGOFromDatabase(outfile,
 
     return
 
-# ---------------------------------------------------------------------------
 
 
 def ReadGene2GOFromFile(infile, synonyms={}, obsolete={}):
@@ -891,7 +852,6 @@ def ReadGene2GOFromFile(infile, synonyms={}, obsolete={}):
 
     return gene2gos, go2infos
 
-# ---------------------------------------------------------------------------
 
 
 def CountGO(gene2go):
@@ -913,7 +873,6 @@ def removeCategories(gene2go, categories):
     for k, vv in list(gene2go.items()):
         gene2go[k] = [v for v in vv if v.mGOId not in categories]
 
-# ---------------------------------------------------------------------------
 
 
 def countGOs(gene2gos):
@@ -927,7 +886,6 @@ def countGOs(gene2gos):
                 goids[v.mGOId] += 1
     return genes, goids
 
-# ---------------------------------------------------------------------------
 
 
 def ReadGeneLists(filename_genes, gene_pattern=None):
@@ -966,7 +924,6 @@ def ReadGeneLists(filename_genes, gene_pattern=None):
 
     return all_genes, gene_lists
 
-# ---------------------------------------------------------------------------
 
 
 def buildGO2Genes(gene2gos, ancestors=None):
@@ -984,7 +941,6 @@ def buildGO2Genes(gene2gos, ancestors=None):
                     go2genes[anc].add(gene_id)
     return go2genes
 
-# ---------------------------------------------------------------------------
 
 
 def GetCode(v):
@@ -998,7 +954,6 @@ def GetCode(v):
         code = "?"
     return code
 
-# ---------------------------------------------------------------------------
 
 
 def convertGo2Goslim(options):
@@ -1373,9 +1328,6 @@ def computeFDRs(go_results,
 
     return fdrs, samples, method
 
-################################################################
-################################################################
-################################################################
 
 
 def getFileName(options, **kwargs):
@@ -1394,9 +1346,6 @@ def getFileName(options, **kwargs):
 
     return outfile
 
-################################################################
-################################################################
-################################################################
 
 
 def buildMatrix(results, valuef, dtype=numpy.float, default=0):
@@ -1422,9 +1371,6 @@ def buildMatrix(results, valuef, dtype=numpy.float, default=0):
 
     return matrix, row_headers
 
-################################################################
-################################################################
-################################################################
 
 
 def selectSignificantResults(pairs, fdrs, options):
@@ -1451,9 +1397,6 @@ def selectSignificantResults(pairs, fdrs, options):
 
     return filtered_pairs
 
-################################################################
-################################################################
-################################################################
 
 
 def outputMultipleGeneListResults(results,

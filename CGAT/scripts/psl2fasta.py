@@ -40,7 +40,6 @@ import CGAT.Genomics as Genomics
 
 import alignlib_lite
 
-# ------------------------------------------------------------------------
 
 
 def getAlignmentFull(m, q, t, options):
@@ -49,7 +48,6 @@ def getAlignmentFull(m, q, t, options):
         m, alignlib_lite.py_makeSequence(q), alignlib_lite.py_makeSequence(t))
     return a.mRowAlignment, a.mColAlignment
 
-# ------------------------------------------------------------------------
 
 
 def main(argv=None):

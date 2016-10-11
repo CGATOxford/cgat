@@ -329,7 +329,6 @@ class CounterGenes(Counter):
             self.mSeparator.join(uniq1),
             self.mSeparator.join(uniq2))))
 
-# ------------------------------------------------------------------------
 
 
 def main(argv=None):

@@ -38,7 +38,6 @@ import CGAT.Experiment as E
 import CGAT.Fastq as Fastq
 import gzip
 
-# define functions to be used in main
 
 
 def replace(fastqfile, baseToReplace):

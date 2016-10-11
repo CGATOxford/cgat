@@ -62,7 +62,6 @@ def readDefinitions(filename):
     return config
 
 
-# Taken from python 3.3.2
 
 def getstatusoutput(cmd):
     """Return (status, output) of executing cmd in a shell.

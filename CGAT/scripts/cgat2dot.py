@@ -45,10 +45,8 @@ import CGAT.Experiment as E
 
 BASE_URL = "https://www.cgat.org/downloads/public/cgat/documentation/"
 
-# handle to original E.Start function
 ORIGINAL_START = None
 
-# Parser object collected from child script
 PARSER = None
 
 
@@ -62,7 +60,6 @@ MAP_FORMATS = {
     'csv': 'table',
 }
 
-# List of principal genomic formats
 PRINCIPAL_FORMATS = ('bam',
                      'gff',
                      'gtf',
@@ -72,8 +69,6 @@ PRINCIPAL_FORMATS = ('bam',
                      'fastq',
                      'fastqs')
 
-# List of formats that will not link between
-# nodes
 BREAK_FORMATS = {'table': 0}
 MAP_TYPE2FORMAT = {
     'gff': 'gff,gtf',

@@ -20,18 +20,9 @@ file::
 The export file is assumed to be organized with mate pairs next to
 each other as follows:
 
-#. Read 1234/1
-#. Read 1234/2
-#. Read 1635/1
-#. Read 1635/2
-#. etc.
 
 Inner-distances are returned on individual lines as follows:
 
-#. 101
-#. 120
-#. 115
-#. etc.
 
 Usage
 -----

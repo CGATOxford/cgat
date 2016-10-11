@@ -29,7 +29,6 @@ Code
 
 """
 
-# load modules
 import CGAT.Experiment as E
 import sys
 import os

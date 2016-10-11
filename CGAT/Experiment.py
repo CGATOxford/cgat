@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''Experiment.py - Tools for writing reproducible scripts
 =========================================================
 
@@ -323,9 +301,6 @@ global_args = None
 global_id = uuid.uuid4()
 global_benchmark = collections.defaultdict(int)
 
-##########################################################################
-# The code for BetterFormatter has been taken from
-# http://code.google.com/p/yjl/source/browse/Python/snippet/BetterFormatter.py
 __copyright__ = """
 Copyright (c) 2001-2006 Gregory P. Ward.  All rights reserved.
 Copyright (c) 2002-2006 Python Software Foundation.  All rights reserved.
@@ -427,10 +402,6 @@ class BetterFormatter(optparse.IndentedHelpFormatter):
         return "".join(result)
 
 
-# End of BetterFormatter()
-#################################################################
-#################################################################
-#################################################################
 class AppendCommaOption(optparse.Option):
 
     '''Option with additional parsing capabilities.
@@ -441,21 +412,6 @@ class AppendCommaOption(optparse.Option):
 
     * Option values of "None" and "" are treated as default values.
     '''
-#    def check_value( self, opt, value ):
-# do not check type for ',' separated lists
-#        if "," in value:
-#            return value
-#        else:
-#            return optparse.Option.check_value( self, opt, value )
-#
-#    def take_action(self, action, dest, opt, value, values, parser):
-#        if action == "append" and "," in value:
-#            lvalue = value.split(",")
-#            values.ensure_value(dest, []).extend(lvalue)
-#        else:
-#            optparse.Option.take_action(
-#                self, action, dest, opt, value, values, parser)
-#
 
     def convert_value(self, opt, value):
         if value is not None:
@@ -1226,7 +1182,6 @@ def run(statement,
         return retcode
 
 
-# some convenient decorators
 
 def benchmark(func):
     """decorator collecting wall clock time spent in decorated method."""
@@ -1243,8 +1198,6 @@ def benchmark(func):
         return res
     return wrapper
 
-# there are differences whether you cache a function or
-# an objects method
 
 
 def cachedmethod(function):
@@ -1303,8 +1256,6 @@ class Memoize(object):
             object = self.cache[args] = self.fn(self.instance, *args)
             return object
 
-######################################################################
-# Deprecated old call interface
 
 
 def GetFooter():

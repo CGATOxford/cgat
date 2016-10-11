@@ -294,20 +294,6 @@ def main(argv=None):
                 options.stdout.write("---- %s ---- %s\n" % (k, "missed2"))
 
     options.stdlog.write("""# Legend:
-# seqs1:          number of sequences in set 1
-# seqs2:          number of sequences in set 2
-# same:           number of identical sequences
-# diff:           number of sequences with differences
-# nmissed1:       sequences in set 1 that are not found in set 2
-# nmissed2:       sequences in set 2 that are not found in set 1
-# Type of sequence differences
-# first:          only the first residue is different
-# last:           only the last residue is different
-# prefix:         one sequence is prefix of the other
-# selenocysteine: difference due to selenocysteines
-# masked:         difference due to masked residues
-# fixed:          fixed differences
-# other:          other differences
 """)
 
     E.info("seqs1=%i, seqs2=%i, same=%i, ndiff=%i, nmissed1=%i, nmissed2=%i" %

@@ -33,7 +33,6 @@ Command line options
 
 import sys
 import collections
-# importing pybedtools within sphinx does not work
 try:
     import pybedtools
 except ImportError:

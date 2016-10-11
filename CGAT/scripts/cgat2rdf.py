@@ -88,14 +88,11 @@ from rdflib import Literal, BNode, URIRef
 from rdflib.collection import Collection
 import CGAT.Experiment as E
 
-# handle to original E.Start function
 ORIGINAL_START = None
 
-# Parser object collected from child script
 PARSER = None
 
 
-# DCTerms = Namespace('http://purl.org/dc/terms/')
 FOAF = Namespace('http://xmlns.com/foaf/1.1/')
 Component = Namespace('http://www.isi.edu/ikcap/Wingse/componentOntology.owl#')
 FO = Namespace('http://www.isi.edu/ikcap/Wingse/fileOntology.owl#')

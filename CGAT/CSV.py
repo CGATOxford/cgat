@@ -97,9 +97,6 @@ class DictReader(csv.DictReader):
                                 CommentStripper(infile),
                                 *args, **kwargs)
 
-# IMS - UnicodeDictReader to read Unicode encoded files
-# Taken from http://stackoverflow.com/questions/1846135/python-csv-library-with-unicode-utf-8-support-that-just-works?rq=1
-# WARNING: Does not strip # comment lines yet
 
 
 class UnicodeCsvReader(object):
@@ -259,8 +256,6 @@ def readTables(infile, *args, **kwargs):
 
     return result
 
-##########################################################################
-# group rows in table
 
 
 def __DoGroup(rows, group_column, group_function, missing_value="na"):

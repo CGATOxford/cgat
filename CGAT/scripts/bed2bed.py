@@ -428,7 +428,6 @@ def shiftIntervals(iterator, contigs, offset):
     E.info("ninput=%i, noutput=%i, nskipped_contig=%i, nskipped_range=%i" %
            (ninput, noutput, nskipped_contig, nskipped_range))
 
-# IMS: new method: extend intervals by set amount
 
 
 def extendInterval(iterator, contigs, distance):

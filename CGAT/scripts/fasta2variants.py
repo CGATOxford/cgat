@@ -49,7 +49,6 @@ import CGAT.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.FastaIterator as FastaIterator
 
-# ------------------------------------------------------------------------
 
 
 def main(argv=None):

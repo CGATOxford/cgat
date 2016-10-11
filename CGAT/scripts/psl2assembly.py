@@ -217,8 +217,6 @@ class Builder(Processor):
                                                                  alignlib_lite.py_makeSequence(query)))
 
                 # self.options.stdlog.write( str( alignlib_lite.py_AlignmentFormatExplicit( match.mMapTarget2Query,
-#                                                                                  alignlib_lite.py_makeSequence( genome ),
-# alignlib_lite.py_makeSequence( query ) ) ) + "\n" )
 
             if map_genome2transcript:
                 alignlib_lite.py_combineAlignment(mapped,
@@ -870,7 +868,6 @@ class BuilderIndels(Builder):
             self.options.stdlog.write("# %s\tfinished: ndeletions=%i, ninsertions=%i\n" % (
                 self.mName, self.mNDeletions, self.mNInsertions))
 
-# -------------------------------------------------------------------------
 
 
 class BuilderConsensus(Builder):
@@ -925,7 +922,6 @@ class BuilderConsensus(Builder):
             mm = Mali.convertAlignlib2Mali(mali, identifiers, seqs)
             mm.writeToFile(self.mOutFile, format="fasta")
 
-# -------------------------------------------------------------------------
 
 
 class BuilderPileUp(Builder):
@@ -952,7 +948,6 @@ class BuilderPileUp(Builder):
             mm.writeToFile(self.mOutFile, format="fasta")
 
 
-# -------------------------------------------------------------------------
 class BuilderPolyA(Builder):
 
     """predict polyA tails.
@@ -1179,7 +1174,6 @@ class BuilderPolyA(Builder):
         self.mOutFileTails.flush()
         self.mOutFile.flush()
 
-# -------------------------------------------------------------------------
 
 
 class Filter(Processor):

@@ -39,7 +39,6 @@ import re
 import sys
 import CGAT.Experiment as E
 
-# See: http://stackoverflow.com/questions/2301789/read-a-file-in-reverse-order-using-python
 
 
 def reverse_readline(filename, buf_size=8192):

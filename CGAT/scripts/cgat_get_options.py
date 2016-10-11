@@ -46,19 +46,13 @@ import pandas
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
-# handle to original E.Start function
 ORIGINAL_START = None
 
-# Parser object collected from child script
 PARSER = None
 
-# DIRECTORIES to examine for python modules/scripts
 EXPRESSIONS = (
     ('scripts', 'scripts/*.py'),)
-# ('optic', 'scripts/optic/*.py'),
-# ('gpipe', 'scripts/gpipe/*.py'))
 
-# scripts to exclude from collection
 EXCLUDE = ("__init__.py",
            "cgat.py",)
 

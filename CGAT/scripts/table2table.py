@@ -128,9 +128,6 @@ def getColumns(fields, columns="all"):
                 c.append(int(x) - 1)
         return c
 
-##########################################################
-##########################################################
-##########################################################
 
 
 def readAndTransposeTable(infile, options):
@@ -167,9 +164,6 @@ def readAndTransposeTable(infile, options):
     for row in new_rows:
         options.stdout.write("\t".join(row) + "\n")
 
-##########################################################
-##########################################################
-##########################################################
 
 
 def readAndGroupTable(infile, options):
@@ -262,9 +256,6 @@ def readAndExpandTable(infile, options):
         for n in range(nrows):
             options.stdout.write("\t".join([d[n] for d in data]) + "\n")
 
-##########################################################
-##########################################################
-##########################################################
 
 
 def readAndCollapseTable(infile, options, missing_value=""):
@@ -314,9 +305,6 @@ def readAndCollapseTable(infile, options, missing_value=""):
     for key, row in list(values.items()):
         options.stdout.write("%s\t%s\n" % (key, "\t".join(row)))
 
-##########################################################
-##########################################################
-##########################################################
 
 
 def computeFDR(infile, options):
@@ -342,9 +330,6 @@ def computeFDR(infile, options):
         for n in range(nrows):
             options.stdout.write("\t".join([d[n] for d in data]) + "\n")
 
-##########################################################
-##########################################################
-##########################################################
 
 
 def readAndJoinTable(infile, options):

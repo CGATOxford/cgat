@@ -104,7 +104,6 @@ SpliceVariant = collections.namedtuple('SpliceVariant',
 TranscriptVariant = collections.namedtuple('TransciptVariant',
                                            '''cds_variants,splice_variants''')
 
-# counters for the cumulative effect of variants on the translated sequence
 TranslationEffect = collections.namedtuple( 'TranslationEffect', '''
                    ncodons,
                    ninserted_bases,

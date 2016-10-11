@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''
 Stats.py - statistical utility functions
 ========================================
@@ -132,10 +110,6 @@ class Result(object):
         # maximum recursion threshold will be reached
         object.__setattr__(self, "_data", d)
 
-#################################################################
-#################################################################
-#################################################################
-# Perform log likelihood test
 
 
 class LogLikelihoodTest:
@@ -303,10 +277,6 @@ def doPearsonChiSquaredTest(p, sample_size, observed,
     result.mExpected = e
     return result
 
-#################################################################
-#################################################################
-#################################################################
-# Convenience functions and objects for statistical analysis
 
 
 class DistributionalParameters:
@@ -1250,11 +1220,6 @@ def doWelchsTTest(n1, mean1, std1,
 
     return result
 
-###################################################################
-###################################################################
-###################################################################
-##
-###################################################################
 
 
 def getAreaUnderCurve(xvalues, yvalues):
@@ -1278,11 +1243,6 @@ def getAreaUnderCurve(xvalues, yvalues):
 
     return auc
 
-###################################################################
-###################################################################
-###################################################################
-##
-###################################################################
 
 
 def getSensitivityRecall(values):
@@ -1310,11 +1270,6 @@ def getSensitivityRecall(values):
 
     return result
 
-###################################################################
-###################################################################
-###################################################################
-##
-###################################################################
 ROCResult = collections.namedtuple("ROCResult",
                                    "value pred tp fp tn fn tpr fpr tnr fnr rtpr rfnr")
 
@@ -1431,11 +1386,6 @@ def getPerformance(values,
 
     return result
 
-###################################################################
-###################################################################
-###################################################################
-##
-###################################################################
 
 
 def doMannWhitneyUTest(xvals, yvals):
@@ -1452,11 +1402,6 @@ def doMannWhitneyUTest(xvals, yvals):
     return result
 
 
-###################################################################
-###################################################################
-###################################################################
-# adjust P-Value
-###################################################################
 def adjustPValues(pvalues, method='fdr', n=None):
     '''returns an array of adjusted pvalues
 
@@ -1541,7 +1486,6 @@ def adjustPValues(pvalues, method='fdr', n=None):
     return numpy.minimum(p0, numpy.ones(len(p0)))
 
 
-# Taken from http://wiki.scipy.org/Cookbook/SavitzkyGolay
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     r"""Smooth (and optionally differentiate) data with a Savitzky-Golay filter.
     The Savitzky-Golay filter removes high frequency noise from data.

@@ -5,8 +5,6 @@ Seeks are allowed, but are efficient only for files compressed by
 the dictzip utility (which adhere to the gzip format).  Files may
 be concatenated to overcome dictzip's 1.8 Gb size limit."""
 
-# based on Andrew Kuchling's minigzip.py distributed with the zlib module
-# Random access read/write and seek-whence support by Gerton Lunter, 3/3/07
 
 import struct
 import sys

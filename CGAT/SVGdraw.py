@@ -1,32 +1,3 @@
-# Copyright (c) 2002, Fedor Baart & Hans de Wit (Stichting Farmaceutische Kengetallen)
-# All rights reserved.
-##
-# Redistribution and use in source and binary forms, with or without modification,
-# are permitted provided that the following conditions are met:
-##
-# Redistributions of source code must retain the above copyright notice, this
-# list of conditions and the following disclaimer.
-##
-# Redistributions in binary form must reproduce the above copyright notice,
-# this list of conditions and the following disclaimer in the documentation and/or
-# other materials provided with the distribution.
-##
-# Neither the name of the Stichting Farmaceutische Kengetallen nor the names of
-# its contributors may be used to endorse or promote products derived from this
-# software without specific prior written permission.
-##
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-##
-# Thanks to Gerald Rosennfellner for his help and useful comments.
 '''
 SVGdraw.py - generate SVG drawings
 ======================================================
@@ -68,15 +39,6 @@ import sys
 
 __version__ = "1.0"
 
-# there are two possibilities to generate svg: via a dom
-# implementation and directly using <element>text</element> strings
-# the latter is way faster (and shorter in coding) the former is only
-# used in debugging svg programs maybe it will be removed alltogether
-# after a while with the following variable you indicate whether to
-# use the dom implementation Note that PyXML is required for using the
-# dom implementation.  It is also possible to use the standard
-# minidom. But I didn't try that one.  Anyway the text based approach
-# is about 60 times faster than using the full dom implementation.
 use_dom_implementation = 0
 
 if use_dom_implementation != 0:
@@ -86,18 +48,9 @@ if use_dom_implementation != 0:
     except:
         raise ImportError("PyXML is required for using the dom implementation")
 
-# The implementation is used for the creating the XML document.
-# The prettyprint module is used for converting the xml document object to
-# a xml file
 
 sys.setrecursionlimit = 50
-# The recursion limit is set conservative so mistakes like s=svg() s.addElement(s)
-# won't eat up too much processor time.
 
-# the following code is pasted form xml.sax.saxutils
-# it makes it possible to run the code without the xml sax package installed
-# To make it possible to have <rubbish> in your text elements, it is
-# necessary to escape the texts
 
 
 def _escape(data, entities={}):

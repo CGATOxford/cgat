@@ -90,7 +90,6 @@ def getMutatedSequence(sequence, divergence):
 
     return "".join(sequence)
 
-# ------------------------------------------------------------
 
 
 def main(argv=None):

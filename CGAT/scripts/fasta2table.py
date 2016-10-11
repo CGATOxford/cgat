@@ -121,7 +121,6 @@ import CGAT.IOTools as IOTools
 import CGAT.SequenceProperties as SequenceProperties
 import CGAT.FastaIterator as FastaIterator
 
-# ------------------------------------------------------------------------
 
 
 def main(argv=None):

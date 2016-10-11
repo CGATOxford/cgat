@@ -1,24 +1,3 @@
-##########################################################################
-#   Gene prediction pipeline
-#
-#   $Id: Genomics.py 2882 2010-04-07 08:45:52Z andreas $
-#
-#   Copyright (C) 2004 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 """
 Genomics.py - Tools for working with genomic data
 =================================================
@@ -50,7 +29,6 @@ except ImportError:
 
 from CGAT import AString as AString
 
-# For caching genome files: remember last one read
 global_last_filename_genome = None
 global_forward_sequences = {}
 global_last_sbjct_token = None
@@ -611,9 +589,6 @@ def Alignment2DNA(alignment, query_from=0, sbjct_from=0):
     return map_query2sbjct
 
 
-# W: ACGT
-# Y: CT = Pyrimidine
-# R: AG = Purine
 Wobble = {
     "A": "GCW",
     "C": "TGY",
@@ -778,8 +753,6 @@ GeneticCodeAA = {
 
 StopCodons = ("TAG", "TAA", "TGA")
 
-# degenerate mappings of the first two nucleotides
-# to amino acid
 GeneticCodeDegenerate = {
     "TC": "S",
     "CT": "L",
@@ -792,8 +765,6 @@ GeneticCodeDegenerate = {
 }
 
 
-# first and third position done, second position not checked
-# Ile is two-fold, even there are three positions
 Degeneracy = {
     "TTT": ("F", 1, 1, 2),
     "TTC": ("F", 1, 1, 2),
@@ -860,7 +831,6 @@ Degeneracy = {
 
 GAP_CHAR = "-"
 
-# amino acid based degeneracy
 DegeneracyAA = {
     "F": 2,
     "L": 6,
@@ -889,7 +859,6 @@ DegeneracyAA = {
     ".": 0,
 }
 
-# map ambiguous nucleic acid codes to the four bases
 AMBIGUOUS_CODES_NA = {
     'A': 'A',
     'C': 'C',
@@ -948,7 +917,6 @@ DECODE_GENOTYPE = {
     'w': 'AT', 'W': 'AT',
 }
 
-# ------------------------------------------------------------
 
 
 def encodeGenotype(code):
@@ -1219,7 +1187,6 @@ def Alignment2CDNA(alignment,
 
     return map_query2sbjct, fragments.join("")
 
-# -------------------------------------------------------------------
 
 
 def GetExon(exons, first_aa):
@@ -1424,7 +1391,6 @@ def GetDegenerateSites(seq1, seq2,
     return "".join(new_seq1), "".join(new_seq2)
 
 
-# -------------------------------------------------------------------
 class SequencePairInfo:
 
     """the first characters are ACGT."""
@@ -1490,7 +1456,6 @@ class SequencePairInfoCodons(SequencePairInfo):
     def getHeader(self):
         return "\t".join((SequencePairInfo.getHeader(self), "nnonsyn", "nsyn"))
 
-# -------------------------------------------------------------------------
 
 
 def AlignedPair2SubstitutionMatrix(seq1, seq2, alphabet):
@@ -1515,7 +1480,6 @@ def AlignedPair2SubstitutionMatrix(seq1, seq2, alphabet):
 
     return matrix
 
-# -------------------------------------------------------------------
 
 
 def CalculatePairIndices(seq1, seq2, gap_char="-", with_codons=False):

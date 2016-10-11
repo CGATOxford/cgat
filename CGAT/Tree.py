@@ -1,24 +1,3 @@
-##########################################################################
-#   Gene prediction pipeline
-#
-#   $Id: Tree.py 2784 2009-09-10 11:41:14Z andreas $
-#
-#   Copyright (C) 2004 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 """
 Tree.py - A phylogenetic tree
 =============================
@@ -400,12 +379,6 @@ class Tree(Bio.Nexus.Trees.Tree):
         self.dfs(self.root,
                  pre_function=dist2other)
 
-#         self.display()
-#         for x in range(0, nnodes):
-#             node = self.node(x)
-#             balance = map_N2Other[x] - map_N2Leaves[x]
-#             print "x=",x, "bl=", node.data.branchlength, \
-#                   "d2root=", map_N2Root[x], "d2leaves=", map_N2Leaves[x], "d2other=", map_N2Other[x], "balance=", balance
 
         # note: need not treat root. Set d2leaves > d2root
         # so that it is never chosen selected.

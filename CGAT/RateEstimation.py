@@ -18,9 +18,6 @@ except ImportError:
     pass
 
 from CGAT import Genomics as Genomics
-# ------------------------------------------------------------------------
-# ------------------------------------------------------------------------
-# ------------------------------------------------------------------------
 
 
 def evaluateCodonPair(codon1, codon2):
@@ -44,7 +41,6 @@ def evaluateCodonPair(codon1, codon2):
 
     return True, is_synonymous, is_transition
 
-# -------------------------------------------------------------------
 
 
 def countSubstitutions(pi, Q):
@@ -77,7 +73,6 @@ def countSubstitutions(pi, Q):
 
     return rI, rV, rS, rN
 
-# -------------------------------------------------------------------
 
 
 def initializeQMatrix(codons):
@@ -91,7 +86,6 @@ def initializeQMatrix(codons):
 
     return Q
 
-# -------------------------------------------------------------------
 
 
 def getQMatrix(pi, Rsi, Rsv, Rni, Rnv):
@@ -142,7 +136,6 @@ def getQMatrix(pi, Rsi, Rsv, Rni, Rnv):
 
     return Q, trace
 
-# --------------------------------------------------------------
 
 
 def getRateMatrix(trained_model, terminals=None):
@@ -186,9 +179,6 @@ def getRateMatrix(trained_model, terminals=None):
 
     return pis, matrices
 
-# ------------------------------------------------------------------------
-# ------------------------------------------------------------------------
-# ------------------------------------------------------------------------
 
 
 def setFrequencies(model, mali, prefix=""):

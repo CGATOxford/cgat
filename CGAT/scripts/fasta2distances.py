@@ -77,7 +77,6 @@ def FilterAlignedPairForPositions(seq1, seq2, method):
         return "".join(s1), "".join(s2)
 
 
-# ------------------------------------------------------------------------
 def CalculateDistanceJC69(info, do_gamma=False, alpha=None):
     """return Jukes-Cantor distance.
     """
@@ -97,7 +96,6 @@ def CalculateDistanceJC69(info, do_gamma=False, alpha=None):
 
     return distance, variance
 
-# ------------------------------------------------------------------------
 
 
 def CalculateDistanceT92(info):
@@ -147,7 +145,6 @@ def CalculateDistanceT92(info):
 
     return distance, variance
 
-# ------------------------------------------------------------------------
 
 
 def main(argv=None):

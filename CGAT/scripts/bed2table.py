@@ -189,7 +189,6 @@ class CounterOverlap(Counter):
 
         return "\t".join(r)
 
-# ------------------------------------------------------------------------
 CounterPeaksResult = collections.namedtuple(
     "CounterPeaksResult", ("length nreads avgval peakval npeaks peakcenter"))
 
@@ -323,7 +322,6 @@ class CounterPeaks(Counter):
         else:
             return "\t".join(map(str, self.result))
 
-# ------------------------------------------------------------------------
 
 
 class CounterCompositionNucleotides(Counter):
@@ -343,7 +341,6 @@ class CounterCompositionNucleotides(Counter):
     def __str__(self):
         return str(self.result)
 
-# ------------------------------------------------------------------------
 
 
 class CounterMotif(Counter):
@@ -362,7 +359,6 @@ class CounterMotif(Counter):
     def __str__(self):
         return str(self.result)
 
-# -------------------------------------------------------------------------
 
 
 class CounterCompositionCpG(CounterCompositionNucleotides):
@@ -390,7 +386,6 @@ class CounterCompositionCpG(CounterCompositionNucleotides):
         self.result.loadSequence(s)
 
 
-# ------------------------------------------------------------------------
 class ClassifierChIPSeq(GeneModelAnalysis.Classifier):
 
     """classify ChIPSeq intervals based on a reference annotation.
@@ -521,7 +516,6 @@ class ClassifierChIPSeq(GeneModelAnalysis.Classifier):
             h.append(str(self.mCounters[key]))
         return "\t".join(h)
 
-# ------------------------------------------------------------
 
 
 def main(argv=None):

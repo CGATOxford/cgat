@@ -47,7 +47,6 @@ from functools import reduce
 parser = E.OptionParser(
     version="%prog version: $Id$")
 
-# ------------------------------------------------------------------------
 
 
 def main(argv=None):

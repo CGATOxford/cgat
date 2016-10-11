@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''
 Counts.py - methods for manipulating counts data frames
 ==========================================================
@@ -49,7 +27,6 @@ import random
 import sys
 import sklearn.preprocessing as preprocessing
 
-# activate pandas/rpy conversion
 pandas2ri.activate()
 
 
@@ -793,10 +770,6 @@ class Counts(object):
                     n += 1
 
 
-########################################################################
-# these functions for spike-in should be re-written to work with the ###
-# counts class                                                       ###
-########################################################################
 
 
 def means2idxarrays(g1, g2, i_bins, c_bins, difference):
@@ -942,13 +915,7 @@ def thresholdBins(indices, counts, s_min):
                                     len(list(indices.keys()))))
     return output_indices_keep
 
-##########################################################################
-##########################################################################
 
-##########################################################################
-# remove the functions below (now methods for class Counts or          ###
-# class ExpDesign (expression.py)                                      ###
-##########################################################################
 
 
 def loadTagDataPandas(tags_filename, design_filename):
@@ -1132,5 +1099,3 @@ def normalizeTagData(counts, method="deseq-size-factors"):
 
     return normed, size_factors
 
-##########################################################################
-##########################################################################

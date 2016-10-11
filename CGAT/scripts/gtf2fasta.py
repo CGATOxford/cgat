@@ -152,7 +152,6 @@ import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Genomics as Genomics
 import CGAT.Intervals as Intervals
 
-# mapping ensembl annotations in the source field
 MAP_ENSEMBL = {'miRNA': 'm',
                'misc_RNA': 'l',
                'pseudogene': 'p',
@@ -216,17 +215,6 @@ def setCode(annotation, pos, code):
         annotation[pos] = AMBIGUOUS_CODE
         E.warn("ambiguous position %i: %s - %s" % (pos, c, code))
 
-#     elif code in CODING_CODES and c in NONCODING_CODES:
-# permit alternative transcripts
-#         annotation[pos] = code
-#     elif code in INTRON_CODES and c in UTR_CODES:
-# permit alternative transcripts in non-coding parts of protein coding genes
-# giving preference to UTR
-#         return
-#     elif code in UTR_CODES and c in INTRON_CODES:
-# permit alternative transcripts in non-coding parts of protein coding genes
-# giving preference to UTR
-#         annotation[pos] = code
 
 
 def addSegments(annotation, intervals, is_positive, code):

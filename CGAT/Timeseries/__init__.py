@@ -34,9 +34,6 @@ def get_r_path():
     """
     return os.path.dirname(__file__)
 
-#################################
-# Clustering assessment functions
-#################################
 
 
 def get_label_map(labels):
@@ -239,9 +236,6 @@ def adjustedMutualInformation(cluster1, cluster2):
     return ami
 
 
-#################################################
-# Data transformation and normalisation functions
-#################################################
 
 
 def deseqNormalize(infile,
@@ -538,9 +532,6 @@ def clusterPCA(infile,
     return eigen_frame
 
 
-#########################
-# Differential expression
-#########################
 
 
 def conditionDESeq2(data_frame, header, alpha, res_dir):
@@ -922,9 +913,6 @@ def maSigPro(infile,
     return diff_genes
 
 
-##########################################
-# Clustering and distance metric functions
-##########################################
 
 
 def splitReplicates(infile,

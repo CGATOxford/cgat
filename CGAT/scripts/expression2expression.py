@@ -166,7 +166,6 @@ def main(argv=None):
     parser.add_option("--quantile", dest="quantile", type="int",
                       help="see pipeline.ini for explanation")
 
-# add common options (-h/--help, ...) and parse command line
 
     (options, args) = E.Start(parser, argv=argv)
 

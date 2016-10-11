@@ -56,7 +56,6 @@ import scipy.stats
 
 import matplotlib.pyplot as plt
 
-# global functions, defined once for optimization purposes
 normalize_transform = lambda x, y: numpy.array(x, float) / (sum(x) + y)
 cumulative_transform = lambda x, y: numpy.cumsum(
     numpy.array(x, float) / (sum(x) + y))

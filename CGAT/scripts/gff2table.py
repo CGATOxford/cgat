@@ -54,11 +54,6 @@ import CGAT.Intervals as Intervals
 import CGAT.Stats as Stats
 import CGAT.GTF as GTF
 
-#########################################################
-#########################################################
-#########################################################
-# Decorators: decorate a window through intervals
-#########################################################
 
 
 def decorator_counts(intervals, start, end, contig, fasta):
@@ -129,11 +124,6 @@ def decorator_max_score(values, start, end, contig):
     d = Stats.DistributionalParameters(values)
     return d['max'], str(d)
 
-#########################################################
-#########################################################
-#########################################################
-# Transformers: manipulate a set of intervals
-#########################################################
 
 
 def transform_overlap(start, end, intervals_with_gff):

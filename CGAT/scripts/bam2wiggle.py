@@ -56,7 +56,6 @@ import CGAT.Experiment as E
 import pysam
 import CGAT.IOTools as IOTools
 
-# for merging pairs
 try:
     import pyximport
     pyximport.install(build_in_temp=False)

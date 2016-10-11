@@ -41,9 +41,7 @@ import CGAT.Experiment as E
 
 """
 
-# generate eps instead of ps (but make sure it's just one page!)
 doEps = True
-# if true smallest p value is 10^-4 otherwise 10^-5.
 largepvalues = True
 annsize = 90                 # width of annotation text column
 colsize = 9                  # width of column
@@ -54,9 +52,7 @@ textangle = 45               # angle of heading text
 labelsize = 70               # upper margin used for printing column labels
 maincolsep = 15              # whitespace between (big) columns
 greylines = 5                # number of lines per grey divider line
-# only include annotations with p value < maxp in some input file
 maxp = 1.0
-# if nonzero, prints a vertical grey line at (small) column 'vertical'
 vertical = 0
 
 maxsize = rowheight - 1

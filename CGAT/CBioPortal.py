@@ -1,9 +1,3 @@
-##########################################################################
-#
-# This module provides a class for interacting with this the Sloan-Kettering
-# Cancer Bioinfomatics Portal Web serice. Can also be run from the command line
-#
-###########################################################################
 '''CBioPortal.py - Interface with the Sloan-Kettering cBioPortal webservice
 ========================================================================
 
@@ -90,9 +84,6 @@ from CGAT import IOTools as IOTools
 from collections import OrderedDict as odict
 from CGAT import Experiment as E
 
-##########################################################################
-##########################################################################
-##########################################################################
 
 
 class CBioPortal():
@@ -666,7 +657,6 @@ class CBioPortal():
             else:
                 raise ValueError("No case_set_id provided and no default set")
 
-##########################################################################
 
     def _getAndCheckGeneticProfiles(self, genetic_profile_id=None, study=None):
 
@@ -797,7 +787,6 @@ class CBioPortal():
         self.last_warnings = warnings
         return return_table
 
-##########################################################################
 
     def getTotalAltered(self, gene_list, study=None, study_name=None, case_set_id=None, genetic_profile_id=None, threshold=2):
         ''' Calculate the percent of cases in which any one of the specified genes are altered '''

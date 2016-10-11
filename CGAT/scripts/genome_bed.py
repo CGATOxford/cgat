@@ -25,7 +25,6 @@ Command line options
 
 """
 
-# load modules
 
 import CGAT.Experiment as E
 import sys

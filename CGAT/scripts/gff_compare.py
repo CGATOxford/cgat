@@ -67,7 +67,6 @@ def Old():
     v = numpy.logical_and(not_ref, not_target)
     tn = numpy.dot(v, v)
 
-# ------------------------------------------------------------------------
 
 
 def GetCounts(nucleotides, val):
@@ -81,7 +80,6 @@ def GetCounts(nucleotides, val):
             t += 1
     return t
 
-# ------------------------------------------------------------------------
 
 
 def AnalyseOverlaps(references, targets):
@@ -120,7 +118,6 @@ def AnalyseOverlaps(references, targets):
 
     return (tp, fp, tn, fn)
 
-# ------------------------------------------------------------------------
 
 
 def CalculateSpecificitySensitivity(tp, fp, tn, fn):
@@ -137,7 +134,6 @@ def CalculateSpecificitySensitivity(tp, fp, tn, fn):
 
     return spec, sens
 
-# ------------------------------------------------------------------------
 
 
 def CalculateCorrelationCoefficient(tp, fp, tn, fn):
@@ -149,7 +145,6 @@ def CalculateCorrelationCoefficient(tp, fp, tn, fn):
         return (tp * tn - fn * fp) / x
 
 
-# ------------------------------------------------------------------------
 def GetFirstOverlaps(gffs, index):
     """get next overlapping gffs from array starting at index.
     """
@@ -175,7 +170,6 @@ def GetFirstOverlaps(gffs, index):
 
     return overlaps, index, min_start, max_end
 
-# ------------------------------------------------------------------------
 
 
 def CountMatchesPerGene(gffs,
@@ -257,7 +251,6 @@ def CountMatchesPerGene(gffs,
 
     return total, total_match, total_partial_match, total_extra
 
-# ------------------------------------------------------------------------
 
 
 def main(argv=None):
@@ -371,16 +364,6 @@ def main(argv=None):
     # process each fragment separately
     if options.do_nucleotides:
         print("""##############################################################################
-# nucleotide accuracy
-#
-# TP: true postives  : nucleotides to be predicted coding in both target and reference.
-# FN: true negatives : nucleotides to be predicted non-coding in both target and reference.
-# FP: false positives: nucleotides to be predicted non-coding in target but not in reference.
-# FN: false negatives: nucleotides to be predicted non-coding in reference but not in target.
-#
-# Sensitivity: TP / TP + FN = correct exons / actual exons
-# Specificity: TP / TP + FP
-# CC: correlation coefficient:  (tp*tn-fn*fp)/((tp+fn)*(tn+fp)*(tp+fp)*(tn+fn))""")
 
         headers = (
             "contig", "strand", "tp", "fp", "tn", "fn", "sp", "sn", "cc")
@@ -440,26 +423,6 @@ def main(argv=None):
     if options.do_exons or options.do_genes:
 
         print("""##############################################################################
-# exon accuracy (see Burset & Guigo (1996))
-#
-# TP: true postives  : exons matching both exon boundaries exactly (a deviation of
-#                         maximal %i nucleotides is allowed).
-# FN: true negatives : not counted.
-# FP: false positives: exons in target not overlapping with in reference.
-# FN: false negatives: exons overlapping, but with deviant boundaries and exons
-#                         in reference not overlapping with any target exon.
-#
-# ME: missed exons: exons in reference not overlapping with exons in target
-#                 (add to false negative count).
-# WE: wrong exons: exons in target not overlapping with exons in reference
-#                 (add to false positive count).
-#
-# Sensitivity: TP / (TP + FN) = correct exons / actual exons
-# Specificity: TP / (TP + FP) = correct exons / predicted exons
-# CC: (sensitivity + specificity) / 2
-#
-# Values are calculated where both exon boundaries of a target exon have to be
-# correct (category "full") and where only one exon boundary has to be correct (catgory "half").""" %
               (options.max_exon_slippage))
 
         headers = ("category", "contig", "strand", "tp", "fp", "tn",
@@ -786,26 +749,6 @@ def main(argv=None):
             options.regex_target:
 
         print("""##############################################################################
-# gene accuracy (see Burset & Guigo (1996))
-#
-# TP: true postives  : genes with exons matching both exon boundaries exactly (a deviation of
-#                         maximal %i nucleotides is allowed).
-# FN: true negatives : not counted.
-# FP: false positives: genes in target not overlapping with in reference.
-# FN: false negatives: genes overlapping, but with deviant exon boundaries and genes
-#                         in reference not overlapping with any target exon.
-#
-# MG: missed genes: exons in reference not overlapping with exons in target
-#                 (add to false negative count).
-# WG: wrong genes: exons in target not overlapping with exons in reference
-#                 (add to false positive count).
-#
-# Sensitivity: TP / (TP + FN) = correct genes / actual genes
-# Specificity: TP / (TP + FP) = correct genes / predicted genes
-# CC: (sensitivity + specificity) / 2
-#
-# Values are calculated where both exon boundaries of a target exon have to be
-# correct (category "full") and where only one exon boundary has to be correct (catgory "half").""" %
               (options.max_exon_slippage))
 
         out_options = []

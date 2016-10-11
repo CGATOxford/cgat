@@ -93,7 +93,6 @@ def getTranscriptsForGenes(genes, transcripts, options):
             result.append(x)
     return result
 
-# --------------------------------------------------------------------------
 
 
 def main(argv=None):

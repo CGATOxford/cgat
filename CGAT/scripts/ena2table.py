@@ -91,8 +91,6 @@ import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 from Bio import Entrez
 
-# mapping various combinations of library_source and selection
-# to an experiment type
 MAP_CODE2DESIGN = \
     {
         ("CAGE", "TRANSCRIPTOMIC"): 'CAGE',
@@ -103,51 +101,6 @@ MAP_CODE2DESIGN = \
         ("PCR", "GENOMIC"): "Genome-Seq",
     }
 
-# all other:
-# ChIP    OTHER   45
-# ChIP    TRANSCRIPTOMIC  17
-# DNase   TRANSCRIPTOMIC  133
-# "Hybrid Selection"      TRANSCRIPTOMIC  8
-# "MBD2 protein methyl-CpG binding domain"        GENOMIC 238
-# MDA     GENOMIC 340
-# MNase   GENOMIC 316
-# PCR     GENOMIC 1829
-# PCR     METAGENOMIC     56
-# PCR     OTHER   12
-# PCR     SYNTHETIC       8
-# PCR     TRANSCRIPTOMIC  73
-# RACE    TRANSCRIPTOMIC  4
-# RANDOM  GENOMIC 51129
-# RANDOM  METAGENOMIC     158
-# RANDOM  METATRANSCRIPTOMIC      2
-# RANDOM  "NON GENOMIC"   37
-# RANDOM  OTHER   55
-# RANDOM  TRANSCRIPTOMIC  751
-# "RANDOM PCR"    GENOMIC 172
-# "RANDOM PCR"    TRANSCRIPTOMIC  41
-# RT-PCR  GENOMIC 3
-# RT-PCR  "NON GENOMIC"   8
-# RT-PCR  TRANSCRIPTOMIC  126
-# "Reduced Representation"        GENOMIC 442
-# "Restriction Digest"    GENOMIC 87
-# cDNA    GENOMIC 63
-# cDNA    METATRANSCRIPTOMIC      2
-# cDNA    "NON GENOMIC"   73
-# cDNA    OTHER   431
-# other   GENOMIC 2845
-# other   METAGENOMIC     16
-# other   OTHER   306
-# other   SYNTHETIC       2756
-# other   TRANSCRIPTOMIC  428
-# "padlock probes capture method" GENOMIC 61
-# "size fractionation"    GENOMIC 121
-# "size fractionation"    METAGENOMIC     8
-# "size fractionation"    OTHER   2
-# "size fractionation"    TRANSCRIPTOMIC  1303
-# unspecified     GENOMIC 5138
-# unspecified     OTHER   50
-# unspecified     SYNTHETIC       14
-# unspecified     TRANSCRIPTOMIC  337
 
 
 def main(argv=None):

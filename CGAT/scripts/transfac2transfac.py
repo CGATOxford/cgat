@@ -30,15 +30,8 @@ Command line options
 
 '''
 
-# parse water alignments to summary stats in a tab delimited text format.
 
-# this is what we are trying to parse
 
-# AC
-##
-# ID V$.....
-##
-# //
 
 import sys
 import re
