@@ -60,6 +60,7 @@ import subprocess
 import glob
 import collections
 import pybedtools
+import shutil
 import CGAT.Experiment as E
 import CGAT.FastaIterator as FastaIterator
 
@@ -143,14 +144,15 @@ def segmentWithGCProfile(infile, options):
         ninput += 1
 
         contig = re.sub("\s.*", "", cur_record.title)
-        filename = os.path.join(tmpdir, contig) + ".fasta"
-        with open(filename, "w") as f:
+        filename = contig + ".fasta"
+        with open(os.path.join(tmpdir, filename), "w") as f:
             f.write(">%s\n%s\n" % (contig, cur_record.sequence))
 
         E.info("running %s on %s" % (EXECUTABLE, contig))
 
-        statement = "%s %s -t %i -g %f -i %i " % \
-                    (EXECUTABLE, filename,
+        statement = "cd %s; %s %s -t %i -g %f -i %i " % \
+                    (tmpdir,
+                     EXECUTABLE, filename,
                      options.gcprofile_halting_parameter,
                      options.gcprofile_gap_size,
                      options.gcprofile_min_length)
@@ -169,7 +171,7 @@ def segmentWithGCProfile(infile, options):
         E.debug("GProfile: stdout=%s" % stdout)
         E.debug("GProfile: stderr=%s" % stderr)
 
-        # process.stdin.close()
+        #process.stdin.close()
         if process.returncode != 0:
             raise OSError("Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" %
                           (-process.returncode, stderr, statement))
@@ -196,7 +198,7 @@ def segmentWithGCProfile(infile, options):
 
     E.info("ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput, nskipped))
 
-    # shutil.rmtree( tmpdir )
+    shutil.rmtree( tmpdir )
 
     return segments
 

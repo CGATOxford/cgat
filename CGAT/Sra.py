@@ -155,7 +155,12 @@ def fetch_ENA_files(accession):
     url = "http://www.ebi.ac.uk/ena/data/warehouse/filereport?accession=%s&result=read_run&fields=fastq_ftp" \
           % accession
 
-    paths = urllib2.urlopen(url).readlines()[1:]
+    try:
+        paths = urllib2.urlopen(url).readlines()[1:]
+    except:
+        print "couldn't access %s" %url
+        raise
+
     paths = list(itertools.chain.from_iterable(
         [p.strip().split(";") for p in paths]))
     filenames = [os.path.basename(x) for x in paths]
@@ -200,4 +205,58 @@ def fetch_TCGA_fastq(acc, filename, token=None, outdir="."):
     return statement % locals()
 
 
+def fetch_TCGA_BAM(acc, token, outdir=".", filter_bed=None):
+    """Get BAM file from TCGA repository based on UUID. Will return
+    statement and path/filename of downloaded file. A bed file may be
+    provided to filter to remove contigs not present in the
+    reference genome"""
+
+    statement = []
+
+    if token:
+        token = "-t %s" % token
+    else:
+        token = ""
+
+    statement.append("""gdc-client download
+                        %(token)s
+                        -d %(outdir)s
+                        %(acc)s """)
+
+    from_prefix = os.path.join(outdir, acc, "*")
+    to_prefix = os.path.join(outdir, acc, acc)
+
+    if filter_bed:
+        statement.append("""samtools view -hb
+                                     %(from_prefix)s.bam
+                                     -L %(filter_bed)s >
+                                     %(to_prefix)s.bam;
+                            checkpoint;
+                            samtools index %(to_prefix)s.bam""")
+    else:
+        statement.append('''rename %(from_prefix)s.bam
+                                   %(to_prefix)s.bam
+                                   %(from_prefix)s''')
     
+    statement = "; checkpoint;".join(statement)
+    return statement % locals(), to_prefix + ".bam"
+
+
+def process_remote_BAM(infile, token=None, outdir=".", filter_bed=None):
+    """generate statement from .remote file"""
+
+    statement = []
+    files = []
+    for line in open(infile):
+        f = line.strip().split()
+    
+        if f[0] == "TCGA" or f[0] == "GDC":
+            s, path = fetch_TCGA_BAM(f[1], token, outdir,
+                                     filter_bed=filter_bed)
+            statement.append(s)
+            files.append(path)
+        else:
+            raise ValueError(
+                "Repository %s not implimented for BAM files" % f[0])
+
+    return "; checkpoint;".join(statement), files
