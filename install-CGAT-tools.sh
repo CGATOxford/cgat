@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 
+# log installation information
 log() {
-   echo "# `date` -- $1"
+   echo "# install-CGAT-tools.sh log | `hostname` | `date` | $1 "
 }
 
 # message to display when the OS is not correct
@@ -394,7 +395,7 @@ if [ $TRAVIS_INSTALL ] ; then
    log "pip-installing additional packages"
    pip install bx-python
 
-   # python preparation, do install
+   # python preparation
    log "install CGAT code into conda environment"
    cd $CGAT_HOME
    python setup.py develop
