@@ -98,9 +98,11 @@ def ReadSparseMatrix(filename,
                      is_symmetric=None):
     """read sparse matrix."""
 
-    lines = [string.split(x[:-1], separator)[:3] for x in [x for x in open(filename, "r").readlines() if x[0] != "#"]]
+    lines = [string.split(x[:-1], separator)[:3]
+             for x in [x for x in open(filename, "r").readlines() if x[0] != "#"]]
 
-    data = [(string.atoi(x[0]), string.atoi(x[1]), string.atof(x[2])) for x in lines]
+    data = [(string.atoi(x[0]), string.atoi(x[1]), string.atof(x[2]))
+            for x in lines]
 
     num_rows = max([x[0] for x in data])
     num_cols = max([x[1] for x in data])
@@ -127,7 +129,8 @@ def ReadBinarySparseMatrix(filename,
                            is_symmetric=None):
     """read sparse matrix."""
 
-    lines = [string.split(x[:-1], separator)[:2] for x in [x for x in open(filename, "r").readlines() if x[0] != "#"]]
+    lines = [string.split(x[:-1], separator)[:2]
+             for x in [x for x in open(filename, "r").readlines() if x[0] != "#"]]
 
     data = [(string.atoi(x[0]), string.atoi(x[1])) for x in lines]
 

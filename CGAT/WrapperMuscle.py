@@ -102,7 +102,8 @@ class Muscle:
                 self.mExecutable, err, out, self.mTempdir))
 
         if dump:
-            print("# stdout output of %s:\n%s\n######################################" % (self.mExecutable, out))
+            print("# stdout output of %s:\n%s\n######################################" % (
+                self.mExecutable, out))
 
         result = Mali.Mali()
 

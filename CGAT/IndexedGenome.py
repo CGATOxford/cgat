@@ -143,4 +143,3 @@ class Quicksect(IndexedGenome):
                     Interval(start, end),
                     num_intervals=1,
                     max_dist=max_dist)]
-        

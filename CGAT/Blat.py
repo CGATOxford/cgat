@@ -226,8 +226,10 @@ class Match:
         self.mSbjctTo = int(sbjct_to)
         self.mNBlocks = int(nblocks)
         self.mBlockSizes = list(map(int, block_sizes[:-1].split(",")))
-        self.mQueryBlockStarts = list(map(int, query_block_starts[:-1].split(",")))
-        self.mSbjctBlockStarts = list(map(int, sbjct_block_starts[:-1].split(",")))
+        self.mQueryBlockStarts = list(
+            map(int, query_block_starts[:-1].split(",")))
+        self.mSbjctBlockStarts = list(
+            map(int, sbjct_block_starts[:-1].split(",")))
 
         # this makes sure that the block positions are rescaled
         if self.mQueryLength != 0:
@@ -352,7 +354,8 @@ class Match:
         f = str(alignlib_lite.py_AlignmentFormatBlat(map_query2target))
 
         self.mQueryFrom, self.mQueryTo, self.mSbjctFrom, self.mSbjctTo, \
-            self.mQueryBlockStarts, self.mSbjctBlockStarts, self.mBlockSizes = f.split("\t")
+            self.mQueryBlockStarts, self.mSbjctBlockStarts, self.mBlockSizes = f.split(
+                "\t")
 
         if self.mBlockSizes:
             self.mBlockSizes = list(map(int, self.mBlockSizes[:-1].split(",")))

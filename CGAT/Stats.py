@@ -111,7 +111,6 @@ class Result(object):
         object.__setattr__(self, "_data", d)
 
 
-
 class LogLikelihoodTest:
 
     def __init__(self):
@@ -276,7 +275,6 @@ def doPearsonChiSquaredTest(p, sample_size, observed,
     result.mObserved = observed
     result.mExpected = e
     return result
-
 
 
 class DistributionalParameters:
@@ -531,7 +529,7 @@ def smoothPValues(pvalues,
 
     for i in range(len(vlambda)):
         pi0[i] = numpy.mean([x >= vlambda[i]
-                            for x in pvalues]) / (1.0 - vlambda[i])
+                             for x in pvalues]) / (1.0 - vlambda[i])
 
     R.assign("pi0", pi0)
     R.assign("vlambda", vlambda)
@@ -588,7 +586,7 @@ def getPi0(pvalues,
 
         for i in range(len(vlambda)):
             pi0[i] = numpy.mean([x >= vlambda[i]
-                                for x in pvalues]) / (1.0 - vlambda[i])
+                                 for x in pvalues]) / (1.0 - vlambda[i])
 
         R.assign("pi0", pi0)
         R.assign("vlambda", vlambda)
@@ -719,7 +717,7 @@ http://genomics.princeton.edu/storeylab/qvalue/linux.html.
 
         for i in range(len(vlambda)):
             pi0[i] = numpy.mean([x >= vlambda[i]
-                                for x in pvalues]) / (1.0 - vlambda[i])
+                                 for x in pvalues]) / (1.0 - vlambda[i])
 
         R.assign("pi0", pi0)
         R.assign("vlambda", vlambda)
@@ -895,7 +893,7 @@ def doFDRPython(pvalues,
 
             for i in range(len(vlambda)):
                 pi0[i] = numpy.mean([x >= vlambda[i]
-                                    for x in pvalues]) / (1.0 - vlambda[i])
+                                     for x in pvalues]) / (1.0 - vlambda[i])
 
             if pi0_method == "smoother":
 
@@ -1221,7 +1219,6 @@ def doWelchsTTest(n1, mean1, std1,
     return result
 
 
-
 def getAreaUnderCurve(xvalues, yvalues):
     '''compute area under curve from a set of discrete x,y coordinates
     using trapezoids.
@@ -1242,7 +1239,6 @@ def getAreaUnderCurve(xvalues, yvalues):
         last_x, last_y = x, y
 
     return auc
-
 
 
 def getSensitivityRecall(values):
@@ -1385,7 +1381,6 @@ def getPerformance(values,
         last_tpr = tpr
 
     return result
-
 
 
 def doMannWhitneyUTest(xvals, yvals):
@@ -1549,11 +1544,11 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     half_window = (window_size - 1) // 2
     # precompute coefficients
     b = numpy.mat([[k**i for i in order_range]
-                   for k in range(-half_window, half_window+1)])
+                   for k in range(-half_window, half_window + 1)])
     m = numpy.linalg.pinv(b).A[deriv] * rate**deriv * math.factorial(deriv)
     # pad the signal at the extremes with
     # values taken from the signal itself
-    firstvals = y[0] - numpy.abs(y[1:half_window+1][::-1] - y[0])
-    lastvals = y[-1] + numpy.abs(y[-half_window-1:-1][::-1] - y[-1])
+    firstvals = y[0] - numpy.abs(y[1:half_window + 1][::-1] - y[0])
+    lastvals = y[-1] + numpy.abs(y[-half_window - 1:-1][::-1] - y[-1])
     y = numpy.concatenate((firstvals, y, lastvals))
     return numpy.convolve(m[::-1], y, mode='valid')

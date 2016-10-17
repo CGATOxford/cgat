@@ -185,7 +185,7 @@ class Bed(object):
             self["thickEnd"] = self.end
 
             blockStarts = [interval[0] - self.start for interval in intervals]
-            blockSizes = [end-start for start, end in intervals]
+            blockSizes = [end - start for start, end in intervals]
 
             blockCount = len(intervals)
 
@@ -218,7 +218,7 @@ class Bed(object):
                                * (position - len(self.fields) + 1))
 
             self.fields[position] = value
-            
+
     def __getattr__(self, key):
         try:
             return self.fields[self.map_key2field[key]]

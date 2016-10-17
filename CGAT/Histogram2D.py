@@ -43,7 +43,6 @@ def Calculate(values, mode=0, bin_function=None):
     return r
 
 
-
 def Print(h, bin_function=None):
     """print a histogram.
 

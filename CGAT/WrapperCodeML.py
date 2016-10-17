@@ -692,11 +692,16 @@ class CodeML:
                              (self.mExecutable, err, out, self.mTempdir))
 
         if dump:
-            print("############################### CONTROL FILE ############################")
-            print("".join(open(self.mTempdir + "/" + self.mFilenameControl, "r").readlines()))
-            print("# result output of %s:\n%s\n######################################" % (self.mExecutable, "".join(lines)))
-            print("############################### LOG OUTPUT ############################")
-            print("# stdout output of %s:\n%s\n######################################" % (self.mExecutable, out))
+            print(
+                "############################### CONTROL FILE ############################")
+            print("".join(open(self.mTempdir + "/" +
+                               self.mFilenameControl, "r").readlines()))
+            print("# result output of %s:\n%s\n######################################" % (
+                self.mExecutable, "".join(lines)))
+            print(
+                "############################### LOG OUTPUT ############################")
+            print("# stdout output of %s:\n%s\n######################################" % (
+                self.mExecutable, out))
 
         if not test:
             shutil.rmtree(self.mTempdir)
@@ -746,7 +751,8 @@ class CodeML:
                 "expected 'Overall accuracy', instead got %s" % lines[0])
 
         del lines[0]
-        accuracy_per_site = list(map(float, re.split("\s+", lines[0][:-1].strip())))
+        accuracy_per_site = list(
+            map(float, re.split("\s+", lines[0][:-1].strip())))
         del lines[:3]
         accuracy_per_sequence = list(map(
             float, re.split("\s+", lines[0][:-1].strip())))
@@ -852,7 +858,6 @@ class CodeML:
 
         if result.mVersion not in known_versions:
             raise ValueError("unknown paml version '%s'" % result.mVersion)
-
 
     def parseSitePatterns(self, inlines, result):
         # read site patterns
@@ -970,7 +975,8 @@ class CodeML:
 
             ncats = len(self.mSiteClassesProbabilities)
             s = lines[0][3:]
-            self.mSiteClassesOmega = [float(s[x:x + 9]) for x in range(0, len(s), 9)]
+            self.mSiteClassesOmega = [float(s[x:x + 9])
+                                      for x in range(0, len(s), 9)]
 
             del lines[0]
             self.nextSection(lines)
@@ -1671,7 +1677,6 @@ class BaseML(CodeML):
 
         self.nextSection(lines)
 
-
         self.nextSection(lines)
 
     def parseTree(self, lines, result):
@@ -1985,7 +1990,8 @@ class Evolver:
             infile.close()
 
         s = subprocess.Popen("%s %i %s" %
-                             (self.mExecutable, self.mRunMode, self.mFilenameControl),
+                             (self.mExecutable, self.mRunMode,
+                              self.mFilenameControl),
                              shell=True,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,
@@ -2008,9 +2014,12 @@ class Evolver:
                 (self.mExecutable, err, out, self.mTempdir))
 
         if dump:
-            print("# result output of %s:\n%s\n######################################" % (self.mExecutable, "".join(lines)))
-            print("############################### LOG OUTPUT ############################")
-            print("# stdout output of %s:\n%s\n######################################" % (self.mExecutable, out))
+            print("# result output of %s:\n%s\n######################################" % (
+                self.mExecutable, "".join(lines)))
+            print(
+                "############################### LOG OUTPUT ############################")
+            print("# stdout output of %s:\n%s\n######################################" % (
+                self.mExecutable, out))
 
         if not test:
             shutil.rmtree(self.mTempdir)
@@ -2154,7 +2163,7 @@ class EvolverBaseml(Evolver):
 
         outfile.write("0          * paml format output\n")
         outfile.write("%i         * random number seed\n" % self.mSeed)
-        outfile.write("%i %i %i   * nsequences nnucleotides nreplicates\n\n" % 
+        outfile.write("%i %i %i   * nsequences nnucleotides nreplicates\n\n" %
                       (self.mNSequences,
                        self.mNucleotides,
                        self.mReplicates))
@@ -2330,7 +2339,7 @@ def runEvolver(options):
 
     if options.loglevel >= 2:
         options.stdlog.write("# Parameters used for evolver\n")
-        options.stdlog.write("# dS=%f t=%f kappa=%f omega=%f\n" % 
+        options.stdlog.write("# dS=%f t=%f kappa=%f omega=%f\n" %
                              (evolver.mDs,
                               evolver.mScale,
                               evolver.mKappa,
@@ -2685,7 +2694,7 @@ if __name__ == "__main__":
 
         else:
             batch.append((None, None, options.filename_log, options.filename_rst,
-                         options.filename_mali, options.filename_map_old2new))
+                          options.filename_mali, options.filename_map_old2new))
 
         first = True
 
@@ -2806,7 +2815,8 @@ if __name__ == "__main__":
             elif options.parse_output == "ancestral-sequence":
 
                 if not hasattr(result, "mAncestralSequences"):
-                    raise ValueError("no ancestral sequences defined in result")
+                    raise ValueError(
+                        "no ancestral sequences defined in result")
 
                 # return most ancestral sequence
                 # mid-point root the tree with ks and then return the sequence closest to the root.

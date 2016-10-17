@@ -121,7 +121,6 @@ class Counts(object):
         self.table = self.table[take]
 
     def normalise(self, method="deseq-size-factors", row_title="total"):
-
         '''return a table with normalized count data.
 
         Implemented methods are:
@@ -604,8 +603,8 @@ class Counts(object):
         # make bins with an extra bin at the end to capture spike-ins with
         # initial or changes values over the intended range.
         # these are ignored later
-        c_bins = np.arange(min_cbin, max_cbin+width_cbin, width_cbin)
-        i_bins = np.arange(min_ibin, max_ibin+width_ibin, width_ibin)
+        c_bins = np.arange(min_cbin, max_cbin + width_cbin, width_cbin)
+        i_bins = np.arange(min_ibin, max_ibin + width_ibin, width_ibin)
 
         bin_counts = np.zeros((len(i_bins) + 1, len(c_bins) + 1))
 
@@ -639,7 +638,8 @@ class Counts(object):
 
                 # for each initial and change value coordinate
                 for idx, coord in enumerate(zip(initial_idx, change_idx)):
-                    # ignore spike-in if change or initial fall into the final bin
+                    # ignore spike-in if change or initial fall into the final
+                    # bin
                     if coord[0] < len(i_bins) and coord[1] < len(c_bins):
                         if coord in list(indices.keys()):
                             # if max fill of bin not reached
@@ -716,17 +716,21 @@ class Counts(object):
             initial_bin, change_bin, size_bin = key
 
             # initial and change values are the center of the bin
-            initial = ((initial_bin*width_ibin) + min_ibin - (width_ibin*0.5))
-            change = ((change_bin*width_cbin) + min_cbin - (width_cbin*0.5))
-            size = ((size_bin*width_sbin) + min_sbin - 1)
+            initial = ((initial_bin * width_ibin) +
+                       min_ibin - (width_ibin * 0.5))
+            change = ((change_bin * width_cbin) +
+                      min_cbin - (width_cbin * 0.5))
+            size = ((size_bin * width_sbin) + min_sbin - 1)
             return initial, change, size
 
         def getInitialChange(key, width_ibin, min_ibin, width_cbin, min_cbin):
             initial_bin, change_bin = key
 
             # initial and change values are the center of the bin
-            initial = ((initial_bin*width_ibin) + min_ibin - (width_ibin*0.5))
-            change = ((change_bin*width_cbin) + min_cbin - (width_cbin*0.5))
+            initial = ((initial_bin * width_ibin) +
+                       min_ibin - (width_ibin * 0.5))
+            change = ((change_bin * width_cbin) +
+                      min_cbin - (width_cbin * 0.5))
             return initial, change
 
         n = 0
@@ -754,7 +758,7 @@ class Counts(object):
                      c2rs, c2re) = values
                     cluster_id = "_".join(
                         map(str, ("spike-in", initial, change,
-                                  size, c1rs-c1s, n)))
+                                  size, c1rs - c1s, n)))
 
                     temp_cluster_df = self.table.ix[c1s:c1e, keep_cols]
                     temp_cluster_df['contig'] = cluster_id
@@ -770,8 +774,6 @@ class Counts(object):
                     n += 1
 
 
-
-
 def means2idxarrays(g1, g2, i_bins, c_bins, difference):
     '''take two arrays of values and return the initial values
     and differences as numpy digitised arrays'''
@@ -783,14 +785,14 @@ def means2idxarrays(g1, g2, i_bins, c_bins, difference):
         initial = g1
 
     elif difference == "logfold":
-        change = [np.log2((g2[x]+1.0) / (g1[x]+1.0))
+        change = [np.log2((g2[x] + 1.0) / (g1[x] + 1.0))
                   for x in range(0, len(g1))]
-        initial = [np.log2(g1[x]+1.0) for x in range(0, len(g1))]
+        initial = [np.log2(g1[x] + 1.0) for x in range(0, len(g1))]
 
     elif difference == "abs_logfold":
-        change = [abs(np.log2((g2[x]+1.0) / (g1[x]+1.0)))
+        change = [abs(np.log2((g2[x] + 1.0) / (g1[x] + 1.0)))
                   for x in range(0, len(g1))]
-        initial = [max(np.log2(g1[x]+1.0), np.log2(g2[x]+1.0))
+        initial = [max(np.log2(g1[x] + 1.0), np.log2(g2[x] + 1.0))
                    for x in range(0, len(g1))]
 
     # return arrays of len(change) with the index position in c_bins
@@ -841,9 +843,9 @@ def shuffleCluster(i_bins, c_bins, tracks_map, groups,
     return indeces from which the spike in clusters can be obtained from the
     original dataframe
     '''
-    s_bins = list(range(s_bins_min, s_bins_max+1, s_bins_width,))
+    s_bins = list(range(s_bins_min, s_bins_max + 1, s_bins_width,))
 
-    counts = np.zeros((len(i_bins)+1, len(c_bins)+1, len(s_bins)+1))
+    counts = np.zeros((len(i_bins) + 1, len(c_bins) + 1, len(s_bins) + 1))
 
     indices = {(key1, key2, key3): []
                for key1 in np.digitize(i_bins, i_bins)
@@ -865,10 +867,10 @@ def shuffleCluster(i_bins, c_bins, tracks_map, groups,
                 cluster2 = clusters_dict[g2_rand[perm]].ix[
                     :, tracks_map[groups[1]]]
                 c1_rand_s = random.randint(
-                    min(cluster1.index), max(cluster1.index)-size)
+                    min(cluster1.index), max(cluster1.index) - size)
                 c1_e = int(c1_rand_s + size)
                 c2_rand_s = random.randint(
-                    min(cluster2.index), max(cluster2.index)-size)
+                    min(cluster2.index), max(cluster2.index) - size)
                 c2_e = int(c2_rand_s + size)
 
                 c1_mean = np.mean(np.mean(cluster1.ix[c1_rand_s: c1_e]))
@@ -881,7 +883,7 @@ def shuffleCluster(i_bins, c_bins, tracks_map, groups,
             change_idx, initial_idx,  = means2idxarrays(
                 group1_mean, group2_mean, i_bins,
                 c_bins,  difference)
-            size_idx = np.digitize([size]*len(initial_idx), s_bins)
+            size_idx = np.digitize([size] * len(initial_idx), s_bins)
             for idx, coord in enumerate(zip(
                     initial_idx, change_idx, size_idx)):
                 if counts[coord] < s_max:
@@ -914,8 +916,6 @@ def thresholdBins(indices, counts, s_min):
     E.info("%s/%s bins retained" % (len(list(output_indices_keep.keys())),
                                     len(list(indices.keys()))))
     return output_indices_keep
-
-
 
 
 def loadTagDataPandas(tags_filename, design_filename):
@@ -1098,4 +1098,3 @@ def normalizeTagData(counts, method="deseq-size-factors"):
     assert normed.shape == counts.shape
 
     return normed, size_factors
-

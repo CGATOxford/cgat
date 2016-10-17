@@ -24,7 +24,6 @@ class ReadMap(object):
         return self
 
 
-
 class RelativeAbundance(object):
 
     '''
@@ -49,7 +48,6 @@ class RelativeAbundance(object):
         '''
         self.taxon_level, self.taxon, self.abundance = taxon_level, taxon, abundance
         return self
-
 
 
 def relative_abundance_iterator(infile):
@@ -96,7 +94,6 @@ def relative_abundance_iterator(infile):
             yield RelativeAbundance().read(group, abundance[0], abundance[1])
 
 
-
 def read_map_iterator(infile):
     '''
     iterate over read_map file
@@ -131,7 +128,6 @@ def read_map_iterator(infile):
         elif len(data) < 2:
             raise ValueError("could not assign taxonomy at the phylum level")
         yield ReadMap().read(seq_id, kingdom, phylum, c_lass, order, family, genus, species)
-
 
 
 class Counter(ReadMap):
@@ -213,4 +209,3 @@ class Counter(ReadMap):
 
     def proportion_with_clade_assignment(self, infile, total_reads):
         return float(total_reads) / self.total_count(infile)
-

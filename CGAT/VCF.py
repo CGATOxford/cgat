@@ -20,6 +20,7 @@ import sys
 
 class VCFEntry:
     """A VCF Entry"""
+
     def __init__(self, data, samples):
 
         assert len(data) == len(samples) + 9
@@ -39,6 +40,7 @@ class VCFEntry:
 
 class VCFFile:
     """A VCF File"""
+
     def __init__(self, infile):
 
         self.infile = infile

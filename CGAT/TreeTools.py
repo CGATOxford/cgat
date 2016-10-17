@@ -1509,9 +1509,11 @@ def calculatePatternsFromTree(tree, sort_order):
     patterns = []
     for a, b in edges:
         result = traverseGraph(graph, a, [b, ])
-        patterns.append(getPattern(tree, list(result.keys()), map_taxon2position))
+        patterns.append(getPattern(tree, list(
+            result.keys()), map_taxon2position))
         result = traverseGraph(graph, b, [a, ])
-        patterns.append(getPattern(tree, list(result.keys()), map_taxon2position))
+        patterns.append(getPattern(tree, list(
+            result.keys()), map_taxon2position))
 
     patterns.append("1" * notus)
     return patterns

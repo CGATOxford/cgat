@@ -1182,7 +1182,6 @@ def run(statement,
         return retcode
 
 
-
 def benchmark(func):
     """decorator collecting wall clock time spent in decorated method."""
 
@@ -1197,7 +1196,6 @@ def benchmark(func):
         global_options.stdlog.flush()
         return res
     return wrapper
-
 
 
 def cachedmethod(function):
@@ -1255,7 +1253,6 @@ class Memoize(object):
         else:
             object = self.cache[args] = self.fn(self.instance, *args)
             return object
-
 
 
 def GetFooter():

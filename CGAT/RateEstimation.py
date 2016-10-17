@@ -42,7 +42,6 @@ def evaluateCodonPair(codon1, codon2):
     return True, is_synonymous, is_transition
 
 
-
 def countSubstitutions(pi, Q):
     """count substitituions given a matrix Q and frequencies pi."""
 
@@ -74,7 +73,6 @@ def countSubstitutions(pi, Q):
     return rI, rV, rS, rN
 
 
-
 def initializeQMatrix(codons):
     """get an initialized Q matrix."""
 
@@ -85,7 +83,6 @@ def initializeQMatrix(codons):
             Q[codon_i][codon_j] = 0.0
 
     return Q
-
 
 
 def getQMatrix(pi, Rsi, Rsv, Rni, Rnv):
@@ -137,7 +134,6 @@ def getQMatrix(pi, Rsi, Rsv, Rni, Rnv):
     return Q, trace
 
 
-
 def getRateMatrix(trained_model, terminals=None):
     """return a rate matrix from an xrate grammar.
 
@@ -178,7 +174,6 @@ def getRateMatrix(trained_model, terminals=None):
             matrices[tt] = matrix
 
     return pis, matrices
-
 
 
 def setFrequencies(model, mali, prefix=""):

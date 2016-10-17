@@ -50,6 +50,7 @@ class Record:
        ``illumina-1.8``, ``solexa`` or ``phred64``.
 
     """
+
     def __init__(self, identifier, seq, quals, format=None):
         self.identifier, self.seq, self.quals, format = (
             identifier, seq, quals, format)

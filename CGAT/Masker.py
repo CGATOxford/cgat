@@ -24,7 +24,6 @@ from CGAT import FastaIterator as FastaIterator
 import io as StringIO
 
 
-
 class Masker:
 
     """a masker preserves gaps, but it does not preserve

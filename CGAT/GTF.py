@@ -297,21 +297,21 @@ def iterator_sorted_chunks(gff_iterator, sort_by="contig-start"):
     # get all chunks and annotate with sort order
     if sort_by == "contig-start":
         chunks = ([(x[0].contig, min([y.start for y in x]), x)
-                  for x in gff_iterator])
+                   for x in gff_iterator])
         chunks.sort()
         for contig, start, chunk in chunks:
             chunk.sort(key=lambda x: (x.contig, x.start))
             yield chunk
     elif sort_by == "contig-strand-start":
         chunks = ([(x[0].contig, x[0].strand, min([y.start for y in x]), x)
-                  for x in gff_iterator])
+                   for x in gff_iterator])
         chunks.sort()
         for contig, start, strand, chunk in chunks:
             chunk.sort(key=lambda x: (x.contig, x.strand, x.start))
             yield chunk
     elif sort_by == "contig-strand-start-end":
         chunks = ([(x[0].contig, x[0].strand, min([y.start for y in x]), x)
-                  for x in gff_iterator])
+                   for x in gff_iterator])
         chunks.sort()
         for contig, start, strand, chunk in chunks:
             chunk.sort(key=lambda x: (x.contig, x.strand, x.start, x.end))

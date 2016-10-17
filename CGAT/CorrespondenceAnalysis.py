@@ -115,7 +115,6 @@ def GetPermutatedMatrix(matrix,
     return result, rows, cols
 
 
-
 def PermuteRows(matrix):
     pass
 

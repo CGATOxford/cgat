@@ -33,7 +33,7 @@ class LCA(object):
         self.species_plus = None
         self.species_plus_plus = None
         self.level = None
-        
+
     def parse(self, line):
         '''
         parse the line
@@ -48,7 +48,7 @@ class LCA(object):
             if "[" not in taxa:
                 continue
             taxa = taxa.split(" ")
-            
+
             level, tax = taxa[0], taxa[1:]
             level = level.replace("[", "").replace("]", "")
 
@@ -161,8 +161,6 @@ class LCA(object):
             self.species_plus_plus = "NA"
 
         return self
-
-
 
 
 def iterate(infile):

@@ -80,7 +80,8 @@ def peek(sra, outdir=None):
 
     # check format of fastqs in .sra
     fastq_format = Fastq.guessFormat(IOTools.openFile(f[0], "r"), raises=False)
-    fastq_datatype = Fastq.guessDataType(IOTools.openFile(f[0], "r"), raises=True)
+    fastq_datatype = Fastq.guessDataType(
+        IOTools.openFile(f[0], "r"), raises=True)
 
     if outdir is None:
         shutil.rmtree(workdir)

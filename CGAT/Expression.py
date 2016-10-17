@@ -83,7 +83,6 @@ except ImportError:
 pandas2ri.activate()
 
 
-
 def runDETest(raw_DataFrame,
               design_file,
               outfile,
@@ -572,12 +571,12 @@ class DEExperiment_TTest(DEExperiment):
 
             control, treatment = combination
             n_rows = counts.table.shape[0]
-            df_dict["control_name"].extend((control,)*n_rows)
-            df_dict["treatment_name"].extend((treatment,)*n_rows)
+            df_dict["control_name"].extend((control,) * n_rows)
+            df_dict["treatment_name"].extend((treatment,) * n_rows)
             df_dict["test_id"].extend(counts.table.index.tolist())
 
             # set all status values to "OK"
-            df_dict["status"].extend(("OK",)*n_rows)
+            df_dict["status"].extend(("OK",) * n_rows)
 
             # subset counts table for each combination
             c_keep = [x == control for
@@ -850,8 +849,8 @@ class DEResult_edgeR(DEResult):
         df_dict["test_id"] = self.table['observation']
         df_dict["control_mean"] = self.table['logCPM']
         df_dict["treatment_mean"] = self.table['logCPM']
-        df_dict["control_std"] = (0,)*n_rows
-        df_dict["treatment_std"] = (0,)*n_rows
+        df_dict["control_std"] = (0,) * n_rows
+        df_dict["treatment_std"] = (0,) * n_rows
         df_dict["p_value"] = self.table['PValue']
         df_dict["p_value_adj"] = adjustPvalues(self.table['PValue'])
         df_dict["significant"] = pvaluesToSignficant(
@@ -868,7 +867,7 @@ class DEResult_edgeR(DEResult):
 
         # set all status values to "OK"
         # TS: again, may need an if/else to check...
-        df_dict["status"] = ("OK",)*n_rows
+        df_dict["status"] = ("OK",) * n_rows
 
         self.table = pandas.DataFrame(df_dict)
         self.table.set_index("test_id", inplace=True)
@@ -982,8 +981,8 @@ class DEResult_DEResult(DEResult):
         df_dict["contrast"] = self.table['contrast']
         df_dict["control_mean"] = self.table['logCPM']
         df_dict["treatment_mean"] = self.table['logCPM']
-        df_dict["control_std"] = (0,)*n_rows
-        df_dict["treatment_std"] = (0,)*n_rows
+        df_dict["control_std"] = (0,) * n_rows
+        df_dict["treatment_std"] = (0,) * n_rows
         df_dict["p_value"] = self.table['PValue']
         df_dict["p_value_adj"] = adjustPvalues(self.table['PValue'])
         df_dict["significant"] = pvaluesToSignficant(
@@ -1000,7 +999,7 @@ class DEResult_DEResult(DEResult):
 
         # set all status values to "OK"
         # TS: again, may need an if/else to check...
-        df_dict["status"] = ("OK",)*n_rows
+        df_dict["status"] = ("OK",) * n_rows
 
         self.table = pandas.DataFrame(df_dict)
         self.table.set_index("test_id", inplace=True)
@@ -1239,7 +1238,7 @@ class DEExperiment_DESeq2(DEExperiment):
                 # tmp_results['test_id'] = tmp_results.index
 
                 # need to set index to sequence of ints to avoid duplications
-                n2 = n+tmp_results.shape[0]
+                n2 = n + tmp_results.shape[0]
                 tmp_results.index = list(range(n, n2))
                 n = n2
 
@@ -1267,8 +1266,8 @@ class DEResult_DESeq2(DEResult):
         df_dict["contrast"] = self.table['contrast']
         df_dict["control_mean"] = self.table['baseMean']
         df_dict["treatment_mean"] = self.table['baseMean']
-        df_dict["control_std"] = (0,)*n_rows
-        df_dict["treatment_std"] = (0,)*n_rows
+        df_dict["control_std"] = (0,) * n_rows
+        df_dict["treatment_std"] = (0,) * n_rows
         df_dict["p_value"] = self.table['pvalue']
         df_dict["p_value_adj"] = adjustPvalues(self.table['pvalue'])
         df_dict["significant"] = pvaluesToSignficant(
@@ -1285,7 +1284,7 @@ class DEResult_DESeq2(DEResult):
 
         # set all status values to "OK"
         # TS: again, may need an if/else to check...
-        df_dict["status"] = ("OK",)*n_rows
+        df_dict["status"] = ("OK",) * n_rows
 
         self.table = pandas.DataFrame(df_dict)
         # causes errors if multiple instance of same test_id exist, for example
@@ -1485,7 +1484,7 @@ class DEExperiment_Sleuth(DEExperiment):
                 tmp_results = pandas2ri.ri2py(
                     differentialTesting(so))
                 tmp_results['contrast'] = contrast
-                
+
                 # need to set index to sequence of ints to avoid duplications
                 n2 = n + tmp_results.shape[0]
                 tmp_results.index = range(n, n2)
@@ -1510,15 +1509,15 @@ class DEResult_Sleuth(DEResult):
 
         n_rows = self.table.shape[0]
 
-        df_dict["treatment_name"] = ("NA",)*n_rows
-        df_dict["control_name"] = ("NA",)*n_rows
+        df_dict["treatment_name"] = ("NA",) * n_rows
+        df_dict["control_name"] = ("NA",) * n_rows
         df_dict["test_id"] = self.table['target_id']
         df_dict["contrast"] = self.table['contrast']
         df_dict["control_mean"] = [math.exp(float(x)) for
                                    x in self.table['mean_obs']]
         df_dict["treatment_mean"] = df_dict["control_mean"]
-        df_dict["control_std"] = (0,)*n_rows
-        df_dict["treatment_std"] = (0,)*n_rows
+        df_dict["control_std"] = (0,) * n_rows
+        df_dict["treatment_std"] = (0,) * n_rows
         df_dict["p_value"] = self.table['pval']
         df_dict["p_value_adj"] = adjustPvalues(self.table['pval'])
         df_dict["significant"] = pvaluesToSignficant(df_dict["p_value_adj"],
@@ -1530,14 +1529,12 @@ class DEResult_Sleuth(DEResult):
 
         # set all status values to "OK"
         # TS: again, may need an if/else to check...
-        df_dict["status"] = ("OK",)*n_rows
+        df_dict["status"] = ("OK",) * n_rows
 
         self.table = pandas.DataFrame(df_dict)
         # causes errors if multiple instance of same test_id exist, for example
         # if multiple constrasts have been tested
         # self.table.set_index("test_id", inplace=True)
-
-
 
 
 def buildProbeset2Gene(infile,
@@ -2455,7 +2452,6 @@ def runEdgeR(outfile,
     outf.close()
 
 
-
 def deseqPlotSizeFactors(outfile):
     '''plot size factors - requires cds object.'''
     R.png(outfile)
@@ -2773,7 +2769,8 @@ def deseq2ParseResults(treatment_name, control_name, fdr, vsd=False):
 
     #  fill columns with values described above
     R('''res2['test_id'] = rownames(res)''')
-    R('''g = unique(groups[groups == "%s" | groups == "%s"])''' % (treatment_name, control_name))
+    R('''g = unique(groups[groups == "%s" | groups == "%s"])''' % (
+        treatment_name, control_name))
     R('''g1 = which(groups == g[1])''')
     R('''g2 = which(groups == g[2])''')
     R('''res2['treatment_name'] = g[1]''')
@@ -3204,9 +3201,9 @@ def runDESeq2(outfile,
         df_out = deseq2ParseResults(treatment, control, fdr, vsd=False)
 
         #  label the deseq2 raw output file and append it to the raw output tab
-        raw_out["treatment"] = [treatment, ]*len(df_out.index)
-        raw_out["control"] = [control, ]*len(df_out.index)
-        raw_out["variable"] = [variable, ]*len(df_out.index)
+        raw_out["treatment"] = [treatment, ] * len(df_out.index)
+        raw_out["control"] = [control, ] * len(df_out.index)
+        raw_out["variable"] = [variable, ] * len(df_out.index)
         raw_final = raw_final.append(raw_out, ignore_index=True)
 
         #  write the standardised output table
@@ -3642,7 +3639,6 @@ def runTTest(outfile,
     writeExpressionResults(outfile, results)
 
 
-
 def loadTagDataPandas(tags_filename, design_filename):
     '''load tag data for deseq/edger analysis.
 
@@ -3870,8 +3866,8 @@ def runTTestPandas(counts_table,
 
         control, treatment = combination
         n_rows = counts_table.shape[0]
-        df_dict["control_name"].extend((control,)*n_rows)
-        df_dict["treatment_name"].extend((treatment,)*n_rows)
+        df_dict["control_name"].extend((control,) * n_rows)
+        df_dict["treatment_name"].extend((treatment,) * n_rows)
         df_dict["test_id"].extend(counts_table.index.tolist())
 
         # subset counts table for each combination
@@ -3904,7 +3900,7 @@ def runTTestPandas(counts_table,
     df_dict["transformed_l2fold"].extend(list(numpy.log2(df_dict["fold"])))
 
     # set all status values to "OK"
-    df_dict["status"].extend(("OK",)*n_rows)
+    df_dict["status"].extend(("OK",) * n_rows)
 
     results = pandas.DataFrame(df_dict)
     results.set_index("test_id", inplace=True)
@@ -4005,11 +4001,11 @@ def runEdgeRPandas(counts,
             counts_a = counts.iloc[:, keep_a]
             keep_b = [x == g2 for x in conds]
             counts_b = counts.iloc[:, keep_b]
-            index = list(range(n, n+nrows))
+            index = list(range(n, n + nrows))
             n += nrows
             a = counts_a.sum(axis=1)
             b = counts_b.sum(axis=1)
-            diff = a-b
+            diff = a - b
             diff.sort()
             temp_df = pandas.DataFrame({"cumsum": np.cumsum(diff).tolist(),
                                         "comb": "_vs_".join([g1, g2]),
@@ -4045,11 +4041,11 @@ def runEdgeRPandas(counts,
                 if sum(keep_a) > 0 and sum(keep_b) > 0:
                     counts_a = counts.iloc[:, keep_a]
                     counts_b = counts.iloc[:, keep_b]
-                    index = list(range(n, n+nrows))
+                    index = list(range(n, n + nrows))
                     n += nrows
                     a = counts_a.sum(axis=1)
                     b = counts_b.sum(axis=1)
-                    diff = a-b
+                    diff = a - b
                     diff.sort()
                     comparison = "pair-%s-%s-vs-%s" % (pair, g1, g2)
                     temp_df = pandas.DataFrame({"cumsum": np.cumsum(diff).tolist(),
@@ -4188,13 +4184,13 @@ def runEdgeRPandas(counts,
     # import r stats module for BH adjustment
     stats = importr('stats')
 
-    df_dict["control_name"].extend((groups[0],)*n_rows)
-    df_dict["treatment_name"].extend((groups[1],)*n_rows)
+    df_dict["control_name"].extend((groups[0],) * n_rows)
+    df_dict["treatment_name"].extend((groups[1],) * n_rows)
     df_dict["test_id"].extend(lrt_table.index)
     df_dict["control_mean"].extend(lrt_table['logCPM'])
     df_dict["treatment_mean"].extend(lrt_table['logCPM'])
-    df_dict["control_std"].extend((0,)*n_rows)
-    df_dict["treatment_std"].extend((0,)*n_rows)
+    df_dict["control_std"].extend((0,) * n_rows)
+    df_dict["treatment_std"].extend((0,) * n_rows)
     df_dict["p_value"].extend(lrt_table['PValue'])
     df_dict["p_value_adj"].extend(
         list(stats.p_adjust(FloatVector(df_dict["p_value"]), method='BH')))
@@ -4211,7 +4207,7 @@ def runEdgeRPandas(counts,
 
     # set all status values to "OK"
     # TS - again, may need an if/else, check...
-    df_dict["status"].extend(("OK",)*n_rows)
+    df_dict["status"].extend(("OK",) * n_rows)
 
     results = pandas.DataFrame(df_dict)
     results.set_index("test_id", inplace=True)
@@ -4223,8 +4219,8 @@ def runEdgeRPandas(counts,
     counts.all_over = sum([x > 0 for x in results['l2fold']])
     counts.all_under = sum([x < 0 for x in results['l2fold']])
     counts.signficant_over = sum([results['significant'][x] == 1 and
-                                 results['l2fold'][x] > 1 for
-                                 x in range(0, n_rows)])
+                                  results['l2fold'][x] > 1 for
+                                  x in range(0, n_rows)])
     counts.signficant_under = sum([results['significant'][x] == 1 and
                                    results['l2fold'][x] < 1 for
                                    x in range(0, n_rows)])

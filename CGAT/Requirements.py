@@ -62,7 +62,6 @@ def readDefinitions(filename):
     return config
 
 
-
 def getstatusoutput(cmd):
     """Return (status, output) of executing cmd in a shell.
 
@@ -356,4 +355,3 @@ def checkRequirementsFromAllModules():
                 all_modules[module],
                 counter))
     return counter, results
-

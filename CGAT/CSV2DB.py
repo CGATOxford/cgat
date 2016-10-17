@@ -145,7 +145,7 @@ def createTable(dbhandle,
 
     columns_to_ignore = set([x.lower() for x in ignore_columns])
     columns_to_rename = dict([x.lower().split(":")
-                             for x in rename_columns])
+                              for x in rename_columns])
 
     take = []
     # associate headers to field names

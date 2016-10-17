@@ -479,5 +479,3 @@ def ShortenIntervalsOverlap(intervals, to_remove):
             new_intervals.append((this_from, this_to))
 
     return new_intervals
-
-

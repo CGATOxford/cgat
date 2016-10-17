@@ -265,7 +265,7 @@ def buildMatrixFromEdges(edges,
                          diagonal_value=0,
                          dtype=numpy.int):
     """build a matrix from an edge-list representation.
-    
+
     For example, the following list of tuples::
 
        [('A', 'B', 1),

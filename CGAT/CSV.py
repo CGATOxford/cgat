@@ -98,7 +98,6 @@ class DictReader(csv.DictReader):
                                 *args, **kwargs)
 
 
-
 class UnicodeCsvReader(object):
 
     def __init__(self, f, encoding="utf-8", **kwargs):
@@ -255,7 +254,6 @@ def readTables(infile, *args, **kwargs):
         start = end + 1
 
     return result
-
 
 
 def __DoGroup(rows, group_column, group_function, missing_value="na"):

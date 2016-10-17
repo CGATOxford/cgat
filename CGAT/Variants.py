@@ -524,7 +524,8 @@ def buildOffsets(variants, phased=True, contig=None):
             offsets1.append((end - 1, offset1))
 
         if E.global_options.loglevel >= 8:
-            print("# variant=", start, end, reference, action, has_wildtype, variantseqs)
+            print("# variant=", start, end, reference,
+                  action, has_wildtype, variantseqs)
             print("# offsets:", offsets0[-1], offsets1[-1])
         # add offsets - applies to the end of the variant
 

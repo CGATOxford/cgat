@@ -260,4 +260,3 @@ def write_DataFrame(dataframe,
                 db_execute(cc, istat)
 
         cc.close()
-

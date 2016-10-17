@@ -379,7 +379,6 @@ class Tree(Bio.Nexus.Trees.Tree):
         self.dfs(self.root,
                  pre_function=dist2other)
 
-
         # note: need not treat root. Set d2leaves > d2root
         # so that it is never chosen selected.
         map_N2Leaves[self.root] = 1

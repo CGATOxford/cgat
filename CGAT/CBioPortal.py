@@ -85,7 +85,6 @@ from collections import OrderedDict as odict
 from CGAT import Experiment as E
 
 
-
 class CBioPortal():
     """connect to the cBioPortal Database.
 
@@ -657,7 +656,6 @@ class CBioPortal():
             else:
                 raise ValueError("No case_set_id provided and no default set")
 
-
     def _getAndCheckGeneticProfiles(self, genetic_profile_id=None, study=None):
 
         study_id = self._getStudyId(study, None)
@@ -787,7 +785,6 @@ class CBioPortal():
         self.last_warnings = warnings
         return return_table
 
-
     def getTotalAltered(self, gene_list, study=None, study_name=None, case_set_id=None, genetic_profile_id=None, threshold=2):
         ''' Calculate the percent of cases in which any one of the specified genes are altered '''
 
@@ -829,9 +826,9 @@ class CBioPortal():
             for gene in data:
 
                 altered = len([x for x in gene
-                              if self._guessAlteration(x[case_id],
-                                                       x['GENETIC_PROFILE_ID'],
-                                                       profiles, threshold)])
+                               if self._guessAlteration(x[case_id],
+                                                        x['GENETIC_PROFILE_ID'],
+                                                        profiles, threshold)])
                 if (altered > 0):
                     case_altered = True
 

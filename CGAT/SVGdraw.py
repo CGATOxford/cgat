@@ -52,7 +52,6 @@ if use_dom_implementation != 0:
 sys.setrecursionlimit = 50
 
 
-
 def _escape(data, entities={}):
     """Escape &, <, and > in a string of data.
 

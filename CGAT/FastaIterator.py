@@ -42,7 +42,7 @@ class FastaRecord:
         ''' str method for writing out'''
 
         if self.fold:
-            seq = [self.sequence[i:i+self.fold]
+            seq = [self.sequence[i:i + self.fold]
                    for i in range(0, len(self.sequence), self.fold)]
         else:
             seq = (self.sequence,)

@@ -205,7 +205,6 @@ class GOEntry:
                 self.mIsObsolete = True
 
 
-
 def readOntology(infile):
     """read ontology in OBO format from infile.
 
@@ -243,7 +242,6 @@ def readOntology(infile):
     return result
 
 
-
 class GOSample:
 
     """store results from sampling.
@@ -258,7 +256,6 @@ class GOSample:
         self.mProbabilitiesOverRepresentation = mprobovers
         self.mProbabilitiesUnderRepresentation = mprobunders
         self.mCounts = counts
-
 
 
 class GOResult:
@@ -366,7 +363,6 @@ class GOResults:
         return "\n".join(lines)
 
 
-
 class GOInfo:
     mGOId = None
     mGOType = None
@@ -391,7 +387,6 @@ class GOInfo:
         return ["goid", "go_catagory", "go_description"]
 
 
-
 class GOMatch(GOInfo):
     mEvidence = None
 
@@ -406,7 +401,6 @@ class GOMatch(GOInfo):
 
     def __str__(self):
         return "\t".join(map(str, (self.mGOId, self.mGOType, self.mDescription, self.mEvidence)))
-
 
 
 def FilterByGOIds(gene2go, go2info):
@@ -433,7 +427,6 @@ def FilterByGOIds(gene2go, go2info):
             filtered_gene2go[gene_id] = list(new_go)
 
     return filtered_gene2go
-
 
 
 def MapGO2Slims(gene2go, go2slim, ontology=None):
@@ -479,7 +472,6 @@ def MapGO2Slims(gene2go, go2slim, ontology=None):
     return filtered_gene2go
 
 
-
 def GetGOSlims(infile):
     """
     returns a map of go identifiers to slim categories
@@ -501,7 +493,6 @@ def GetGOSlims(infile):
         go2go[go.strip()] = [x for x in [x.strip() for x in goslims] if len(x)]
 
     return go2go
-
 
 
 def GetGOFrequencies(gene2go, genes):
@@ -529,7 +520,6 @@ def GetGOFrequencies(gene2go, genes):
             total += 1
 
     return total, counts, found_genes
-
 
 
 def AnalyseGO(gene2go,
@@ -597,8 +587,10 @@ def AnalyseGO(gene2go,
                 print(msg)
                 print("# error while calculating probabilities for %s" % go_id)
                 print("# genes in sample", sample_genes)
-                print("# counts in sample: %i out of %i total" % (result_go.mSampleCountsCategory, result_go.mSampleCountsTotal))
-                print("# counts in background %i out of %i total" % (result_go.mBackgroundCountsCategory, result_go.mBackgroundCountsTotal))
+                print("# counts in sample: %i out of %i total" % (
+                    result_go.mSampleCountsCategory, result_go.mSampleCountsTotal))
+                print("# counts in background %i out of %i total" % (
+                    result_go.mBackgroundCountsCategory, result_go.mBackgroundCountsTotal))
                 for x in list(sample_genes.keys()):
                     for y in gene2go[x]:
                         print(x, str(y))
@@ -608,7 +600,6 @@ def AnalyseGO(gene2go,
         result.mResults[go_id] = result_go
 
     return result
-
 
 
 def GetGOStatement(go_type, database, species):
@@ -795,7 +786,6 @@ def DumpGOFromDatabase(outfile,
     return
 
 
-
 def ReadGene2GOFromFile(infile, synonyms={}, obsolete={}):
     """reads GO mappings for all go_types from a
     file.
@@ -853,7 +843,6 @@ def ReadGene2GOFromFile(infile, synonyms={}, obsolete={}):
     return gene2gos, go2infos
 
 
-
 def CountGO(gene2go):
     """count number of genes and go categories in mapping."""
 
@@ -874,7 +863,6 @@ def removeCategories(gene2go, categories):
         gene2go[k] = [v for v in vv if v.mGOId not in categories]
 
 
-
 def countGOs(gene2gos):
     """return map of number of genes and go categories in mapping."""
     genes, goids = collections.defaultdict(int), collections.defaultdict(int)
@@ -885,7 +873,6 @@ def countGOs(gene2gos):
             for v in vv:
                 goids[v.mGOId] += 1
     return genes, goids
-
 
 
 def ReadGeneLists(filename_genes, gene_pattern=None):
@@ -925,7 +912,6 @@ def ReadGeneLists(filename_genes, gene_pattern=None):
     return all_genes, gene_lists
 
 
-
 def buildGO2Genes(gene2gos, ancestors=None):
     '''invert the dictionary genes2go. 
 
@@ -942,7 +928,6 @@ def buildGO2Genes(gene2gos, ancestors=None):
     return go2genes
 
 
-
 def GetCode(v):
     """return a code for over/underrepresentation."""
 
@@ -953,7 +938,6 @@ def GetCode(v):
     else:
         code = "?"
     return code
-
 
 
 def convertGo2Goslim(options):
@@ -1329,7 +1313,6 @@ def computeFDRs(go_results,
     return fdrs, samples, method
 
 
-
 def getFileName(options, **kwargs):
     '''return a filename
 
@@ -1345,7 +1328,6 @@ def getFileName(options, **kwargs):
         outfile = options.stdout
 
     return outfile
-
 
 
 def buildMatrix(results, valuef, dtype=numpy.float, default=0):
@@ -1372,7 +1354,6 @@ def buildMatrix(results, valuef, dtype=numpy.float, default=0):
     return matrix, row_headers
 
 
-
 def selectSignificantResults(pairs, fdrs, options):
     '''select a set of significant results.
     '''
@@ -1396,7 +1377,6 @@ def selectSignificantResults(pairs, fdrs, options):
             filtered_pairs.append((k, v))
 
     return filtered_pairs
-
 
 
 def outputMultipleGeneListResults(results,

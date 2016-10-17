@@ -918,7 +918,6 @@ DECODE_GENOTYPE = {
 }
 
 
-
 def encodeGenotype(code):
     '''encode genotypes like GG, GA into a one-letter code.
     The returned code is lower case if code[0] < code[1], otherwise
@@ -1186,7 +1185,6 @@ def Alignment2CDNA(alignment,
         sbjct_pos += l_sbjct
 
     return map_query2sbjct, fragments.join("")
-
 
 
 def GetExon(exons, first_aa):
@@ -1457,7 +1455,6 @@ class SequencePairInfoCodons(SequencePairInfo):
         return "\t".join((SequencePairInfo.getHeader(self), "nnonsyn", "nsyn"))
 
 
-
 def AlignedPair2SubstitutionMatrix(seq1, seq2, alphabet):
     """given a pair of sequences, calculate
     a substitution matrix for the given alphabet.
@@ -1479,7 +1476,6 @@ def AlignedPair2SubstitutionMatrix(seq1, seq2, alphabet):
             continue
 
     return matrix
-
 
 
 def CalculatePairIndices(seq1, seq2, gap_char="-", with_codons=False):

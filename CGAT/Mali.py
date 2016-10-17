@@ -393,7 +393,7 @@ class Mali:
                     x += 1
 
                 self.addEntry(
-                    AlignedString(xid, 
+                    AlignedString(xid,
                                   int(data[0]) - 1,
                                   int(data[2]),
                                   data[1]))
@@ -1363,7 +1363,6 @@ def convertMali2Alignlib(mali):
         a = alignlib_lite.py_makeAlignatum(mali[identifier])
         m.add(a)
     return m
-
 
 
 def convertAlignlib2Mali(mali, identifiers=None, seqs=None):

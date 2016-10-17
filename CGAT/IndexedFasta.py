@@ -751,7 +751,7 @@ class CGATIndexedFasta:
         # add pointers to self
         for key in list(self.mIndex.keys()):
             _add(key, key)
-       
+
     def setTranslator(self, translator=None):
         """set the :class:`Translator` to use."""
         self.mTranslator = translator
@@ -949,7 +949,7 @@ class CGATIndexedFasta:
         except (struct.error, TypeError):
             pos_id, pos_seq, lcontig, points = data
 
-        start, end = 0, 0 
+        start, end = 0, 0
         if size >= lcontig:
             end = lcontig
         else:
@@ -1066,7 +1066,6 @@ def IndexedFasta(dbname, *args, **kwargs):
         return PysamIndexedFasta(dbname, *args, **kwargs)
     else:
         return CGATIndexedFasta(dbname, *args, **kwargs)
-
 
 
 def _one_forward_closed(x, y, c, l):
@@ -1187,7 +1186,6 @@ def getConverter(format):
                 return _zero_both_closed
             else:
                 return _zero_both_open
-
 
 
 def benchmarkRandomFragment(fasta, size):

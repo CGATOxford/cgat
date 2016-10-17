@@ -50,7 +50,6 @@ from CGAT import Genomics as Genomics
 import Bio.Alphabet.IUPAC
 
 
-
 class SequenceProperties(object):
     """Base class.
 
@@ -634,7 +633,8 @@ class SequencePropertiesDegeneracy (SequencePropertiesLength):
 
         SequencePropertiesLength.updateProperties(self)
         self.mNGC = 0
-        self.mNSites1D, self.mNSites2D, self.mNSites3D, self.mNSites4D = (0,)*4
+        self.mNSites1D, self.mNSites2D, self.mNSites3D, self.mNSites4D = (
+            0,) * 4
         self.mNSitesD3 = 0
 
         for x in (0, 1, 2):
@@ -969,6 +969,7 @@ class SequencePropertiesCodonUsage(SequencePropertiesCodons):
         Codon frequencies.
 
     """
+
     def __init__(self):
 
         SequencePropertiesCodons.__init__(self)
@@ -1192,6 +1193,7 @@ class SequencePropertiesCounts(SequenceProperties):
         List of characters in alphabet
 
     """
+
     def __init__(self, alphabet):
 
         SequenceProperties.__init__(self)
