@@ -277,7 +277,7 @@ setup(
     package_dir=cgat_package_dirs,
     include_package_data=True,
     entry_points={
-        'console_scripts': ['cgat = scripts.cgat:main']
+        'console_scripts': ['cgat = CGAT.cgat:main']
     },
     # dependencies
     install_requires=install_requires,

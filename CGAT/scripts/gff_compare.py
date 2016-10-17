@@ -363,7 +363,7 @@ def main(argv=None):
     # get nucleotide level accuracy
     # process each fragment separately
     if options.do_nucleotides:
-        print("""##############################################################################
+        print("""############################################################""")
 
         headers = (
             "contig", "strand", "tp", "fp", "tn", "fn", "sp", "sn", "cc")
@@ -422,8 +422,7 @@ def main(argv=None):
     ##########################################################################
     if options.do_exons or options.do_genes:
 
-        print("""##############################################################################
-              (options.max_exon_slippage))
+        print("""############################################################""")
 
         headers = ("category", "contig", "strand", "tp", "fp", "tn",
                    "fn", "sp", "sn", "cc", "me", "we", "me", "we")
@@ -748,8 +747,7 @@ def main(argv=None):
             options.regex_reference and \
             options.regex_target:
 
-        print("""##############################################################################
-              (options.max_exon_slippage))
+        print("""###############################################################""")
 
         out_options = []
         if options.write_missed_genes:
