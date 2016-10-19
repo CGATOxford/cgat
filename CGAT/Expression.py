@@ -142,37 +142,6 @@ def pvaluesToSignficant(p_values, fdr):
     return [int(x < fdr) for x in p_values]
 
 
-def makeMAPlot(resultsTable, title, outfile):
-    '''make an MA plot from a DE results table'''
-
-    plotter = R('''
-    function(results, title, outfile){
-    suppressMessages(library(ggplot2))
-
-    m_text = element_text(size = 15)
-
-    results=results[order(results$significant),]
-    results$significant = factor(results$significant, levels=c(0,1))
-
-    p = ggplot(results[!is.na(results$p_value),],
-        aes(x=log(((control_mean + treatment_mean)/2), 10),
-            y = log(fold,2), col = significant))
-    p = p + geom_point(aes(size=significant))
-    p = p + scale_colour_manual(values=c("black", "red"),name="p-adjust < fdr")
-    p = p + scale_size_manual(values=c(1,2), name="p-adjust < fdr")
-    p = p + xlab("Normalised counts (log10)") + ylab("Fold change (log2)")
-    p = p + ggtitle(title)
-    p = p + theme(axis.title.x = m_text, axis.title.y = m_text,
-                  axis.text.x = m_text, axis.text.y = m_text,
-                  legend.title = m_text, legend.text = m_text)
-
-    ggsave(plot = p, file = outfile, width=7, height=7)}''')
-
-    r_resultsTable = pandas2ri.py2ri(resultsTable)
-
-    plotter(r_resultsTable, title, outfile)
-
-
 class ExperimentalDesign(object):
     """Objects representing experimental designs.
 
@@ -269,13 +238,6 @@ class ExperimentalDesign(object):
             self.conditions)))
         self.samples = self.table.index.tolist()
 
-        # TS, adapted from JJ code for DESeq2 design tables:
-        # if additional columns present, pass to 'factors'
-        if len(self.table.columns) > 3:
-            self.factors = self.table.iloc[:, 3:]
-        else:
-            self.factors = None
-
         # Test if replicates exist, i.e at least one group has multiple samples
         # TS - does this need to be extended to check whether replicates exist
         # for each group?
@@ -292,6 +254,13 @@ class ExperimentalDesign(object):
             self.has_pairs = min_per_pair >= 2
         else:
             self.has_pairs = False
+
+        # all columns except "include" may be considered as factors
+        self.factors = self.table.drop(["include"], axis=1)
+        # remove "pair" from factor if design does not include pairs
+        if not self.has_pairs:
+            self.factors.drop("pair", inplace=True, axis=1)
+
 
     def validate(self, counts=None, model=None):
 
@@ -402,6 +371,17 @@ class ExperimentalDesign(object):
                 [x + y for x in tmp_design.index.tolist() for y in keep_suffix])
 
         return groups_to_keep_tracks, groups_to_spike_tracks
+
+
+class DEExperiment(object):
+    ''' base clase for DE experiments '''
+
+    def __init__(self):
+        pass
+
+    def run(self):
+        ''' Custom DE functions
+        return a DEResult object'''
 
 
 class DEResult(object):
@@ -526,6 +506,7 @@ class DEResult(object):
               legend.title = l_txt, legend.text = l_txt,
               title=l_txt, legend.key.size=unit(1, "cm"),
               aspect.ratio=1)
+        print(p)
 
         suppressMessages(
           ggsave(file="%(outfile_prefix)s_%(contrast)s_MA_plot.png",
@@ -563,20 +544,6 @@ class DEResult(object):
           width=10, height=10))}''' % locals())
 
         makeVolcanoPlot(pandas2ri.py2ri(self.table))
-
-
-class DEExperiment(object):
-    ''' base clase for DE experiments '''
-
-    def __init__(self):
-        pass
-
-    def __call__(self):
-        ''' call DE and generate an initial results table '''
-        self.callDifferentialExpression()
-
-    def run(self):
-        ''' Custom DE functions '''
 
 
 class DEExperiment_TTest(DEExperiment):
@@ -669,10 +636,11 @@ class DEExperiment_edgeR(DEExperiment):
             counts,
             design,
             model=None,
-            dispersion=None,
+            contrast=None,
+            outfile_prefix=None,
             ref_group=None,
-            contrasts=None,
-            outfile_prefix=None):
+            fdr=0.1,
+            dispersion=None):
 
         if not design.has_replicates and dispersion is None:
             raise ValueError("no replicates and no dispersion")
@@ -681,87 +649,67 @@ class DEExperiment_edgeR(DEExperiment):
         r_counts = pandas2ri.py2ri(counts.table)
         r_groups = ro.StrVector(design.conditions)
         r_pairs = ro.StrVector(design.pairs)
-        r_has_pairs = ro.default_py2ri(design.has_pairs)
-        r_has_replicates = ro.default_py2ri(design.has_replicates)
-
-        if dispersion is not None:
-            r_dispersion = ro.default_py2ri(dispersion)
-        else:
-            r_dispersion = ro.default_py2ri(False)
+        r_has_pairs = ro.BoolVector([design.has_pairs])
+        r_has_replicates = ro.BoolVector([design.has_replicates])
 
         if model is not None:
             r_factors_df = pandas2ri.py2ri(design.factors)
         else:
             r_factors_df = ro.default_py2ri(False)
 
-        if ref_group is not None:
-            r_ref_group = ro.default_py2ri(ref_group)
-        else:
-            r_ref_group = ro.default_py2ri(design.groups[0])
+        E.info('running edgeR: groups=%s, replicates=%s, pairs=%s, '
+               'additional_factors:%s' %
+               (design.groups, design.has_replicates, design.has_pairs,
+                design.factors))
 
-        if contrasts is not None:
-            raise ValueError("cannot currently handle user defined contrasts")
-            r_contrasts = ro.default_py2ri(contrasts)
+        levels = set(design.table[contrast])
+        if len(levels) > 2:
 
-        E.info('running EdgeR: groups=%s, pairs=%s, replicates=%s, pairs=%s' %
-               (design.groups, design.pairs, design.has_replicates,
-                design.has_pairs))
+            E.warn(
+                "There are more than 2 levels for the "
+                "contrast specified" "(%s:%s). The log2fold changes in the "
+                "results table and MA plots will be for the first two "
+                "levels in the contrast. The p-value will be the p-value "
+                "for the overall significance of the contrast. Hence, some "
+                "genes will have a signficant p-value but 0-fold change "
+                "between the first two levels" % (contrast, levels))
 
         # build DGEList object
         buildDGEList = R('''
         suppressMessages(library('edgeR'))
 
-        function(counts, groups, ref_group, factors_df){
+        function(counts){
 
-        countsTable = DGEList(counts, group=groups)
-
-        if (factors_df != FALSE){
-          for (level in colnames(factors_df)){
-            countsTable$samples[level] <- factors_df[level]
-        }}
-
-        countsTable$samples$group <- relevel(countsTable$samples$group,
-        ref = ref_group)
+        countsTable = DGEList(counts)
 
         countsTable = calcNormFactors(countsTable)
 
-        return(countsTable)}''')
+        return(countsTable)}''' % locals())
 
-        r_countsTable = buildDGEList(r_counts, r_groups,
-                                     r_ref_group, r_factors_df)
+        r_countsTable = buildDGEList(r_counts)
 
         # build design matrix
-        if model is None:
-            buildDesign = R('''
+        buildDesign = R('''
+        function(factors_df){
 
-            function(countsTable, has_pairs){
+        for (level in colnames(factors_df)){
+           factors_df[[level]] <- factor(factors_df[[level]])
+        }
 
-            if (has_pairs==TRUE) {
-              design <- model.matrix( ~pairs + countsTable$samples$group ) }
+        factors_df$%(contrast)s <- relevel(
+           factors_df$%(contrast)s, ref="%(ref_group)s")
 
-            else {
-              design <- model.matrix( ~countsTable$samples$group ) }
+        design <- model.matrix(%(model)s, data=factors_df)
 
-            return(design)
-            }''')
+        return(design)}''' % locals())
 
-            r_design = buildDesign(r_countsTable, r_has_pairs)
-        else:
-            buildDesign = R('''
-            function(factors_df){
-            design <- model.matrix(%s, data=factors_df)
-            return(design)}''' % model)
-
-            r_design = buildDesign(r_factors_df)
-
-        # TS - for debugging, remove from final version
-        E.info("design_table:")
+        r_design = buildDesign(r_factors_df)
 
         # fit model
         fitModel = R('''
-        function(countsTable, design, has_replicates, dispersion){
+        function(countsTable, design, has_replicates){
 
-        if (has_replicates == TRUE) {
+        if (has_replicates[1] == TRUE) {
 
             # estimate common dispersion
             countsTable = estimateGLMCommonDisp( countsTable, design )
@@ -777,83 +725,48 @@ class DEExperiment_edgeR(DEExperiment):
 
         else {
             # fitting model to each tag
-            fit = glmFit(countsTable, design, dispersion=dispersion) }
+            fit = glmFit(countsTable, design, dispersion=%(dispersion)s) }
 
-        return(fit)}''')
+        return(fit)}''' % locals())
 
-        r_fit = fitModel(r_countsTable, r_design,
-                         r_has_replicates, r_dispersion)
+        r_fit = fitModel(r_countsTable, r_design, r_has_replicates)
 
-        E.info("Conducting liklihood ratio tests")
+        E.info("Conducting likelihood ratio tests")
 
-        # TS - if no contrasts are specified, perform LR test on all possible
-        # contrasts, otherwise, only perform the contrasts specified
-        # TS - Function definition should depend on whether contrasts
-        # are specified (keep the decision tree in python)
-        # TS - To do:
-        # add lrtTest definition for user-supplied contrasts
-        if contrasts is None:
-            lrtTest = R('''
-        function(fit, prefix, countsTable, design){
+        lrtTest = R('''
+        function(fit, design, factors_df, countsTable){
         suppressMessages(library(reshape2))
 
-        lrt_table_list = NULL
+        lrt = glmLRT(fit)
 
-        for(coef in seq(2, length(colnames(design)))){
-          lrt = glmLRT(fit, coef = coef)
+        lrt_table = as.data.frame(lrt$table)
 
+        lrt_table$contrast <- "%(contrast)s"
 
-          lrt_table = lrt$table
-          # need to include observations as a seperate column as there will
-          # be non-unique
-          lrt_table$observation = rownames(lrt_table)
-          rownames(lrt_table) <- NULL
-
-          lrt_table_list[[coef]] = lrt_table
-          lrt_table_list[[coef]]['contrast'] = colnames(design)[coef]
-
-          dt <- decideTestsDGE(lrt)
-          isDE <- as.logical(dt)
-          DEnames <- rownames(fit)[isDE]
-
-          contrast = gsub(":", "_interaction_", colnames(design)[coef])
-          png(paste0(contrast, "MAplot.png"))
-          plotSmear(lrt, de.tags=DEnames, cex=0.35, main=contrast)
-          abline(h=c(-1,1), col="blue")
-          dev.off()
+        for (level in colnames(factors_df)){
+           factors_df[[level]] <- factor(factors_df[[level]])
         }
 
-            lrt_final = do.call(rbind, lrt_table_list)
+        factors_df$%(contrast)s <- relevel(
+           factors_df$%(contrast)s, ref="%(ref_group)s")
 
-        return(lrt_final)}''')
+        contrast_levels = as.vector(levels(factor(factors_df[["%(contrast)s"]])))
 
-            r_lrt_table = lrtTest(r_fit, outfile_prefix,
-                                  r_countsTable, r_design)
-        else:
-            # TS - shouldn't get to here as error thrown earlier if
-            # contrasts is not None
-            pass
+        lrt_table$control_name <- contrast_levels[1]
+        lrt_table$treatment_name <- contrast_levels[2]
 
-        E.info("Generating output - cpm table")
+        dt <- decideTestsDGE(lrt, adjust.method="BH", p.value=%(fdr)s)
+        isDE <- as.logical(dt)
+        DEnames <- rownames(fit)[isDE]
 
-        # output cpm table
-        outputCPMTable = R('''function(countsTable, outfile_prefix){
-        suppressMessages(library(reshape2))
-        countsTable.cpm <- cpm(countsTable, normalized.lib.sizes=TRUE)
-        melted <- melt(countsTable.cpm)
-        names(melted) <- c("test_id", "sample", "ncpm")
+        png(paste0(c("%(outfile_prefix)s", "MA.png"), collapse="_"))
+        plotSmear(lrt, de.tags=DEnames, cex=0.35, main="%(contrast)s")
+        abline(h=c(-1,1), col="blue")
+        dev.off()
 
-        # melt columns are factors - convert to string for sorting
-        melted$test_id = levels(melted$test_id)[as.numeric(melted$test_id)]
-        melted$sample = levels(melted$sample)[as.numeric(melted$sample)]
+        return(lrt_table)}''' % locals())
 
-        # sort cpm table by test_id and sample
-        sorted <- melted[with(melted, order(test_id, sample)),]
-        gz <- gzfile(paste0(outfile_prefix,"cpm.tsv.gz"), "w" )
-        write.table(sorted, file=gz, sep = "\t", row.names=FALSE, quote=FALSE)
-        close(gz)}''')
-
-        outputCPMTable(r_countsTable, outfile_prefix)
+        r_lrt_table = lrtTest(r_fit, r_design, r_factors_df, r_countsTable)
 
         result = DEResult_edgeR(testTable=pandas2ri.ri2py(r_lrt_table))
 
@@ -871,141 +784,10 @@ class DEResult_edgeR(DEResult):
 
         n_rows = self.table.shape[0]
 
-        df_dict["treatment_name"] = self.table['contrast']
-        df_dict["control_name"] = self.table['contrast']
-        df_dict["test_id"] = self.table['observation']
-        df_dict["control_mean"] = self.table['logCPM']
-        df_dict["treatment_mean"] = self.table['logCPM']
-        df_dict["control_std"] = (0,)*n_rows
-        df_dict["treatment_std"] = (0,)*n_rows
-        df_dict["p_value"] = self.table['PValue']
-        df_dict["p_value_adj"] = adjustPvalues(self.table['PValue'])
-        df_dict["significant"] = pvaluesToSignficant(
-            df_dict["p_value_adj"], fdr)
-        df_dict["l2fold"] = list(numpy.log2(self.table['logFC']))
-
-        # TS: the transformed log2 fold change is not transformed!
-        df_dict["transformed_l2fold"] = df_dict["l2fold"]
-
-        # TS: check what happens when no fold change is available
-        # TS: may need an if/else in list comprehension. Raise E.warn too?
-        df_dict["fold"] = [math.pow(2, float(x)) for
-                           x in self.table['logFC']]
-
-        # set all status values to "OK"
-        # TS: again, may need an if/else to check...
-        df_dict["status"] = ("OK",)*n_rows
-
-        self.table = pandas.DataFrame(df_dict)
-        self.table.set_index("test_id", inplace=True)
-
-    def plotMAplot(self, design, outfile_prefix):
-        # need to implement edgeR specific MA plot
-        raise ValueError("MA plotting is not yet implemented for edgeR")
-
-
-class DEExperiment_DESeq(DEExperiment):
-    '''DEExperiment object to run DEseq on counts data
-    '''
-
-    # TS: this is a work in progress!
-
-    def run(self,
-            counts,
-            design,
-            model=None,
-            dispersion_method="pooled",
-            ref_group=None,
-            contrasts=None,
-            outfile_prefix=None,
-            sharing_mode="maximum",
-            fit_type="parametric"):
-
-        # create r objects
-        r_counts = pandas2ri.py2ri(counts.table)
-        r_groups = ro.StrVector(design.conditions)
-        r_pairs = ro.StrVector(design.pairs)
-        r_has_pairs = ro.default_py2ri(design.has_pairs)
-        r_has_replicates = ro.default_py2ri(design.has_replicates)
-        r_dispersion_method = ro.default_py2ri(dispersion_method)
-        r_sharing_mode = ro.default_py2ri(sharing_mode)
-        r_fit_type = ro.default_py2ri(fit_type)
-
-        if model is not None:
-            r_factors_df = pandas2ri.py2ri(design.factors)
-        else:
-            r_factors_df = ro.default_py2ri(False)
-
-        if ref_group is not None:
-            r_ref_group = ro.default_py2ri(ref_group)
-        else:
-            r_ref_group = ro.default_py2ri(design.groups[0])
-
-        if contrasts is not None:
-            raise ValueError("cannot currently handle user defined contrasts")
-            r_contrasts = ro.default_py2ri(contrasts)
-
-        if dispersion_method == "pooled" and not design.has_replicates:
-            E.warn("cannot use pooled dispersion without replicates, switching"
-                   " to 'blind dispersion method")
-            r_dispersion_method = ro.default_py2ri("blind")
-
-        E.info('running DESeq: groups=%s, pairs=%s, replicates=%s, pairs=%s' %
-               (design.groups, design.pairs, design.has_replicates,
-                design.has_pairs))
-
-        E.info("dispersion_method=%s, fit_type=%s, sharing_mode=%s" %
-               (dispersion_method, fit_type, sharing_mode))
-
-        # load DESeq
-        R('''suppressMessages(library('DESeq'))''')
-
-        buildCountDataSet = R('''
-        function(counts, groups, dispersion_method, fit_type, sharing_mode){
-
-        # create new counts data object for deseq
-        cds <- newCountDataSet(counts, groups)
-
-        # estimate size factors
-        cds <- estimateSizeFactors(cds)
-
-        # estimate dispersion
-        cds <- estimateDispersions(cds, method=dispersion_method,
-               fitType=fit_type, sharingMode=sharing_mode)
-
-        }''')
-
-        buildCountDataSet(r_counts, r_groups,  r_dispersion_method,
-                          r_fit_type, r_sharing_mode)
-
-        result = None
-        # result = DEResult_DESeq(testTable=pandas2ri.ri2py(r_lrt_table))
-
-        return result
-
-
-class DEResult_DEResult(DEResult):
-
-    # re-write for DESeq
-    def getResults(self, fdr, DEtype="pairwise"):
-        ''' post-process test results table into generic results output '''
-
-        E.info("Generating output - results table")
-
-        df_dict = collections.defaultdict()
-
-        n_rows = self.table.shape[0]
-
-        if DEtype == "GLM":
-            df_dict["treatment_name"] = self.table['contrast']
-            df_dict["control_name"] = self.table['contrast']
-
-        else:
-            # TS: edgeR is currently only set up to run GLM-based tests
-            pass
-
-        df_dict["test_id"] = self.table['observation']
+        df_dict["treatment_name"] = self.table['treatment_name']
+        df_dict["control_name"] = self.table['control_name']
         df_dict["contrast"] = self.table['contrast']
+        df_dict["test_id"] = self.table.index
         df_dict["control_mean"] = self.table['logCPM']
         df_dict["treatment_mean"] = self.table['logCPM']
         df_dict["control_std"] = (0,)*n_rows
@@ -1014,7 +796,7 @@ class DEResult_DEResult(DEResult):
         df_dict["p_value_adj"] = adjustPvalues(self.table['PValue'])
         df_dict["significant"] = pvaluesToSignficant(
             df_dict["p_value_adj"], fdr)
-        df_dict["l2fold"] = list(numpy.log2(self.table['logFC']))
+        df_dict["l2fold"] = (self.table['logFC'])
 
         # TS: the transformed log2 fold change is not transformed!
         df_dict["transformed_l2fold"] = df_dict["l2fold"]
@@ -1029,11 +811,6 @@ class DEResult_DEResult(DEResult):
         df_dict["status"] = ("OK",)*n_rows
 
         self.table = pandas.DataFrame(df_dict)
-        self.table.set_index("test_id", inplace=True)
-
-    def plotMAplot(self, design, outfile_prefix):
-        # need to implement edgeR specific MA plot
-        raise ValueError("MA plotting is not yet implemented for edgeR")
 
 
 class DEExperiment_DESeq2(DEExperiment):
@@ -1042,100 +819,82 @@ class DEExperiment_DESeq2(DEExperiment):
     def run(self,
             counts,
             design,
-            model=None,
-            contrasts=None,
-            outfile_prefix=None,
             fdr=0.1,
             fit_type="parametric",
-            ref_group=False):
+            model=None,
+            outfile_prefix=None,
+            ref_group=None,
+            contrast=None,
+            DEtest="Wald"):
 
         pandas2ri.activate()
 
+        # R will replace any "-" with "." in rownames.
+        # Here, we make sure the design and counts samples are the same
+        design.table.index = [x.replace("-", ".") for x in design.table.index]
+        design.factors.index = [x.replace("-", ".") for x in design.factors.index]
+        counts.table.columns = [x.replace("-", ".") for x in counts.table.columns]
+
         # create r objects
         r_counts = pandas2ri.py2ri(counts.table)
-        r_groups = ro.StrVector(design.conditions)
-        r_pairs = ro.StrVector(design.pairs)
         r_has_pairs = ro.default_py2ri(design.has_pairs)
         r_has_replicates = ro.default_py2ri(design.has_replicates)
+        r_design = pandas2ri.py2ri(design.table)
+        r_factors_df = pandas2ri.py2ri(design.factors)
 
-        if design.factors is not None:
-            r_factors_df = pandas2ri.py2ri(design.factors)
-        else:
-            r_factors_df = ro.default_py2ri(False)
+        model_terms = [x for x in re.split("[\+~ ]+", model)[1:]
+                       if x != "0"]
 
-        r_ref_group = ro.default_py2ri(ref_group)
-
-        if contrasts is not None:
-            DEtype = "GLM"
-
-            # if model not included, use the column names from design.factors
-            if not model:
-
-                if design.factors is not None:
-                    model = "~" + "+".join(design.factors.columns)
-                    model_terms = design.factors.columns.values.tolist()
-
-                else:
-                    E.warn("need to supply a full model or else "
-                           "additional columns in the design table "
-                           "which will be taken as the full model")
-            else:
-                model_terms = [x for x in re.split("[\+~ ]+", model)[1:]
-                               if x != "0"]
-
-            r_model = ro.default_py2ri(model)
-
-        else:
-            DEtype = "pairwise"
-
-        r_DEtype = ro.default_py2ri(DEtype)
-
-        E.info('running DESeq2: groups=%s, pairs=%s, replicates=%s, pairs=%s, '
-               'additional_factors:' %
-               (design.groups, design.pairs, design.has_replicates,
-                design.has_pairs))
-
-        design.table.index = [x.replace("-", ".") for x in design.table.index]
+        E.info('running DESeq2: groups=%s, replicates=%s, pairs=%s, '
+               'additional_factors:%s, DE test: %s' %
+               (design.groups, design.has_replicates, design.has_pairs,
+                design.factors, DEtest))
 
         # load DESeq
         R('''suppressMessages(library('DESeq2'))''')
 
-        # build design matrix
-        if DEtype == "pairwise":
-            buildDesign = R('''
-              function(counts, groups, ref_group){
+        # build DESeq2 Datasets (dds)
+        buildDds = R('''
+        function(counts, factors_df){
 
-                design = data.frame(row.names = colnames(counts),
-                                    condition = factor(groups))
-                if (ref_group != FALSE){
-                  design$condition <- relevel(factor(design$condition),
-                                          ref = ref_group)}
-                return(design)}''')
+        for(column in colnames(factors_df)){
+          factors_df[[column]] = factor(factors_df[[column]])
+        }
 
-            r_design = buildDesign(r_counts, r_groups, r_ref_group)
+        full_model <- formula("%(model)s")
 
-            buildCountDataSet = R('''
-            function(counts, design){
+        factors_df$%(contrast)s <- relevel(
+           factors_df$%(contrast)s, ref="%(ref_group)s")
 
-            for(column in colnames(design)){
-              design[[column]] = factor(design[[column]])
-            }
+        dds <- suppressMessages(DESeqDataSetFromMatrix(
+                 countData= counts,
+                 colData = factors_df,
+                 design = full_model))
 
-            dds <- suppressMessages(DESeqDataSetFromMatrix(
-                     countData= counts,
-                     colData = design,
-                     design = ~condition))
+        return(dds)
 
-            return(dds)
+        }''' % locals())
 
-            }''' % locals())
+        r_dds = buildDds(r_counts, r_factors_df)
 
-            r_dds = buildCountDataSet(r_counts, r_design)
+        if DEtest == "wald":
+
+            levels = set(design.table[contrast])
+            if len(levels) > 2:
+                E.warn('''Using Wald test for factor with more than 2
+                levels (%s:%s), Consider LRT''' % (contrast, levels))
+
+            contrast = model_terms[-1]
+            contrast_levels = set(design.factors[contrast])
 
             performDifferentialTesting = R('''
-            function(dds, fit_type){
+            function(dds){
 
-            dds = suppressMessages(DESeq(dds, fitType=fit_type))
+            dds = suppressMessages(
+               DESeq(dds, test="Wald", fitType="%(fit_type)s"))
+
+
+            contrast_levels = as.vector(levels(dds@colData$%(contrast)s))
 
             png("%(outfile_prefix)s_dispersion.png")
             plotDispEsts(dds)
@@ -1150,16 +909,11 @@ class DEExperiment_DESeq2(DEExperiment):
 
             c = counts(dds, normalized = TRUE)
 
-            contrast = "condition"
-            res$contrast = contrast
-            contrast_levels = levels(dds@colData[[contrast]])
+            res$contrast = "%(contrast)s"
+            contrast_levels = levels(dds@colData$%(contrast)s)
 
-            if(length(contrast_levels)==2){
-              res$control = contrast_levels[1]
-              res$treatment = contrast_levels[2]}
-            else{
-              res$control = contrast
-              res$treatment = contrast}
+            res$control = contrast_levels[1]
+            res$treatment = contrast_levels[2]
 
             res['test_id'] = rownames(res)
 
@@ -1167,109 +921,84 @@ class DEExperiment_DESeq2(DEExperiment):
 
             }''' % locals())
 
-            results = pandas2ri.ri2py(
-                performDifferentialTesting(r_dds, fit_type))
+            results = pandas2ri.ri2py(performDifferentialTesting(r_dds))
 
-        # DEtype == "GLM"
-        else:
-            r_design = pandas2ri.py2ri(design.table)
+        # liklihood ratio test
+        # Note that if there are more than 3 levels for the contrast,
+        # the results table will include a log2-fold change from the
+        # first two levels only, however, MA plots will be generated
+        # for each combination of levels
+        elif DEtest == "lrt":
 
-            buildCountDataSet = R('''
-            function(counts, design, model, ref_group){
+            levels = set(design.table[contrast])
+            if len(levels) > 2:
 
-            for(column in colnames(design)){
-              design[[column]] = factor(design[[column]])
-            }
-
-            if (ref_group != FALSE){
-                design$group <- relevel(design$group,
-                                        ref = ref_group)}
-
-            full_model <- formula("%(model)s")
-
-            dds <- suppressMessages(DESeqDataSetFromMatrix(
-                     countData= counts,
-                     colData = design,
-                     design = full_model))
-
-            return(dds)
-            }''' % locals())
-            r_dds = buildCountDataSet(counts.table, r_design,
-                                      model, ref_group)
+                E.warn('''There are more than 2 levels for the
+                contrast specified" "(%s:%s). The log2fold changes in the
+                results table and MA plots will be for the first two
+                levels in the contrast. The p-value will be the p-value
+                for the overall significance of the contrast. Hence, some
+                genes will have a signficant p-value but 0-fold change
+                between the first two levels''' % (contrast, levels))
 
             results = pandas.DataFrame()
 
             n = 0
 
-            for contrast in contrasts:
-                assert contrast in design.table.columns, (
-                    "contrast: %s not found in design" % contrast)
+            reduced_model = [x for x in model_terms if x != contrast]
 
-                model = [x for x in model_terms if x != contrast]
+            if len(reduced_model) > 0:
+                reduced_model = "~" + "+".join(reduced_model)
+            else:
+                reduced_model = "~1"
 
-                if len(model) > 0:
-                    model = "~" + "+".join(model)
-                else:
-                    model = "~1"
+            performDifferentialTesting = R('''
+            function(dds){
 
-                performDifferentialTesting = R('''
-                function(dds, fit_type){
+            ddsLRT <- suppressMessages(
+            DESeq(dds, test="LRT", reduced=formula("%(reduced_model)s"),
+                  betaPrior=TRUE, fitType="%(fit_type)s"))
 
-                if (fit_type == "local"){
-                ddsLRT <- suppressMessages(
-                DESeq(dds, test="LRT", reduced=formula("%(model)s"),
-                      betaPrior=TRUE, fitType="local"))}
+            png("%(outfile_prefix)s_dispersion.png")
+            plotDispEsts(ddsLRT)
+            dev.off()
 
-                else if(fit_type == "parametric"){
-                ddsLRT <- suppressMessages(
-                DESeq(dds, test="LRT", reduced=formula("%(model)s"),
-                      betaPrior=TRUE))}
+            contrast_levels = as.vector(levels(dds@colData$%(contrast)s))
 
-                png("%(outfile_prefix)s_dispersion.png")
-                plotDispEsts(ddsLRT)
-                dev.off()
+            res = suppressMessages(results(ddsLRT, addMLE=TRUE,
+                                   contrast=c("%(contrast)s",
+                                   contrast_levels[2], contrast_levels[1])))
 
-                contrast_levels = as.vector(levels(dds@colData$%(contrast)s))
+            png(paste0(c("%(outfile_prefix)s", "MA.png"), collapse="_"))
+            plotMA(res, alpha=%(fdr)s)
+            dev.off()
 
-                for(levels in combn(contrast_levels, 2, simplify=F)){
+            res = as.data.frame(res)
+            res$contrast = "%(contrast)s"
 
-                    res = suppressMessages(results(ddsLRT, addMLE=TRUE,
-                                           contrast=c("%(contrast)s",
-                                           levels[1], levels[2])))
+            if(length(contrast_levels)==2){
+              res$control = contrast_levels[1]
+              res$treatment = contrast_levels[2]
+              }
+            else{
+              res$control = "%(contrast)s"
+              res$treatment = "%(contrast)s"}
 
-                    png(paste0(c("%(outfile_prefix)s", "%(contrast)s",
-                               levels[1], levels[2], "MA.png"), collapse="_"))
-                    plotMA(res, alpha=%(fdr)s)
-                    dev.off()
-                }
+            res['test_id'] = rownames(res)
+            return(res)
+            }''' % locals())
 
-                res = as.data.frame(res)
-                res$contrast = "%(contrast)s"
+            tmp_results = pandas2ri.ri2py(performDifferentialTesting(r_dds))
 
-                if(length(contrast_levels)==2){
-                  tmp_df = data.frame(contrast_levels)
-                  res$control = tmp_df[1,1]
-                  res$treatment = tmp_df[2,1]
-                  }
-                else{
-                  res$control = "%(contrast)s"
-                  res$treatment = "%(contrast)s"}
+            # need to set index to sequence of ints to avoid duplications
+            n2 = n+tmp_results.shape[0]
+            tmp_results.index = range(n, n2)
+            n = n2
 
-                res['test_id'] = rownames(res)
-                return(res)
-                }''' % locals())
+            results = results.append(tmp_results)
 
-                tmp_results = pandas2ri.ri2py(
-                    performDifferentialTesting(r_dds, fit_type))
-
-                # tmp_results['test_id'] = tmp_results.index
-
-                # need to set index to sequence of ints to avoid duplications
-                n2 = n+tmp_results.shape[0]
-                tmp_results.index = range(n, n2)
-                n = n2
-
-                results = results.append(tmp_results)
+        else:
+            raise ValueError("DEtest must be 'wald' or 'lrt'")
 
         final_result = DEResult_DESeq2(testTable=results)
 
@@ -1372,6 +1101,7 @@ class DEExperiment_Sleuth(DEExperiment):
         # design dataframe for sleuth
         model_terms = [x for x in re.split("[\+~ ]+", model)[1:]
                        if x != "0"]
+
         variates = "c(%s)" % ",".join(model_terms)
 
         if genewise:
