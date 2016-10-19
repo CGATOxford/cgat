@@ -110,18 +110,24 @@ pandas2ri.activate()
 
 
 class buildDifferentialExpressionRscript(object):
-
+    # note other things to be included - thresholds for IHW and FDR 
+                                        # plots 
+                                            # dispersion
+    # ma plot
+                                            # volcano plot
+                                            # counts
+                                            # heatmaps 
     ''' '''
 
     def __init__(self, counts_infile, design_infile, full_model, raw_outfile,
-                 relevel=None, DEtype=None, ihw=False):
+                 contrasts, relevel=None, ihw=False):
         self.counts_inf = counts_infile
         self.design_inf = design_infile
         self.full_model = full_model
         self.relevel = relevel
-        self.DEtype = DEtype
         self.IHW = ihw
         self.raw_outfile = raw_outfile
+        self.contrasts = contrasts
 
     def validate(self):
         design = Expression.ExperimentalDesign(self.design_inf)
@@ -141,7 +147,19 @@ class buildDifferentialExpressionRscript(object):
         return ""
 
     def plotResults(self):
-        return ""
+        #def plotMA(self):
+            #return ""
+
+        #def plotVolcano(self):
+            #return ""
+
+        #def plotPValHistogram(self):
+            #return ""
+
+        #def plotAdjPValHistogram(self):
+            #return ""
+        return  ''
+
 
     def buildRscript(self):
         Rstatement = []
@@ -217,16 +235,41 @@ class buildDESeq2Rscript(buildDifferentialExpressionRscript):
                 statement.append('''dds$%s <- relevel(dds$%s, ref="%s")
                 ''' % (key, key, value))
 
-        if self.DEtype == "pairwise":
-            statement.append("\n#' run differential expression testing")
-            statement.append("dds <- DESeq(dds)")
+        statement.append("\n#' run differential expression testing")
+        statement.append("#' note this is a simple DE pairwise comparision")
+        statement.append("#' using wald test - you might want to try a LRT if
+        statement.append("#' you have a model with many variables and/or your main 
+        statement.append("#' variable has more then 2 factors")
+        statement.append("dds <- DESeq(dds)")
 
         if self.IHW:
             statement.append("\n#' calculate IHW")
-            statement.append("results = as.data.frame(results(dds, filterFun=ihw))")
+            statement.append('''
+            results = as.data.frame(results(dds, contrast=list(%s),
+            filterFun=ihw))''' % ('"' + '",'.join(self.contrasts) + '"'))
+
+        else:
+            statement.append("\n#' these results were generated without IHW")
+            statement.append('''# see vignette to see how to get IHW results and
+            # why you might want to try it
+            results = as.data.frame(results(dds, contrast=list(%s)
+            ))''' % ('"' + '",'.join(self.contrasts) + '"'))
 
         statement.append("\n#' write out raw differential expression results")
         statement.append('''
         write.table(results, file="%s", sep="\\t")''' % self.raw_outfile)
 
         return "\n".join(statement)
+
+
+    def plotResults(self):
+
+       statement = []
+       statement.append("\n#' ## create deseq2 dispersion plot")
+       statement.append("plotDispEsts(dds)")
+
+       statement.append("\n#' ##histogram of p values")
+       statement.append('\nhist(results$pvalue[results$baseMean > 1],breaks=0:20/20, col="grey50",border="white")')
+       statement.append('\nhist(results$padj[results$baseMean > 1],breaks=0:20/20, col="grey50", border="white")')
+
+       return "\n".join(statement)
