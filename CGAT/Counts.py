@@ -42,6 +42,7 @@ import CGAT.IOTools as IOTools
 import pandas as pd
 from rpy2.robjects import r as R
 from rpy2.robjects import pandas2ri
+import rpy2.robjects as ro
 import numpy as np
 import numpy.ma as ma
 import copy
@@ -202,6 +203,23 @@ class Counts(object):
 
             normed = self.table / self.size_factors
 
+        elif method == "edger":
+
+            getCPM = R('''
+            suppressMessages(library(edgeR))
+
+            function(counts){
+            countsTable = DGEList(counts)
+            countsTable = calcNormFactors(countsTable)
+
+            countsTable.cpm <- cpm(countsTable, normalized.lib.sizes=TRUE)
+
+            return (as.data.frame(countsTable.cpm))
+            }''' % locals())
+
+            normed = pandas2ri.ri2py(getCPM(pandas2ri.py2ri(self.table)))
+            print normed
+
         elif method == "total-count":
 
             # compute column-wise sum
@@ -223,9 +241,9 @@ class Counts(object):
             normed = self.table * 1000000.0 / self.size_factors
         else:
             raise NotImplementedError(
-                "normalization method '%s' not implemented" % method)
+                "normalisation method '%s' not implemented" % method)
 
-        # make sure we did not lose any rows or columns
+        # make sure we did not lose any rows or columns before replacing table
         assert normed.shape == self.table.shape
 
         self.table = normed
@@ -483,7 +501,8 @@ class Counts(object):
           theme(axis.text.x = m_text,
                 axis.title.y = m_text,
                 axis.title.x = m_text,
-                axis.text.y = m_text)
+                axis.text.y = m_text,
+                aspect.ratio=1)
 
           ggsave("%(variance_plot_filename)s", width=10, height=10, unit="cm")
 
@@ -512,7 +531,7 @@ class Counts(object):
           theme_bw() +
           theme(axis.text.x = s_text, axis.text.y = s_text,
                 title = m_text, legend.text = m_text,
-                legend.title = m_text)
+                legend.title = m_text, aspect.ratio=1)
 
           ggsave("%(pca_plot_filename)s", width=10, height=10, unit="cm")
 
@@ -520,22 +539,23 @@ class Counts(object):
 
         makePCA(r_counts, r_design)
 
-    def plotPairwiseCorrelations(self, outfile, subset=False):
+    def plotPairwise(self, outfile_scatter, outfile_heatmap, subset=False):
         ''' use the R base pairs function to plot all pairwise
         correlations between the samples
 
         subset will randomly subset n rows to speed up plotting'''
 
         plotGGpairs = R('''
-        function(df){
+        library(ggplot2)
+        library(reshape2)
 
-        write.table(df, file="%(outfile)s.tsv", sep="\t")
+        function(df, df2){
 
         colnames(df) <- gsub("-", "_", colnames(df))
 
         width <- height <-  length(colnames(df)) * 100
 
-        png("%(outfile)s", width=width, height=height, units = "px")
+        png("%(outfile_scatter)s", width=width, height=height, units = "px")
 
         panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...){
           usr <- par("usr"); on.exit(par(usr))
@@ -561,37 +581,65 @@ class Counts(object):
               diag.panel=panel.hist)
 
         dev.off()
+
+        # use the full (not subsetted) df for heatmap correlation
+        colnames(df2) <- gsub("-", "_", colnames(df2))
+        df_cor <- as.matrix(cor(df2))
+        df_cor_melt <- melt(df_cor)
+
+        p = ggplot(df_cor_melt, aes(Var1, Var2, fill=value)) +
+        geom_tile() +
+        xlab("") + ylab("") +
+        scale_fill_continuous(low="white", high="dodgerblue4", name="Correlation") +
+        theme_bw() +
+        theme(
+        axis.text.x = element_text(angle=90, vjust=0.5, hjust=0),
+        aspect.ratio=1)
+
+        ggsave("%(outfile_heatmap)s", width=10, height=10, unit="cm")
         }''' % locals())
 
         if subset:
             if len(self.table.index) > subset:
                 rows = random.sample(self.table.index, subset)
-                r_counts = pandas2ri.py2ri(self.table.ix[rows])
+                subset_counts = pandas2ri.py2ri(self.table.ix[rows])
             else:
-                r_counts = pandas2ri.py2ri(self.table)
+                subset_counts = pandas2ri.py2ri(self.table)
         else:
-            r_counts = pandas2ri.py2ri(self.table)
+            subset_counts = pandas2ri.py2ri(self.table)
 
-        plotGGpairs(r_counts)
+        plotGGpairs(subset_counts, pandas2ri.py2ri(self.table))
 
-    def heatmap(self, plotfile):
-        ''' plots a heatmap '''
+    def heatmap(self, plotfile, zscore=False):
+        ''' plots a heatmap
+        set zscore=True to use a divergent colour scale
+        '''
         # to do: add option to parse design file and add coloured row for
         # variable specified in design file.
 
         plotHeatmap = R('''
-        function(df){
+        function(df, zscore){
 
         library("Biobase")
         library("RColorBrewer")
         library("gplots")
 
+        if(zscore[1]==TRUE){
+        #hmcol <- colorRampPalette(colors = c("red", "white", "blue"))
+        PuOr <- brewer.pal(11, "PuOr")
+        hmcol <- c(colorRampPalette(c(PuOr[1], PuOr[6]))(100),
+                   colorRampPalette(c(PuOr[6], PuOr[11]))(100)[-1])
+        }
+        else{
         hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
+        }
+
         png("%(plotfile)s", width=1000, height=1000, units="px")
-        write.table(df, file="%(plotfile)s.tsv", sep="\t")
+
         heatmap.2(as.matrix(df),
-                  col = hmcol, scale="none", trace="none", margin=c(18, 10),
-                  dendrogram="column", cexCol=2,
+                  col = hmcol,
+                  scale="none", trace="none", margin=c(18, 10),
+                  dendrogram="both", cexCol=2,
                   labRow = "",
                   hclustfun = function(x) hclust(x, method = 'average'),
                   distfun = function(x) as.dist(1 - cor(t(x), method="spearman")))
@@ -600,7 +648,7 @@ class Counts(object):
 
         r_counts = pandas2ri.py2ri(self.table)
 
-        plotHeatmap(r_counts)
+        plotHeatmap(r_counts, ro.BoolVector([zscore]))
 
     def shuffleRows(self,
                     min_cbin, max_cbin, width_cbin,
