@@ -198,9 +198,10 @@ def main(argv=None):
     parser.add_option("-f", "--fdr", dest="fdr", type="float",
                       help="fdr to apply [default=%default].")
 
-    parser.add_option("-R", "--output-R-code", dest="save_r_environment",
-                      action="store_true",
-                      help="save R environment [default=%default].")
+    # currently not implemented
+    #parser.add_option("-R", "--output-R-code", dest="save_r_environment",
+    #                  type="string",
+    #                  help="save R environment to location [default=%default].")
 
     parser.add_option("-r", "--reference-group", dest="ref_group",
                       type="string",
@@ -284,7 +285,6 @@ def main(argv=None):
         deseq2_fit_type="parametric",
         edger_dispersion=0.4,
         ref_group=False,
-        save_r_environment=None,
         filter_min_counts_per_row=None,
         filter_min_counts_per_sample=None,
         filter_percentile_rowsums=None,
@@ -302,15 +302,17 @@ def main(argv=None):
         use_ihw=False,
         sleuth_genewise=False,
         gene_biomart=None,
-        DEtest="wald"
-    )
+        DEtest="wald")
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
     outfile_prefix = options.output_filename_pattern
 
-    if not options.ref_group:
+    # Expression.py currently expects a refernce group for edgeR and
+    # sleuth, regardless of which test is used
+    if not options.ref_group and (
+            options.method is "edger" or options.method is "sleuth"):
         raise ValueError("Must provide a reference group ('--reference-group')")
 
     # create Design object
@@ -320,11 +322,12 @@ def main(argv=None):
 
     if len(set(design.table[options.contrast])) > 2:
 
-        if options.method == "deseq2" and options.DEtest == "wald":
-            raise ValueError(
-                "Factor must have exactly two levels for Wald Test. "
-                "If you have more than two levels in your factor, "
-                "consider LRT")
+        if options.method == "deseq2" or options.method == "sleuth":
+            if options.DEtest == "wald":
+                raise ValueError(
+                    "Factor must have exactly two levels for Wald Test. "
+                    "If you have more than two levels in your factor, "
+                    "consider LRT")
         else:
             E.info('''There are more than 2 levels for the contrast
             specified" "(%s:%s). The log2fold changes in the results table
@@ -347,13 +350,15 @@ def main(argv=None):
         results = experiment.run(design,
                                  base_dir=options.sleuth_counts_dir,
                                  model=options.model,
-                                 contrasts=options.contrasts,
+                                 contrast=options.contrast,
                                  outfile_prefix=outfile_prefix,
                                  counts=options.outfile_sleuth_count,
                                  tpm=options.outfile_sleuth_tpm,
                                  fdr=options.fdr,
                                  genewise=options.sleuth_genewise,
-                                 gene_biomart=options.gene_biomart)
+                                 gene_biomart=options.gene_biomart,
+                                 DE_test=options.DEtest,
+                                 ref_group=options.ref_group)
 
     else:
         # create Counts object
@@ -427,6 +432,8 @@ def main(argv=None):
     for contrast in set(results.table['contrast']):
         results.plotVolcano(contrast, outfile_prefix=outfile_prefix)
         results.plotMA(contrast, outfile_prefix=outfile_prefix)
+        results.plotPvalueHist(contrast, outfile_prefix=outfile_prefix)
+        results.plotPvalueQQ(contrast, outfile_prefix=outfile_prefix)
 
     results.table.to_csv(sys.stdout, sep="\t", na_rep="NA", index=False)
 
