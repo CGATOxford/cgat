@@ -506,7 +506,6 @@ class DEResult(object):
               legend.title = l_txt, legend.text = l_txt,
               title=l_txt, legend.key.size=unit(1, "cm"),
               aspect.ratio=1)
-        print(p)
 
         suppressMessages(
           ggsave(file="%(outfile_prefix)s_%(contrast)s_MA_plot.png",
@@ -544,6 +543,57 @@ class DEResult(object):
           width=10, height=10))}''' % locals())
 
         makeVolcanoPlot(pandas2ri.py2ri(self.table))
+
+    def plotPvalueHist(self, contrast=None, outfile_prefix=None):
+        ''' base function for Volcano plotting'''
+
+        makePvalueHistPlot = R('''
+        function(df){
+
+        suppressMessages(library(ggplot2))
+        suppressMessages(library(grid))
+
+        l_txt = element_text(size=20)
+
+        tmp_df = df[df$contrast=="%(contrast)s",]
+
+        p = ggplot(tmp_df, aes(p_value)) +
+        geom_histogram(fill="dodgerblue4") +
+        xlab("p-value") + ylab("count") +
+        ggtitle("p-value histogram - %(contrast)s") +
+        theme_bw() +
+        theme(axis.text.x = l_txt, axis.text.y = l_txt,
+              axis.title.x = l_txt, axis.title.y = l_txt,
+              title=l_txt)
+
+        suppressMessages(
+          ggsave(file="%(outfile_prefix)s_%(contrast)s_p_value_histogram.png",
+          width=10, height=10))}''' % locals())
+
+        makePvalueHistPlot(pandas2ri.py2ri(self.table))
+
+    def plotPvalueQQ(self, contrast=None, outfile_prefix=None):
+        ''' base function for Volcano plotting'''
+
+        makePvalueQQPlot = R('''
+        function(df){
+
+        log_obs_pvalues = sort(-log10(df[['p_value']]))
+        uni_pvalues=runif(length(log_obs_pvalues))
+        log_uni_pvalues= -log10(uni_pvalues)
+        log_uni_pvalues = sort(log_uni_pvalues)
+
+        png(file="%(outfile_prefix)s_%(contrast)s_p_value_qq_plot.png")
+        plot(log_uni_pvalues,log_obs_pvalues,
+             xlab=expression(Theoretical~~-log[10](italic(p))),
+             ylab=expression(Observed~~-log[10](italic(p))),
+             main="P-value QQ-plot",
+             pch=20)
+        abline(0,1)
+        }''' % locals())
+
+        makePvalueQQPlot(pandas2ri.py2ri(self.table))
+
 
 
 class DEExperiment_TTest(DEExperiment):
@@ -846,36 +896,77 @@ class DEExperiment_DESeq2(DEExperiment):
                        if x != "0"]
 
         E.info('running DESeq2: groups=%s, replicates=%s, pairs=%s, '
-               'additional_factors:%s, DE test: %s' %
+               'DE test: %s, additional_factors:%s, ' %
                (design.groups, design.has_replicates, design.has_pairs,
-                design.factors, DEtest))
+                DEtest, design.factors))
+
+        #env0 = ro.r.baseenv()
 
         # load DESeq
         R('''suppressMessages(library('DESeq2'))''')
 
+        #from rpy2.robjects.packages import importr
+        #base = importr('base')
+        #utils = importr('utils')
+        #utils.savehistory("myfile.hist")
+        #base.save_image("myfile.Rdata")
+
+        #env1 = ro.r.baseenv()
+
         # build DESeq2 Datasets (dds)
-        buildDds = R('''
-        function(counts, factors_df){
+        assert contrast, ("must supply a contrast for wald or LRT "
+                          "(for LRT, contrast is used to derive reduced model")
+        if DEtest == "wald":
+            assert ref_group, "Must supply a ref_group to perform Wald test"
 
-        for(column in colnames(factors_df)){
-          factors_df[[column]] = factor(factors_df[[column]])
-        }
+        if ref_group:
+            buildDds = R('''
+            function(counts, factors_df){
 
-        full_model <- formula("%(model)s")
+            for(column in colnames(factors_df)){
+              factors_df[[column]] = factor(factors_df[[column]])
+            }
 
-        factors_df$%(contrast)s <- relevel(
-           factors_df$%(contrast)s, ref="%(ref_group)s")
+            full_model <- formula("%(model)s")
 
-        dds <- suppressMessages(DESeqDataSetFromMatrix(
-                 countData= counts,
-                 colData = factors_df,
-                 design = full_model))
+            factors_df$%(contrast)s <- relevel(
+               factors_df$%(contrast)s, ref="%(ref_group)s")
 
-        return(dds)
+            dds <- suppressMessages(DESeqDataSetFromMatrix(
+                     countData= counts,
+                     colData = factors_df,
+                     design = full_model))
 
-        }''' % locals())
+            return(dds)
+
+            }''' % locals())
+
+        else:
+            buildDds = R('''
+            function(counts, factors_df){
+
+            for(column in colnames(factors_df)){
+              factors_df[[column]] = factor(factors_df[[column]])
+            }
+
+            full_model <- formula("%(model)s")
+
+            dds <- suppressMessages(DESeqDataSetFromMatrix(
+                     countData= counts,
+                     colData = factors_df,
+                     design = full_model))
+
+            return(dds)
+
+            }''' % locals())
 
         r_dds = buildDds(r_counts, r_factors_df)
+
+        #env2 = ro.r.baseenv()
+
+        #print len([x for x in env0])
+        #print len([x for x in env1])
+        #print len([x for x in env2])
 
         if DEtest == "wald":
 
@@ -985,6 +1076,12 @@ class DEExperiment_DESeq2(DEExperiment):
               res$treatment = "%(contrast)s"}
 
             res['test_id'] = rownames(res)
+
+
+            save.image()
+            save.image(file=paste0("%(save_r)s", ".Rdat"))
+            savehistory(file=paste0("%(save_r)s", ".hist"))
+
             return(res)
             }''' % locals())
 
@@ -1069,18 +1166,19 @@ class DEExperiment_Sleuth(DEExperiment):
             design,
             base_dir,
             model=None,
-            contrasts=None,
+            contrast=None,
             outfile_prefix=None,
             counts=None,
             tpm=None,
             fdr=0.1,
-            lrt=False,
+            DE_test="wald",
             reduced_model=None,
             dummy_run=False,
             genewise=False,
-            gene_biomart=None):
+            gene_biomart=None,
+            ref_group=None):
 
-        if lrt:
+        if DE_test == "lrt":
             E.info("Note: LRT will not generate fold changes")
             assert reduced_model is not None, ("need to provide a reduced "
                                                "model to use LRT")
@@ -1104,6 +1202,7 @@ class DEExperiment_Sleuth(DEExperiment):
 
         variates = "c(%s)" % ",".join(model_terms)
 
+        # need to code in option to not use a reference group (e.g for LRT)
         if genewise:
             assert gene_biomart, ("for genewise analysis, "
                                   "must provide a 'gene_biomart'")
@@ -1121,6 +1220,11 @@ class DEExperiment_Sleuth(DEExperiment):
                                        %(variates)s)
             design_df <- dplyr::mutate(design_df, path = kal_dirs)
 
+            %(contrast)s <- factor(design_df$%(contrast)s)
+            %(contrast)s <- relevel(%(contrast)s,ref='%(ref_group)s')
+            md <- model.matrix(%(model)s, design_df)
+            colnames(md)[grep("%(contrast)s", colnames(md))] <- '%(contrast)s%(ref_group)s'
+
             mart <- biomaRt::useMart(biomart = "ENSEMBL_MART_ENSEMBL",
             #dataset = "hsapiens_gene_ensembl",
             dataset = "%(gene_biomart)s",
@@ -1132,7 +1236,8 @@ class DEExperiment_Sleuth(DEExperiment):
             t2g <- dplyr::rename(t2g, target_id = ensembl_transcript_id,
                                  ens_gene = ensembl_gene_id,
                                  ext_gene = external_gene_name)
-            so <- sleuth_prep(design_df, %(model)s,
+
+            so <- sleuth_prep(design_df, md,
                               target_mapping = t2g, aggregation_column = 'ens_gene')
             so <- suppressMessages(sleuth_fit(so))
 
@@ -1151,7 +1256,12 @@ class DEExperiment_Sleuth(DEExperiment):
                                        %(variates)s)
             design_df <- dplyr::mutate(design_df, path = kal_dirs)
 
-            so <- sleuth_prep(design_df, %(model)s)
+            %(contrast)s <- factor(design_df$%(contrast)s)
+            %(contrast)s <- relevel(%(contrast)s,ref='%(ref_group)s')
+            md <- model.matrix(%(model)s, design_df)
+            colnames(md)[grep("%(contrast)s", colnames(md))] <- '%(contrast)s%(ref_group)s'
+
+            so <- sleuth_prep(design_df, md)
             so <- sleuth_fit(so)
 
             return(so)
@@ -1193,7 +1303,7 @@ class DEExperiment_Sleuth(DEExperiment):
         if dummy_run:
             return None
 
-        if lrt:
+        if DE_test == "lrt":
             differentialTesting = R('''
             function(so){
             so <- suppressMessages(sleuth_fit(so, formula = %(reduced_model)s,
@@ -1209,45 +1319,36 @@ class DEExperiment_Sleuth(DEExperiment):
             final_result = DEResult_Sleuth(pandas2ri.ri2py(
                 differentialTesting(so)))
 
-        # can run multiple contrasts and concatenate results
-        else:
-            results = pandas.DataFrame()
-            n = 0
+        elif DE_test == "wald":
 
-            for contrast in contrasts:
+            differentialTesting = R('''
+            function(so){
 
-                differentialTesting = R('''
-                function(so){
-                so <- sleuth_wt(so, which_beta = '%(contrast)s')
+            so <- sleuth_wt(so, which_beta = '%(contrast)s%(ref_group)s')
 
-                p_ma = plot_ma(so, '%(contrast)s')
-                ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_ma.png",
-                    width=15, height=15, units="cm")
-
-                p_vars = plot_vars(so, '%(contrast)s')
-                ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_vars.png",
-                    width=15, height=15, units="cm")
-
-                p_mean_var = plot_mean_var(so)
-                ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_mean_var.png",
+            p_ma = plot_ma(so, '%(contrast)s%(ref_group)s')
+            ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_ma.png",
                 width=15, height=15, units="cm")
 
-                results_table <- sleuth_results(so, test = '%(contrast)s')
+            p_vars = plot_vars(so, '%(contrast)s%(ref_group)s')
+            ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_vars.png",
+                width=15, height=15, units="cm")
 
-                return(results_table)
+            p_mean_var = plot_mean_var(so)
+            ggsave("%(outfile_prefix)s_%(contrast)s_sleuth_mean_var.png",
+            width=15, height=15, units="cm")
 
-                } ''' % locals())
+            results_table <- sleuth_results(so, test = '%(contrast)s%(ref_group)s')
 
-                tmp_results = pandas2ri.ri2py(
-                    differentialTesting(so))
-                tmp_results['contrast'] = contrast
-                
-                # need to set index to sequence of ints to avoid duplications
-                n2 = n + tmp_results.shape[0]
-                tmp_results.index = range(n, n2)
-                n = n2
+            return(results_table)
 
-                results = results.append(tmp_results)
+            } ''' % locals())
+
+            results = pandas2ri.ri2py(differentialTesting(so))
+            results['contrast'] = contrast
+
+        else:
+            raise ValueError("unknown DE test type, use 'wald' or 'lrt'")
 
         final_result = DEResult_Sleuth(results)
 
