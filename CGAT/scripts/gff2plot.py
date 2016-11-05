@@ -100,7 +100,11 @@ Command line options
 '''
 import sys
 import os
-import configparser
+try:
+     import configparser
+except ImportError:
+    import ConfigParser as configparser
+
 import matplotlib
 import pylab
 import matplotlib.ticker
