@@ -150,7 +150,7 @@ import CGAT.Experiment as E
 import CGAT.Expression as Expression
 import CGAT.IOTools as IOTools
 import CGAT.Counts as Counts
-from rpy2.robjects import r as R
+import CGAT.R as R
 
 
 def main(argv=None):
@@ -275,6 +275,16 @@ def main(argv=None):
                       choices=("wald", "lrt"),
                       help=("Differential expression test"))
 
+    parser.add_option("--Rhistory",
+                      dest="Rhistory",
+                      type="string",
+                      help=("Outfile for R history"))
+
+    parser.add_option("--Rimage",
+                      dest="Rimage",
+                      type="string",
+                      help=("Outfile for R image"))
+
     parser.set_defaults(
         input_filename_tags="-",
         input_filename_design=None,
@@ -302,10 +312,16 @@ def main(argv=None):
         use_ihw=False,
         sleuth_genewise=False,
         gene_biomart=None,
-        DEtest="wald")
+        DEtest="wald",
+        Rhistory=None,
+        Rimage=None)
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
+
+    RH = None
+    if options.Rhistory or options.Rimage:
+        RH = R.R_with_History()
 
     outfile_prefix = options.output_filename_pattern
 
@@ -422,7 +438,8 @@ def main(argv=None):
                                      fdr=options.fdr,
                                      fit_type=options.deseq2_fit_type,
                                      ref_group=options.ref_group,
-                                     DEtest=options.DEtest)
+                                     DEtest=options.DEtest,
+                                     R=RH)
 
     results.getResults(fdr=options.fdr)
 
@@ -430,10 +447,10 @@ def main(argv=None):
         results.calculateIHW(alpha=options.fdr)
 
     for contrast in set(results.table['contrast']):
-        results.plotVolcano(contrast, outfile_prefix=outfile_prefix)
-        results.plotMA(contrast, outfile_prefix=outfile_prefix)
-        results.plotPvalueHist(contrast, outfile_prefix=outfile_prefix)
-        results.plotPvalueQQ(contrast, outfile_prefix=outfile_prefix)
+        results.plotVolcano(contrast, outfile_prefix=outfile_prefix, R=RH)
+        results.plotMA(contrast, outfile_prefix=outfile_prefix, R=RH)
+        results.plotPvalueHist(contrast, outfile_prefix=outfile_prefix, R=RH)
+        results.plotPvalueQQ(contrast, outfile_prefix=outfile_prefix, R=RH)
 
     results.table.to_csv(sys.stdout, sep="\t", na_rep="NA", index=False)
 
@@ -446,6 +463,11 @@ def main(argv=None):
         outf.write("category\tcounts\n%s\n"
                    % results.Summary[test_group].asTable())
         outf.close()
+
+    if options.Rhistory:
+        RH.saveHistory(options.Rhistory)
+    if options.Rimage:
+        RH.saveImage(options.Rimage)
 
     E.Stop()
 

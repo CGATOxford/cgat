@@ -86,7 +86,7 @@ from scipy.stats import ttest_ind
 import matplotlib
 import matplotlib.pyplot as plt
 import rpy2
-from rpy2.robjects import r as R
+from rpy2.robjects import r
 import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.packages import importr
@@ -101,6 +101,7 @@ except ImportError:
     import Experiment as E
     import IOTools
     import Stats
+
 
 # activate pandas/rpy conversion
 pandas2ri.activate()
@@ -421,7 +422,7 @@ class DEResult(object):
             E.error("IHW requires control_mean, treatment_mean and p_value "
                     "columns, have you first run the getResults method?")
 
-        runIHW = R('''function(df){
+        runIHW = r('''function(df){
         library(IHW)
         mean_expression = (df$control_mean + df$treatment_mean)/2
         ihw_res = ihw(df$p_value ~ mean_expression,  alpha = %(alpha)s)
@@ -478,18 +479,22 @@ class DEResult(object):
                 self.Summary[label] = counts
 
     def plotMA(self, contrast=None, outfile_prefix=None,
-               point_alpha=1, point_size=1):
+               point_alpha=1, point_size=1, R=None):
         ''' base function for making a MA plot '''
 
-        makeMAPlot = R('''
-        function(df){
+        if not R:
+            R = rpy2.robjects.r
+
+        ro.globalenv['tmp_df'] = pandas2ri.py2ri(self.table)
+
+        R('''
 
         suppressMessages(library(ggplot2))
         suppressMessages(library(grid))
 
         l_txt = element_text(size=20)
 
-        tmp_df = df[df$contrast=="%(contrast)s",]
+        tmp_df = tmp_df[tmp_df$contrast=="%(contrast)s",]
         tmp_df = tmp_df[order(-tmp_df$p_value_adj),]
         p = ggplot(tmp_df, aes(log((control_mean+treatment_mean)/2,2),
                             transformed_l2fold,
@@ -509,22 +514,23 @@ class DEResult(object):
 
         suppressMessages(
           ggsave(file="%(outfile_prefix)s_%(contrast)s_MA_plot.png",
-          width=10, height=10))}''' % locals())
+          width=10, height=10))''' % locals())
 
-        makeMAPlot(pandas2ri.py2ri(self.table))
-
-    def plotVolcano(self, contrast=None, outfile_prefix=None):
+    def plotVolcano(self, contrast=None, outfile_prefix=None, R=None):
         ''' base function for Volcano plotting'''
 
-        makeVolcanoPlot = R('''
-        function(df){
+        if not R:
+            R = rpy2.robjects.r
 
+        ro.globalenv['tmp_df'] = pandas2ri.py2ri(self.table)
+
+        R('''
         suppressMessages(library(ggplot2))
         suppressMessages(library(grid))
 
         l_txt = element_text(size=20)
 
-        tmp_df = df[df$contrast=="%(contrast)s",]
+        tmp_df = tmp_df[tmp_df$contrast=="%(contrast)s",]
 
         p = ggplot(tmp_df, aes(transformed_l2fold, -log(p_value,10),
                    colour=as.factor(significant))) +
@@ -540,22 +546,23 @@ class DEResult(object):
 
         suppressMessages(
           ggsave(file="%(outfile_prefix)s_%(contrast)s_volcano_plot.png",
-          width=10, height=10))}''' % locals())
+          width=10, height=10))''' % locals())
 
-        makeVolcanoPlot(pandas2ri.py2ri(self.table))
-
-    def plotPvalueHist(self, contrast=None, outfile_prefix=None):
+    def plotPvalueHist(self, contrast=None, outfile_prefix=None, R=None):
         ''' base function for Volcano plotting'''
 
-        makePvalueHistPlot = R('''
-        function(df){
+        if not R:
+            R = rpy2.robjects.r
 
+        ro.globalenv['tmp_df'] = pandas2ri.py2ri(self.table)
+
+        R('''
         suppressMessages(library(ggplot2))
         suppressMessages(library(grid))
 
         l_txt = element_text(size=20)
 
-        tmp_df = df[df$contrast=="%(contrast)s",]
+        tmp_df = tmp_df[tmp_df$contrast=="%(contrast)s",]
 
         p = ggplot(tmp_df, aes(p_value)) +
         geom_histogram(fill="dodgerblue4") +
@@ -568,17 +575,18 @@ class DEResult(object):
 
         suppressMessages(
           ggsave(file="%(outfile_prefix)s_%(contrast)s_p_value_histogram.png",
-          width=10, height=10))}''' % locals())
+          width=10, height=10))''' % locals())
 
-        makePvalueHistPlot(pandas2ri.py2ri(self.table))
-
-    def plotPvalueQQ(self, contrast=None, outfile_prefix=None):
+    def plotPvalueQQ(self, contrast=None, outfile_prefix=None, R=None):
         ''' base function for Volcano plotting'''
 
-        makePvalueQQPlot = R('''
-        function(df){
+        if not R:
+            R = rpy2.robjects.r
 
-        log_obs_pvalues = sort(-log10(df[['p_value']]))
+        ro.globalenv['tmp_df'] = pandas2ri.py2ri(self.table)
+
+        R('''
+        log_obs_pvalues = sort(-log10(tmp_df[['p_value']]))
         uni_pvalues=runif(length(log_obs_pvalues))
         log_uni_pvalues= -log10(uni_pvalues)
         log_uni_pvalues = sort(log_uni_pvalues)
@@ -589,11 +597,7 @@ class DEResult(object):
              ylab=expression(Observed~~-log[10](italic(p))),
              main="P-value QQ-plot",
              pch=20)
-        abline(0,1)
-        }''' % locals())
-
-        makePvalueQQPlot(pandas2ri.py2ri(self.table))
-
+        abline(0,1)''' % locals())
 
 
 class DEExperiment_TTest(DEExperiment):
@@ -725,7 +729,7 @@ class DEExperiment_edgeR(DEExperiment):
                 "between the first two levels" % (contrast, levels))
 
         # build DGEList object
-        buildDGEList = R('''
+        buildDGEList = r('''
         suppressMessages(library('edgeR'))
 
         function(counts){
@@ -739,7 +743,7 @@ class DEExperiment_edgeR(DEExperiment):
         r_countsTable = buildDGEList(r_counts)
 
         # build design matrix
-        buildDesign = R('''
+        buildDesign = r('''
         function(factors_df){
 
         for (level in colnames(factors_df)){
@@ -756,7 +760,7 @@ class DEExperiment_edgeR(DEExperiment):
         r_design = buildDesign(r_factors_df)
 
         # fit model
-        fitModel = R('''
+        fitModel = r('''
         function(countsTable, design, has_replicates){
 
         if (has_replicates[1] == TRUE) {
@@ -783,7 +787,7 @@ class DEExperiment_edgeR(DEExperiment):
 
         E.info("Conducting likelihood ratio tests")
 
-        lrtTest = R('''
+        lrtTest = r('''
         function(fit, design, factors_df, countsTable){
         suppressMessages(library(reshape2))
 
@@ -875,7 +879,11 @@ class DEExperiment_DESeq2(DEExperiment):
             outfile_prefix=None,
             ref_group=None,
             contrast=None,
-            DEtest="Wald"):
+            DEtest="Wald",
+            R=None):
+
+        if not R:
+            R = rpy2.robjects.r
 
         pandas2ri.activate()
 
@@ -886,11 +894,9 @@ class DEExperiment_DESeq2(DEExperiment):
         counts.table.columns = [x.replace("-", ".") for x in counts.table.columns]
 
         # create r objects
-        r_counts = pandas2ri.py2ri(counts.table)
-        r_has_pairs = ro.default_py2ri(design.has_pairs)
-        r_has_replicates = ro.default_py2ri(design.has_replicates)
-        r_design = pandas2ri.py2ri(design.table)
-        r_factors_df = pandas2ri.py2ri(design.factors)
+        ro.globalenv['counts'] = pandas2ri.py2ri(counts.table)
+        ro.globalenv['design'] = pandas2ri.py2ri(design.table)
+        ro.globalenv['factors_df'] = pandas2ri.py2ri(design.factors)
 
         model_terms = [x for x in re.split("[\+~ ]+", model)[1:]
                        if x != "0"]
@@ -900,18 +906,8 @@ class DEExperiment_DESeq2(DEExperiment):
                (design.groups, design.has_replicates, design.has_pairs,
                 DEtest, design.factors))
 
-        #env0 = ro.r.baseenv()
-
         # load DESeq
         R('''suppressMessages(library('DESeq2'))''')
-
-        #from rpy2.robjects.packages import importr
-        #base = importr('base')
-        #utils = importr('utils')
-        #utils.savehistory("myfile.hist")
-        #base.save_image("myfile.Rdata")
-
-        #env1 = ro.r.baseenv()
 
         # build DESeq2 Datasets (dds)
         assert contrast, ("must supply a contrast for wald or LRT "
@@ -920,11 +916,10 @@ class DEExperiment_DESeq2(DEExperiment):
             assert ref_group, "Must supply a ref_group to perform Wald test"
 
         if ref_group:
-            buildDds = R('''
-            function(counts, factors_df){
+            R('''
 
             for(column in colnames(factors_df)){
-              factors_df[[column]] = factor(factors_df[[column]])
+                factors_df[[column]] = factor(factors_df[[column]])
             }
 
             full_model <- formula("%(model)s")
@@ -936,15 +931,10 @@ class DEExperiment_DESeq2(DEExperiment):
                      countData= counts,
                      colData = factors_df,
                      design = full_model))
-
-            return(dds)
-
-            }''' % locals())
+            ''' % locals())
 
         else:
-            buildDds = R('''
-            function(counts, factors_df){
-
+            R('''
             for(column in colnames(factors_df)){
               factors_df[[column]] = factor(factors_df[[column]])
             }
@@ -955,18 +945,7 @@ class DEExperiment_DESeq2(DEExperiment):
                      countData= counts,
                      colData = factors_df,
                      design = full_model))
-
-            return(dds)
-
-            }''' % locals())
-
-        r_dds = buildDds(r_counts, r_factors_df)
-
-        #env2 = ro.r.baseenv()
-
-        #print len([x for x in env0])
-        #print len([x for x in env1])
-        #print len([x for x in env2])
+            ''' % locals())
 
         if DEtest == "wald":
 
@@ -978,8 +957,8 @@ class DEExperiment_DESeq2(DEExperiment):
             contrast = model_terms[-1]
             contrast_levels = set(design.factors[contrast])
 
-            performDifferentialTesting = R('''
-            function(dds){
+            #performDifferentialTesting
+            R('''
 
             dds = suppressMessages(
                DESeq(dds, test="Wald", fitType="%(fit_type)s"))
@@ -1008,11 +987,9 @@ class DEExperiment_DESeq2(DEExperiment):
 
             res['test_id'] = rownames(res)
 
-            return(res)
+            ''' % locals())
 
-            }''' % locals())
-
-            results = pandas2ri.ri2py(performDifferentialTesting(r_dds))
+            results = pandas2ri.ri2py(ro.globalenv['res'])
 
         # liklihood ratio test
         # Note that if there are more than 3 levels for the contrast,
@@ -1029,10 +1006,8 @@ class DEExperiment_DESeq2(DEExperiment):
                 results table and MA plots will be for the first two
                 levels in the contrast. The p-value will be the p-value
                 for the overall significance of the contrast. Hence, some
-                genes will have a signficant p-value but 0-fold change
+                genes may have a signficant p-value but ~0-fold change
                 between the first two levels''' % (contrast, levels))
-
-            results = pandas.DataFrame()
 
             n = 0
 
@@ -1043,9 +1018,7 @@ class DEExperiment_DESeq2(DEExperiment):
             else:
                 reduced_model = "~1"
 
-            performDifferentialTesting = R('''
-            function(dds){
-
+            print '''
             ddsLRT <- suppressMessages(
             DESeq(dds, test="LRT", reduced=formula("%(reduced_model)s"),
                   betaPrior=TRUE, fitType="%(fit_type)s"))
@@ -1073,26 +1046,46 @@ class DEExperiment_DESeq2(DEExperiment):
               }
             else{
               res$control = "%(contrast)s"
-              res$treatment = "%(contrast)s"}
+              res$treatment = "%(contrast)s"
+              }
 
             res['test_id'] = rownames(res)
+            ''' % locals()
 
+            R('''
+            ddsLRT <- suppressMessages(
+            DESeq(dds, test="LRT", reduced=formula("%(reduced_model)s"),
+                  betaPrior=TRUE, fitType="%(fit_type)s"))
 
-            save.image()
-            save.image(file=paste0("%(save_r)s", ".Rdat"))
-            savehistory(file=paste0("%(save_r)s", ".hist"))
+            png("%(outfile_prefix)s_dispersion.png")
+            plotDispEsts(ddsLRT)
+            dev.off()
 
-            return(res)
-            }''' % locals())
+            contrast_levels = as.vector(levels(dds@colData$%(contrast)s))
 
-            tmp_results = pandas2ri.ri2py(performDifferentialTesting(r_dds))
+            res = suppressMessages(results(ddsLRT, addMLE=TRUE,
+                                   contrast=c("%(contrast)s",
+                                   contrast_levels[2], contrast_levels[1])))
 
-            # need to set index to sequence of ints to avoid duplications
-            n2 = n+tmp_results.shape[0]
-            tmp_results.index = range(n, n2)
-            n = n2
+            png(paste0(c("%(outfile_prefix)s", "MA.png"), collapse="_"))
+            plotMA(res, alpha=%(fdr)s)
+            dev.off()
 
-            results = results.append(tmp_results)
+            res = as.data.frame(res)
+            res$contrast = "%(contrast)s"
+
+            if(length(contrast_levels)==2) {
+               res$control = contrast_levels[1]
+               res$treatment = contrast_levels[2]
+            } else {
+            res$control = "%(contrast)s"
+            res$treatment = "%(contrast)s"
+            }
+
+            res['test_id'] = rownames(res)
+            ''' % locals())
+
+            results = pandas2ri.ri2py(ro.globalenv['res'])
 
         else:
             raise ValueError("DEtest must be 'wald' or 'lrt'")
@@ -1193,7 +1186,7 @@ class DEExperiment_Sleuth(DEExperiment):
                 design.has_pairs))
 
         # load sleuth
-        R('''suppressMessages(library('sleuth'))''')
+        r('''suppressMessages(library('sleuth'))''')
 
         # make variates string to ensure all model terms are in the
         # design dataframe for sleuth
@@ -1207,7 +1200,7 @@ class DEExperiment_Sleuth(DEExperiment):
             assert gene_biomart, ("for genewise analysis, "
                                   "must provide a 'gene_biomart'")
 
-            createSleuthObject = R('''
+            createSleuthObject = r('''
             function(design_df){
 
             library(biomaRt)
@@ -1245,7 +1238,7 @@ class DEExperiment_Sleuth(DEExperiment):
             }''' % locals())
 
         else:
-            createSleuthObject = R('''
+            createSleuthObject = r('''
             function(design_df){
 
             sample_id = design_df$sample
@@ -1272,7 +1265,7 @@ class DEExperiment_Sleuth(DEExperiment):
         # write out counts and tpm tables if required
         if counts:
 
-            makeCountsTable = R('''
+            makeCountsTable = r('''
             function(so){
 
             library('reshape')
@@ -1287,7 +1280,7 @@ class DEExperiment_Sleuth(DEExperiment):
 
         if tpm:
 
-            makeTPMTable = R('''
+            makeTPMTable = r('''
             function(so){
 
             library('reshape')
@@ -1304,7 +1297,7 @@ class DEExperiment_Sleuth(DEExperiment):
             return None
 
         if DE_test == "lrt":
-            differentialTesting = R('''
+            differentialTesting = r('''
             function(so){
             so <- suppressMessages(sleuth_fit(so, formula = %(reduced_model)s,
                                    fit_name = "reduced"))
@@ -1321,7 +1314,7 @@ class DEExperiment_Sleuth(DEExperiment):
 
         elif DE_test == "wald":
 
-            differentialTesting = R('''
+            differentialTesting = r('''
             function(so){
 
             so <- sleuth_wt(so, which_beta = '%(contrast)s%(ref_group)s')
@@ -1407,7 +1400,7 @@ def buildProbeset2Gene(infile,
     R.library(database)
 
     # map is a Bimap object
-    m = R(mapping)
+    m = r(mapping)
 
     result = R.toTable(m)
 
@@ -1544,11 +1537,11 @@ class SAMR(object):
         R.assign("y", labels)
         R.assign("probesets", probesets)
 
-        data = R(
+        data = r(
             '''data=list( x=x, y=y, geneid=1:length(probesets), genenames=probesets, logged2=TRUE)''')
-        result = R(
+        result = r(
             '''samr.obj<-samr(data,  resp.type="Two class unpaired", nperms=100)''')
-        R('''plot(samr.obj, delta=.4)''')
+        r('''plot(samr.obj, delta=.4)''')
 
 
 class SAM(object):
@@ -1618,24 +1611,24 @@ class SAM(object):
         if use_excel_sam:
             kwargs.update(
                 {"control":
-                 R('''samControl( lambda = 0.5, n.delta = %(ndelta)s) ''' %
+                 r('''samControl( lambda = 0.5, n.delta = %(ndelta)s) ''' %
                    locals()),
                  "med": True,
                  "var.equal": True})
         else:
             kwargs.update({"control":
-                           R('''samControl( n.delta = %(ndelta)s ) ''' %
+                           r('''samControl( n.delta = %(ndelta)s ) ''' %
                              locals())},)
 
         # the option B needs to be not set if wilc.stat is chosen
 
         if method == "ttest":
-            kwargs["method"] = R('''d.stat''')
+            kwargs["method"] = r('''d.stat''')
             kwargs["B"] = npermutations
         elif method == "wilc":
-            kwargs["method"] = R('''wilc.stat''')
+            kwargs["method"] = r('''wilc.stat''')
         elif method == "cat":
-            kwargs["method"] = R('''cat.stat''')
+            kwargs["method"] = r('''cat.stat''')
         else:
             raise ValueError("unknown statistic `%s`" % method)
 
@@ -1696,8 +1689,8 @@ class SAM(object):
             raise ValueError("either supply ngenes or fdr")
 
         # collect (unadjusted) p-values and qvalues for all probesets
-        pvalues = dict(zip(probesets, R('''a@p.value''')))
-        qvalues = dict(zip(probesets, R('''a@q.value''')))
+        pvalues = dict(zip(probesets, r('''a@p.value''')))
+        qvalues = dict(zip(probesets, r('''a@q.value''')))
 
         if pattern:
             outfile = pattern % "sam.pdf"
@@ -1706,21 +1699,21 @@ class SAM(object):
                 R.plot(a, cutoff.delta)
             else:
                 R.plot(a)
-            R['dev.off']()
+            r['dev.off']()
 
         siggenes = {}
         significant_genes = set()
         if cutoff is not None:
             E.debug("using cutoff %s" % str(cutoff))
 
-            summary = R('''summary( a, %f )''' % cutoff.delta)
+            summary = r('''summary( a, %f )''' % cutoff.delta)
 
             # summary = R.summary( a, cutoff.delta )
             R.assign("summary", summary)
 
             significant_genes = set(
                 [probesets[int(x) - 1] for x
-                 in R('''summary@row.sig.genes''')])
+                 in r('''summary@row.sig.genes''')])
             # E.debug( "significant genes=%s" % str(significant_genes))
 
             r_result = zip(*_totable(summary.do_slot('mat.sig')))
@@ -1829,53 +1822,53 @@ def loadTagData(tags_filename, design_filename):
     # Load counts table
     E.info("loading tag data from %s" % tags_filename)
 
-    R('''counts_table = read.table('%(tags_filename)s',
+    r('''counts_table = read.table('%(tags_filename)s',
     header=TRUE,
     row.names=1,
     stringsAsFactors=TRUE,
     comment.char='#')''' % locals())
 
     E.info("read data: %i observations for %i samples" %
-           tuple(R('''dim(counts_table)''')))
-    E.debug("sample names: %s" % R('''colnames(counts_table)'''))
+           tuple(r('''dim(counts_table)''')))
+    E.debug("sample names: %s" % r('''colnames(counts_table)'''))
 
     # Load comparisons from file
-    R('''pheno = read.delim(
+    r('''pheno = read.delim(
     '%(design_filename)s',
     header=TRUE,
     stringsAsFactors=TRUE,
     comment.char='#')''' % locals())
 
     # Make sample names R-like - substitute - for .
-    R('''pheno[,1] = gsub('-', '.', pheno[,1]) ''')
-    E.debug("design names: %s" % R('''pheno[,1]'''))
+    r('''pheno[,1] = gsub('-', '.', pheno[,1]) ''')
+    E.debug("design names: %s" % r('''pheno[,1]'''))
 
     # Ensure pheno rows match count columns
-    pheno = R(
+    pheno = r(
         '''pheno2 = pheno[match(colnames(counts_table),pheno[,1]),,drop=FALSE]''')
-    missing = R('''colnames(counts_table)[is.na(pheno2)][1]''')
+    missing = r('''colnames(counts_table)[is.na(pheno2)][1]''')
     if missing:
         E.warn("missing samples from design file are ignored: %s" %
                missing)
 
     # Subset data & set conditions
-    R('''includedSamples <- !(is.na(pheno2$include) | pheno2$include == '0') ''')
+    r('''includedSamples <- !(is.na(pheno2$include) | pheno2$include == '0') ''')
     E.debug("included samples: %s" %
-            R('''colnames(counts_table)[includedSamples]'''))
-    R('''countsTable <- counts_table[ , includedSamples ]''')
-    R('''groups <- factor(pheno2$group[ includedSamples ])''')
-    R('''conds <- pheno2$group[ includedSamples ]''')
-    R('''pairs <- factor(pheno2$pair[ includedSamples ])''')
+            r('''colnames(counts_table)[includedSamples]'''))
+    r('''countsTable <- counts_table[ , includedSamples ]''')
+    r('''groups <- factor(pheno2$group[ includedSamples ])''')
+    r('''conds <- pheno2$group[ includedSamples ]''')
+    r('''pairs <- factor(pheno2$pair[ includedSamples ])''')
 
     # JJ if additional columns present, pass to 'factors'
-    R('''if (length(names(pheno2)) > 4) {
+    r('''if (length(names(pheno2)) > 4) {
            factors <- data.frame(pheno2[includedSamples,5:length(names(pheno2))])
          } else {
            factors <- NA
          }''')
 
     E.info("filtered data: %i observations for %i samples" %
-           tuple(R('''dim(countsTable)''')))
+           tuple(r('''dim(countsTable)''')))
 
 
 def filterTagData(filter_min_counts_per_row=1,
@@ -1892,21 +1885,21 @@ def filterTagData(filter_min_counts_per_row=1,
     '''
 
     # Remove windows with no data
-    R('''max_counts = apply(countsTable,1,max)''')
-    R('''countsTable = countsTable[max_counts>=%i,]''' %
+    r('''max_counts = apply(countsTable,1,max)''')
+    r('''countsTable = countsTable[max_counts>=%i,]''' %
       filter_min_counts_per_row)
     E.info("removed %i empty rows" %
-           tuple(R('''sum(max_counts == 0)''')))
-    observations, samples = tuple(R('''dim(countsTable)'''))
+           tuple(r('''sum(max_counts == 0)''')))
+    observations, samples = tuple(r('''dim(countsTable)'''))
     E.info("trimmed data: %i observations for %i samples" %
            (observations, samples))
 
     # remove samples without data
-    R('''max_counts = apply(countsTable,2,max)''')
+    r('''max_counts = apply(countsTable,2,max)''')
 
     empty_samples = tuple(
-        R('''max_counts < %i''' % filter_min_counts_per_sample))
-    sample_names = R('''colnames(countsTable)''')
+        r('''max_counts < %i''' % filter_min_counts_per_sample))
+    sample_names = r('''colnames(countsTable)''')
     nempty_samples = sum(empty_samples)
 
     if nempty_samples:
@@ -1914,29 +1907,29 @@ def filterTagData(filter_min_counts_per_row=1,
                (nempty_samples,
                 ",".join([sample_names[x]
                           for x, y in enumerate(empty_samples) if y])))
-        R('''countsTable <- countsTable[, max_counts >= %i]''' %
+        r('''countsTable <- countsTable[, max_counts >= %i]''' %
           filter_min_counts_per_sample)
-        R('''groups <- groups[max_counts >= %i]''' %
+        r('''groups <- groups[max_counts >= %i]''' %
           filter_min_counts_per_sample)
-        R('''pairs <- pairs[max_counts >= %i]''' %
+        r('''pairs <- pairs[max_counts >= %i]''' %
           filter_min_counts_per_sample)
-        R('''if (!is.na(factors)) {factors <- factors[max_counts >= %i,]}''' %
+        r('''if (!is.na(factors)) {factors <- factors[max_counts >= %i,]}''' %
           filter_min_counts_per_sample)
-        observations, samples = tuple(R('''dim(countsTable)'''))
+        observations, samples = tuple(r('''dim(countsTable)'''))
 
     # percentile filtering
     if filter_percentile_rowsums > 0:
         percentile = float(filter_percentile_rowsums) / 100.0
-        R('''sum_counts = rowSums( countsTable )''')
-        R('''take = (sum_counts > quantile(sum_counts, probs = %(percentile)f))''' %
+        r('''sum_counts = rowSums( countsTable )''')
+        r('''take = (sum_counts > quantile(sum_counts, probs = %(percentile)f))''' %
           locals())
-        discard, keep = R('''table( take )''')
+        discard, keep = r('''table( take )''')
         E.info("percentile filtering at level %f: keep=%i, discard=%i" %
                (filter_percentile_rowsums,
                 keep, discard))
-        R('''countsTable = countsTable[take,]''')
+        r('''countsTable = countsTable[take,]''')
 
-    observations, samples = tuple(R('''dim(countsTable)'''))
+    observations, samples = tuple(r('''dim(countsTable)'''))
 
     return observations, samples
 
@@ -1945,7 +1938,7 @@ def groupTagData(ref_group=None, ref_regex=None):
     '''compute groups and pairs from tag data table.'''
 
     if ref_regex is not None and ref_group is None:
-        groups = R('''levels(groups)''')
+        groups = r('''levels(groups)''')
         for g in groups:
             rx = re.compile(ref_regex)
             if rx.search(g):
@@ -1954,11 +1947,11 @@ def groupTagData(ref_group=None, ref_regex=None):
     # Relevel the groups so that the reference comes first
     if ref_group is not None:
         E.info("reference group (control) is '%s'" % ref_group)
-        R('''groups <- relevel(groups, ref="%s")''' % ref_group)
+        r('''groups <- relevel(groups, ref="%s")''' % ref_group)
 
-    groups = R('''levels(groups)''')
-    pairs = R('''levels(pairs)''')
-    factors = R('''factors''')
+    groups = r('''levels(groups)''')
+    pairs = r('''levels(pairs)''')
+    factors = r('''factors''')
 
     # JJ - check whether there are additional factors in design file...
     # warning... isintance(df, rpy.robjects.vectors.Vector) returns True
@@ -1973,17 +1966,17 @@ def groupTagData(ref_group=None, ref_regex=None):
     #         "factors must either be DataFrame or NA in R global namespace"
 
     # Test if replicates exist - at least one group must have multiple samples
-    max_per_group = R('''max(table(groups)) ''')[0]
+    max_per_group = r('''max(table(groups)) ''')[0]
 
     has_replicates = max_per_group >= 2
 
     # Test if pairs exist:
-    npairs = R('''length(table(pairs)) ''')[0]
+    npairs = r('''length(table(pairs)) ''')[0]
     has_pairs = npairs == 2
 
     # at least two samples per pair
     if has_pairs:
-        min_per_pair = R('''min(table(pairs)) ''')[0]
+        min_per_pair = r('''min(table(pairs)) ''')[0]
         has_pairs = min_per_pair >= 2
 
     return groups, pairs, has_replicates, has_pairs
@@ -1995,18 +1988,18 @@ def plotCorrelationHeatmap(method="correlation"):
     '''
 
     if method == "correlation":
-        R('''dists <- dist( (1 - cor(countsTable)) / 2 )''')
+        r('''dists <- dist( (1 - cor(countsTable)) / 2 )''')
     else:
-        R('''dists <- dist( t(as.matrix(countsTable)), method = '%s' )''' %
+        r('''dists <- dist( t(as.matrix(countsTable)), method = '%s' )''' %
           method)
 
-    R('''heatmap( as.matrix( dists ), symm=TRUE )''')
+    r('''heatmap( as.matrix( dists ), symm=TRUE )''')
 
 
 def plotPairs():
     '''requires counts table'''
     # Plot pairs
-    R('''panel.pearson <- function(x, y, digits=2, prefix="", cex.cor, ...)
+    r('''panel.pearson <- function(x, y, digits=2, prefix="", cex.cor, ...)
             {
             usr <- par("usr"); on.exit(par(usr))
             par(usr = c(0, 1, 0, 1))
@@ -2022,7 +2015,7 @@ def plotPairs():
             }
        ''')
     try:
-        R('''pairs(countsTable,
+        r('''pairs(countsTable,
         lower.panel = panel.pearson,
         pch=".",
         labels=colnames(countsTable),
@@ -2038,25 +2031,25 @@ def plotPCA(groups=True):
     used for colouring. If *False*, the groups are
     determined by sample labels.
     '''
-    R('''suppressMessages(library(ggplot2))''')
-    R('''pca = prcomp(t(countsTable))''')
+    r('''suppressMessages(library(ggplot2))''')
+    r('''pca = prcomp(t(countsTable))''')
     # Build factor groups by splitting labels at "."
-    R('''colour=groups''')
-    R('''shape=0''')
-    R('''size=1''')
+    r('''colour=groups''')
+    r('''shape=0''')
+    r('''size=1''')
     if groups is False:
-        R('''mm = matrix(
+        r('''mm = matrix(
         unlist(sapply(colnames(countsTable),strsplit,'[.]')),
         nrow=length(colnames(countsTable)),
         byrow=T)''')
-        nrows, nlevels = R('''dim(mm)''')
+        nrows, nlevels = r('''dim(mm)''')
         if nlevels > 1:
-            R('''colour=mm[,1]''')
+            r('''colour=mm[,1]''')
         if nlevels > 2:
-            R('''shape=mm[,2]''')
+            r('''shape=mm[,2]''')
 
     try:
-        R('''p1 = ggplot(
+        r('''p1 = ggplot(
         as.data.frame(pca$x),
         aes(x=PC1, y=PC2,
         colour=colour,
@@ -2064,24 +2057,24 @@ def plotPCA(groups=True):
         label=rownames(pca$x))) \
         + geom_text(size=4, vjust=1) \
         + geom_point()''')
-        R('''p2 = qplot(x=PC1, y=PC3,
+        r('''p2 = qplot(x=PC1, y=PC3,
         data = as.data.frame(pca$x),
         label=rownames(pca$x),
         shape=shape,
         colour=colour)''')
-        R('''p3 = qplot(x=PC2, y=PC3,
+        r('''p3 = qplot(x=PC2, y=PC3,
         data = as.data.frame(pca$x),
         label=rownames(pca$x),
         shape=shape,
         colour=colour)''')
         # TODO: plot all in a multi-plot with proper scale
         # the following squishes the plots
-        # R('''source('%s')''' %
+        # r('''source('%s')''' %
         #   os.path.join(os.path.dirname(E.__file__),
         #                "../R",
         #                "multiplot.R"))
-        # R('''multiplot(p1, p2, p3, cols=2)''')
-        R('''plot(p1)''')
+        # r('''multiplot(p1, p2, p3, cols=2)''')
+        r('''plot(p1)''')
     except rpy2.rinterface.RRuntimeError, msg:
         E.warn("could not plot in plotPCA(): %s" % msg)
 
@@ -2113,7 +2106,7 @@ def runEdgeR(outfile,
     '''
 
     # load library
-    R('''suppressMessages(library('edgeR'))''')
+    r('''suppressMessages(library('edgeR'))''')
 
     groups, pairs, has_replicates, has_pairs = groupTagData(ref_group,
                                                             ref_regex)
@@ -2121,7 +2114,7 @@ def runEdgeR(outfile,
     # output heatmap plot
     R.png('%(outfile_prefix)sheatmap.png' % locals())
     plotCorrelationHeatmap()
-    R['dev.off']()
+    r['dev.off']()
 
     E.info('running EdgeR: groups=%s, pairs=%s, replicates=%s, pairs=%s' %
            (groups, pairs, has_replicates, has_pairs))
@@ -2131,18 +2124,18 @@ def runEdgeR(outfile,
         R.png('''%(outfile_prefix)sbalance_groups.png''' % locals())
         first = True
         for g1, g2 in itertools.combinations(groups, 2):
-            R('''a = rowSums( countsTable[groups == '%s'] ) ''' % g1)
-            R('''b = rowSums( countsTable[groups == '%s'] ) ''' % g2)
+            r('''a = rowSums( countsTable[groups == '%s'] ) ''' % g1)
+            r('''b = rowSums( countsTable[groups == '%s'] ) ''' % g2)
             if first:
-                R('''plot(cumsum(sort(a - b)), type = 'l') ''')
+                r('''plot(cumsum(sort(a - b)), type = 'l') ''')
                 first = False
             else:
-                R('''lines(cumsum(sort(a - b))) ''')
+                r('''lines(cumsum(sort(a - b))) ''')
 
-        R['dev.off']()
+        r['dev.off']()
 
-        R('''suppressMessages(library('ggplot2'))''')
-        R('''suppressMessages(library('reshape'))''')
+        r('''suppressMessages(library('ggplot2'))''')
+        r('''suppressMessages(library('reshape'))''')
 
         # output difference between pairs within groups
         first = True
@@ -2151,130 +2144,130 @@ def runEdgeR(outfile,
             for g1, g2 in itertools.combinations(groups, 2):
                 key = re.sub("-", "_", "pair_%s_%s_vs_%s" % (pair, g1, g2))
                 legend.append(key)
-                # print R('''colnames( countsTable) ''')
-                # print R(''' pairs=='%s' ''' % pair)
-                # print R(''' groups=='%s' ''' % g1)
-                R('''a = rowSums( countsTable[pairs == '%s' & groups == '%s'])''' % (
+                # print r('''colnames( countsTable) ''')
+                # print r(''' pairs=='%s' ''' % pair)
+                # print r(''' groups=='%s' ''' % g1)
+                r('''a = rowSums( countsTable[pairs == '%s' & groups == '%s'])''' % (
                     pair, g1))
-                R('''b = rowSums( countsTable[pairs == '%s' & groups == '%s'])''' % (
+                r('''b = rowSums( countsTable[pairs == '%s' & groups == '%s'])''' % (
                     pair, g2))
-                R('''c = cumsum( sort(a - b) )''')
-                R('''c = c - min(c)''')
+                r('''c = cumsum( sort(a - b) )''')
+                r('''c = c - min(c)''')
                 if first:
-                    data = R('''d = data.frame( %s = c)''' % key)
+                    data = r('''d = data.frame( %s = c)''' % key)
                     first = False
                 else:
-                    R('''d$%s = c''' % key)
+                    r('''d$%s = c''' % key)
 
         # remove row names (gene idenitifiers)
-        R('''row.names(d) = NULL''')
+        r('''row.names(d) = NULL''')
         # add numbers of genes (x-axis)
-        R('''d$genes=1:nrow(d)''')
+        r('''d$genes=1:nrow(d)''')
 
         # merge data for ggplot
-        R('''d = melt( d, 'genes', variable_name = 'comparison' )''')
+        r('''d = melt( d, 'genes', variable_name = 'comparison' )''')
 
         # plot
-        R('''gp = ggplot(d)''')
-        R('''pp = gp + \
+        r('''gp = ggplot(d)''')
+        r('''pp = gp + \
             geom_line(aes(x=genes,y=value,group=comparison,color=comparison))''')
 
         try:
             R.ggsave('''%(outfile_prefix)sbalance_pairs.png''' % locals())
-            R['dev.off']()
+            r['dev.off']()
         except rpy2.rinterface.RRuntimeError, msg:
             E.warn("could not plot: %s" % msg)
 
     # build DGEList object
     # ignore message: "Calculating library sizes from column totals"
-    R('''countsTable = suppressMessages(DGEList(countsTable, group=groups))''')
+    r('''countsTable = suppressMessages(DGEList(countsTable, group=groups))''')
 
     # Relevel groups to make the results predictable - IMS
     if ref_group is not None:
-        R('''countsTable$samples$group <- relevel(countsTable$samples$group,
+        r('''countsTable$samples$group <- relevel(countsTable$samples$group,
         ref = "%s")''' % ref_group)
     else:
         # if no ref_group provided use first group in groups
-        R('''countsTable$sample$group <- relevel(countsTable$samples$group,
+        r('''countsTable$sample$group <- relevel(countsTable$samples$group,
         ref = "%s")''' % groups[0])
 
     # calculate normalisation factors
     E.info("calculating normalization factors")
-    R('''countsTable = calcNormFactors( countsTable )''')
+    r('''countsTable = calcNormFactors( countsTable )''')
     E.info("output")
 
     # output MDS plot
     R.png('''%(outfile_prefix)smds.png''' % locals())
     try:
-        R('''plotMDS( countsTable )''')
+        r('''plotMDS( countsTable )''')
     except rpy2.rinterface.RRuntimeError, msg:
         E.warn("can not plot mds: %s" % msg)
-    R['dev.off']()
+    r['dev.off']()
 
     # build design matrix
     if has_pairs:
-        R('''design = model.matrix(~pairs + countsTable$samples$group)''')
+        r('''design = model.matrix(~pairs + countsTable$samples$group)''')
     else:
-        R('''design = model.matrix(~countsTable$samples$group)''')
+        r('''design = model.matrix(~countsTable$samples$group)''')
 
-    # R('''rownames(design) = rownames( countsTable$samples )''')
-    # R('''colnames(design)[length(colnames(design))] = "CD4" ''' )
+    # r('''rownames(design) = rownames( countsTable$samples )''')
+    # r('''colnames(design)[length(colnames(design))] = "CD4" ''' )
 
     # fitting model to each tag
     if has_replicates:
         # estimate common dispersion
-        R('''countsTable = estimateGLMCommonDisp(countsTable, design)''')
+        r('''countsTable = estimateGLMCommonDisp(countsTable, design)''')
         # estimate tagwise dispersion
-        R('''countsTable = estimateGLMTagwiseDisp(countsTable, design)''')
+        r('''countsTable = estimateGLMTagwiseDisp(countsTable, design)''')
         # fitting model to each tag
-        R('''fit = glmFit(countsTable, design)''')
+        r('''fit = glmFit(countsTable, design)''')
     else:
         # fitting model to each tag
         if dispersion is None:
             raise ValueError("no replicates and no dispersion")
         E.warn("no replicates - using a fixed dispersion value")
-        R('''fit = glmFit(countsTable, design, dispersion=%f)''' %
+        r('''fit = glmFit(countsTable, design, dispersion=%f)''' %
           dispersion)
 
     # perform LR test
-    R('''lrt = glmLRT(fit)''')
+    r('''lrt = glmLRT(fit)''')
 
     E.info("Generating output")
 
     # output cpm table
-    R('''suppressMessages(library(reshape2))''')
-    R('''countsTable.cpm <- cpm(countsTable, normalized.lib.sizes=TRUE)''')
-    R('''melted <- melt(countsTable.cpm)''')
-    R('''names(melted) <- c("test_id", "sample", "ncpm")''')
+    r('''suppressMessages(library(reshape2))''')
+    r('''countsTable.cpm <- cpm(countsTable, normalized.lib.sizes=TRUE)''')
+    r('''melted <- melt(countsTable.cpm)''')
+    r('''names(melted) <- c("test_id", "sample", "ncpm")''')
     # melt columns are factors - convert to string for sorting
-    R('''melted$test_id = levels(melted$test_id)[as.numeric(melted$test_id)]''')
-    R('''melted$sample = levels(melted$sample)[as.numeric(melted$sample)]''')
+    r('''melted$test_id = levels(melted$test_id)[as.numeric(melted$test_id)]''')
+    r('''melted$sample = levels(melted$sample)[as.numeric(melted$sample)]''')
     # sort cpm table by test_id and sample
-    R('''sorted = melted[with(melted, order(test_id, sample)),]''')
-    R('''gz = gzfile("%(outfile_prefix)scpm.tsv.gz", "w" )''' % locals())
-    R('''write.table(sorted, file=gz, sep = "\t",
+    r('''sorted = melted[with(melted, order(test_id, sample)),]''')
+    r('''gz = gzfile("%(outfile_prefix)scpm.tsv.gz", "w" )''' % locals())
+    r('''write.table(sorted, file=gz, sep = "\t",
                      row.names=FALSE, quote=FALSE)''')
-    R('''close(gz)''')
+    r('''close(gz)''')
 
     # compute adjusted P-Values
-    R('''padj = p.adjust(lrt$table$PValue, 'BH')''')
+    r('''padj = p.adjust(lrt$table$PValue, 'BH')''')
 
     rtype = collections.namedtuple("rtype", "lfold logCPM LR pvalue")
 
     # output differences between pairs
     if len(groups) == 2:
         R.png('''%(outfile_prefix)smaplot.png''' % locals())
-        R('''plotSmear(countsTable, pair=c('%s'))''' % "','".join(groups))
-        R('''abline(h=c(-2, 2), col='dodgerblue') ''')
-        R['dev.off']()
+        r('''plotSmear(countsTable, pair=c('%s'))''' % "','".join(groups))
+        r('''abline(h=c(-2, 2), col='dodgerblue') ''')
+        r['dev.off']()
 
     # I am assuming that logFC is the base 2 logarithm foldchange.
     # Parse results and parse to file
     results = []
     counts = E.Counter()
 
-    df = R('''lrt$table''')
-    df["padj"] = R('''padj''')
+    df = r('''lrt$table''')
+    df["padj"] = r('''padj''')
 
     counts.significant = sum(df.padj <= fdr)
     counts.insignificant = sum(df.padj > fdr)
@@ -2322,15 +2315,15 @@ def runEdgeR(outfile,
 def deseqPlotSizeFactors(outfile):
     '''plot size factors - requires cds object.'''
     R.png(outfile)
-    R('''par(mar=c(8,4,4,2))''')
-    R('''barplot( sizeFactors( cds ), main="size factors", las=2)''')
-    R['dev.off']()
+    r('''par(mar=c(8,4,4,2))''')
+    r('''barplot( sizeFactors( cds ), main="size factors", las=2)''')
+    r['dev.off']()
 
 
 def deseqOutputSizeFactors(outfile):
     '''output size factors - requires cds object.'''
-    size_factors = R('''sizeFactors( cds )''')
-    samples = R('''names(sizeFactors(cds))''')
+    size_factors = r('''sizeFactors( cds )''')
+    samples = r('''names(sizeFactors(cds))''')
     with IOTools.openFile(outfile, "w") as outf:
         outf.write("sample\tfactor\n")
         for name, x in zip(samples, size_factors):
@@ -2346,14 +2339,14 @@ def deseqPlotCorrelationHeatmap(outfile, vsd):
     '''
 
     # rpy2.4.2 - passing of arrays seems to be broken - do it in R
-    # dists = R['as.matrix'](R.dist(R.t(R.exprs(vsd))))
-    dists = R('''as.matrix(dist(t(exprs(vsd))))''')
+    # dists = r['as.matrix'](R.dist(R.t(R.exprs(vsd))))
+    dists = r('''as.matrix(dist(t(exprs(vsd))))''')
     R.png(outfile)
-    R['heatmap.2'](
+    r['heatmap.2'](
         dists,
         trace='none',
         margin=ro.IntVector((10, 10)))
-    R['dev.off']()
+    r['dev.off']()
 
 
 def deseqPlotGeneHeatmap(outfile,
@@ -2375,9 +2368,9 @@ def deseqPlotGeneHeatmap(outfile,
         return
 
     R.png(outfile, width=500, height=2000)
-    hmcol = R.colorRampPalette(R['brewer.pal'](9, "GnBu"))(100)
+    hmcol = R.colorRampPalette(r['brewer.pal'](9, "GnBu"))(100)
 
-    R['heatmap.2'](
+    r['heatmap.2'](
         data,
         col=hmcol,
         trace="none",
@@ -2389,7 +2382,7 @@ def deseqPlotGeneHeatmap(outfile,
         lhei=ro.IntVector((1, 10)),
         key=False)
 
-    R['dev.off']()
+    r['dev.off']()
 
 
 def deseqPlotPCA(outfile, vsd, max_genes=500):
@@ -2403,14 +2396,14 @@ def deseqPlotPCA(outfile, vsd, max_genes=500):
     #  if there are more than 500 genes (after filtering)
     #  use the 500 most variable in the PCA
     #  else use the number of genes
-    R('''ntop = ifelse(as.integer(dim(vsd))[1] >= %(max_genes)i,
+    r('''ntop = ifelse(as.integer(dim(vsd))[1] >= %(max_genes)i,
     %(max_genes)i,
     as.integer(dim(vsd))[1])''' % locals())
     try:
-        R('''plotPCA(vsd)''')
+        r('''plotPCA(vsd)''')
     except rpy2.rinterface.RRuntimeError, msg:
         E.warn("can not plot PCA: %s" % msg)
-    R['dev.off']()
+    r['dev.off']()
 
 
 def deseqPlotPairs(outfile):
@@ -2418,7 +2411,7 @@ def deseqPlotPairs(outfile):
     # Plot pairs
     R.png(outfile, width=960, height=960)
     plotPairs()
-    R['dev.off']()
+    r['dev.off']()
 
 
 def deseqPlotPvaluesAgainstRowsums(outfile):
@@ -2428,15 +2421,15 @@ def deseqPlotPvaluesAgainstRowsums(outfile):
     be applied.
     '''
 
-    R('''counts_sum = rowSums( countsTable )''')
+    r('''counts_sum = rowSums( countsTable )''')
     R.png(outfile)
-    R('''plot( rank( counts_sum)/length(counts_sum),
+    r('''plot( rank( counts_sum)/length(counts_sum),
                -log10( res$pval),
                pch = 16,
                cex= 0.1)''')
 
-    R('''abline( a=3, b=0, col='red')''')
-    R['dev.off']()
+    r('''abline( a=3, b=0, col='red')''')
+    r['dev.off']()
 
 
 def deseqParseResults(control_name, treatment_name, fdr, vsd=False):
@@ -2483,10 +2476,10 @@ def deseqParseResults(control_name, treatment_name, fdr, vsd=False):
     '''
 
     results = []
-    isna = R["is.na"]
+    isna = r["is.na"]
 
     # Get column names from output and edit
-    names = list(R['res'].names)
+    names = list(r['res'].names)
     m = dict([(x, x) for x in names])
     m.update(dict(
         pval="pvalue",
@@ -2498,7 +2491,7 @@ def deseqParseResults(control_name, treatment_name, fdr, vsd=False):
     rtype = collections.namedtuple("rtype", names)
     counts = E.Counter()
 
-    for data in zip(*R['res']):
+    for data in zip(*r['res']):
         counts.input += 1
 
         d = rtype._make(data)
@@ -2524,7 +2517,7 @@ def deseqParseResults(control_name, treatment_name, fdr, vsd=False):
         if d.baseMeanA == 0.0 and d.baseMeanB == 0.0:
             d = d._replace(foldChange=0, log2FoldChange=0)
 
-        if d.pval != R('''NA'''):
+        if d.pval != r('''NA'''):
             status = "OK"
         else:
             status = "FAIL"
@@ -2611,9 +2604,9 @@ def deseq2ParseResults(treatment_name, control_name, fdr, vsd=False):
 
     status = OK if a pvalue has been generated, else FAIL
     '''
-    R(''' fdr=%s ''' % fdr)
+    r(''' fdr=%s ''' % fdr)
     #  assign standard column names
-    R('''cols = c("test_id",
+    r('''cols = c("test_id",
                   "treatment_name",
                   "treatment_mean",
                   "treatment_std",
@@ -2629,44 +2622,44 @@ def deseq2ParseResults(treatment_name, control_name, fdr, vsd=False):
                   "status") ''')
 
     #  extract normalised counts
-    R('''normalcounts = counts(dds, normalized=T)''')
+    r('''normalcounts = counts(dds, normalized=T)''')
     #  build empty dataframe
-    R('''res2 = data.frame(matrix(nrow=nrow(res), ncol=length(cols)))''')
-    R('''colnames(res2) = cols''')
+    r('''res2 = data.frame(matrix(nrow=nrow(res), ncol=length(cols)))''')
+    r('''colnames(res2) = cols''')
 
     #  fill columns with values described above
-    R('''res2['test_id'] = rownames(res)''')
-    R('''g = unique(groups[groups == "%s" | groups == "%s"])''' % (treatment_name, control_name))
-    R('''g1 = which(groups == g[1])''')
-    R('''g2 = which(groups == g[2])''')
-    R('''res2['treatment_name'] = g[1]''')
-    R('''res2['treatment_mean'] = rowMeans(normalcounts[,g1])''')
-    R('''res2['treatment_std'] = apply(normalcounts[,g1], 1, sd)''')
-    R('''res2['control_name'] = g[2]''')
-    R('''res2['control_mean'] = rowMeans(normalcounts[,g2])''')
-    R('''res2['control_std'] = apply(normalcounts[,g2], 1, sd)''')
-    R('''res2['pvalue'] = res$pvalue''')
-    R('''res2['qvalue'] = res$padj''')
-    R('''res2['l2fold'] = res$log2FoldChange''')
+    r('''res2['test_id'] = rownames(res)''')
+    r('''g = unique(groups[groups == "%s" | groups == "%s"])''' % (treatment_name, control_name))
+    r('''g1 = which(groups == g[1])''')
+    r('''g2 = which(groups == g[2])''')
+    r('''res2['treatment_name'] = g[1]''')
+    r('''res2['treatment_mean'] = rowMeans(normalcounts[,g1])''')
+    r('''res2['treatment_std'] = apply(normalcounts[,g1], 1, sd)''')
+    r('''res2['control_name'] = g[2]''')
+    r('''res2['control_mean'] = rowMeans(normalcounts[,g2])''')
+    r('''res2['control_std'] = apply(normalcounts[,g2], 1, sd)''')
+    r('''res2['pvalue'] = res$pvalue''')
+    r('''res2['qvalue'] = res$padj''')
+    r('''res2['l2fold'] = res$log2FoldChange''')
 
     # Fold change here does not reflect the shrinkage applied to
     # log2fold changes
-    R('''res2['fold'] = res2$control_mean / res2$treatment_mean''')
-    R('''res2['signif'] = as.integer(res2$qvalue <= fdr)''')
-    R('''res2['status'] = ifelse(is.na(res2$pvalue), "FAIL", "OK")''')
+    r('''res2['fold'] = res2$control_mean / res2$treatment_mean''')
+    r('''res2['signif'] = as.integer(res2$qvalue <= fdr)''')
+    r('''res2['status'] = ifelse(is.na(res2$pvalue), "FAIL", "OK")''')
 
     #  replace l2fold change and fold for expression levels of 0 in treatment
     #  and control with 0
-    R('''z1  = which(res2$treatment_mean == 0)''')
-    R('''z2 = which(res2$control_mean == 0)''')
-    R('''zeros = intersect(z1, z2)''')
-    R('''res2$l2fold[zeros] = 0''')
-    R('''res2$fold[zeros] = 0''')
+    r('''z1  = which(res2$treatment_mean == 0)''')
+    r('''z2 = which(res2$control_mean == 0)''')
+    r('''zeros = intersect(z1, z2)''')
+    r('''res2$l2fold[zeros] = 0''')
+    r('''res2$fold[zeros] = 0''')
 
     #  occupy transformed l2fold with 0s
-    R('''res2$transformed_l2fold = 0''')
+    r('''res2$transformed_l2fold = 0''')
 
-    D = R('res2')
+    D = r('res2')
     D.index = D['test_id']
     D = D.drop('test_id', 1)
     return D
@@ -2697,9 +2690,9 @@ def runDESeq(outfile,
     '''
 
     # load library
-    R('''suppressMessages(library('DESeq'))''')
-    R('''suppressMessages(library('gplots'))''')
-    R('''suppressMessages(library('RColorBrewer'))''')
+    r('''suppressMessages(library('DESeq'))''')
+    r('''suppressMessages(library('gplots'))''')
+    r('''suppressMessages(library('RColorBrewer'))''')
 
     groups, pairs, has_replicates, has_pairs = groupTagData(ref_group,
                                                             ref_regex)
@@ -2707,12 +2700,12 @@ def runDESeq(outfile,
     # Run DESeq
     # Create Count data object
     E.info("running DESeq: replicates=%s" % (has_replicates))
-    R('''cds <-newCountDataSet( countsTable, groups) ''')
+    r('''cds <-newCountDataSet( countsTable, groups) ''')
 
     # Estimate size factors
-    R('''cds <- estimateSizeFactors( cds )''')
+    r('''cds <- estimateSizeFactors( cds )''')
 
-    no_size_factors = R('''is.na(sum(sizeFactors(cds)))''')[0]
+    no_size_factors = r('''is.na(sum(sizeFactors(cds)))''')[0]
     if no_size_factors:
         E.warn("no size factors - can not estimate - no output")
         return
@@ -2726,32 +2719,32 @@ def runDESeq(outfile,
 
     E.info("dispersion_method=%s, fit_type=%s, sharing_mode=%s" %
            (dispersion_method, fit_type, sharing_mode))
-    R('''cds <- estimateDispersions( cds,
+    r('''cds <- estimateDispersions( cds,
     method='%(dispersion_method)s',
     fitType='%(fit_type)s',
     sharingMode='%(sharing_mode)s')''' % locals())
 
     # bring into python namespace
-    cds = R('''cds''')
+    cds = r('''cds''')
 
     # plot fit - if method == "pooled":
     if dispersion_method == "pooled":
         R.png('%sdispersion_estimates_pooled.png' %
               outfile_prefix)
         R.plotDispEsts(cds)
-        R['dev.off']()
+        r['dev.off']()
     elif not has_replicates:
         # without replicates the following error appears
         # in the rpy2.py2ri conversion:
         #   'dims' cannot be of length 0
         pass
     else:
-        dispersions = R('''ls(cds@fitInfo)''')
+        dispersions = r('''ls(cds@fitInfo)''')
         for dispersion in dispersions:
             R.png('%sdispersion_estimates_%s.png' %
                   (outfile_prefix, dispersion))
         R.plotDispEsts(cds, name=dispersion)
-        R['dev.off']()
+        r['dev.off']()
 
     # plot size factors
     deseqPlotSizeFactors('%(outfile_prefix)ssize_factors.png' % locals())
@@ -2765,20 +2758,20 @@ def runDESeq(outfile,
     if dispersion_method not in ("blind",):
         # also do a blind dispersion estimate for
         # a variance stabilizing transform
-        R('''cds_blind <- estimateDispersions( cds,
+        r('''cds_blind <- estimateDispersions( cds,
         method='blind',
         fitType='%(fit_type)s',
         sharingMode='%(sharing_mode)s')''' % locals())
     else:
-        R('''cds_blind = cds''')
+        r('''cds_blind = cds''')
 
     # perform variance stabilization for log2 fold changes
-    vsd = R('''vsd = varianceStabilizingTransformation(cds_blind)''')
+    vsd = r('''vsd = varianceStabilizingTransformation(cds_blind)''')
     # output normalized counts (in order)
     # gzfile does not work with rpy 2.4.2 in python namespace
     # using R.gzfile, so do it in R-space
 
-    R('''t = counts(cds, normalized=TRUE);
+    r('''t = counts(cds, normalized=TRUE);
     write.table(t[order(rownames(t)),],
     file=gzfile('%(outfile_prefix)scounts.tsv.gz'),
     row.names=TRUE,
@@ -2787,7 +2780,7 @@ def runDESeq(outfile,
     sep='\t') ''' % locals())
 
     # output variance stabilized counts (in order)
-    R('''t = exprs(vsd);
+    r('''t = exprs(vsd);
     write.table(t[order(rownames(t)),],
     file=gzfile('%(outfile_prefix)svsd.tsv.gz'),
     row.names=TRUE,
@@ -2811,12 +2804,12 @@ def runDESeq(outfile,
     # the following uses R-based indexing
     deseqPlotGeneHeatmap(
         '%sgene_heatmap.png' % outfile_prefix,
-        R['as.matrix'](R.exprs(vsd).rx(select)))
+        r['as.matrix'](R.exprs(vsd).rx(select)))
 
     # plot heatmap of top 200 expressed genes
     deseqPlotGeneHeatmap(
         '%sgene_heatmap_top200.png' % outfile_prefix,
-        R['as.matrix'](R.exprs(vsd).rx(select[:200])))
+        r['as.matrix'](R.exprs(vsd).rx(select[:200])))
 
     # Call diffential expression for all pairings of groups included in the
     # design
@@ -2830,17 +2823,17 @@ def runDESeq(outfile,
         E.info(("calling differential expression for "
                 "control=%s vs treatment=%s") %
                (control, treatment))
-        res = R('''res = nbinomTest(cds, '%s', '%s')''' % (control, treatment))
+        res = r('''res = nbinomTest(cds, '%s', '%s')''' % (control, treatment))
 
         # plot significance
         R.png('''%(outfile_groups_prefix)ssignificance.png''' % locals())
-        R('''plot(
+        r('''plot(
         res$baseMean,
         res$log2FoldChange,
         log="x",
         pch=20, cex=.1,
         col = ifelse( res$padj < %(fdr)s, "red", "black"))''' % locals())
-        R['dev.off']()
+        r['dev.off']()
 
         # plot pvalues against rowsums
         deseqPlotPvaluesAgainstRowsums(
@@ -2850,7 +2843,7 @@ def runDESeq(outfile,
 
         # get variance stabilized fold changes - note the reversal of
         # treatment/control
-        R('''vsd_l2f =
+        r('''vsd_l2f =
         (rowMeans(exprs(vsd)[,conditions(cds) == '%s', drop=FALSE])
         - rowMeans( exprs(vsd)[,conditions(cds) == '%s', drop=FALSE]))''' %
           (treatment, control))
@@ -2859,17 +2852,17 @@ def runDESeq(outfile,
         # if you also want to colour by expression level
         R.png('''%(outfile_groups_prefix)sfold_transformation.png''' %
               locals())
-        R('''plot(
+        r('''plot(
         res$log2FoldChange, vsd_l2f,
         pch=20, cex=.1,
         col = ifelse( res$padj < %(fdr)s, "red", "black" ) )''' % locals())
-        R['dev.off']()
+        r['dev.off']()
 
         # plot heatmap of differentially expressed genes
         # plot gene heatmap for all genes - order by average expression
-        select = R('''select = res['padj'] < %f''' % fdr)
+        select = r('''select = res['padj'] < %f''' % fdr)
 
-        if R('''sum(select)''')[0] > 0:
+        if r('''sum(select)''')[0] > 0:
             E.info('%s vs %s: plotting %i genes in heatmap' %
                    (treatment, control, len(select)))
             data = R.exprs(vsd).rx(select)
@@ -2878,7 +2871,7 @@ def runDESeq(outfile,
                 order = R.order(R.rowMeans(data), decreasing=True)
                 deseqPlotGeneHeatmap(
                     '%sgene_heatmap.png' % outfile_groups_prefix,
-                    R['as.matrix'](data[order]),
+                    r['as.matrix'](data[order]),
                     Colv=False,
                     Rowv=True)
             else:
@@ -2888,39 +2881,39 @@ def runDESeq(outfile,
 
         # Plot pvalue histogram
         R.png('''%(outfile_groups_prefix)spvalue_histogram.png''' % locals())
-        R('''pvalues = res$pval''')
-        R('''hist(pvalues, breaks=50, col='skyblue' )''')
-        R['dev.off']()
+        r('''pvalues = res$pval''')
+        r('''hist(pvalues, breaks=50, col='skyblue' )''')
+        r['dev.off']()
 
         # Plot diagnostic plots for FDR
         if has_replicates:
-            R('''orderInPlot = order(pvalues)''')
-            R('''showInPlot = (pvalues[orderInPlot] < 0.08)''')
+            r('''orderInPlot = order(pvalues)''')
+            r('''showInPlot = (pvalues[orderInPlot] < 0.08)''')
             # Jethro - previously plotting x =
             # pvalues[orderInPlot][showInPlot]
             # pvalues[orderInPlot][showInPlot] contains all NA values
             # from pvalues which(showInPlot) doesn't... removing NA
             # values
-            R('''true.pvalues <- pvalues[orderInPlot][showInPlot]''')
-            R('''true.pvalues <- true.pvalues[is.finite(true.pvalues)]''')
-            if R('''sum(showInPlot)''')[0] > 0:
+            r('''true.pvalues <- pvalues[orderInPlot][showInPlot]''')
+            r('''true.pvalues <- true.pvalues[is.finite(true.pvalues)]''')
+            if r('''sum(showInPlot)''')[0] > 0:
                 R.png('''%(outfile_groups_prefix)sfdr.png''' % locals())
                 # failure when no replicates:
                 # rpy2.rinterface.RRuntimeError:
                 # Error in plot.window(...) : need finite 'xlim' values
-                R('''plot( seq( along=which(showInPlot)),
+                r('''plot( seq( along=which(showInPlot)),
                            true.pvalues,
                            pch='.',
                            xlab=expression(rank(p[i])),
                            ylab=expression(p[i]))''')
-                R('''abline(a = 0, b = %(fdr)f / length(pvalues), col = "red")
+                r('''abline(a = 0, b = %(fdr)f / length(pvalues), col = "red")
                 ''' % locals())
-                R['dev.off']()
+                r['dev.off']()
             else:
                 E.warn('no p-values < 0.08')
 
         # Add log2 fold with variance stabilized l2fold value
-        R('''res$transformed_log2FoldChange = vsd_l2f''')
+        r('''res$transformed_log2FoldChange = vsd_l2f''')
 
         # Parse results and parse to file
         results, counts = deseqParseResults(control,
@@ -2961,16 +2954,16 @@ def runDESeq2(outfile,
     """
 
     # load libraries
-    R('''suppressMessages(library('DESeq2'))''')
+    r('''suppressMessages(library('DESeq2'))''')
 
     # Create metadata... this will eventually be a pandas dataframe
-    if isinstance(R('''factors'''), rpy2.robjects.vectors.DataFrame):
+    if isinstance(r('''factors'''), rpy2.robjects.vectors.DataFrame):
         E.info("DESeq2: Merging additional factors in design file to"
                "create metadata table")
-        R('''mdata <- cbind(groups, factors)''')
-        mdata = tuple(R('''names(mdata)'''))
+        r('''mdata <- cbind(groups, factors)''')
+        mdata = tuple(r('''names(mdata)'''))
     else:
-        R('''mdata <- data.frame(group=groups)''')
+        r('''mdata <- data.frame(group=groups)''')
         mdata = "group"
     E.info("DESeq2 colData headers are: %s" % mdata)
 
@@ -2988,43 +2981,43 @@ def runDESeq2(outfile,
     E.info("DESeq2 design formula is: %s" % model)
 
     # Create DESeqDataSet, using countsTable, mdata, model
-    R('''suppressMessages(dds <- DESeqDataSetFromMatrix(countData=countsTable,
+    r('''suppressMessages(dds <- DESeqDataSetFromMatrix(countData=countsTable,
                                        colData=mdata,
                                        design=%(model)s))''' % locals())
     # WARNING: This is not done automatically... I don't know why?
-    R('''colnames(dds) <- colnames(countsTable)''')
+    r('''colnames(dds) <- colnames(countsTable)''')
     E.info("Combined colata, design formula and counts table to create"
            " DESeqDataSet instance")
 
     # Rlog transform
-    R('''suppressMessages(rld <- rlog(dds))''')
+    r('''suppressMessages(rld <- rlog(dds))''')
 
     if plot == 1:
         # Plot PCA of rlog transformed count data for top 500
         for factor in terms:
             outf = outfile_prefix + factor + "_PCAplot500.tiff"
             E.info("Creating PCA plot for factor: %s" % outf)
-            R('''x <- plotPCA(rld, intgroup="%(factor)s")''' % locals())
-            # R('''saveRDS(x, '%(outf)s')''' % locals())
-            R('''tiff("%(outf)s")''' % locals())
-            R('''plot(x)''')
-            R('''dev.off()''')
+            r('''x <- plotPCA(rld, intgroup="%(factor)s")''' % locals())
+            # r('''saveRDS(x, '%(outf)s')''' % locals())
+            r('''tiff("%(outf)s")''' % locals())
+            r('''plot(x)''')
+            r('''dev.off()''')
 
     # Extract rlog transformed count data...
 
-    R('''rlogtab = as.data.frame(assay(rld))''')
-    R('''rlogtab$test_id = rownames(rlogtab)''')
-    R('''rlogtab = rlogtab[, c(ncol(rlogtab), 1:ncol(rlogtab)-1)]''')
-    R('''rlogtab = as.data.frame(rlogtab)''')
+    r('''rlogtab = as.data.frame(assay(rld))''')
+    r('''rlogtab$test_id = rownames(rlogtab)''')
+    r('''rlogtab = rlogtab[, c(ncol(rlogtab), 1:ncol(rlogtab)-1)]''')
+    r('''rlogtab = as.data.frame(rlogtab)''')
     R.data('rlogtab')
-    rlog_out = R('rlogtab')
+    rlog_out = r('rlogtab')
     rlogoutf = outfile_prefix + "rlog.tsv"
 
     rlog_out.to_csv(rlogoutf, sep="\t", index=False)
     os.system("gzip %s" % rlogoutf)
 
     # Run DESeq2
-    R('''suppressMessages(dds <- DESeq(dds))''')
+    r('''suppressMessages(dds <- DESeq(dds))''')
     E.info("Completed DESeq2 differential expression analysis")
 
     # Extract contrasts...
@@ -3032,7 +3025,7 @@ def runDESeq2(outfile,
         contrasts = (x.split(":") for x in contrasts.split(","))
     else:
         # created by loadTagData...
-        groups = R('''levels(groups)''')
+        groups = r('''levels(groups)''')
         contrasts = (("group",) + x for x in itertools.combinations(groups, 2))
 
     df_final = pandas.DataFrame()
@@ -3044,7 +3037,7 @@ def runDESeq2(outfile,
         # Fetch results
         gfix = "%s_%s_vs_%s" % (variable, control, treatment)
         outfile_groups_prefix = outfile_prefix + gfix + "_MAplot.png"
-        R('''res <- results(dds, contrast=c("%(variable)s",
+        r('''res <- results(dds, contrast=c("%(variable)s",
                                             "%(treatment)s",
                                             "%(control)s"))''' % locals())
         E.info("Extracting contrast for levels %s (treatment) vs %s (control)"
@@ -3052,16 +3045,16 @@ def runDESeq2(outfile,
 
         # plot MA plot
         if plot == 1:
-            R('''png("%(outfile_groups_prefix)s")''' % locals())
-            R('''plotMA(res, alpha=%f)''' % fdr)
-            R('''dev.off()''')
+            r('''png("%(outfile_groups_prefix)s")''' % locals())
+            r('''plotMA(res, alpha=%f)''' % fdr)
+            r('''dev.off()''')
             E.info("Plotted MA plot for levels %s (treatment) vs %s (control)"
                    " for factor %s" % (treatment, control, variable))
-        R('''res_df <- as.data.frame(res)''')
-        R('''res_df$test_id = rownames(res_df)''')
-        R('''res_df = res_df[, c(ncol(res_df), 1:ncol(res_df)-1)]''')
+        r('''res_df <- as.data.frame(res)''')
+        r('''res_df$test_id = rownames(res_df)''')
+        r('''res_df = res_df[, c(ncol(res_df), 1:ncol(res_df)-1)]''')
         R.data('res_df')
-        raw_out = R('res_df')
+        raw_out = r('res_df')
 
         #  manipulate output into standard format
         df_out = deseq2ParseResults(treatment, control, fdr, vsd=False)
@@ -3131,29 +3124,29 @@ def plotTagStats(infile, design_file, outfile_prefix):
 
     # import rpy2.robjects.lib.ggplot2 as ggplot2
 
-    R('''suppressMessages(library('ggplot2'))''')
-    R('''suppressMessages(library('reshape'))''')
+    r('''suppressMessages(library('ggplot2'))''')
+    r('''suppressMessages(library('reshape'))''')
 
-    R('''d = melt( log10(countsTable + 1), variable_name = 'sample' )''')
+    r('''d = melt( log10(countsTable + 1), variable_name = 'sample' )''')
 
     # Note that ggsave does not work if there is
     # X display.
     R.png(outfile_prefix + ".densities.png")
-    R('''gp = ggplot(d)''')
-    R('''pp = gp + geom_density(aes(x=value, group=sample,
+    r('''gp = ggplot(d)''')
+    r('''pp = gp + geom_density(aes(x=value, group=sample,
     color=sample, fill=sample), alpha=I(1/3))''')
-    R('''plot(pp)''')
-    R['dev.off']()
+    r('''plot(pp)''')
+    r['dev.off']()
 
     R.png(outfile_prefix + ".boxplots.png")
-    R('''gp = ggplot(d)''')
-    R('''pp = gp +
+    r('''gp = ggplot(d)''')
+    r('''pp = gp +
     geom_boxplot(aes(x=sample,y=value,color=sample,fill=sample),
     size=0.3,
     alpha=I(1/3)) +
     theme(axis.text.x = element_text( angle=90, hjust=1, size=8 ) )''')
-    R('''plot(pp)''')
-    R['dev.off']()
+    r('''plot(pp)''')
+    r['dev.off']()
 
 
 def plotDETagStats(infile, outfile_prefix,
@@ -3268,26 +3261,26 @@ def runMockAnalysis(outfile,
     for combination in itertools.combinations(groups, 2):
         control, treatment = combination
 
-        R('''control_counts = rowSums( countsTable[groups == '%s'] )''' %
+        r('''control_counts = rowSums( countsTable[groups == '%s'] )''' %
           control)
-        R('''treatment_counts = rowSums( countsTable[groups == '%s'] )''' %
+        r('''treatment_counts = rowSums( countsTable[groups == '%s'] )''' %
           treatment)
 
         # add pseudocounts to enable analysis of regions
         # that are absent/present
         if pseudo_counts:
-            R('''control_counts = control_counts + %f''' % pseudo_counts)
-            R('''treatment_counts = treatment_counts + %f''' % pseudo_counts)
+            r('''control_counts = control_counts + %f''' % pseudo_counts)
+            r('''treatment_counts = treatment_counts + %f''' % pseudo_counts)
 
-        R('''fc = treatment_counts / control_counts''')
+        r('''fc = treatment_counts / control_counts''')
 
         results = []
 
         for identifier, treatment_count, control_count, foldchange in \
-                zip(R('''rownames( countsTable)'''),
-                    R('''treatment_counts'''),
-                    R('''control_counts'''),
-                    R('''fc''')):
+                zip(r('''rownames( countsTable)'''),
+                    r('''treatment_counts'''),
+                    r('''control_counts'''),
+                    r('''fc''')):
             try:
                 log2fold = math.log(foldchange)
             except ValueError:
@@ -3331,23 +3324,23 @@ def outputTagSummary(filename_tags,
 
     else:
         # read complete table
-        R('''countsTable = read.delim('%(filename_tags)s',
+        r('''countsTable = read.delim('%(filename_tags)s',
         header = TRUE,
         row.names = 1,
         stringsAsFactors = TRUE,
         comment.char = '#')''' % locals())
 
-        nobservations, nsamples = tuple(R('''dim(countsTable)'''))
+        nobservations, nsamples = tuple(r('''dim(countsTable)'''))
         E.info("read data: %i observations for %i samples" %
                (nobservations, nsamples))
         # remove samples without data
-        R('''max_counts = apply(countsTable,2,max)''')
+        r('''max_counts = apply(countsTable,2,max)''')
 
         filter_min_counts_per_sample = 1
 
         empty_samples = tuple(
-            R('''max_counts < %i''' % filter_min_counts_per_sample))
-        sample_names = R('''colnames(countsTable)''')
+            r('''max_counts < %i''' % filter_min_counts_per_sample))
+        sample_names = r('''colnames(countsTable)''')
         nempty_samples = sum(empty_samples)
 
         if nempty_samples:
@@ -3355,26 +3348,26 @@ def outputTagSummary(filename_tags,
                    (nempty_samples,
                     ",".join([sample_names[x]
                               for x, y in enumerate(empty_samples) if y])))
-            R('''countsTable <- countsTable[, max_counts >= %i]''' %
+            r('''countsTable <- countsTable[, max_counts >= %i]''' %
               filter_min_counts_per_sample)
-            nobservations, nsamples = tuple(R('''dim(countsTable)'''))
+            nobservations, nsamples = tuple(r('''dim(countsTable)'''))
 
-        R('''groups = factor(colnames( countsTable ))''')
-        E.debug("sample names: %s" % R('''colnames(countsTable)'''))
+        r('''groups = factor(colnames( countsTable ))''')
+        E.debug("sample names: %s" % r('''colnames(countsTable)'''))
 
-    nrows, ncolumns = tuple(R('''dim(countsTable)'''))
+    nrows, ncolumns = tuple(r('''dim(countsTable)'''))
 
     outfile.write("metric\tvalue\tpercent\n")
     outfile.write("number of observations\t%i\t100\n" % nobservations)
     outfile.write("number of samples\t%i\t100\n" % nsamples)
 
     # Count windows with no data
-    R('''max_counts = apply(countsTable,1,max)''')
+    r('''max_counts = apply(countsTable,1,max)''')
 
     # output distribution of maximum number of counts per window
     outfilename = output_filename_pattern + "max_counts.tsv.gz"
     E.info("outputting maximum counts per window to %s" % outfilename)
-    R('''write.table(table(max_counts),
+    r('''write.table(table(max_counts),
     file=gzfile('%(outfilename)s'),
     sep="\t",
     row.names=FALSE,
@@ -3383,23 +3376,23 @@ def outputTagSummary(filename_tags,
 
     # removing empty rows
     E.info("removing rows with no counts in any sample")
-    R('''countsTable = countsTable[max_counts>0,]''')
+    r('''countsTable = countsTable[max_counts>0,]''')
 
     for x in range(0, 20):
-        nempty = tuple(R('''sum(max_counts <= %i)''' % x))[0]
+        nempty = tuple(r('''sum(max_counts <= %i)''' % x))[0]
         outfile.write("max per row<=%i\t%i\t%f\n" %
                       (x, nempty, 100.0 * nempty / nrows))
 
-    E.info("removed %i empty rows" % tuple(R('''sum(max_counts == 0)''')))
-    observations, samples = tuple(R('''dim(countsTable)'''))
+    E.info("removed %i empty rows" % tuple(r('''sum(max_counts == 0)''')))
+    observations, samples = tuple(r('''dim(countsTable)'''))
     E.info("trimmed data: %i observations for %i samples" %
            (observations, samples))
 
     # build correlation
-    R('''correlations = cor(countsTable)''')
+    r('''correlations = cor(countsTable)''')
     outfilename = output_filename_pattern + "correlation.tsv"
     E.info("outputting sample correlations table to %s" % outfilename)
-    R('''write.table(correlations, file='%(outfilename)s',
+    r('''write.table(correlations, file='%(outfilename)s',
     sep="\t",
     row.names=TRUE,
     col.names=NA,
@@ -3410,32 +3403,32 @@ def outputTagSummary(filename_tags,
     E.info("outputting scatter plots to %s" % outfilename)
     R.png(outfilename, width=960, height=960)
     plotPairs()
-    R['dev.off']()
+    r['dev.off']()
 
     # output heatmap based on correlations
     outfilename = output_filename_pattern + "heatmap.svg"
     E.info("outputting correlation heatmap to %s" % outfilename)
     R.svg(outfilename)
     plotCorrelationHeatmap(method="correlation")
-    R['dev.off']()
+    r['dev.off']()
 
     # output PCA
     outfilename = output_filename_pattern + "pca.svg"
     E.info("outputting PCA plot to %s" % outfilename)
     R.svg(outfilename)
     plotPCA(groups=False)
-    R['dev.off']()
+    r['dev.off']()
 
     # output an MDS plot
-    R('''suppressMessages(library('limma'))''')
+    r('''suppressMessages(library('limma'))''')
     outfilename = output_filename_pattern + "mds.svg"
     E.info("outputting mds plot to %s" % outfilename)
     R.svg(outfilename)
     try:
-        R('''plotMDS(countsTable)''')
+        r('''plotMDS(countsTable)''')
     except rpy2.rinterface.RRuntimeError, msg:
         E.warn("can not plot mds: %s" % msg)
-    R['dev.off']()
+    r['dev.off']()
 
 
 def dumpTagData(filename_tags, filename_design, outfile):
@@ -3453,7 +3446,7 @@ def dumpTagData(filename_tags, filename_design, outfile):
     nobservations, nsamples = filterTagData()
 
     # output
-    R('''write.table( countsTable,
+    r('''write.table( countsTable,
                       file='%(outfilename)s',
                       sep='\t',
                       quote=FALSE)''' % locals())
@@ -3475,7 +3468,7 @@ def runTTest(outfile,
     results = []
     for combination in itertools.combinations(groups, 2):
         control, treatment = combination
-        r = R('''r = apply(countsTable, 1,
+        r = r('''r = apply(countsTable, 1,
         function(x) { t.test(
         x[groups == '%(treatment)s'],
         x[groups == '%(control)s']) } )
@@ -3617,10 +3610,10 @@ def filterTagDataPandas(counts_table,
 
                           enumerate(empty_samples) if y])))
         raise NotImplementedError("removing empty samples needs to be done")
-        # R('''countsTable <- countsTable[, max_counts >= %i]''' % filter_min_counts_per_sample)
-        # R('''groups <- groups[max_counts >= %i]''' % filter_min_counts_per_sample)
-        # R('''pairs <- pairs[max_counts >= %i]''' % filter_min_counts_per_sample)
-        # observations, samples = tuple( R('''dim(countsTable)'''))
+        # r('''countsTable <- countsTable[, max_counts >= %i]''' % filter_min_counts_per_sample)
+        # r('''groups <- groups[max_counts >= %i]''' % filter_min_counts_per_sample)
+        # r('''pairs <- pairs[max_counts >= %i]''' % filter_min_counts_per_sample)
+        # observations, samples = tuple( r('''dim(countsTable)'''))
 
     # percentile filtering
     if filter_percentile_rowsums > 0:
@@ -3664,7 +3657,7 @@ def checkTagGroupsPandas(design_table, ref_group=None):
     # Relevel the groups so that the reference comes first
     # how to do this in python?
     # if ref_group is not None:
-    #    R('''groups <- relevel(groups, ref = "%s")''' % ref_group)
+    #    r('''groups <- relevel(groups, ref = "%s")''' % ref_group)
 
     # check this works, will need to make factors from normal df
     # TS adapted from JJ code for DESeq2 -
@@ -3830,7 +3823,7 @@ def runEdgeRPandas(counts,
     '''
 
     # load library
-    R('''suppressMessages(library('edgeR'))''')
+    r('''suppressMessages(library('edgeR'))''')
 
     (groups, pairs, conds, factors, has_replicates,
      has_pairs) = checkTagGroupsPandas(design_table, ref_group)
@@ -3848,7 +3841,7 @@ def runEdgeRPandas(counts,
 
     r_counts = pandas2ri.py2ri(counts)
 
-    passDFtoRGlobalEnvironment = R('''function(df){
+    passDFtoRGlobalEnvironment = r('''function(df){
     countsTable <<- df}''')
     passDFtoRGlobalEnvironment(r_counts)
 
@@ -3882,7 +3875,7 @@ def runEdgeRPandas(counts,
                                         "id": range(0, nrows)},
                                        index=index)
             pairs_df = pairs_df.append(temp_df)
-        plot_pairs = R('''function(df, outfile){
+        plot_pairs = r('''function(df, outfile){
         suppressMessages(library('ggplot2'))
         p = ggplot(df, aes(y=cumsum, x=id)) +
         geom_line(aes(col=factor(comb))) +
@@ -3924,7 +3917,7 @@ def runEdgeRPandas(counts,
                                                index=index)
                     pairs_in_groups_df = pairs_in_groups_df.append(temp_df)
 
-        plot_pairs_in_groups = R('''function(df, outfile){
+        plot_pairs_in_groups = r('''function(df, outfile){
         suppressMessages(library('ggplot2'))
         p = ggplot(df, aes(y=cumsum, x=id)) +
         geom_line(aes(col=factor(comb))) +
@@ -3954,7 +3947,7 @@ def runEdgeRPandas(counts,
         r_ref_group = ro.default_py2ri(groups[0])
 
     # build DGEList object
-    buildDGEList = R('''
+    buildDGEList = r('''
     suppressMessages(library('edgeR'))
     function(counts, groups, ref_group){
     countsTable = DGEList(counts, group=groups)
@@ -3970,15 +3963,15 @@ def runEdgeRPandas(counts,
     # TT - should this be performed on the normalised counts table?(see above)
     R.png('''%(outfile_prefix)smds.png''' % locals())
     try:
-        MDSplot = R('''function(counts){
+        MDSplot = r('''function(counts){
         plotMDS(counts)}''')
         MDSplot(r_counts)
     except rpy2.rinterface.RRuntimeError, msg:
         E.warn("can not plot mds: %s" % msg)
-    R['dev.off']()
+    r['dev.off']()
 
     # build design matrix
-    buildDesign = R('''function(countsTable, has_pairs, pairs){
+    buildDesign = r('''function(countsTable, has_pairs, pairs){
     if (has_pairs==TRUE) {
         design <- model.matrix( ~pairs + countsTable$samples$group ) }
     else {
@@ -3988,7 +3981,7 @@ def runEdgeRPandas(counts,
 
     r_design = buildDesign(r_countsTable, r_has_pairs, r_pairs)
 
-    fitModel = R('''function(countsTable, design, has_replicates, dispersion){
+    fitModel = r('''function(countsTable, design, has_replicates, dispersion){
     if (has_replicates == TRUE) {
         # estimate common dispersion
         countsTable = estimateGLMCommonDisp( countsTable, design )
@@ -4007,7 +4000,7 @@ def runEdgeRPandas(counts,
     E.info("Generating output")
 
     # perform LR test
-    lrtTest = R('''function(fit, prefix){
+    lrtTest = r('''function(fit, prefix){
     lrt = glmLRT(fit)
     # save image for access to the whole of the lrt object
     save.image(paste0(prefix,"lrt.RData"))
@@ -4016,11 +4009,11 @@ def runEdgeRPandas(counts,
     r_lrt = lrtTest(r_fit, outfile_prefix)
 
     # return statistics table - must be a better way to do this?
-    extractTable = R('''function(lrt){ return(lrt$table)}''')
+    extractTable = r('''function(lrt){ return(lrt$table)}''')
     r_lrt_table = extractTable(r_lrt)
 
     # output cpm table
-    outputCPMTable = R('''function(countsTable, outfile_prefix, lrt){
+    outputCPMTable = r('''function(countsTable, outfile_prefix, lrt){
     suppressMessages(library(reshape2))
     countsTable.cpm <- cpm(countsTable, normalized.lib.sizes=TRUE)
     melted <- melt(countsTable.cpm)
@@ -4040,7 +4033,7 @@ def runEdgeRPandas(counts,
 
     # output differences between pairs
     if len(groups) == 2:
-        plotSmear = R('''function(countsTable, outfile_prefix){
+        plotSmear = r('''function(countsTable, outfile_prefix){
         png(paste0(outfile_prefix,"smaplot.png"
         plotSmear(countsTable, pair=c('%s'))
         abline(h=c(-2, 2), col='dodgerblue')
