@@ -12,7 +12,6 @@ and adds the capability to skip comment characters.
 
 """
 
-import types
 import csv
 
 
@@ -87,15 +86,8 @@ class CommentStripper:
             if line.strip() != "" and not line.startswith("#"):
                 return line
 
-
-class DictReader(csv.DictReader):
-    """Like csv.DictReader, but skip lines starting with ``#``.
-    """
-
-    def __init__(self, infile, *args, **kwargs):
-        csv.DictReader.__init__(self,
-                                CommentStripper(infile),
-                                *args, **kwargs)
+    def next(self):
+        return self.__next__()
 
 
 class UnicodeCsvReader(object):
@@ -112,6 +104,9 @@ class UnicodeCsvReader(object):
         row = next(self.csv_reader)
         # now decode
         return [str(cell, self.encoding) for cell in row]
+
+    def next(self):
+        return self.__next__()
 
     @property
     def line_num(self):

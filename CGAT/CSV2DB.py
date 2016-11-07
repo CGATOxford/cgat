@@ -31,11 +31,11 @@ Code
 
 '''
 import os
+import csv
 import string
 import re
 import time
 import tempfile
-import types
 
 from CGAT import Experiment as E
 from CGAT import CSV as CSV
@@ -346,7 +346,7 @@ def run(infile, options, report_step=10000):
                                        dialect=options.dialect,
                                        fieldnames=options.header)
     else:
-        reader = CSV.DictReader(infile,
+        reader = csv.DictReader(CSV.CommentStripper(infile),
                                 dialect=options.dialect,
                                 fieldnames=options.header)
 
