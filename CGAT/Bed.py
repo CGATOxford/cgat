@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''Bed.py - Tools for working with bed files
 =========================================
 
@@ -168,9 +146,9 @@ class Bed(object):
 
         if self.columns >= 12:
 
-            blockStarts = map(int, self.blockStarts.split(","))
+            blockStarts = list(map(int, self.blockStarts.split(",")))
             starts = [self.start + blockStart for blockStart in blockStarts]
-            blockLengths = map(int, self.blockSizes.split(","))
+            blockLengths = list(map(int, self.blockSizes.split(",")))
 
             assert (len(blockStarts), len(blockLengths)) == \
                 (int(self.blockCount), int(self.blockCount)), \
@@ -182,7 +160,7 @@ class Bed(object):
             assert ends[-1] == self.end, \
                 "Malformed Bed12 entry:\n%s" % str(self)
 
-            return zip(starts, ends)
+            return list(zip(starts, ends))
         else:
             return [(self.start, self.end)]
 
@@ -207,7 +185,7 @@ class Bed(object):
             self["thickEnd"] = self.end
 
             blockStarts = [interval[0] - self.start for interval in intervals]
-            blockSizes = [end-start for start, end in intervals]
+            blockSizes = [end - start for start, end in intervals]
 
             blockCount = len(intervals)
 
@@ -240,7 +218,7 @@ class Bed(object):
                                * (position - len(self.fields) + 1))
 
             self.fields[position] = value
-            
+
     def __getattr__(self, key):
         try:
             return self.fields[self.map_key2field[key]]

@@ -1,19 +1,3 @@
-####
-####
-##
-# Project PythonTools
-##
-# Copyright (C) 2002 Andreas Heger All rights reserved
-##
-# Author: Andreas Heger <heger@ebi.ac.uk>
-##
-# $Id: Histogram.py 2784 2009-09-10 11:41:14Z andreas $
-##
-##
-####
-####
-
-
 """
 Histogram.py - Various functions to deal with histograms
 ===========================================================
@@ -30,14 +14,13 @@ of the format [(bin1,value1), (bin2,value2), ...].
 """
 
 import sys
-import string
 import re
 import math
-from types import *
 import scipy
 import scipy.stats
 import bisect
 import numpy
+from functools import reduce
 
 
 def CalculateFromTable(dbhandle,
@@ -75,9 +58,9 @@ def CalculateFromTable(dbhandle,
         step_size = 1
 
     if not intervals:
-        intervals = range(min_value, max_value, step_size)
+        intervals = list(range(min_value, max_value, step_size))
 
-    i_string = string.join(map(str, intervals), ",")
+    i_string = ",".join(list(map(str, intervals)))
 
     statement = "SELECT INTERVAL( %s, %s )-1 AS i, COUNT(*) %s GROUP BY i" % (
         field_name, i_string, from_statement)
@@ -109,7 +92,7 @@ def CalculateConst(values,
         step_size = 1
 
     if not intervals:
-        intervals = range(min_value, max_value, step_size)
+        intervals = list(range(min_value, max_value, step_size))
 
     histogram = [0] * len(intervals)
     for v in values:
@@ -150,7 +133,7 @@ def Calculate(values,
 
         if dynamic_bins:
             intervals = list(
-                set(filter(lambda x: min_value <= x <= max_value, values)))
+                set([x for x in values if min_value <= x <= max_value]))
             intervals.sort()
         else:
             if increment:
@@ -225,7 +208,7 @@ def Combine(source_histograms, missing_value=0):
             else:
                 v = data[1]
 
-            if type(v) == ListType or type(v) == TupleType:
+            if isinstance(v, list) or isinstance(v, tuple):
                 l = len(v)
                 for x in v:
                     new_bins[bin].append(x)
@@ -234,7 +217,7 @@ def Combine(source_histograms, missing_value=0):
                 new_bins[bin].append(v)
 
         # add missing value for unused bins
-        for b in new_bins.keys():
+        for b in list(new_bins.keys()):
             if len(new_bins[b]) < length:
                 for x in range(0, l):
                     new_bins[b].append(missing_value)
@@ -295,7 +278,7 @@ def Write(outfile, h, intervalls=None, format=0, nonull=None,
     else:
         fb = str
 
-    if type(h[0]) != ListType and type(h[0]) != TupleType:
+    if not isinstance(h[0], list) and not isinstance(h[0], tuple):
         for x in range(0, len(h)):
 
             if intervalls:
@@ -304,8 +287,8 @@ def Write(outfile, h, intervalls=None, format=0, nonull=None,
                 lines.append(fb(x) + "\t" + fv(h[x]))
     else:
         for x, v in h:
-            if type(v) == ListType or type(v) == TupleType:
-                val = string.join(map(fv, v), "\t")
+            if isinstance(v, list) or isinstance(v, tuple):
+                val = "\t".join(list(map(fv, v)))
             else:
                 val = fv(v)
 
@@ -320,11 +303,11 @@ def Write(outfile, h, intervalls=None, format=0, nonull=None,
             lines[l] = re.sub("\t0", "\t%s" % nonull, lines[l])
 
     if format == 0:
-        outfile.write(string.join(lines, "\n") + "\n")
+        outfile.write("\n".join(lines) + "\n")
     elif format == 1:
-        outfile.write(string.join(lines, " | ") + "\n")
+        outfile.write(" | ".join(lines) + "\n")
     else:
-        outfile.write(string.join(lines, "\n") + "\n")
+        outfile.write("\n".join(lines) + "\n")
 
 
 def Fill(h):
@@ -336,14 +319,14 @@ def Fill(h):
 
     x, v = h[0]
 
-    if type(v) == ListType or type(v) == TupleType:
+    if isinstance(v, list) or isinstance(v, tuple):
         l = len(v)
         previous_v = [0] * l
     else:
         previous_v = 0
 
     for x, v in h:
-        if type(v) == ListType or type(v) == TupleType:
+        if isinstance(v, list) or isinstance(v, tuple):
             for i in range(0, l):
                 if v[i] == 0:
                     v[i] = previous_v[i]
@@ -363,7 +346,7 @@ def Fill(h):
 def Normalize(h):
 
     # first count totals
-    if type(h[0][1]) == ListType or type(h[0][1]) == TupleType:
+    if isinstance(h[0][1], list) or isinstance(h[0][1], tuple):
         l = len(h[0][1])
         is_list = 1
     else:
@@ -426,7 +409,7 @@ def __ConvertToList(new_bins):
     """
 
     # convert to list
-    keys = new_bins.keys()
+    keys = list(new_bins.keys())
     keys.sort()
     new_histogram = []
 
@@ -488,17 +471,17 @@ def PrintAscii(histogram, step_size=1):
     m = max(histogram)
 
     if m == 0:
-        print "----> histogram is empty"
+        print("----> histogram is empty")
         return
 
     f = 100.0 / m
 
-    print "----> histogram: len=%i, max=%i" % (l, m)
+    print("----> histogram: len=%i, max=%i" % (l, m))
     for x in range(1, l, step_size):
         s = "|"
         s += " " * (int(histogram[x] * f) - 1) + "*"
 
-        print "%5i" % x, s
+        print("%5i" % x, s)
 
 
 def Count(data):
@@ -533,7 +516,7 @@ def Accumulate(h, num_bins=2, direction=1):
 
     new_histogram = []
 
-    if type(h[0][1]) == ListType or type(h[0][1]) == TupleType:
+    if isinstance(h[0][1], list) or isinstance(h[0][1], tuple):
         l = len(h[0][1])
         is_list = 1
     else:
@@ -594,7 +577,7 @@ def Cumulate(h, direction=1):
 
     new_histogram = []
 
-    if type(h[0][1]) == ListType or type(h[0][1]) == TupleType:
+    if isinstance(h[0][1], list) or isinstance(h[0][1], tuple):
         l = len(h[0][1])
         is_list = 1
     else:
@@ -609,7 +592,7 @@ def Cumulate(h, direction=1):
         for b, v in h:
             for x in range(0, l):
                 vv[x] += v[x]
-            new_histogram.append((b, map(lambda x: x, vv)))
+            new_histogram.append((b, [x for x in vv]))
     else:
         vv = 0
         for b, v in h:
@@ -632,7 +615,7 @@ def AddRelativeAndCumulativeDistributions(h):
         return []
 
     new_histogram = []
-    total = float(reduce(lambda x, y: x + y, map(lambda x: x[1], h)))
+    total = float(reduce(lambda x, y: x + y, [x[1] for x in h]))
 
     cumul_down = int(total)
     cumul_up = 0
@@ -660,14 +643,14 @@ def histogram(values, mode=0, bin_function=None):
     histogram(vals, 1, lambda v: round(v, -2)) ==> [(200.0, 6), (100.0, 3)]"""
 
     if bin_function:
-        values = map(bin_function, values)
+        values = list(map(bin_function, values))
     bins = {}
     for val in values:
         bins[val] = bins.get(val, 0) + 1
         if mode:
-            return sort(bins.items(), lambda x, y: cmp(y[1], x[1]))
+            return sort(list(bins.items()), lambda x, y: cmp(y[1], x[1]))
         else:
-            return sort(bins.items())
+            return sort(list(bins.items()))
 
 
 def cumulate(histogram):
@@ -679,7 +662,7 @@ def cumulate(histogram):
     if len(histogram) == 0:
         return
 
-    if type(histogram[0][1]) in (ListType, TupleType):
+    if isinstance(h[0][1], list) or isinstance(h[0][1], tuple):
         n = len(histogram[0][1])
         l = [0] * n
         for bin, vv in histogram:
@@ -702,7 +685,7 @@ def normalize(histogram):
     if len(histogram) == 0:
         return
 
-    if type(histogram[0][1]) in (ListType, TupleType):
+    if isinstance(histogram[0][1], list) or isinstance(histogram[0][1], tuple):
         n = len(histogram[0][1])
         m = [0] * n
         for bin, d in histogram:

@@ -53,8 +53,8 @@ def parse(infile):
             "Motif \#(\d+): \((.+)\)", lines[0]).groups()
         widths, gaps, score, sites = re.match(
             "Width \((.*)\); Gap \[(.*)\]; MotifScore (.*); Sites (.*)", lines[1]).groups()
-        width1, width2 = map(int, widths.split(","))
-        min_gap, max_gap = map(int, gaps.split(","))
+        width1, width2 = list(map(int, widths.split(",")))
+        min_gap, max_gap = list(map(int, gaps.split(",")))
 
         sites = int(sites)
         start = end = 3
@@ -77,7 +77,7 @@ def parse(infile):
             assert lines[x].startswith(">"), lines[x]
             id, lseq, site_id, coords = re.match(
                 ">(\S+).*len\s(\d+).*site \#(\d+)\s*(.*)", lines[x][:-1]).groups()
-            lseq, site_id = map(int, (lseq, site_id))
+            lseq, site_id = list(map(int, (lseq, site_id)))
             coords = re.split("\s", coords)
             if len(coords) == 2:
                 strand1, start1 = convert(coords[:2], width1)
@@ -128,10 +128,10 @@ if __name__ == "__main__":
 
     outname = "test%i.eps"
 
-    import MAST
+    from . import MAST
     for x, motifs in enumerate(results):
         build_logo([y.sequence for y in motifs.matches], outname % x)
-        print motifs.score, motifs.sites
+        print(motifs.score, motifs.sites)
 
         outfile = open("test%i.motif" % x, "w")
         MAST.sequences2motif(outfile,
