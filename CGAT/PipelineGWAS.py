@@ -4227,7 +4227,7 @@ def selectLdFromDB(database, table_name,
 
 
 def calcLdScores(ld_table, snps,
-                 scale=False):
+                 scale=False, metric="R2"):
     '''
     Calculate the LD scores for SNPs across a chromosome,
     stored in a SQL database.
@@ -4247,6 +4247,9 @@ def calcLdScores(ld_table, snps,
       used to calculate the score.  Useful if used
       as a weighting for other SNP scores.
 
+    metric: string
+      Use either R^2 or D' as the LD metric
+
     Returns
     -------
     ld_scores: float
@@ -4254,7 +4257,10 @@ def calcLdScores(ld_table, snps,
     '''
 
     if len(ld_table) > 0:
-        ld_score = sum(ld_table["R2"])
+        if metric == "R2":
+            ld_score = sum(ld_table["R2"])
+        elif metric == "DP":
+            ld_score = sum(ld_table["DP"])
     else:
         ld_score = 0
 
