@@ -161,7 +161,7 @@ def runSailfishQuant(fasta_index, fastq_files, output_dir,
     # subprocess cannot handle process substitution
     # therefore needs to be wrapped in /bin/bash -c '...'
     # for bash to interpret the substitution correctly
-
+    print statement
     process = subprocess.Popen(statement, shell=True,
                                executable="/bin/bash")
 
