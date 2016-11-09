@@ -179,16 +179,19 @@ def main(argv=None):
     bins = [ix for ix, iy in enumerate(cumulative)][:max_indx + 1]
 
     # plot!
+    # need to add number of individuals into each bin as point size
     if options.plot_stat == "frequency":
         E.info("Generating plot of #risk alleles vs. P(Phenotype)")
         hist_df = gwas.plotRiskFrequency(bins=bins,
                                          frequencies=max_freqs,
+                                         counts=risk_results["cases"][:max_indx + 1],
                                          savepath=options.plot_path,
                                          ytitle="P(Phenotype)")
     elif options.plot_stat == "cumulative":
         E.info("Generating plot of #risk alleles vs. cumulative frequency")
         hist_df = gwas.plotRiskFrequency(bins=bins,
                                          frequencies=max_cum,
+                                         counts=risk_results["cases"][:max_indx + 1],
                                          savepath=options.plot_path,
                                          ytitle="Cumulative frequency cases")
 

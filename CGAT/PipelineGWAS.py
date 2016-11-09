@@ -5462,7 +5462,7 @@ def parsePed(ped_file, delim="\t", compound_geno="False"):
             ped_dict["IID"] = indiv_split[1]
             ped_dict["SEX"] = int(indiv_split[4])
             ped_dict["PHEN"] = int(indiv_split[5])
-            ped_dict["GENOS"] = np.array(indiv_split[6:])
+            ped_dict["GENOS"] = np.array(["".join(x.split(" ")) for x in indiv_split[6:]])
             samples.append(ped_dict)
 
     ped_frame = pd.DataFrame(samples)
@@ -5501,9 +5501,10 @@ def countRiskAlleles(ped_frame, snp_index, report, flag):
       cumulative frequency array of #risk alleles
     '''
 
-    case_freq = np.zeros(shape=len(snp_index)*2,
+    # need to include 0 count
+    case_freq = np.zeros(shape=(len(snp_index)*2) + 1,
                          dtype=np.float64)
-    cntrl_freq = np.zeros(shape=len(snp_index)*2,
+    cntrl_freq = np.zeros(shape=(len(snp_index)*2) + 1,
                           dtype=np.float64)
 
     # group by phenotype column
@@ -5556,7 +5557,8 @@ def countRiskAlleles(ped_frame, snp_index, report, flag):
     return res_dict
 
 
-def plotRiskFrequency(bins, frequencies, savepath=None, ytitle=None):
+def plotRiskFrequency(bins, frequencies, counts,
+                      savepath=None, ytitle=None):
     '''
     Generate a plot of #risk alleles vs.
     P(binary phenotype).
@@ -5571,13 +5573,18 @@ def plotRiskFrequency(bins, frequencies, savepath=None, ytitle=None):
       list of frequencies of binary phenotype
       corresponding to #risk allele bins
 
+    counts: list
+      counts of cases in each frequency bin. Used to
+      scale the point sizes
+
     Returns
     -------
     None - plot is generated
     '''
 
     hist_df = pd.DataFrame({"bins": bins,
-                            "freq": frequencies})
+                            "freq": frequencies,
+                            "counts": counts})
 
     py2ri.activate()
     R('''suppressPackageStartupMessages(library(ggplot2))''')
@@ -5586,7 +5593,8 @@ def plotRiskFrequency(bins, frequencies, savepath=None, ytitle=None):
     r_df = py2ri.py2ri_pandasdataframe(hist_df)
     R.assign("hist.df", r_df)
 
-    R('''p_hist <- ggplot(hist.df, aes(x=bins, y=freq)) + '''
+    R('''p_hist <- ggplot(hist.df, aes(x=bins, y=freq,'''
+      '''size=counts)) + '''
       '''geom_point() + theme_bw() + '''
       '''xlim(c(0, dim(hist.df)[1])) + ylim(c(0, 1)) + '''
       '''labs(x="Number of Risk Alleles", '''
