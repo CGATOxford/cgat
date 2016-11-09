@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''
 VCF.py - Tools for working with VCF files
 =========================================
@@ -42,6 +20,7 @@ import sys
 
 class VCFEntry:
     """A VCF Entry"""
+
     def __init__(self, data, samples):
 
         assert len(data) == len(samples) + 9
@@ -49,7 +28,7 @@ class VCFEntry:
             self.filter, self.info, self.format = \
             data[:9]
 
-        self.genotypes = dict(zip(samples, data[9:]))
+        self.genotypes = dict(list(zip(samples, data[9:])))
         self.order = samples
 
     def __str__(self):
@@ -61,6 +40,7 @@ class VCFEntry:
 
 class VCFFile:
     """A VCF File"""
+
     def __init__(self, infile):
 
         self.infile = infile
@@ -84,9 +64,9 @@ class VCFFile:
 
     def writeHeader(self, outfile, order=None):
         outfile.write("##fileformat=%s\n" % self.fileformat)
-        for key, values in self.format.iteritems():
+        for key, values in self.format.items():
             outfile.write("##FORMAT=%s,%s\n" % (key, ",".join(values)))
-        for key, values in self.info.iteritems():
+        for key, values in self.info.items():
             outfile.write("##INFO=%s,%s\n" % (key, ",".join(values)))
         outfile.write(
             "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t")
@@ -114,7 +94,7 @@ class VCFFile:
         elif key == "fileformat":
             self.fileformat = value
 
-    def next(self):
+    def __next__(self):
 
         data = self.line[:-1].split("\t")
         self.line = self.infile.readline()
@@ -122,9 +102,12 @@ class VCFFile:
             raise StopIteration
         return VCFEntry(data, self.samples)
 
+    def next(self):
+        return self.__next__()
+
 if __name__ == "__main__":
 
     inf = VCFFile(sys.stdin)
 
     for x in inf:
-        print str(x)
+        print(str(x))

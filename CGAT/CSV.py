@@ -12,7 +12,6 @@ and adds the capability to skip comment characters.
 
 """
 
-import types
 import csv
 
 
@@ -25,7 +24,7 @@ def getMapColumn2Type(rows, ignore_empty=False, get_max_values=False):
     columns are returned in a dictionary.
     """
 
-    headers = rows[0].keys()
+    headers = list(rows[0].keys())
     map_column2type = {}
     is_full = {}
 
@@ -40,14 +39,14 @@ def getMapColumn2Type(rows, ignore_empty=False, get_max_values=False):
             is_full[h] = True
 
             if isinstance(row[h], int):
-                t = types.IntType
+                t = int
                 if h not in max_values:
                     max_values[h] = int(row[h])
                 else:
                     max_values[h] = max(h, int(row[h]))
 
             elif isinstance(row[h], float):
-                t = types.FloatType
+                t = float
             else:
                 continue
 
@@ -57,7 +56,7 @@ def getMapColumn2Type(rows, ignore_empty=False, get_max_values=False):
     for h in headers:
         if h not in map_column2type:
             if h in is_full or not ignore_empty:
-                map_column2type[h] = types.StringType
+                map_column2type[h] = bytes
             else:
                 ignored.append(h)
     if get_max_values:
@@ -79,27 +78,16 @@ class CommentStripper:
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         while 1:
-            line = self.infile.next()
+            line = next(self.infile)
             if line is None:
                 raise StopIteration
             if line.strip() != "" and not line.startswith("#"):
                 return line
 
-
-class DictReader(csv.DictReader):
-    """Like csv.DictReader, but skip lines starting with ``#``.
-    """
-
-    def __init__(self, infile, *args, **kwargs):
-        csv.DictReader.__init__(self,
-                                CommentStripper(infile),
-                                *args, **kwargs)
-
-# IMS - UnicodeDictReader to read Unicode encoded files
-# Taken from http://stackoverflow.com/questions/1846135/python-csv-library-with-unicode-utf-8-support-that-just-works?rq=1
-# WARNING: Does not strip # comment lines yet
+    def next(self):
+        return self.__next__()
 
 
 class UnicodeCsvReader(object):
@@ -111,11 +99,14 @@ class UnicodeCsvReader(object):
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         # read and split the csv row into fields
-        row = self.csv_reader.next()
+        row = next(self.csv_reader)
         # now decode
-        return [unicode(cell, self.encoding) for cell in row]
+        return [str(cell, self.encoding) for cell in row]
+
+    def next(self):
+        return self.__next__()
 
     @property
     def line_num(self):
@@ -148,14 +139,14 @@ class DictReaderLarge:
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
 
-        line = self.mFile.next()
+        line = next(self.mFile)
         if not line:
             raise StopIteration
         data = line[:-1].split("\t")
         assert len(data) == self.mNFields
-        return dict(zip(self.mFieldNames, data))
+        return dict(list(zip(self.mFieldNames, data)))
 
 
 def readTable(infile,
@@ -195,7 +186,7 @@ def readTable(infile,
         del lines[0]
     else:
         fields = lines[0][:-1].split("\t")
-        fields = map(str, range(len(fields)))
+        fields = list(map(str, list(range(len(fields)))))
 
     nfields = len(fields)
 
@@ -221,7 +212,7 @@ def readTable(infile,
                 raise ValueError
 
     if not as_rows:
-        table = zip(*table)
+        table = list(zip(*table))
 
     return fields, table
 
@@ -245,7 +236,7 @@ def readTables(infile, *args, **kwargs):
     """
 
     lines = [x for x in infile if x[0] != "#"]
-    chunks = filter(lambda x: lines[x][:2] == "//", range(len(lines)))
+    chunks = [x for x in range(len(lines)) if lines[x][:2] == "//"]
     if not lines[-1].startswith("//"):
         chunks.append(len(lines))
 
@@ -259,9 +250,6 @@ def readTables(infile, *args, **kwargs):
 
     return result
 
-##########################################################################
-# group rows in table
-
 
 def __DoGroup(rows, group_column, group_function, missing_value="na"):
 
@@ -270,11 +258,11 @@ def __DoGroup(rows, group_column, group_function, missing_value="na"):
         if x == group_column:
             values.append(rows[0][x])
         else:
-            v = filter(lambda x: x != missing_value, map(lambda y: y[x], rows))
+            v = [x for x in [y[x] for y in rows] if x != missing_value]
             if len(v) == 0:
                 values.append(missing_value)
             else:
-                values.append(group_function(map(lambda y: y[x], rows)))
+                values.append(group_function([y[x] for y in rows]))
 
     return values
 
@@ -352,7 +340,7 @@ def convertTable(table, columns, function=float,
         for c in columns:
             try:
                 row[c] = float(row[c])
-            except ValueError, msg:
+            except ValueError as msg:
                 if skip_errors:
                     skip = True
                     break

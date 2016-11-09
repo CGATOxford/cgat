@@ -1,24 +1,3 @@
-##########################################################################
-#   Gene prediction pipeline
-#
-#   $Id: Genomics.py 2882 2010-04-07 08:45:52Z andreas $
-#
-#   Copyright (C) 2004 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 """
 Genomics.py - Tools for working with genomic data
 =================================================
@@ -35,12 +14,13 @@ Reference
 
 import numpy
 import os
-import sys
 import string
 import re
 import hashlib
 import base64
 import tempfile
+import sys
+from functools import reduce
 
 try:
     import alignlib_lite
@@ -48,14 +28,15 @@ except ImportError:
     pass
 
 from CGAT import AString as AString
-import Bio.Alphabet
 
-# For caching genome files: remember last one read
 global_last_filename_genome = None
 global_forward_sequences = {}
 global_last_sbjct_token = None
 
-global_translator = string.maketrans("ACGTacgt", "TGCAtgca")
+if sys.version_info.major >= 3:
+    global_translator = str.maketrans("ACGTacgt", "TGCAtgca")
+else:
+    global_translator = string.maketrans("ACGTacgt", "TGCAtgca")
 
 
 def complement(s):
@@ -68,7 +49,7 @@ def complement(s):
     -------
     string
     """
-    return string.translate(s[:], global_translator)[::-1]
+    return s[::-1].translate(global_translator)
 
 
 def GetHID(sequence):
@@ -143,7 +124,7 @@ def readContigSizes(infile):
     for line in infile:
         if line[0] == "#":
             continue
-        sbjct_token, size = string.split(line[:-1], "\t")[:2]
+        sbjct_token, size = line[:-1].split("\t")[:2]
         sizes[sbjct_token] = int(size)
 
     return sizes
@@ -325,16 +306,14 @@ def CountGeneFeatures(first_position,
 def Alignment2String(alignment):
     """convert a tuple alignment to an alignment string.
     """
-    return string.join(map(
-        lambda x: string.join(map(str, x), " "),
-        alignment), " ")
+    return " ".join([" ".join(list(map(str, x))) for x in alignment])
 
 
 def String2Alignment(source):
     """convert an alignment string to a tuple alignment.
     """
 
-    d = string.split(source, " ")
+    d = source.split(" ")
     ali = []
     if len(d) < 3:
         return ali
@@ -541,7 +520,7 @@ def MaskStopCodons(sequence, stop_codons=("TAG", "TAA", "TGA")):
         if codon in stop_codons:
             codon = "NNN"
         codons.append(codon)
-    return string.join(codons, "")
+    return codons.join("")
 
 
 def Alignment2DNA(alignment, query_from=0, sbjct_from=0):
@@ -610,9 +589,6 @@ def Alignment2DNA(alignment, query_from=0, sbjct_from=0):
     return map_query2sbjct
 
 
-# W: ACGT
-# Y: CT = Pyrimidine
-# R: AG = Purine
 Wobble = {
     "A": "GCW",
     "C": "TGY",
@@ -777,8 +753,6 @@ GeneticCodeAA = {
 
 StopCodons = ("TAG", "TAA", "TGA")
 
-# degenerate mappings of the first two nucleotides
-# to amino acid
 GeneticCodeDegenerate = {
     "TC": "S",
     "CT": "L",
@@ -791,8 +765,6 @@ GeneticCodeDegenerate = {
 }
 
 
-# first and third position done, second position not checked
-# Ile is two-fold, even there are three positions
 Degeneracy = {
     "TTT": ("F", 1, 1, 2),
     "TTC": ("F", 1, 1, 2),
@@ -859,7 +831,6 @@ Degeneracy = {
 
 GAP_CHAR = "-"
 
-# amino acid based degeneracy
 DegeneracyAA = {
     "F": 2,
     "L": 6,
@@ -888,7 +859,6 @@ DegeneracyAA = {
     ".": 0,
 }
 
-# map ambiguous nucleic acid codes to the four bases
 AMBIGUOUS_CODES_NA = {
     'A': 'A',
     'C': 'C',
@@ -947,8 +917,6 @@ DECODE_GENOTYPE = {
     'w': 'AT', 'W': 'AT',
 }
 
-# ------------------------------------------------------------
-
 
 def encodeGenotype(code):
     '''encode genotypes like GG, GA into a one-letter code.
@@ -985,7 +953,7 @@ def GetMapAA2Codons():
     ."""
     map_aa2codons = {}
 
-    for codon, aa in GeneticCodeAA.items():
+    for codon, aa in list(GeneticCodeAA.items()):
         if aa not in map_aa2codons:
             map_aa2codons[aa] = []
         map_aa2codons[aa].append(codon)
@@ -1015,7 +983,7 @@ def MapCodon2AA(codon, is_seleno=False, ignore_n=True):
     Amino acids are returned as upper-case letters.
     '''
 
-    codon = string.upper(codon)
+    codon = codon.upper()
 
     codon = re.sub("[.-]", "", codon)
     if len(codon) == 0:
@@ -1045,7 +1013,7 @@ def Protein2Wobble(s):
     c = []
     for x in s:
         c.append(Wobble[x])
-    return string.join(c, "")
+    return c.join("")
 
 
 def Alignment2PeptideAlignment(alignment,
@@ -1114,7 +1082,7 @@ def Alignment2PeptideAlignment(alignment,
 
         sbjct_genome_pos += l_sbjct
 
-    return map_query2sbjct, string.join(sbjct_residues, "")
+    return map_query2sbjct, "".join(sbjct_residues)
 
 
 def translate(sequence,
@@ -1137,11 +1105,11 @@ def translate(sequence,
         if prefer_lowercase:
             is_lower = False
             for c in sequence[x:x + 3]:
-                is_lower = is_lower or c in string.lowercase
+                is_lower = is_lower or c in "acgtnx"
         else:
             is_lower = True
             for c in sequence[x:x + 3]:
-                is_lower = is_lower and c in string.lowercase
+                is_lower = is_lower and c in "acgtnx"
 
         if is_lower:
             residues.append(MapCodon2AA(sequence[x:x + 3].upper(),
@@ -1152,7 +1120,7 @@ def translate(sequence,
                                         is_seleno=is_seleno,
                                         ignore_n=ignore_n).upper())
 
-    return string.join(residues, "")
+    return "".join(residues)
 
 
 def TranslateDNA2Protein(*args, **kwargs):
@@ -1216,9 +1184,7 @@ def Alignment2CDNA(alignment,
         query_pos += l_query
         sbjct_pos += l_sbjct
 
-    return map_query2sbjct, string.join(fragments, "")
-
-# -------------------------------------------------------------------
+    return map_query2sbjct, fragments.join("")
 
 
 def GetExon(exons, first_aa):
@@ -1420,10 +1386,9 @@ def GetDegenerateSites(seq1, seq2,
                     new_seq1.append(c1[position - 1])
                     new_seq2.append(c2[position - 1])
 
-    return string.join(new_seq1, ""), string.join(new_seq2, "")
+    return "".join(new_seq1), "".join(new_seq2)
 
 
-# -------------------------------------------------------------------
 class SequencePairInfo:
 
     """the first characters are ACGT."""
@@ -1489,15 +1454,13 @@ class SequencePairInfoCodons(SequencePairInfo):
     def getHeader(self):
         return "\t".join((SequencePairInfo.getHeader(self), "nnonsyn", "nsyn"))
 
-# -------------------------------------------------------------------------
-
 
 def AlignedPair2SubstitutionMatrix(seq1, seq2, alphabet):
     """given a pair of sequences, calculate
     a substitution matrix for the given alphabet.
     """
     if len(seq1) != len(seq2):
-        raise "two sequences of unequal length submitted."
+        raise ValueError("two sequences of unequal length submitted")
 
     nchars = len(alphabet)
     matrix = numpy.zeros((nchars, nchars), numpy.int)
@@ -1513,8 +1476,6 @@ def AlignedPair2SubstitutionMatrix(seq1, seq2, alphabet):
             continue
 
     return matrix
-
-# -------------------------------------------------------------------
 
 
 def CalculatePairIndices(seq1, seq2, gap_char="-", with_codons=False):
@@ -1560,7 +1521,7 @@ def CalculatePairIndices(seq1, seq2, gap_char="-", with_codons=False):
 
     if with_codons:
         nsyn, nnon = 0, 0
-        pairs = zip(seq1, seq2)
+        pairs = list(zip(seq1, seq2))
         for x in range(len(pairs)):
             a, b = pairs[x]
             if a != b:
@@ -1632,7 +1593,7 @@ def makeSubstitutionMatrix(type="EMBOSS"):
         gop = -10.0
         gep = -10.0
     else:
-        raise "unknown MATRIX."
+        raise ValueError("unknown MATRIX")
 
     # build empty matrix
     for m in range(21):
@@ -1668,7 +1629,7 @@ def makeSubstitutionMatrix(type="EMBOSS"):
 
     handle_tmpfile, filename_tmpfile = tempfile.mkstemp()
     for m in matrix:
-        os.write(handle_tmpfile, string.join(map(str, m), "\t") + "\n")
+        os.write(handle_tmpfile, "\t".join(list(map(str, m))) + "\n")
     os.close(handle_tmpfile)
 
     smatrix = alignlib_lite.py_readSubstitutionMatrixAA(filename_tmpfile)
@@ -1691,7 +1652,7 @@ def CalculateCodonFrequenciesFromCounts(counts, pseudo_counts=0):
     map_aa2codons = GetMapAA2Codons()
     weights = {}
 
-    for aa, codons in map_aa2codons.items():
+    for aa, codons in list(map_aa2codons.items()):
 
         total_counts = reduce(
             lambda x, y: x + y, (counts[x] + pseudo_counts for x in codons))
@@ -1715,7 +1676,7 @@ def CalculateCAIWeightsFromCounts(counts, pseudo_counts=0):
     map_aa2codons = GetMapAA2Codons()
     weights = {}
 
-    for aa, codons in map_aa2codons.items():
+    for aa, codons in list(map_aa2codons.items()):
 
         max_counts = max(counts[x] for x in codons) + pseudo_counts
 
@@ -1753,7 +1714,7 @@ def CountCodons(sequence):
         raise "sequence is not multiple of 3: %i" % len(sequence)
 
     counts = {}
-    for c in GeneticCodeAA.keys():
+    for c in list(GeneticCodeAA.keys()):
         counts[c] = 0
     for codon in [sequence[x:x + 3] for x in range(0, len(sequence), 3)]:
         try:
@@ -1772,12 +1733,12 @@ def GetUniformCodonUsage():
 
     aas = {}
 
-    for codon, aa in GeneticCodeAA.items():
+    for codon, aa in list(GeneticCodeAA.items()):
         if aa not in aas:
             aas[aa] = 0
         aas[aa] += 1
 
-    for codon, aa in GeneticCodeAA.items():
+    for codon, aa in list(GeneticCodeAA.items()):
         frequencies[codon] = 1.0 / aas[aa]
 
     return frequencies
@@ -1796,12 +1757,12 @@ def GetBiasedCodonUsage(bias=1.0):
 
     aas = {}
 
-    for codon, aa in GeneticCodeAA.items():
+    for codon, aa in list(GeneticCodeAA.items()):
         if aa not in aas:
             aas[aa] = 0
         aas[aa] += 1
 
-    for codon, aa in GeneticCodeAA.items():
+    for codon, aa in list(GeneticCodeAA.items()):
         frequencies[codon] = 1.0 / aas[aa]
 
     return frequencies
@@ -1875,11 +1836,11 @@ def printPrettyAlignment(seq1, *args):
             for x in range(2 * nother):
                 otherrows[x] += " "
             if len(seqrow) > 120:
-                print "".join(seqrow)
+                print("".join(seqrow))
                 for x in range(2 * nother):
-                    print "".join(otherrows[x])
+                    print("".join(otherrows[x]))
 
-                print
+                print()
                 seqrow, otherrows = [], []
                 nother = len(args)
                 for x in range(nother):
@@ -1908,9 +1869,9 @@ def printPrettyAlignment(seq1, *args):
                 c2, l2 = "-", 1
             otherrows[x * 2 + 1].append(c2 + " " * (max_len - l2))
 
-    print "".join(seqrow)
+    print("".join(seqrow))
     for x in range(2 * nother):
-        print "".join(otherrows[x])
+        print("".join(otherrows[x]))
 
 
 def ReadPeptideSequences(infile, filter=None, as_array=False,
@@ -1922,7 +1883,7 @@ def ReadPeptideSequences(infile, filter=None, as_array=False,
         infile, filter, regex_identifier=regex_identifier)
 
     if not as_array:
-        for k in sequences.keys():
+        for k in list(sequences.keys()):
             sequences[k] = sequences[k][:]
     return sequences
 

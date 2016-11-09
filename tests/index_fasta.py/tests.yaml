@@ -26,7 +26,8 @@ index_stdin:
     outputs: [test3_sc.gz, test3_sc.cdx]
     binary: [test3_sc.gz]
     references: [test3.gz, test3.cdx]
-    options: test3_sc - --compression=gzip --force-output --file-format=tar.gz --random-access-points=1000000 > test3.log
+    options: test3_sc - --compression=gzip --force-output --file-format=tar.gz --random-access-points=1000000
+    skip_python: "3"
 
 # This test tests the ability to clean and also
 # to use synonyms
@@ -34,15 +35,14 @@ clean:
     stdin: null
     outputs: [test4_sc.fasta, test4_sc.idx]
     references: [test4.fasta, test4.idx]
-    options: test4_sc %DIR%/with_x.fa --force-output --clean-sequence --synonyms=chrI=chr1 > test4.log
+    options: test4_sc %DIR%/with_x.fa --force-output --clean-sequence --synonyms=chrI=chr1
 
 #allowing duplicates
 allowdups:
     stdin: null
     outputs: [test5_sc.fasta, test5_sc.idx]
     references: [test5.fasta, test5.idx]
-    options: --allow-duplicates --force-output test5_sc %DIR%/chrI.fa %DIR%/1chr.fa > test5.log
-
+    options: --allow-duplicates --force-output test5_sc %DIR%/chrI.fa %DIR%/1chr.fa
 
 #regex-ing identifiers
 regexid:

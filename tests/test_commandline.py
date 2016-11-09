@@ -33,10 +33,15 @@ import yaml
 import re
 import sys
 import copy
+import platform
 
 from nose.tools import ok_
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
+
+
+PYTHON_VERSION = platform.python_version()
+IS_PY3 = sys.version_info.major >= 3
 
 # handle to original E.Start function
 ORIGINAL_START = None
@@ -47,14 +52,26 @@ PARSER = None
 # DIRECTORIES to examine for python modules/scripts
 EXPRESSIONS = (
     ('scripts', 'scripts/*.py'),)
-# ('optic', 'scripts/optic/*.py'),
-# ('gpipe', 'scripts/gpipe/*.py'))
 
-EXCLUDE = ("__init__.py",
-           "version.py",
-           "cgat.py",
-           "fasta2bed.py",   # fails because of pybedtools rebuild
-           )
+EXCLUDE = [
+    "__init__.py",
+    "version.py",
+    "cgat.py",
+    "gtf2table.py",  # fails with pysam include issue
+    "bed2table.py",  # fails with pysam include issue
+    "fasta2bed.py",   # fails because of pybedtools rebuild
+]
+
+if IS_PY3:
+    # issues with pyximport scripts, cause subsequent scripts to fail
+    # with script not found.
+    EXCLUDE.extend([
+        "bam2bam.py",
+        "bam2stats.py",
+        "bam2bed.py",
+        "bam2geneprofile.py",
+        "bam2peakshape.py"])
+
 
 # Filename with the black/white list of options.
 # The file is a tab-separated with the first column
@@ -69,7 +86,7 @@ class DummyError(Exception):
     pass
 
 
-def filterFiles(files):
+def filter_files(files):
     '''filter list of files according to filters set in
     configuration file tests/_test_commandline.yaml'''
 
@@ -102,7 +119,7 @@ def LocalStart(parser, *args, **kwargs):
     raise DummyError()
 
 
-def loadScript(script_name):
+def load_script(script_name):
 
     # call other script
     prefix, suffix = os.path.splitext(script_name)
@@ -119,7 +136,7 @@ def loadScript(script_name):
     modulename = ".".join((re.sub("/", ".", dirname), basename))
     try:
         module = importlib.import_module(modulename)
-    except ImportError, msg:
+    except ImportError as msg:
         sys.stderr.write('could not import %s - skipped: %s\n' %
                          (modulename, msg))
         module = None
@@ -140,7 +157,7 @@ def check_option(option, script_name, map_option2action):
             (script_name, option, map_option2action[option]))
 
 
-def failTest(msg):
+def fail_(msg):
     '''create test that fails with *msg*.'''
     ok_(False, msg)
 
@@ -148,6 +165,7 @@ def failTest(msg):
 def test_cmdline():
     '''test style of scripts
     '''
+
     # start script in order to build the command line parser
     global ORIGINAL_START
     if ORIGINAL_START is None:
@@ -164,7 +182,7 @@ def test_cmdline():
         f = glob.glob(expression)
         files.extend(sorted(f))
 
-    files = filterFiles(files)
+    files = filter_files(files)
 
     # make sure to use the current working directory as
     # primary lookup.
@@ -184,17 +202,17 @@ def test_cmdline():
         pyxfile = (os.path.join(os.path.dirname(f), "_") +
                    os.path.basename(f) + "x")
 
-        failTest.description = script_name
+        fail_.description = script_name
         # check if script contains getopt
         with IOTools.openFile(script_name) as inf:
             if "getopt" in inf.read():
-                yield (failTest,
+                yield (fail_,
                        "script uses getopt directly: %s" % script_name)
                 continue
 
-        module, modulename = loadScript(script_name)
+        module, modulename = load_script(script_name)
         if module is None:
-            yield (failTest,
+            yield (fail_,
                    "module could not be imported: %s\n" % script_name)
             continue
         E.Start = LocalStart
@@ -202,11 +220,11 @@ def test_cmdline():
         try:
             module.main(argv=["--help"])
         except AttributeError:
-            yield (failTest,
+            yield (fail_,
                    "no main method in %s\n" % script_name)
             ok_(False, "no main method in %s" % script_name)
         except SystemExit:
-            yield (failTest,
+            yield (fail_,
                    "script does not use E.Start() %s\n" % script_name)
         except DummyError:
             pass
@@ -235,4 +253,3 @@ def test_cmdline():
         # each script
         if os.path.exists(pyxfile):
             sys.meta_path = []
-

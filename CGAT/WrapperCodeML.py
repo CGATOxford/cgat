@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''
 WrapperCodeML.py -
 ======================================================
@@ -158,7 +136,7 @@ class CodeMLResult:
                             ("%-40s: %s" % (key,
                                             self.truncateLine(str(m[x])))))
                 elif type(m) in (DictType,):
-                    for x, y in m.items():
+                    for x, y in list(m.items()):
                         s.append(
                             ("%-40s: %s: %s" % (key, str(x),
                                                 self.truncateLine(str(y)))))
@@ -174,19 +152,19 @@ class CodeMLResult:
         """
         # t is a map of parent to children
         self.mTreeKs = TreeTools.Graph2Tree(
-            map(lambda x: (x.mBranch1, x.mBranch2, x.mKs), self.mBranchInfo))
+            [(x.mBranch1, x.mBranch2, x.mKs) for x in self.mBranchInfo])
         self.mTreeKa = TreeTools.Graph2Tree(
-            map(lambda x: (x.mBranch1, x.mBranch2, x.mKa), self.mBranchInfo))
+            [(x.mBranch1, x.mBranch2, x.mKa) for x in self.mBranchInfo])
         self.mTreeKaks = TreeTools.Graph2Tree(
-            map(lambda x: (x.mBranch1, x.mBranch2, x.mKaks), self.mBranchInfo))
+            [(x.mBranch1, x.mBranch2, x.mKaks) for x in self.mBranchInfo])
         self.mTreeSds = TreeTools.Graph2Tree(
-            map(lambda x: (x.mBranch1, x.mBranch2, x.mSds), self.mBranchInfo))
+            [(x.mBranch1, x.mBranch2, x.mSds) for x in self.mBranchInfo])
         self.mTreeNdn = TreeTools.Graph2Tree(
-            map(lambda x: (x.mBranch1, x.mBranch2, x.mNdn), self.mBranchInfo))
+            [(x.mBranch1, x.mBranch2, x.mNdn) for x in self.mBranchInfo])
         self.mTreeS = TreeTools.Graph2Tree(
-            map(lambda x: (x.mBranch1, x.mBranch2, x.mS), self.mBranchInfo))
+            [(x.mBranch1, x.mBranch2, x.mS) for x in self.mBranchInfo])
         self.mTreeN = TreeTools.Graph2Tree(
-            map(lambda x: (x.mBranch1, x.mBranch2, x.mN), self.mBranchInfo))
+            [(x.mBranch1, x.mBranch2, x.mN) for x in self.mBranchInfo])
 
 
 class BaseMLResult(CodeMLResult):
@@ -481,7 +459,7 @@ class CodeML:
     def GetOptions(self):
         """return options in pretty format"""
         result = ["# Options for CodeML"]
-        for var in self.mOptions.keys():
+        for var in list(self.mOptions.keys()):
             result.append("# %-40s: %s" % (var, self.mOptions[var]))
         return string.join(result, "\n")
 
@@ -576,7 +554,7 @@ class CodeML:
         written_options = {}
 
         # write set options
-        for key, vv in options.items():
+        for key, vv in list(options.items()):
 
             if key not in self.mOptions:
                 raise IndexError("illegal option %s" % key)
@@ -597,14 +575,14 @@ class CodeML:
                 else:
                     raise ValueError(
                         "illegal value %s for option %s: possible values are: %s" %
-                        (value, key, " ".join(self.mOptions[key].keys())))
+                        (value, key, " ".join(list(self.mOptions[key].keys()))))
 
             written_options[key] = 1
             description = ";".join(descriptions)
             outfile.write("* %s\n   %s = %s\n\n" % (description, key, vv))
 
         # write default options
-        for key, vv in self.mDefaults.items():
+        for key, vv in list(self.mDefaults.items()):
 
             if key in written_options:
                 continue
@@ -629,7 +607,7 @@ class CodeML:
                 else:
                     raise ValueError(
                         "illegal value %s for option %s: possible values are: %s" %
-                        (value, key, " ".join(self.mOptions[key].keys())))
+                        (value, key, " ".join(list(self.mOptions[key].keys()))))
 
             written_options[key] = 1
             description = ";".join(descriptions)
@@ -649,7 +627,7 @@ class CodeML:
         self.mFilenameOutput = "output"
 
         if test:
-            print "# temporary directory is %s" % self.mTempdir
+            print("# temporary directory is %s" % self.mTempdir)
 
         if tree:
 
@@ -714,11 +692,16 @@ class CodeML:
                              (self.mExecutable, err, out, self.mTempdir))
 
         if dump:
-            print "############################### CONTROL FILE ############################"
-            print "".join(open(self.mTempdir + "/" + self.mFilenameControl, "r").readlines())
-            print "# result output of %s:\n%s\n######################################" % (self.mExecutable, "".join(lines))
-            print "############################### LOG OUTPUT ############################"
-            print "# stdout output of %s:\n%s\n######################################" % (self.mExecutable, out)
+            print(
+                "############################### CONTROL FILE ############################")
+            print("".join(open(self.mTempdir + "/" +
+                               self.mFilenameControl, "r").readlines()))
+            print("# result output of %s:\n%s\n######################################" % (
+                self.mExecutable, "".join(lines)))
+            print(
+                "############################### LOG OUTPUT ############################")
+            print("# stdout output of %s:\n%s\n######################################" % (
+                self.mExecutable, out))
 
         if not test:
             shutil.rmtree(self.mTempdir)
@@ -768,10 +751,11 @@ class CodeML:
                 "expected 'Overall accuracy', instead got %s" % lines[0])
 
         del lines[0]
-        accuracy_per_site = map(float, re.split("\s+", lines[0][:-1].strip()))
+        accuracy_per_site = list(
+            map(float, re.split("\s+", lines[0][:-1].strip())))
         del lines[:3]
-        accuracy_per_sequence = map(
-            float, re.split("\s+", lines[0][:-1].strip()))
+        accuracy_per_sequence = list(map(
+            float, re.split("\s+", lines[0][:-1].strip())))
 
         for x in range(len(ancestral_sequences)):
             id, sequence = ancestral_sequences[x]
@@ -781,7 +765,7 @@ class CodeML:
                 accuracy_per_sequence[x])
 
         result.mAncestralTree = TreeTools.Graph2Tree(
-            map(lambda x: (x.mBranch1, x.mBranch2, 1.0), result.mBranchInfo),
+            [(x.mBranch1, x.mBranch2, 1.0) for x in result.mBranchInfo],
             label_ancestral_nodes=True)
 
     def parseSequences(self, lines, result):
@@ -849,8 +833,8 @@ class CodeML:
 
             # read sequence info
             try:
-                result.mNumSequences, result.mLength = map(
-                    int, re.match("ns\s*=\s+(\d+)\s+ls\s*=\s*(\d+)", lines[0]).groups())
+                result.mNumSequences, result.mLength = list(map(
+                    int, re.match("ns\s*=\s+(\d+)\s+ls\s*=\s*(\d+)", lines[0]).groups()))
                 del lines[0]
             except AttributeError:
                 raise ParsingError(
@@ -874,9 +858,6 @@ class CodeML:
 
         if result.mVersion not in known_versions:
             raise ValueError("unknown paml version '%s'" % result.mVersion)
-
-# if result.mModel not in ("free dN/dS Ratios for branches", "One dN/dS ratio", "several dN/dS ratios for branches"):
-#             raise "parsing for model '%s' not implemented" % result.mModel
 
     def parseSitePatterns(self, inlines, result):
         # read site patterns
@@ -988,14 +969,14 @@ class CodeML:
             # note: spaces might be missing, because it seems to a fixed with format.
             # This is ok for probabilities (allways less than 1) but a problem for
             # w, if it gets larger than 100. Field width seems to be 9.
-            self.mSiteClassesProbabilities = map(
-                float, re.split("\s+", lines[0])[1:])
+            self.mSiteClassesProbabilities = list(map(
+                float, re.split("\s+", lines[0])[1:]))
             del lines[0]
 
             ncats = len(self.mSiteClassesProbabilities)
             s = lines[0][3:]
-            self.mSiteClassesOmega = map(
-                lambda x: float(s[x:x + 9]), range(0, len(s), 9))
+            self.mSiteClassesOmega = [float(s[x:x + 9])
+                                      for x in range(0, len(s), 9)]
 
             del lines[0]
             self.nextSection(lines)
@@ -1022,7 +1003,7 @@ class CodeML:
 
             # start counting from 0, correct below to for ancestral nodes
             # to use PAML 1-based numbering.
-            a, b = map(lambda x: int(x) - 1, branch.split(".."))
+            a, b = [int(x) - 1 for x in branch.split("..")]
 
             if a < result.mNumSequences:
                 branch1 = self.mMapPosition2Identifier[a]
@@ -1087,7 +1068,7 @@ class CodeML:
 
         if lines_log:
             if lines_log[0] and lines_log[0][-1] == "\n":
-                lines_log = map(lambda x: x[:-1].strip(), lines_log)
+                lines_log = [x[:-1].strip() for x in lines_log]
             result.mLog = "\n".join(lines_log)
             self.parseLog(lines_log, result)
 
@@ -1103,8 +1084,8 @@ class CodeML:
 
             x = rx.match(line)
             if x:
-                result.mRn, result.mRs, result.mRn0, result.mRs0, result.mBranchLength = map(
-                    float, x.groups())
+                result.mRn, result.mRs, result.mRn0, result.mRs0, result.mBranchLength = list(map(
+                    float, x.groups()))
 
     def parseOutput(self, lines, lines_log=None, rst_lines=None):
         """parse CodeML output. This is rather tricky, as paml output is as
@@ -1118,7 +1099,7 @@ class CodeML:
         self.saveSummary(result, lines, lines_log)
 
         # chop, strip and remove comments
-        lines = map(lambda x: x[:-1].strip(), lines)
+        lines = [x[:-1].strip() for x in lines]
 
         if len(lines) == 0:
             raise ParsingError("empty input")
@@ -1154,8 +1135,7 @@ class CodeMLSites (CodeML):
         self.saveSummary(result, lines, lines_log)
 
         # chop and strip
-        lines = map(
-            lambda x: x[:-1].strip(), filter(lambda x: x[0] != "#", lines))
+        lines = [x[:-1].strip() for x in [x for x in lines if x[0] != "#"]]
 
         self.parseSequences(lines, result)
 
@@ -1246,7 +1226,7 @@ class CodeMLSites (CodeML):
             while lines[0]:
                 k, vals = lines[0].split(":")
                 data = re.split("\s+", vals.strip())
-                result.mGrid[k.strip()] = map(float, data)
+                result.mGrid[k.strip()] = list(map(float, data))
                 del lines[0]
 
             self.nextSection(lines)
@@ -1258,7 +1238,7 @@ class CodeMLSites (CodeML):
             while lines[0]:
                 k, vals = lines[0].split(":")
                 data = re.split("\s+", vals.strip())
-                result.mGridPosterior[k.strip()] = map(float, data)
+                result.mGridPosterior[k.strip()] = list(map(float, data))
                 del lines[0]
 
             self.nextSection(lines)
@@ -1331,7 +1311,7 @@ class CodeMLPairwise (CodeML):
 
             x = rx.match(line)
             if x:
-                self.mRhos.append(map(float, x.groups()))
+                self.mRhos.append(list(map(float, x.groups())))
 
     def parseOutput(self, lines, lines_log=None, rst_lines=None):
         """parse codeml output for pairwise rate calculation."""
@@ -1341,8 +1321,7 @@ class CodeMLPairwise (CodeML):
         self.saveSummary(result, lines, lines_log)
 
         # chop and strip
-        lines = map(
-            lambda x: x[:-1].strip(), filter(lambda x: x[0] != "#", lines))
+        lines = [x[:-1].strip() for x in [x for x in lines if x[0] != "#"]]
 
         self.parseVersion(lines, result)
 
@@ -1376,7 +1355,7 @@ class CodeMLPairwise (CodeML):
 
             # the next values are tau, kappa and omega (this might
             # change, if some of these are fixed?)
-            values = map(float, re.split("\s+", lines[0].strip()))
+            values = list(map(float, re.split("\s+", lines[0].strip())))
             del lines[0]
 
             if len(values) == 3:
@@ -1393,8 +1372,8 @@ class CodeMLPairwise (CodeML):
             del lines[0]
 
             tokens = re.split("[\s=]+", lines[0].strip())
-            pair.mTau, pair.mS, pair.mN, pair.mKaks, pair.mKa, pair.mKs = map(
-                float, [tokens[x] for x in range(1, len(tokens), 2)])
+            pair.mTau, pair.mS, pair.mN, pair.mKaks, pair.mKa, pair.mKs = list(map(
+                float, [tokens[x] for x in range(1, len(tokens), 2)]))
             del lines[0]
 
             if self.mRhos:
@@ -1620,7 +1599,7 @@ class BaseML(CodeML):
         CodeML.SetOptions(self, options)
 
         map_model2index = {}
-        for key, val in self.mOptions["model"].items():
+        for key, val in list(self.mOptions["model"].items()):
             map_model2index[val] = key
 
         if options.baseml_model.upper() in map_model2index:
@@ -1640,7 +1619,7 @@ class BaseML(CodeML):
         self.saveSummary(result, lines, lines_log)
 
         # chop and strip
-        lines = map(lambda x: x[:-1].strip(), lines)
+        lines = [x[:-1].strip() for x in lines]
         # lines = map(lambda x: x[:-1].strip(), filter( lambda x: x[0] != "#",
         # lines ))
 
@@ -1683,8 +1662,8 @@ class BaseML(CodeML):
             raise ParsingError(
                 "wrong section, expected 'Homogeneity statistic'", lines[0])
 
-        result.mX2, result.mG = map(float, re.search(
-            "Homogeneity statistic: X2 = (\S+) G = (\S+)", lines[0]).groups())
+        result.mX2, result.mG = list(map(float, re.search(
+            "Homogeneity statistic: X2 = (\S+) G = (\S+)", lines[0]).groups()))
         del lines[0]
         self.nextSection(lines)
 
@@ -1697,10 +1676,6 @@ class BaseML(CodeML):
         result.mBaseFrequencies["average"] = f
 
         self.nextSection(lines)
-
-# result.mConstantSites, result.mConstantSitesPercent = \
-# map(float, re.search( "# constant sites:\s+(\S+)\s\((.+)%\)", lines[0]
-# ).groups())
 
         self.nextSection(lines)
 
@@ -1788,10 +1763,10 @@ class BaseML(CodeML):
                 del lines[0]
             d = re.split(
                 "\s+", re.search("Rate parameters: +(.*)", lines[0]).groups()[0])
-            result.mRevRateBaseParameters = map(float, d)
+            result.mRevRateBaseParameters = list(map(float, d))
             del lines[0]
-            result.mRevBaseFrequencies = map(
-                float, re.split("\s+", re.search("Base frequencies: +(.*)", lines[0]).groups()[0]))
+            result.mRevBaseFrequencies = list(map(
+                float, re.split("\s+", re.search("Base frequencies: +(.*)", lines[0]).groups()[0])))
             del lines[0]
             try:
                 result.mRevK = float(
@@ -1803,7 +1778,7 @@ class BaseML(CodeML):
             del lines[0]
             self.mRevQ = []
             for x in range(0, 4):
-                self.mRevQ.append(map(float, re.split("\s+", lines[0])))
+                self.mRevQ.append(list(map(float, re.split("\s+", lines[0]))))
                 del lines[0]
             self.nextSection(lines)
 
@@ -1883,7 +1858,7 @@ class Evolver:
         self.calculateScale(self.mDs)
 
         if self.mCodonTable is None:
-            raise "please supply a codon table."
+            raise ValueError("please supply a codon table")
 
         self.mNSequences = len(
             TreeTools.Newick2Nexus(self.mTree).trees[0].get_taxa())
@@ -1921,7 +1896,7 @@ class Evolver:
                     codon = c1 + c2 + c3
                     self.mCodonTable[codon] = 0
 
-        for id, i in mali.items():
+        for id, i in list(mali.items()):
             s = i.mString
             for x in range(0, len(s), 3):
                 codon = s[x:x + 3].upper()
@@ -1931,7 +1906,7 @@ class Evolver:
                     continue
 
         total = sum(self.mCodonTable.values())
-        for codon in self.mCodonTable.keys():
+        for codon in list(self.mCodonTable.keys()):
             self.mCodonTable[codon] = float(self.mCodonTable[codon]) / total
 
     # ------------------------------------------------------------------------
@@ -1961,7 +1936,7 @@ class Evolver:
         """
 
         if self.mCodonTable is None:
-            raise "please supply a codon table."
+            raise ValueError("please supply a codon table")
 
         # number of synonymous/non-synonymous sites
         Q, t = RateEstimation.getQMatrix(
@@ -1989,7 +1964,7 @@ class Evolver:
         self.mFilenameOutput = "mc.paml"
 
         if test:
-            print "# temporary directory is %s" % self.mTempdir
+            print("# temporary directory is %s" % self.mTempdir)
 
         if tree:
             # check what kind of tree is given.
@@ -2009,13 +1984,14 @@ class Evolver:
             open(self.mTempdir + "/" + self.mFilenameControl, "w"))
 
         if dump:
-            print "################### control file input  ########"
+            print("################### control file input  ########")
             infile = open(self.mTempdir + "/" + self.mFilenameControl, "r")
-            print "".join(infile.readlines())
+            print("".join(infile.readlines()))
             infile.close()
 
         s = subprocess.Popen("%s %i %s" %
-                             (self.mExecutable, self.mRunMode, self.mFilenameControl),
+                             (self.mExecutable, self.mRunMode,
+                              self.mFilenameControl),
                              shell=True,
                              stdout=subprocess.PIPE,
                              stderr=subprocess.PIPE,
@@ -2038,9 +2014,12 @@ class Evolver:
                 (self.mExecutable, err, out, self.mTempdir))
 
         if dump:
-            print "# result output of %s:\n%s\n######################################" % (self.mExecutable, "".join(lines))
-            print "############################### LOG OUTPUT ############################"
-            print "# stdout output of %s:\n%s\n######################################" % (self.mExecutable, out)
+            print("# result output of %s:\n%s\n######################################" % (
+                self.mExecutable, "".join(lines)))
+            print(
+                "############################### LOG OUTPUT ############################")
+            print("# stdout output of %s:\n%s\n######################################" % (
+                self.mExecutable, out))
 
         if not test:
             shutil.rmtree(self.mTempdir)
@@ -2075,7 +2054,7 @@ class Evolver:
         if not self.mCodonTable:
             outfile.write("# no frequency table defined\n")
         else:
-            codons = self.mCodonTable.keys()
+            codons = list(self.mCodonTable.keys())
             outfile.write("# codon table used in evolver:\n")
             for codon in codons:
                 outfile.write("# %s\t%6.4f\n" %
@@ -2130,7 +2109,7 @@ class EvolverBaseml(Evolver):
         for c in ("T", "C", "A", "G"):
             self.mFrequencies[c] = 0
 
-        for id, i in mali.items():
+        for id, i in list(mali.items()):
             for c in i.mString:
                 try:
                     self.mFrequencies[c] += 1
@@ -2138,7 +2117,7 @@ class EvolverBaseml(Evolver):
                     continue
 
         total = sum(self.mFrequencies.values())
-        for c in self.mFrequecies.keys():
+        for c in list(self.mFrequecies.keys()):
             self.mFrequencies[c] = float(self.mFrequencies[c]) / total
 
     # ------------------------------------------------------------------------
@@ -2163,7 +2142,7 @@ class EvolverBaseml(Evolver):
             return (10, 5, 1, 2, 3)
 
         elif self.mModel == "TN93":
-            raise "not implemented"
+            raise NotImplementedError("not implemented")
             return (k1, k2)
 
         else:
@@ -2177,14 +2156,14 @@ class EvolverBaseml(Evolver):
             self.setUniformFrequencies()
 
         if self.mFrequencies is None:
-            raise "please supply nucleotide frequencies."
+            raise ValueError("please supply nucleotide frequencies")
 
         self.mNSequences = len(
             TreeTools.Newick2Nexus(self.mTree).trees[0].get_taxa())
 
         outfile.write("0          * paml format output\n")
         outfile.write("%i         * random number seed\n" % self.mSeed)
-        outfile.write("%i %i %i   * nsequences nnucleotides nreplicates\n\n" % 
+        outfile.write("%i %i %i   * nsequences nnucleotides nreplicates\n\n" %
                       (self.mNSequences,
                        self.mNucleotides,
                        self.mReplicates))
@@ -2214,7 +2193,7 @@ class EvolverBaseml(Evolver):
             outfile.write("# no frequency table defined\n")
         else:
             outfile.write("# frequency table used in evolver:\n")
-            for c in evolver.mFrequencies.keys():
+            for c in list(evolver.mFrequencies.keys()):
                 outfile.write("# %s\t%6.4f\n" % (c, evolver.mFrequencies[c]))
 
 
@@ -2360,7 +2339,7 @@ def runEvolver(options):
 
     if options.loglevel >= 2:
         options.stdlog.write("# Parameters used for evolver\n")
-        options.stdlog.write("# dS=%f t=%f kappa=%f omega=%f\n" % 
+        options.stdlog.write("# dS=%f t=%f kappa=%f omega=%f\n" %
                              (evolver.mDs,
                               evolver.mScale,
                               evolver.mKappa,
@@ -2615,7 +2594,7 @@ if __name__ == "__main__":
                 branch = 0
                 # setup branch specific models.
                 # You need to create a new tree for each one
-                for node_id, node in tree.chain.items():
+                for node_id, node in list(tree.chain.items()):
                     if node.prev is None:
                         continue
 
@@ -2715,7 +2694,7 @@ if __name__ == "__main__":
 
         else:
             batch.append((None, None, options.filename_log, options.filename_rst,
-                         options.filename_mali, options.filename_map_old2new))
+                          options.filename_mali, options.filename_map_old2new))
 
         first = True
 
@@ -2741,7 +2720,7 @@ if __name__ == "__main__":
                 else:
                     out_lines = sys.stdin.readlines()
 
-            except IOError, msg:
+            except IOError as msg:
                 options.stdlog.write(
                     "file not found error for cluster id %s: %s\n" % (str(cluster_id), msg))
                 traceback.print_exc()
@@ -2750,7 +2729,7 @@ if __name__ == "__main__":
 
             try:
                 result = codeml.parseOutput(out_lines, log_lines, rst_lines)
-            except ParsingError, msg:
+            except ParsingError as msg:
                 options.stdlog.write(
                     "parsing error for cluster id %s: %s\n" % (str(cluster_id), msg))
                 traceback.print_exc()
@@ -2829,14 +2808,15 @@ if __name__ == "__main__":
 
             elif options.parse_output == "sequences":
                 output = []
-                for id, s in result.mSequences.items():
+                for id, s in list(result.mSequences.items()):
                     output.append(">%s\n%s" % (id, s))
                 output = "\n".join(output)
 
             elif options.parse_output == "ancestral-sequence":
 
                 if not hasattr(result, "mAncestralSequences"):
-                    raise "no ancestral sequences defined in result."
+                    raise ValueError(
+                        "no ancestral sequences defined in result")
 
                 # return most ancestral sequence
                 # mid-point root the tree with ks and then return the sequence closest to the root.
@@ -2921,7 +2901,7 @@ if __name__ == "__main__":
                             options=codeml_options,
                             dump=options.dump)
 
-        print result
+        print(result)
     else:
 
         mali = Mali.Mali()

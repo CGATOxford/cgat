@@ -8,4 +8,4 @@ basic_test:
     stdin: test.fasta.gz
     outputs: [stdout]
     references: [basic_test_reference_content.tsv]
-    options: --kmer-size 4
+    options: --kmer-size 4  --random-seed=1

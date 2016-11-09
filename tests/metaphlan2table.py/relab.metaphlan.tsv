@@ -1,9 +1,9 @@
 taxon_level	taxon	rel_abundance
 class	Bacteroidia	100.0
-genus	Alistipes	81.37011
-genus	Bacteroides	18.62989
 family	Rikenellaceae	81.37011
 family	Bacteroidaceae	18.62989
+genus	Alistipes	81.37011
+genus	Bacteroides	18.62989
 kingdom	Bacteria	100.0
 order	Bacteroidales	100.0
 phylum	Bacteroidetes	100.0
