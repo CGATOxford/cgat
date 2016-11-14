@@ -13,7 +13,7 @@ import Bio.Nexus.Nexus
 import Bio.Nexus.Trees
 import string
 import re
-import io
+from six import StringIO
 from CGAT import Tree as Tree
 
 
@@ -107,7 +107,7 @@ def Newick2Nexus(infile):
 
     # previoulsy, a string was ok, now a string
     # is interpreted as a filename.
-    nexus = Bio.Nexus.Nexus.Nexus(io.StringIO("".join(lines)))
+    nexus = Bio.Nexus.Nexus.Nexus(StringIO("".join(lines)))
 
     if len(nexus.trees) == 0:
         raise ValueError("no tree found in file %s" % str(infile))

@@ -21,7 +21,7 @@ import random
 from CGAT import Experiment as E
 from CGAT import Genomics as Genomics
 from CGAT import FastaIterator as FastaIterator
-import io as StringIO
+from six import StringIO
 
 
 class Masker:
@@ -169,7 +169,7 @@ class Masker:
                 (statement, err))
 
         result = [
-            x.sequence for x in FastaIterator.iterate(StringIO.StringIO(out))]
+            x.sequence for x in FastaIterator.iterate(StringIO(out))]
 
         os.remove(infile)
 

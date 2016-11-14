@@ -616,6 +616,9 @@ class BlatIterator:
         except StopIteration:
             return None
 
+    def next(self):
+        return self.__next__()
+
 
 def iterator2(infile):
     """iterate over the contents of a psl file.

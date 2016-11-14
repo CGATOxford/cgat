@@ -461,7 +461,6 @@ Command line options
 
 '''
 
-import collections
 import sys
 import pysam
 
@@ -741,7 +740,7 @@ def main(argv=None):
                 options=options,
                 prefix=prefix))
         elif c == "read-coverage":
-            counters.append(GeneModelAnalysis.GeneModelAnalysis.CounterReadCoverage(
+            counters.append(GeneModelAnalysis.CounterReadCoverage(
                 bam_files,
                 options=options,
                 prefix=prefix))

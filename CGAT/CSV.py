@@ -12,6 +12,7 @@ and adds the capability to skip comment characters.
 
 """
 
+import six
 import csv
 
 
@@ -65,7 +66,7 @@ def getMapColumn2Type(rows, ignore_empty=False, get_max_values=False):
         return map_column2type, ignored
 
 
-class CommentStripper:
+class CommentStripper(six.Iterator):
     """Iterator for stripping comments from file.
 
     This iterator will skip any lines beginning with ``#``
@@ -85,9 +86,6 @@ class CommentStripper:
                 raise StopIteration
             if line.strip() != "" and not line.startswith("#"):
                 return line
-
-    def next(self):
-        return self.__next__()
 
 
 class UnicodeCsvReader(object):

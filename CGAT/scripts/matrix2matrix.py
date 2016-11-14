@@ -58,6 +58,7 @@ import CGAT.IOTools as IOTools
 import CGAT.CorrespondenceAnalysis as CorrespondenceAnalysis
 import CGAT.MatlabTools as MatlabTools
 import scipy
+from six import StringIO
 
 
 def main(argv=None):
@@ -169,10 +170,11 @@ def main(argv=None):
     for chunk in range(len(chunks) - 1):
 
         try:
-            raw_matrix, row_headers, col_headers = MatlabTools.readMatrix(io.StringIO("".join(lines[chunks[chunk] + 1:chunks[chunk + 1]])),
-                                                                          format=options.input_format,
-                                                                          headers=options.headers,
-                                                                          missing=options.missing)
+            raw_matrix, row_headers, col_headers = MatlabTools.readMatrix(
+                StringIO("".join(lines[chunks[chunk] + 1:chunks[chunk + 1]])),
+                format=options.input_format,
+                headers=options.headers,
+                missing=options.missing)
         except ValueError as msg:
             E.warn("matrix could not be read: %s" % msg)
             continue
