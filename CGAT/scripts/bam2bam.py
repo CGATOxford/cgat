@@ -94,6 +94,16 @@ The script implements the following methods:
    keep only the first base of reads so that read counting tools will
    only consider the first base in the counts
 
+``downsample-single``
+
+   generates a downsampled :term:`bam` file by randomly subsampling
+   reads from a single ended :term:`bam` file.
+
+``downsample-paried``
+
+   generates a downsampled :term:`bam` file by randomly subsampling
+   reads from a single ended :term:`bam` file.
+
 
 By default, the script works from stdin and outputs to stdout.
 If the ``--inplace option`` is given, the script will modify
@@ -107,7 +117,7 @@ Usage
 
 For example::
 
-   cgat bam2bam.py --method=filter --filter-method=mapped < in.bam > out.bam
+   cgat bam2bam --method=filter --filter-method=mapped < in.bam > out.bam
 
 will remove all unmapped reads from the bam-file.
 
@@ -131,7 +141,11 @@ import sys
 import tempfile
 import shutil
 import pysam
-
+import re
+import random
+import collections
+import itertools
+import numpy as np
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
@@ -141,6 +155,67 @@ try:
     import _bam2bam
 except ImportError:
     import CGAT.scripts._bam2bam as _bam2bam
+
+
+def downsample(pysam_in, downsample, paired_end, single_end,
+               randomseed, bamlength):
+
+    bamfile = pysam_in
+    reads = int(downsample)
+
+    if paired_end == True:
+        num_input_reads = bamlength/2
+    elif single_end == True:
+        num_input_reads = bamlength
+    else:
+        raise ValueError("Read end option not set")
+
+    if reads < num_input_reads:
+        num_of_reads_to_remove = num_input_reads - reads
+
+        #init the generator and set the seed
+        randomgen = np.random.RandomState()
+        randomgen.seed([randomseed])
+
+        # create a array of 1's for the number of pairs of reads wanted after
+        # downsampling length of list == number of pairs wanted after downsampling
+        wanted_list = np.ones((1,reads),dtype=np.int8)
+
+        # create a array of 0's for the number of pairs of reads to be removed by downsampling
+        # length of list == number of pairs to be removed by downsampling
+        remove_list = np.zeros((1,num_of_reads_to_remove),dtype=np.int8)
+
+        # combine the list of 1 & 0 & shuffle - double check list us same length as 
+        # as input bam
+        full_list = np.concatenate((wanted_list,remove_list),axis =1)[0]
+        randomgen.shuffle(full_list)
+
+        if len(full_list) != num_input_reads:
+            raise ValueError('''length of list to randomly downsample reads is %s
+            but length of file is %s''' % (len(full_list),num_input_reads))
+
+        # J counts where are in bam, i counts the possition in the full_list of 1&0 to
+        # tell it to include read or not
+        j = 0
+        i = 0
+
+        for read in bamfile:
+            # if j is even
+            if j % 2 == 0:
+                # take item i from intlist
+                include = full_list[i]
+                i += 1
+            j += 1
+            # sends to output bam file 0 or 1
+            if include == 1:
+                yield read
+            else:
+                continue
+
+    else:
+        num_of_reads_to_remove = 0
+        for read in bamfile:
+            yield read
 
 
 def main(argv=None):
@@ -165,7 +240,9 @@ def main(argv=None):
                                "strip-sequence",
                                "strip-quality",
                                "unstrip",
-                               "unset-unmapped-mapq"),
+                               "unset-unmapped-mapq",
+                               "downsample-single",
+                               "downsample-paired"),
                       help="methods to apply [%default]")
 
     parser.add_option("--strip-method", dest="strip_method", type="choice",
@@ -213,6 +290,16 @@ def main(argv=None):
         "in pair. Used for unstripping sequence "
         "and quality scores  [%default]")
 
+    parser.add_option(
+        "--downsample",dest="downsample",
+        type="string",
+        help="Number of reads to downsample to")
+
+    parser.add_option("-r", "--randomseed", dest="randomseed",
+                      type="int",
+                      help="Optional ability to specify a random seed")
+
+
     parser.set_defaults(
         methods=[],
         output_sam=False,
@@ -223,6 +310,8 @@ def main(argv=None):
         inplace=False,
         fastq_pair1=None,
         fastq_pair2=None,
+        downsample=None,
+        randomseed=int(2)
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -456,6 +545,31 @@ def main(argv=None):
                         pysam_out.close()
                         continue
 
+            if "downsample-single" in options.methods:
+
+                if not options.downsample:
+                    raise ValueError("Please provide downsample size")
+
+                else:
+                    bamlength = pysam_in.count()
+                    it = downsample(pysam_in=it, downsample=options.downsample,
+                           pysam_out=pysam_out,
+                           paired_end=None, single_end=True,
+                               randomseed=options.randomseed, bamlength=bamlength)
+
+
+            if "downsample-paired" in options.methods:
+
+                if not options.downsample:
+                    raise ValueError("Please provide downsample size")
+
+                else:
+                    bamlength = pysam_in.count()
+                    import pdb; pdb.set_trace()
+                    it = downsample(pysam_in=it, downsample=options.downsample,
+                           paired_end=True, single_end=None,
+                               randomseed=options.randomseed, bamlength=bamlength)
+            
             # continue processing till end
             for read in it:
                 pysam_out.write(read)
