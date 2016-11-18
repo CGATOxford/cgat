@@ -141,13 +141,10 @@ import sys
 import tempfile
 import shutil
 import pysam
-import re
-import random
-import collections
-import itertools
 import numpy as np
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
+import CGAT.BamTools as BamTools
 
 try:
     import pyximport
@@ -160,11 +157,14 @@ except ImportError:
 def downsample(pysam_in, downsample, paired_end, single_end,
                randomseed, bamlength):
 
-    bamfile = pysam_in
     reads = int(downsample)
 
     if paired_end == True:
-        num_input_reads = bamlength/2
+        if bamlength % 2 == 0:
+            num_input_reads = bamlength/2
+        else:
+            raise ValueError('''There are unmatched read pairs in the file,
+            please pre-process as described in documentation''')
     elif single_end == True:
         num_input_reads = bamlength
     else:
@@ -173,12 +173,13 @@ def downsample(pysam_in, downsample, paired_end, single_end,
     if reads < num_input_reads:
         num_of_reads_to_remove = num_input_reads - reads
 
-        #init the generator and set the seed
+        # init the generator and set the seed
         randomgen = np.random.RandomState()
         randomgen.seed([randomseed])
 
         # create a array of 1's for the number of pairs of reads wanted after
-        # downsampling length of list == number of pairs wanted after downsampling
+        # downsampling length of list == number of pairs wanted after
+        # downsampling
         wanted_list = np.ones((1,reads),dtype=np.int8)
 
         # create a array of 0's for the number of pairs of reads to be removed by downsampling
@@ -187,35 +188,39 @@ def downsample(pysam_in, downsample, paired_end, single_end,
 
         # combine the list of 1 & 0 & shuffle - double check list us same length as 
         # as input bam
-        full_list = np.concatenate((wanted_list,remove_list),axis =1)[0]
+        full_list = np.concatenate((wanted_list, remove_list), axis=1)[0]
         randomgen.shuffle(full_list)
 
         if len(full_list) != num_input_reads:
             raise ValueError('''length of list to randomly downsample reads is %s
-            but length of file is %s''' % (len(full_list),num_input_reads))
+            but length of file is %s''' % (len(full_list), num_input_reads))
 
-        # J counts where are in bam, i counts the possition in the full_list of 1&0 to
-        # tell it to include read or not
         j = 0
         i = 0
+        include = []
 
-        for read in bamfile:
-            # if j is even
-            if j % 2 == 0:
-                # take item i from intlist
-                include = full_list[i]
-                i += 1
-            j += 1
-            # sends to output bam file 0 or 1
-            if include == 1:
+        E.info(",".join(list(full_list.astype(str))))
+
+        for read in pysam_in:
+            if full_list[i] == 1:
                 yield read
-            else:
-                continue
+#                E.info("First: %s and %s" % (j, i))
+            if (paired_end is True and j % 2 == 0) or paired_end is False:
+#                   E.info("Second: %s and %s" % (j, i))
+                    i += 1
+            j += 1
 
     else:
         num_of_reads_to_remove = 0
-        for read in bamfile:
+        for read in pysam_in:
             yield read
+
+def count_reads(pysam_in):
+    count = 0
+    for read in pysam_in:
+        if read.is_paired:
+            count += 1
+    return count
 
 
 def main(argv=None):
@@ -295,10 +300,14 @@ def main(argv=None):
         type="string",
         help="Number of reads to downsample to")
 
+    parser.add_option(
+        "--reads-total",dest="reads_total",
+        type="string",
+        help="Total number of reads in file")
+
     parser.add_option("-r", "--randomseed", dest="randomseed",
                       type="int",
                       help="Optional ability to specify a random seed")
-
 
     parser.set_defaults(
         methods=[],
@@ -348,13 +357,13 @@ def main(argv=None):
             continue
 
         # reading bam from stdin does not work with only the "r" tag
-        pysam_in = pysam.Samfile(bamfile, "rb")
+        pysam_in = pysam.AlignmentFile(bamfile, "rb")
 
         if bamfile == "-":
             if options.output_sam:
-                pysam_out = pysam.Samfile("-", "wh", template=pysam_in)
+                pysam_out = pysam.AlignmentFile("-", "wh", template=pysam_in)
             else:
-                pysam_out = pysam.Samfile("-", "wb", template=pysam_in)
+                pysam_out = pysam.AlignmentFile("-", "wb", template=pysam_in)
         else:
             if IOTools.isEmpty(bamfile):
                 E.warn('skipping empty file %s' % bamfile)
@@ -363,7 +372,7 @@ def main(argv=None):
             tmpfile.close()
 
             E.debug("writing temporary bam-file to %s" % tmpfile.name)
-            pysam_out = pysam.Samfile(tmpfile.name, "wb", template=pysam_in)
+            pysam_out = pysam.AlignmentFile(tmpfile.name, "wb", template=pysam_in)
 
         if "filter" in options.methods:
 
@@ -551,7 +560,7 @@ def main(argv=None):
                     raise ValueError("Please provide downsample size")
 
                 else:
-                    bamlength = pysam_in.count()
+                    bamlength = count_reads(pysam_in)
                     it = downsample(pysam_in=it, downsample=options.downsample,
                            pysam_out=pysam_out,
                            paired_end=None, single_end=True,
@@ -564,12 +573,12 @@ def main(argv=None):
                     raise ValueError("Please provide downsample size")
 
                 else:
-                    bamlength = pysam_in.count()
-                    import pdb; pdb.set_trace()
+                    bamlength = count_reads(pysam_in)
+                    E.info("bamlength = %s" % bamlength)
                     it = downsample(pysam_in=it, downsample=options.downsample,
                            paired_end=True, single_end=None,
                                randomseed=options.randomseed, bamlength=bamlength)
-            
+
             # continue processing till end
             for read in it:
                 pysam_out.write(read)
