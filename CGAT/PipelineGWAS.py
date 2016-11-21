@@ -4165,6 +4165,7 @@ def selectLdFromTabix(ld_dir, chromosome, snp_pos,
         ld_df = pd.DataFrame(0.0,
                              index=[snp_pos],
                              columns=["SNP_A",
+                                      "DP",
                                       "R2"])
     return ld_df
 
@@ -4227,7 +4228,8 @@ def selectLdFromDB(database, table_name,
 
 
 def calcLdScores(ld_table, snps,
-                 scale=False, metric="R2"):
+                 scale=False, metric="R2",
+                 snp_list=None):
     '''
     Calculate the LD scores for SNPs across a chromosome,
     stored in a SQL database.
@@ -4250,6 +4252,9 @@ def calcLdScores(ld_table, snps,
     metric: string
       Use either R^2 or D' as the LD metric
 
+    snp_list: list
+      A list of SNP IDs to restrict the
+      LD score calculation to
     Returns
     -------
     ld_scores: float
@@ -4257,10 +4262,22 @@ def calcLdScores(ld_table, snps,
     '''
 
     if len(ld_table) > 0:
-        if metric == "R2":
-            ld_score = sum(ld_table["R2"])
-        elif metric == "DP":
-            ld_score = sum(ld_table["DP"])
+        if snp_list:
+            try:
+                # use np.sum to handle NaN values
+                ld_table = ld_table.loc[snp_list]
+                if metric == "R2":
+                    ld_score = np.sum(ld_table["R2"])
+                elif metric == "DP":
+                    ld_score = np.sum(ld_table["DP"])
+            except KeyError:
+                E.warn("None of the SNPs are in LD")
+                ld_score = 0
+        else:
+            if metric == "R2":
+                ld_score = np.sum(ld_table["R2"])
+            elif metric == "DP":
+                ld_score = np.sum(ld_table["DP"])
     else:
         ld_score = 0
 
