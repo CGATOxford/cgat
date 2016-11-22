@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''
 CorrespondenceAnalysis.py - 
 ======================================================
@@ -136,8 +114,6 @@ def GetPermutatedMatrix(matrix,
 
     return result, rows, cols
 
-# ---------------------------------------------------------------------
-
 
 def PermuteRows(matrix):
     pass
@@ -161,14 +137,14 @@ if __name__ == "__main__":
     matrix[5, 0] = 1
     matrix[5, 2:5] = 1
 
-    print "matrix=", matrix
+    print("matrix=", matrix)
 
     row_indices, col_indices = GetIndices(matrix)
 
     map_row_new2old = numpy.argsort(row_indices)
     map_col_new2old = numpy.argsort(col_indices)
 
-    print map_row_new2old
-    print map_col_new2old
+    print(map_row_new2old)
+    print(map_col_new2old)
 
-    print GetPermutatedMatrix(matrix, map_row_new2old, map_col_new2old)
+    print(GetPermutatedMatrix(matrix, map_row_new2old, map_col_new2old))

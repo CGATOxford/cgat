@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''
 Mali.py - Tools for multiple alignments 
 =======================================
@@ -221,16 +199,16 @@ class Mali:
         return copy.deepcopy(self)
 
     def iteritems(self):
-        return self.mMali.iteritems()
+        return iter(self.mMali.items())
 
     def items(self):
-        return self.mMali.items()
+        return list(self.mMali.items())
 
     def values(self):
-        return self.mMali.values()
+        return list(self.mMali.values())
 
     def keys(self):
-        return self.mMali.keys()
+        return list(self.mMali.keys())
 
     def getName(self):
         return self.mName
@@ -285,7 +263,7 @@ class Mali:
 
     def addEntry(self, s):
         """add an aligned string object."""
-        if s.mId in self.mMali.keys():
+        if s.mId in list(self.mMali.keys()):
             raise KeyError("id %s already in mali" % s.mId)
 
         self.mIdentifiers.append(s.mId)
@@ -303,14 +281,14 @@ class Mali:
 
     def deleteEntry(self, identifier):
         if identifier not in self.mMali:
-            raise KeyError, "identifier %s not in mali." % identifier
+            raise KeyError("identifier %s not in mali." % identifier)
         del self.mMali[identifier]
         self.mIdentifiers.remove(identifier)
 
     def getColumns(self):
         """return mali in column orientation."""
-        args = map(lambda x: self.mMali[x].mString, self.mIdentifiers)
-        return map(lambda x: "".join(x), zip(*args))
+        args = [self.mMali[x].mString for x in self.mIdentifiers]
+        return ["".join(x) for x in zip(*args)]
 
     def getConsensus(self, mark_with_gaps=False):
         """return consensus string.
@@ -379,13 +357,13 @@ class Mali:
 
         if format not in ("stockholm"):
             # save comments
-            self.mComments = filter(lambda x: x[0] == "#", lines)
-            lines = filter(lambda x: x[0] != "#", lines)
+            self.mComments = [x for x in lines if x[0] == "#"]
+            lines = [x for x in lines if x[0] != "#"]
         else:
             self.mComments = []
 
         # remove empty lines
-        lines = filter(lambda x: x.strip(), lines)
+        lines = [x for x in lines if x.strip()]
         if not lines:
             raise AttributeError("empty alignment")
 
@@ -415,7 +393,7 @@ class Mali:
                     x += 1
 
                 self.addEntry(
-                    AlignedString(xid, 
+                    AlignedString(xid,
                                   int(data[0]) - 1,
                                   int(data[2]),
                                   data[1]))
@@ -458,7 +436,7 @@ class Mali:
 
                 self.mMali[id].append(sequence)
 
-            for id, frags in self.mMali.items():
+            for id, frags in list(self.mMali.items()):
                 s = "".join(frags)
                 fr, to = 0, self.countCharacters(s)
                 self.mMali[id] = AlignedString(id, fr, to, s)
@@ -470,9 +448,9 @@ class Mali:
             fragments = {}
 
             # prune lines
-            lines = map(lambda x: x.strip(), lines)
+            lines = [x.strip() for x in lines]
             # remove empty lines
-            lines = filter(lambda x: len(x[:-1]) > 0, lines)
+            lines = [x for x in lines if len(x[:-1]) > 0]
 
             for line in lines:
                 # remove consensus lines
@@ -490,7 +468,7 @@ class Mali:
 
                 fragments[id].append(fragment)
 
-            for id, f in fragments.items():
+            for id, f in list(fragments.items()):
                 s = re.sub("\s", "", string.join(f, ""))
                 self.mMali[id] = AlignedString(
                     id, 0, self.countCharacters(s), s)
@@ -503,9 +481,9 @@ class Mali:
             fragments = {}
             annotations = {}
             # prune lines
-            lines = map(lambda x: x.strip(), lines)
+            lines = [x.strip() for x in lines]
             # remove empty lines
-            lines = filter(lambda x: len(x[:-1]) > 0, lines)
+            lines = [x for x in lines if len(x[:-1]) > 0]
 
             for line in lines:
                 data = re.split("\s+", line)
@@ -555,7 +533,7 @@ class Mali:
                 self.mMali[id] = AlignedString(id, fr, to, s)
             self.mIdentifiers = n
 
-            for id, f in annotations.items():
+            for id, f in list(annotations.items()):
                 s = re.sub("\s", "", string.join(f, ""))
                 annotations[id] = s
             self.mAnnotations = annotations
@@ -566,7 +544,7 @@ class Mali:
             self.mLength = 0
         else:
             self.mLength = min(
-                map(lambda x: len(x.mString), self.mMali.values()))
+                [len(x.mString) for x in list(self.mMali.values())])
 
     def writeToFile(self, outfile, write_ranges=True, format="plain",
                     options=None):
@@ -615,7 +593,7 @@ class Mali:
                 else:
                     x = "%s" % (id)
                 max_l = max(max_l, len(x))
-            for identifier in self.mAnnotations.keys():
+            for identifier in list(self.mAnnotations.keys()):
                 x = "#=GC %s" % identifier
                 max_l = max(max_l, len(x))
 
@@ -631,7 +609,7 @@ class Mali:
 
                 outfile.write(format % (x, m.mString))
 
-            for identifier, value in self.mAnnotations.items():
+            for identifier, value in list(self.mAnnotations.items()):
                 x = "#=GC %s" % identifier
                 outfile.write(format % (x, value))
 
@@ -666,7 +644,7 @@ class Mali:
             outfile.write(
                 "  format datatype=dna interleave=no gap=%s;\n" % (self.mGapChar))
             outfile.write("  matrix\n")
-            max_len = max(map(lambda x: len(x), self.mIdentifiers))
+            max_len = max([len(x) for x in self.mIdentifiers])
             format = "  %-" + str(max_len) + "s %s\n"
             for identifier in self.mIdentifiers:
                 outfile.write(
@@ -685,7 +663,7 @@ class Mali:
         pattern_start = re.compile("^([- .a-z]+)")
         pattern_unaligned = re.compile("[a-z]")
 
-        for s in self.mMali.values():
+        for s in list(self.mMali.values()):
 
             first = pattern_start.match(s.mString)
             if first:
@@ -706,12 +684,12 @@ class Mali:
 
     def upperCase(self):
         """set all characters to upper case."""
-        for k, s in self.mMali.items():
+        for k, s in list(self.mMali.items()):
             s.mString = s.mString.upper()
 
     def lowerCase(self):
         """set all characters to lower case."""
-        for k, s in self.mMali.items():
+        for k, s in list(self.mMali.items()):
             s.mString = s.mString.lower()
 
     def removeEndGaps(self):
@@ -726,7 +704,7 @@ class Mali:
         min_from = self.mLength
         max_to = 0
 
-        for s in self.mMali.values():
+        for s in list(self.mMali.values()):
 
             first = pattern_start_gaps.match(s.mString)
             if first:
@@ -740,10 +718,10 @@ class Mali:
                 last = last.groups()[0]
                 max_to = max(max_to, len(s) - len(last))
 
-        for s in self.mMali.values():
+        for s in list(self.mMali.values()):
             s.mString = s.mString[min_from:max_to]
 
-        self.mLength = min(map(lambda x: x.mString, self.mMali.values()))
+        self.mLength = min([x.mString for x in list(self.mMali.values())])
 
     def insertColumns(self, position, num_gaps, keep_fixed=None, char="-"):
         """insert gaps at position into multiple alignment.
@@ -753,7 +731,7 @@ class Mali:
         """
 
         last_pos = min(self.getWidth(), position + num_gaps)
-        for id, seq in self.mMali.items():
+        for id, seq in list(self.mMali.items()):
             if keep_fixed and id in keep_fixed:
                 seq.insertColumns(last_pos, num_gaps, char)
             else:
@@ -812,7 +790,7 @@ class Mali:
         """
         nmatches = [0] * self.getWidth()
 
-        for s in map(lambda x: x.mString, self.mMali.values()):
+        for s in [x.mString for x in list(self.mMali.values())]:
             for x in range(0, len(s), search_frame):
                 segment = s[x:x + search_frame]
                 if match_function(segment):
@@ -855,19 +833,19 @@ class Mali:
     def upper(self):
         """convert all characters in mali to uppercase."""
 
-        for s in self.mMali.values():
+        for s in list(self.mMali.values()):
             s.mString = s.mString.upper()
 
     def lower(self):
         """convert all characters in mali to lowercase."""
 
-        for s in self.mMali.values():
+        for s in list(self.mMali.values()):
             s.mString = s.mString.lower()
 
     def shiftAlignment(self, map_id2offset):
         """shift alignment by offset."""
 
-        for identifier, m in self.mMali.items():
+        for identifier, m in list(self.mMali.items()):
             if identifier in map_id2offset:
                 o = map_id2offset[identifier]
                 m.mFrom += o
@@ -876,7 +854,7 @@ class Mali:
     def markCodons(self, mode="case"):
         """mark codons.
         """
-        for identifier, m in self.mMali.items():
+        for identifier, m in list(self.mMali.items()):
             s = m.mString
             if len(s) % 3 != 0:
                 raise "sequence %s not divisible by 3" % (m.mId)
@@ -906,7 +884,7 @@ class Mali:
             # check, if the whole alignment needs to be masked/marked:
             if "mali" in map_id2transitions:
                 transitions = map_id2transitions["mali"]
-                for identifier, s in self.mMali.items():
+                for identifier, s in list(self.mMali.items()):
                     new_chars = []
                     is_upper = True
                     is_first = False
@@ -941,7 +919,7 @@ class Mali:
                     s.mString = "".join(new_chars)
 
             # now do individual sequences
-            for identifier, s in self.mMali.items():
+            for identifier, s in list(self.mMali.items()):
                 if identifier not in map_id2transitions:
                     continue
 
@@ -980,7 +958,7 @@ class Mali:
 
                 s.mString = "".join(new_chars)
         else:
-            raise "character insertion not implemented yet."
+            raise ValueError("character insertion not implemented yet")
 
     def buildColumnMap(self, other, join_field=None):
         """build map of columns in other to this."""
@@ -997,8 +975,8 @@ class Mali:
 
         if this_seq.mFrom != other_seq.mFrom or \
            this_seq.mTo != other_seq.mTo:
-            raise "residue ranges for sequence %s doe not correspond." % (
-                join_field)
+            raise ValueError("residue ranges for sequence %s doe not correspond." % (
+                join_field))
 
         map_this2other = []
 
@@ -1023,7 +1001,7 @@ class Mali:
         The frame determines the block size for shuffling. Use 3 for codons in
         a multiple alignment without frame-shifts.
         """
-        columns = range(self.getNumColumns() // frame)
+        columns = list(range(self.getNumColumns() // frame))
         random.shuffle(columns)
         if frame > 1:
             cc = []
@@ -1041,7 +1019,7 @@ class Mali:
         """
 
         masks_per_column = {}
-        for identifier, s in self.mMali.items():
+        for identifier, s in list(self.mMali.items()):
             r = s.mString.lower()
             for x in range(len(r)):
                 if r[x] == mask_char:
@@ -1050,7 +1028,7 @@ class Mali:
                     masks_per_column[x] += 1
 
         columns_to_mask = []
-        for c, n in masks_per_column.items():
+        for c, n in list(masks_per_column.items()):
             if n >= min_chars:
                 columns_to_mask.append(c)
 
@@ -1062,7 +1040,7 @@ class Mali:
         """propagate lower case in a column to all residues.
         """
         columns_to_change = set()
-        for identifier, s in self.mMali.items():
+        for identifier, s in list(self.mMali.items()):
             r = s.mString
             for x in range(len(r)):
                 if r[x] in string.lowercase:
@@ -1075,27 +1053,27 @@ class Mali:
 
     def takeColumns(self, columns):
         """restrict alignments to certain columns."""
-        for identifier, s in self.mMali.items():
+        for identifier, s in list(self.mMali.items()):
             s.takeColumns(columns)
 
-        for key, anno in self.mAnnotations.items():
+        for key, anno in list(self.mAnnotations.items()):
             self.mAnnotations[key] = "".join([anno[c] for c in columns])
 
     def maskColumns(self, columns, mask_char="x"):
         """mask columns in a multiple alignment."""
 
-        for identifier, s in self.mMali.items():
+        for identifier, s in list(self.mMali.items()):
             s.maskColumns(columns, mask_char=mask_char)
 
     def mapColumns(self, columns, map_function):
         """apply map_function to all residues in columns."""
 
-        for identifier, s in self.mMali.items():
+        for identifier, s in list(self.mMali.items()):
             s.mapColumns(columns, map_function)
 
     def recount(self, reset_first=False):
         """recount residue in alignments."""
-        for id, seq in self.mMali.items():
+        for id, seq in list(self.mMali.items()):
             if reset_first:
                 seq.mFrom = 0
             seq.mTo = seq.mFrom + self.countCharacters(seq.mString)
@@ -1103,7 +1081,7 @@ class Mali:
     def maskColumn(self, column, mask_char="x"):
         """mask a column."""
 
-        for identifier, s in self.mMali.items():
+        for identifier, s in list(self.mMali.items()):
             s.maskColumn(column, mask_char)
 
     def copyAnnotations(self, other):
@@ -1112,7 +1090,7 @@ class Mali:
         map_this2other = self.buildColumnMap(other)
         ncols = self.getWidth()
 
-        for key, annotation in other.mAnnotations.items():
+        for key, annotation in list(other.mAnnotations.items()):
             a = []
             for x in range(ncols):
                 m = map_this2other[x]
@@ -1142,7 +1120,7 @@ class Mali:
 
     def truncate(self, first, last):
         """truncate alignment within range."""
-        for key, value in self.mMali.items():
+        for key, value in list(self.mMali.items()):
             value.truncate(first, last)
 
     def mapIdentifiers(self, map_old2new=None, pattern_identifier="ID%06i"):
@@ -1185,7 +1163,7 @@ class Mali:
         Alphabet is "na", if more than 90% of characaters are "actgxn",
         otherwise it is "aa".
         """
-        s = "".join(map(lambda x: x.mString, self.values())).lower()
+        s = "".join([x.mString for x in list(self.values())]).lower()
         s = re.sub("[%s]" % "".join(self.mGapChars), "", s)
         ss = re.sub("[acgtxn]", "", s)
         if float(len(ss)) < (len(s) * 0.1):
@@ -1199,7 +1177,7 @@ class Mali:
         Return false if they are inconsistent."""
 
         l = None
-        for s in self.mMali.values():
+        for s in list(self.mMali.values()):
             if l is None:
                 l = len(s.mString)
             else:
@@ -1232,7 +1210,7 @@ class Mali:
 
     def apply(self, f):
         """apply function f to every row in the multiple alignment."""
-        for s in self.mMali.values():
+        for s in list(self.mMali.values()):
             f(s)
 
     def filter(self, f):
@@ -1271,9 +1249,9 @@ class SequenceCollection(Mali):
     def addEntry(self, s):
         """add an aligned string object."""
         id = s.mId
-        if id in self.mMali.keys():
+        if id in list(self.mMali.keys()):
             x = 1
-            while "%s_%i" % (id, x) in self.mMali.keys():
+            while "%s_%i" % (id, x) in list(self.mMali.keys()):
                 x += 1
 
             id = "%s_%i" % (id, x)
@@ -1298,8 +1276,8 @@ class SequenceCollection(Mali):
 
         if format not in ("stockholm"):
             # save comments
-            self.mComments = filter(lambda x: x[0] == "#", lines)
-            lines = filter(lambda x: x[0] != "#", lines)
+            self.mComments = [x for x in lines if x[0] == "#"]
+            lines = [x for x in lines if x[0] != "#"]
         else:
             self.mComments = []
 
@@ -1358,23 +1336,22 @@ class SequenceCollection(Mali):
 
         #######################################################################
         elif format.lower() == "phylip":
-            raise "phylip not implemented"
+            raise ValueError("phylip not implemented")
 
         #######################################################################
         elif format.lower() == "clustal":
-            raise "clustal not implemented"
+            raise ValueError("clustal not implemented")
 
         elif format.lower() == "stockholm":
-            raise "stockholm not implemented"
+            raise ValueError("stockholm not implemented")
 
         if len(self.mMali) == 0:
             self.mLength = 0
         else:
             self.mLength = min(
-                map(lambda x: len(x.mString), self.mMali.values()))
+                [len(x.mString) for x in list(self.mMali.values())])
 
 
-###############################################################################
 def convertMali2Alignlib(mali):
     '''convert a multiple alignment of type :class:`Mali`
     into an alignlib_lite.py_multiple alignment object.
@@ -1386,8 +1363,6 @@ def convertMali2Alignlib(mali):
         a = alignlib_lite.py_makeAlignatum(mali[identifier])
         m.add(a)
     return m
-
-###############################################################################
 
 
 def convertAlignlib2Mali(mali, identifiers=None, seqs=None):

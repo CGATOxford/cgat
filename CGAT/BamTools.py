@@ -219,14 +219,14 @@ def getNumReads(bamfile):
         Number of reads
     '''
 
-    lines = pysam.idxstats(bamfile)
+    lines = pysam.idxstats(bamfile).splitlines()
 
     try:
         nreads = sum(
             map(int, [x.split("\t")[2]
                       for x in lines if not x.startswith("#")]))
 
-    except IndexError, msg:
+    except IndexError as msg:
         raise IndexError(
             "can't get number of reads from bamfile, msg=%s, data=%s" %
             (msg, lines))

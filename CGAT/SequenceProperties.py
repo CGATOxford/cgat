@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 """SequenceProperties.py - Computing metrics of nucleotide sequences
 =================================================================
 
@@ -58,19 +36,18 @@ Reference
 ---------
 
 """
-from __future__ import division
+
 import string
 import re
 import math
 import hashlib
 import base64
 import itertools
+import six
 
 from CGAT import Genomics as Genomics
 
 import Bio.Alphabet.IUPAC
-
-###########################################################################
 
 
 class SequenceProperties(object):
@@ -163,18 +140,16 @@ class SequencePropertiesHid(SequenceProperties):
         SequenceProperties.loadSequence(self, sequence, seqtype)
 
         # do the encryption
-        h = hashlib.md5(sequence).digest()
+        h = hashlib.md5(six.b(sequence)).digest()
         # map to printable letters: hid has length 22, so the padded '=' are
         # truncated. You have to add them, if you ever want to decode,
         # but who would do such a thing :=)
-        r = base64.encodestring(h)[0:22]
+        r = base64.encodestring(h)[0:22].decode("ascii")
 
         # finally substitute some characters:
         # '/' for '_', so we have legal file names
         # '[' for '+' and ']' for '=' for internet-applications
-        hid = string.replace(r, '/', '_')
-        hid = string.replace(hid, '+', '[')
-        hid = string.replace(hid, '=', ']')
+        hid = r.replace('/', '_').replace('+', '[').replace('=', ']')
 
         self.mHid = hid
 
@@ -258,7 +233,7 @@ class SequencePropertiesNA(SequenceProperties):
         self.mCountsGC += other.mCountsGC
         self.mCountsAT += other.mCountsAT
         self.mCountsOthers += other.mCountsOthers
-        for na, count in other.mCountsNA.items():
+        for na, count in list(other.mCountsNA.items()):
             self.mCountsNA[na] += count
 
     def loadSequence(self, sequence, seqtype="na"):
@@ -346,7 +321,7 @@ class SequencePropertiesDN(SequenceProperties):
     def addProperties(self, other):
         SequenceProperties.addProperties(self, other)
         self.mCountsOthers += other.mCountsOthers
-        for dn, count in other.mCountsDinuc.items():
+        for dn, count in list(other.mCountsDinuc.items()):
             self.mCountsDinuc[dn] += count
 
     def loadSequence(self, sequence, seqtype="na"):
@@ -356,7 +331,7 @@ class SequencePropertiesDN(SequenceProperties):
         # IMS: generator rather than list
         # to save memory for might be a neater way of doing this.
         for dinuc in (sequence[x - 2:x]
-                      for x in xrange(2, len(sequence) + 1, 1)):
+                      for x in range(2, len(sequence) + 1, 1)):
             try:
                 self.mCountsDinuc[dinuc] += 1
             except KeyError:
@@ -414,7 +389,7 @@ class SequencePropertiesCpg(SequencePropertiesNA, SequencePropertiesDN):
         if self.mLength > 0:
             self.mCpG_density = (float(self.mCountsDinuc["CG"]) /
                                  (float(self.mLength) / 2.0))
-            if (self.mCountsNA["C"] * self.mCountsNA["G"]) / self.mLength > 0:
+            if (float(self.mCountsNA["C"] * self.mCountsNA["G"])) / self.mLength > 0:
                 self.mCpG_ObsExp = ((float(self.mCountsDinuc["CG"])) /
                                     ((float(self.mCountsNA["C"]) *
                                       float(self.mCountsNA["G"])) /
@@ -427,8 +402,8 @@ class SequencePropertiesCpg(SequencePropertiesNA, SequencePropertiesDN):
 
     def getFields(self):
         fields = ["%s" % self.mCountsDinuc["CG"]]
-        fields.append("%s" % self.mCpG_density)
-        fields.append("%s" % self.mCpG_ObsExp)
+        fields.append("%6.4f" % self.mCpG_density)
+        fields.append("%6.4f" % self.mCpG_ObsExp)
         return fields
 
     def getHeaders(self):
@@ -598,7 +573,7 @@ class SequencePropertiesDegeneracy (SequencePropertiesLength):
                         z] += other.mCountsDegeneracy[x][y][z]
 
         for x in (0, 1, 2):
-            for y, count in other.mCounts[x].items():
+            for y, count in list(other.mCounts[x].items()):
                 self.mCounts[x][y] += count
 
     def loadSequence(self, sequence, seqtype="na"):
@@ -635,7 +610,7 @@ class SequencePropertiesDegeneracy (SequencePropertiesLength):
             self.mCountsDegeneracy.append(xx)
 
         # use generator rather than list to save memory
-        for codon in (sequence[x:x + 3] for x in xrange(0, len(sequence), 3)):
+        for codon in (sequence[x:x + 3] for x in range(0, len(sequence), 3)):
 
             for x in (0, 1, 2):
                 self.mCounts[x][codon[x]] += 1
@@ -658,7 +633,8 @@ class SequencePropertiesDegeneracy (SequencePropertiesLength):
 
         SequencePropertiesLength.updateProperties(self)
         self.mNGC = 0
-        self.mNSites1D, self.mNSites2D, self.mNSites3D, self.mNSites4D = (0,)*4
+        self.mNSites1D, self.mNSites2D, self.mNSites3D, self.mNSites4D = (
+            0,) * 4
         self.mNSitesD3 = 0
 
         for x in (0, 1, 2):
@@ -790,7 +766,7 @@ class SequencePropertiesAA(SequenceProperties):
     def addProperties(self, other):
         SequenceProperties.addProperties(self, other)
 
-        for aa, count in other.mCountsAA.items():
+        for aa, count in list(other.mCountsAA.items()):
             self.mCountsAA[aa] += count
 
     def loadSequence(self, sequence, seqtype="na"):
@@ -809,7 +785,7 @@ class SequencePropertiesAA(SequenceProperties):
         for x in Bio.Alphabet.IUPAC.extended_protein.letters:
             self.mCountsAA[x] = 0
 
-        for codon in (sequence[x:x + 3] for x in xrange(0, len(sequence), 3)):
+        for codon in (sequence[x:x + 3] for x in range(0, len(sequence), 3)):
             aa = Genomics.MapCodon2AA(codon)
             self.mCountsAA[aa] += 1
 
@@ -856,7 +832,7 @@ class SequencePropertiesAminoAcids(SequenceProperties):
     def addProperties(self, other):
         SequenceProperties.addProperties(self, other)
 
-        for aa, count in other.mCountsAA.items():
+        for aa, count in list(other.mCountsAA.items()):
             self.mCountsAA[aa] += count
 
     def loadSequence(self, sequence, seqtype="na"):
@@ -921,13 +897,13 @@ class SequencePropertiesCodons(SequencePropertiesLength):
         SequencePropertiesLength.__init__(self)
 
         self.mCodonCounts = {}
-        for c in Genomics.GeneticCodeAA.keys():
+        for c in list(Genomics.GeneticCodeAA.keys()):
             self.mCodonCounts[c] = 0
 
     def addProperties(self, other):
         SequencePropertiesLength.addProperties(self, other)
 
-        for codon, count in other.mCodonCounts.items():
+        for codon, count in list(other.mCodonCounts.items()):
             if codon not in self.mCodonCounts:
                 self.mCodonCounts[codon] = 0
             self.mCodonCounts[codon] += count
@@ -953,7 +929,7 @@ class SequencePropertiesCodons(SequencePropertiesLength):
 
         fields = SequencePropertiesLength.getFields(self)
 
-        keys = self.mCodonCounts.keys()
+        keys = list(self.mCodonCounts.keys())
         keys.sort()
         t = 0
         for key in keys:
@@ -969,7 +945,7 @@ class SequencePropertiesCodons(SequencePropertiesLength):
 
         fields = SequencePropertiesLength.getHeaders(self)
 
-        keys = self.mCodonCounts.keys()
+        keys = list(self.mCodonCounts.keys())
         keys.sort()
         for key in keys:
             fields.append("n%s" % key)
@@ -993,13 +969,14 @@ class SequencePropertiesCodonUsage(SequencePropertiesCodons):
         Codon frequencies.
 
     """
+
     def __init__(self):
 
         SequencePropertiesCodons.__init__(self)
 
         self.mCodonFrequencies = {}
 
-        for codon, aa in Genomics.GeneticCodeAA.items():
+        for codon, aa in list(Genomics.GeneticCodeAA.items()):
             self.mCodonFrequencies[codon] = 0
         for codon in Genomics.StopCodons:
             self.mCodonFrequencies[codon] = 0
@@ -1019,7 +996,7 @@ class SequencePropertiesCodonUsage(SequencePropertiesCodons):
 
         fields = SequenceProperties.getFields(self)
 
-        keys = self.mCodonFrequencies.keys()
+        keys = list(self.mCodonFrequencies.keys())
         keys.sort()
         for key in keys:
             fields.append("%f" % self.mCodonFrequencies[key])
@@ -1030,7 +1007,7 @@ class SequencePropertiesCodonUsage(SequencePropertiesCodons):
 
         fields = SequenceProperties.getHeaders(self)
 
-        keys = self.mCodonFrequencies.keys()
+        keys = list(self.mCodonFrequencies.keys())
         keys.sort()
         for key in keys:
             fields.append("r%s" % key)
@@ -1073,7 +1050,7 @@ class SequencePropertiesCodonTranslator(SequencePropertiesCodonUsage):
         fields = SequenceProperties.getFields(self)
 
         data = []
-        for x in xrange(0, len(self.mSequence), 3):
+        for x in range(0, len(self.mSequence), 3):
             codon = self.mSequence[x:x + 3]
             if codon in self.mCodonFrequencies:
                 v = self.mCodonFrequencies[codon]
@@ -1143,7 +1120,7 @@ class SequencePropertiesBias(SequencePropertiesCodons):
         """return message length of a sequence
         in terms of its reference usage."""
         ml = 0
-        for codon, count in self.mCodonCounts.items():
+        for codon, count in list(self.mCodonCounts.items()):
             ml -= float(count) * math.log(usage[codon])
         return ml
 
@@ -1162,7 +1139,7 @@ class SequencePropertiesBias(SequencePropertiesCodons):
             self.mCodonCounts, self.mPseudoCounts)
         if usage is None:
             usage = freqs
-        for codon, count in self.mCodonCounts.items():
+        for codon, count in list(self.mCodonCounts.items()):
             e -= freqs[codon] * math.log(usage[codon])
         return e
 
@@ -1173,7 +1150,7 @@ class SequencePropertiesBias(SequencePropertiesCodons):
         e = 0
         freqs = Genomics.CalculateCodonFrequenciesFromCounts(
             self.mCodonCounts, self.mPseudoCounts)
-        for codon, count in self.mCodonCounts.items():
+        for codon, count in list(self.mCodonCounts.items()):
             e += usage[codon] * math.log(usage[codon] / freqs[codon])
         return e
 
@@ -1216,6 +1193,7 @@ class SequencePropertiesCounts(SequenceProperties):
         List of characters in alphabet
 
     """
+
     def __init__(self, alphabet):
 
         SequenceProperties.__init__(self)
@@ -1228,7 +1206,7 @@ class SequencePropertiesCounts(SequenceProperties):
 
     def addProperties(self, other):
         SequenceProperties.addProperties(self, other)
-        for na, count in other.mCounts.items():
+        for na, count in list(other.mCounts.items()):
             self.mCounts[na] += count
         self.mCountsOthers += self.mCountsOthers
 
@@ -1315,7 +1293,7 @@ class SequencePropertiesEntropy(SequencePropertiesCounts):
 
         e = None
 
-        v = self.mCounts.values()
+        v = list(self.mCounts.values())
         total = sum(v) + len(v) * self.mPseudoCounts
         pc = self.mPseudoCounts
         if total != 0:

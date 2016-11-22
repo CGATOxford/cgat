@@ -148,6 +148,9 @@ cdef class IntervalDBIterator:
     else:
       raise StopIteration
 
+  def next(self):
+      return self.__next__()
+
   def __dealloc__(self):
     'remember: dealloc cannot call other methods!'
     free_interval_iterator(self.it_alloc)
@@ -572,6 +575,9 @@ cdef class IntervalFileDBIterator:
       return (self.im_buf[i].start,self.im_buf[i].end,self.im_buf[i].target_id )
     else:
       raise StopIteration
+
+  def next(self):
+      return self.__next__()
 
   def __dealloc__(self):
     'remember: dealloc cannot call other methods!'

@@ -1,7 +1,3 @@
-#########################################################
-# provide utility functions for parsing the output from
-# a metaphlan analysis
-#########################################################
 import collections
 
 
@@ -26,8 +22,6 @@ class ReadMap(object):
 
         self.seq_id, self.kingdom, self.phylum, self.c_lass, self.order, self.family, self.genus, self.species = seq_id, kingdom, phylum, c_lass, order, family, genus, species
         return self
-
-#-------------------------------
 
 
 class RelativeAbundance(object):
@@ -55,10 +49,6 @@ class RelativeAbundance(object):
         self.taxon_level, self.taxon, self.abundance = taxon_level, taxon, abundance
         return self
 
-##############################
-# iterator for read map output
-##############################
-
 
 def relative_abundance_iterator(infile):
     '''
@@ -83,7 +73,7 @@ def relative_abundance_iterator(infile):
 
     # return the taxonomic group and the specific
     # names within the taxonomic group
-    for group in taxons.keys():
+    for group in sorted(taxons.keys()):
         for abundance in zip(taxons[group], abundances[group]):
             if group == "k":
                 group = "kingdom"
@@ -102,10 +92,6 @@ def relative_abundance_iterator(infile):
             else:
                 group = group
             yield RelativeAbundance().read(group, abundance[0], abundance[1])
-
-##############################
-# iterator for read map output
-##############################
 
 
 def read_map_iterator(infile):
@@ -142,10 +128,6 @@ def read_map_iterator(infile):
         elif len(data) < 2:
             raise ValueError("could not assign taxonomy at the phylum level")
         yield ReadMap().read(seq_id, kingdom, phylum, c_lass, order, family, genus, species)
-
-##############################
-# count by taxonomic group
-##############################
 
 
 class Counter(ReadMap):
@@ -227,7 +209,3 @@ class Counter(ReadMap):
 
     def proportion_with_clade_assignment(self, infile, total_reads):
         return float(total_reads) / self.total_count(infile)
-
-###########################################
-###########################################
-###########################################

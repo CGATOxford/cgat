@@ -50,7 +50,7 @@ from setuptools import setup, find_packages, Extension
 
 from distutils.version import LooseVersion
 if LooseVersion(setuptools.__version__) < LooseVersion('1.1'):
-    print "Version detected:", LooseVersion(setuptools.__version__)
+    print("Version detected:", LooseVersion(setuptools.__version__))
     raise ImportError(
         "the CGAT code collection requires setuptools 1.1 higher")
 
@@ -63,7 +63,7 @@ IS_OSX = sys.platform == 'darwin'
 ########################################################################
 ########################################################################
 # collect CGAT version
-sys.path.insert(0, "scripts")
+sys.path.insert(0, "CGAT")
 import version
 
 version = version.__version__
@@ -88,25 +88,19 @@ for tool, toolkit, expected in external_dependencies:
     try:
         retcode = subprocess.call(tool, shell=True,
                                   stdout=DEVNULL, stderr=DEVNULL)
-    except OSError, msg:
-        print("WARNING: depency check for %s failed: %s" % (toolkit, msg))
+    except OSError as msg:
+        print(("WARNING: depency check for %s failed: %s" % (toolkit, msg)))
 
     # UCSC tools return 255 when called without arguments
     if retcode != expected:
-        print ("WARNING: depency check for %s(%s) failed, error %i" %
-               (toolkit, tool, retcode))
+        print(("WARNING: depency check for %s(%s) failed, error %i" %
+               (toolkit, tool, retcode)))
 
 ###############################################################
 ###############################################################
-# Define dependencies 
+# Define dependencies
 #
-# Perform a CGAT Code Collection Installation
-INSTALL_CGAT_CODE_COLLECTION = True
-
 major, minor1, minor2, s, tmp = sys.version_info
-
-if major == 3:
-    raise SystemExit("""CGAT is not fully python3 compatible""")
 
 if (major == 2 and minor1 < 7) or major < 2:
     raise SystemExit("""CGAT requires Python 2.7 or later.""")
@@ -175,17 +169,8 @@ if major == 2:
 elif major == 3:
     pass
 
-if INSTALL_CGAT_CODE_COLLECTION:
-    cgat_packages = find_packages(exclude=["CGATPipelines*", "scripts*"])
-else:
-    cgat_packages = find_packages(exclude=["scripts*"])
-
-# rename scripts to CGATScripts
-cgat_packages.append("CGATScripts")
-
-cgat_package_dirs = {'CGAT': 'CGAT',
-                     'CGATScripts': 'scripts',
-                     'CGATPipelines': 'CGATPipelines'}
+cgat_packages = find_packages()
+cgat_package_dirs = {'CGAT': 'CGAT'}
 
 ##########################################################
 ##########################################################
@@ -235,8 +220,19 @@ Timeseries = Extension(
     language="c",
 )
 
+# Nested containment lists
+GeneModelAnalysis = Extension(
+    "CGAT.GeneModelAnalysis",
+    ["CGAT/GeneModelAnalysis.pyx"],
+    include_dirs=pysam.get_include() + [numpy.get_include()],
+    library_dirs=[],
+    libraries=[],
+    define_macros=pysam.get_defines(),
+    language="c",
+)
+
 # automatically build pyximport script extensions
-pyx_files = glob.glob("scripts/*.pyx")
+pyx_files = glob.glob("CGAT/scripts/*.pyx")
 script_extensions = []
 pysam_dirname = os.path.dirname(pysam.__file__)
 include_dirs = [numpy.get_include()] + pysam.get_include()
@@ -246,14 +242,14 @@ if IS_OSX:
     # within OS X
     extra_link_args = []
 else:
-    extra_link_args = [os.path.join(pysam_dirname, x) for x in 
+    extra_link_args = [os.path.join(pysam_dirname, x) for x in
                        pysam.get_libraries()]
 
 for pyx_file in pyx_files:
     script_name = os.path.basename(pyx_file)
     script_prefix = script_name[:-4]
     script_extensions.append(
-        Extension("CGAT.%s" % (script_prefix),
+        Extension("CGAT.scripts.%s" % (script_prefix),
                   sources=[pyx_file],
                   extra_link_args=extra_link_args,
                   include_dirs=include_dirs,
@@ -261,7 +257,7 @@ for pyx_file in pyx_files:
     )
 
 
-ext_modules = [Components, NCL, Timeseries] + script_extensions
+ext_modules = [Components, NCL, Timeseries, GeneModelAnalysis] + script_extensions
 
 setup(
     # package information
@@ -270,21 +266,18 @@ setup(
     description='CGAT : the Computational Genomics Analysis Toolkit',
     author='Andreas Heger',
     author_email='andreas.heger@gmail.com',
-    license="BSD",
+    license="MIT",
     platforms=["any"],
     keywords="computational genomics",
     long_description='CGAT : the Computational Genomics Analysis Toolkit',
-    classifiers=filter(None, classifiers.split("\n")),
+    classifiers=[_f for _f in classifiers.split("\n") if _f],
     url="http://www.cgat.org/cgat/Tools/",
     # package contents
     packages=cgat_packages,
     package_dir=cgat_package_dirs,
-    # package_data = {'CGATScripts':['./scripts/*.py', './scripts/*.pyx',
-    #                                './scripts/*.pyxbld', './scripts/*.pl'],
-    #                },
     include_package_data=True,
     entry_points={
-        'console_scripts': ['cgat = CGATScripts.cgat:main']
+        'console_scripts': ['cgat = CGAT.cgat:main']
     },
     # dependencies
     install_requires=install_requires,

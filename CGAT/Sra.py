@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''
 Sra.py - Methods for dealing with short read archive files
 ==========================================================
@@ -62,7 +40,7 @@ def peek(sra, outdir=None):
         The quality score format in the :term:`fastq` formatted files.
 
     """
-    
+
     if outdir is None:
         workdir = tempfile.mkdtemp()
     else:
@@ -102,17 +80,22 @@ def peek(sra, outdir=None):
 
     # check format of fastqs in .sra
     fastq_format = Fastq.guessFormat(IOTools.openFile(f[0], "r"), raises=False)
+    fastq_datatype = Fastq.guessDataType(
+        IOTools.openFile(f[0], "r"), raises=True)
 
     if outdir is None:
         shutil.rmtree(workdir)
 
-    return f, fastq_format
+    return f, fastq_format, fastq_datatype
 
 
-def extract(sra, outdir):
-    """return statement for extracting the SRA file in `outdir`."""
+def extract(sra, outdir, tool="fastq-dump"):
+    """return statement for extracting the SRA file in `outdir`.
+    possible tools are fastq-dump and abi-dump. Use abi-dump for colorspace"""
 
-    statement = """fastq-dump --split-files --gzip --outdir
-                 %(outdir)s %(sra)s""" % locals()
+    if tool == "fastq-dump":
+        tool += " --split-files"
+
+    statement = """%(tool)s --gzip --outdir %(outdir)s %(sra)s""" % locals()
 
     return statement

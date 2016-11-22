@@ -131,7 +131,7 @@ def runSailfishQuant(fasta_index, fastq_files, output_dir,
         states.append(decomp_second)
 
     elif decompress and not paired:
-        first_mates = tuple([fq for fq in fastq_files if re.search("fastq.1.gz",
+        first_mates = tuple([fq for fq in fastq_files if re.search("fastq.gz",
                                                                    fq)])
         fstr_format = " ".join(["%s" for sq in first_mates])
         fdecomp_format = fstr_format % first_mates
@@ -322,19 +322,21 @@ def main(argv=None):
     parser.add_option("--output-file", dest="outfile", type="string",
                       help="output filename")
 
+    parser.set_defaults(paired=False)
+
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
 
     if options.method == "make_index":
         if options.program == "kallisto":
-            scQC.runKallistoIndex(fasta_file=options.fa_index,
-                                  outfile=options.outfile,
-                                  kmer=options.kmer)
+            runKallistoIndex(fasta_file=options.fa_index,
+                             outfile=options.outfile,
+                             kmer=options.kmer)
         elif options.program == "sailfish":
-            scQC.runSailfishIndex(fasta_file=options.fa_index,
-                                  outdir=options.outdir,
-                                  threads=options.threads,
-                                  kmer=options.kmer)
+            runSailfishIndex(fasta_file=options.fa_index,
+                             outdir=options.outdir,
+                             threads=options.threads,
+                             kmer=options.kmer)
         else:
             E.warn("program not recognised, exiting.")
 
@@ -348,24 +350,24 @@ def main(argv=None):
             os.system("mkdir %s" % options.outdir)
 
         if options.program == "kallisto":
-            scQC.runKallistoQuant(fasta_index=options.index_file,
-                                  fastq_files=qfiles,
-                                  output_dir=options.outdir,
-                                  bias=options.bias,
-                                  bootstrap=options.bootstrap,
-                                  seed=options.seed,
-                                  threads=options.threads,
-                                  plaintext=options.text_only)
+            runKallistoQuant(fasta_index=options.index_file,
+                             fastq_files=qfiles,
+                             output_dir=options.outdir,
+                             bias=options.bias,
+                             bootstrap=options.bootstrap,
+                             seed=options.seed,
+                             threads=options.threads,
+                             plaintext=options.text_only)
         elif options.program == "sailfish":
             infiles = argv[-1]
             qfiles = infiles.split(",")
-            scQC.runSailfishQuant(fasta_index=options.index_file,
-                                  fastq_files=qfiles,
-                                  output_dir=options.outdir,
-                                  paired=options.paired,
-                                  library=options.library,
-                                  threads=options.threads,
-                                  gene_gtf=options.gene_gtf)
+            runSailfishQuant(fasta_index=options.index_file,
+                             fastq_files=qfiles,
+                             output_dir=options.outdir,
+                             paired=options.paired,
+                             library=options.library,
+                             threads=options.threads,
+                             gene_gtf=options.gene_gtf)
 
         else:
             E.warn("program not recognised, exiting.")

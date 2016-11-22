@@ -1,6 +1,6 @@
 '''
 extract_stats.py - extract and process tables from CSVDB
-====================================================
+========================================================
 
 :Author: Mike Morgan
 :Release: $Id$

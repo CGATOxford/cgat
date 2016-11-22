@@ -33,7 +33,7 @@ class Match:
     """a MAST entry.
     """
     header = "\t".join(("id", "description", "length", "pvalue", "evalue",
-                       "nmatches", "diagram", "start", "end", "positions", "motifs", "directions"))
+                        "nmatches", "diagram", "start", "end", "positions", "motifs", "directions"))
 
     def __init__(self):
         pass
