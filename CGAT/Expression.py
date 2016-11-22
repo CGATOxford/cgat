@@ -901,7 +901,7 @@ class DEResult_edgeR(DEResult):
 
     def plotMAplot(self, design, outfile_prefix):
         # need to implement edgeR specific MA plot
-        raise ValueError("MA plotting is not yet implemented for edgeR")
+        raise ValueError("MA plotting is not yet implemented for DESeq")
 
 
 class DEExperiment_DESeq(DEExperiment):
@@ -1033,7 +1033,7 @@ class DEResult_DEResult(DEResult):
 
     def plotMAplot(self, design, outfile_prefix):
         # need to implement edgeR specific MA plot
-        raise ValueError("MA plotting is not yet implemented for edgeR")
+        raise ValueError("MA plotting is not yet implemented for DESeq2")
 
 
 class DEExperiment_DESeq2(DEExperiment):
@@ -1379,8 +1379,22 @@ class DEExperiment_DEXSeq(DEExperiment):
         result = pandas2ri.ri2py(
             buildCountDataSet(countfiles, flattenedfile, sampleTable, model))
 
-        self.table = result
+        final_result = DEResult_DEXSeq(result)
 
+        return final_result
+
+
+class DEResult_DEXSeq(DEResult):
+
+    def getResults(self, fdr):
+        ''' post-process test results table into generic results output '''
+
+        self.table = pandas.DataFrame(self.table)
+        # self.table.set_index("test_id", inplace=True)
+
+    def plotMAplot(self, design, outfile_prefix):
+        # need to implement DEXSeq specific MA plot
+        raise ValueError("MA plotting is not yet implemented for DESeq")
 
 class DEExperiment_Sleuth(DEExperiment):
     '''DEExperiment object to run sleuth on kallisto bootstrap files

@@ -453,11 +453,6 @@ def main(argv=None):
                                      fit_type=options.deseq2_fit_type,
                                      ref_group=options.ref_group)
 
-    # Slightly hacky method to deal with different output from DEXSeq
-    if options.method == "dexseq":
-        results.table.to_csv(sys.stdout, sep="\t", na_rep="NA", index=False)
-        E.Stop()
-
     results.getResults(fdr=options.fdr)
 
     if options.use_ihw:
