@@ -190,6 +190,12 @@ def main(argv=None):
         "is returned [default=%default]")
 
     parser.add_option(
+        "--header-attributes", dest="header_attr",
+        action="store_true",
+        help="add GFF entry attributes to the FASTA record"
+        " header section")
+
+    parser.add_option(
         "--extend-by", dest="extend_by", type="int",
         help="extend by # bases [default=%default]")
 
@@ -225,7 +231,8 @@ def main(argv=None):
         extend_with=None,
         masker=None,
         fold_at=None,
-        naming_attribute=False
+        naming_attribute=False,
+        header_attr=False,
     )
 
     (options, args) = E.Start(parser)
@@ -285,6 +292,7 @@ def main(argv=None):
             continue
 
         contig, strand = chunk[0].contig, chunk[0].strand
+        
         if options.is_gtf:
             name = chunk[0].transcript_id
         else:
@@ -381,13 +389,25 @@ def main(argv=None):
         else:
             seq = "\n".join(s)
 
-        options.stdout.write(">%s %s:%s:%s\n%s\n" % (name,
-                                                     contig,
-                                                     strand,
-                                                     ";".join(
-                                                         ["%i-%i" %
-                                                          x for x in out]),
-                                                     seq))
+        if options.header_attr:
+            attributes = " ".join([":".join([ax, ay]) for ax, ay in chunk[0].asDict().items()])
+            options.stdout.write(">%s %s:%s:%s feature:%s %s\n%s\n" % (name,
+                                                                       contig,
+                                                                       strand,
+                                                                       ";".join(
+                                                                           ["%i-%i" %
+                                                                            x for x in out]),
+                                                                       chunk[0].feature,
+                                                                       attributes,
+                                                                       seq))
+        else:
+            options.stdout.write(">%s %s:%s:%s\n%s\n" % (name,
+                                                         contig,
+                                                         strand,
+                                                         ";".join(
+                                                             ["%i-%i" %
+                                                              x for x in out]),
+                                                         seq))
 
         noutput += 1
 
