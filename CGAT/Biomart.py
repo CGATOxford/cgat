@@ -46,7 +46,7 @@ def importFromBiomart(outfile,
 
     R.library("biomaRt")
 
-    keys = columns.keys()
+    keys = list(columns.keys())
 
     # The default value for host in the biomaRt package is
     # www.biomart.org but for some reason R errors if you specify
@@ -151,4 +151,4 @@ def biomart_iterator(columns,
         (str(tuple(result.colnames)), tuple(columns))
 
     for data in zip(*[result[x] for x in range(len(columns))]):
-        yield dict(zip(columns, data))
+        yield dict(list(zip(columns, data)))

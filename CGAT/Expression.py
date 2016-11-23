@@ -4200,3 +4200,4 @@ def outputSpikeIns(filename_tags,
               sep="\t")
 
     E.info("output %i spike in intervals" % interval_id)
+

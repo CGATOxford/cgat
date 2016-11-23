@@ -30,6 +30,7 @@ test_4_geneprofileabsolutedistancefromthreeprimeend:
     references: [test4.geneprofileabsolutedistancefromthreeprimeend.lengths.tsv.gz, test4.geneprofileabsolutedistancefromthreeprimeend.matrix.tsv.gz]
 
 test_5_bigwigfileintervalaccuracy:
+    skip_python: "3"
     stdin: null
     options: --force-output --reporter=transcript --method=geneprofile --bigwigfile=<DIR>/../bam2peakshape.py/small.bw --gtf-file=<DIR>/twogenes.gtf.gz
     outputs: [geneprofile.lengths.tsv.gz, geneprofile.matrix.tsv.gz]

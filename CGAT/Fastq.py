@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''Fastq.py - methods for dealing with fastq files
 ===============================================
 
@@ -48,8 +26,6 @@ from math import log
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
-# see http://en.wikipedia.org/wiki/FASTQ_format
-# ranges are conservative - they are open-ended
 RANGES = {
     'sanger': (33, 75),
     'illumina-1.8': (33, 79),
@@ -74,6 +50,7 @@ class Record:
        ``illumina-1.8``, ``solexa`` or ``phred64``.
 
     """
+
     def __init__(self, identifier, seq, quals, format=None):
         self.identifier, self.seq, self.quals, format = (
             identifier, seq, quals, format)
@@ -89,7 +66,7 @@ class Record:
         c = [ord(x) for x in self.quals]
         mi, ma = min(c), max(c)
         r = []
-        for format, v in RANGES.iteritems():
+        for format, v in RANGES.items():
             m1, m2 = v
             if mi >= m1 and ma < m2:
                 r.append(format)
@@ -453,5 +430,5 @@ def getReadLength(filename):
     '''
 
     with IOTools.openFile(filename) as infile:
-        record = iterate(infile).next()
+        record = next(iterate(infile))
         return len(record.seq)

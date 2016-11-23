@@ -1,24 +1,3 @@
-##########################################################################
-#   Gene prediction pipeline
-#
-#   $Id: Tree.py 2784 2009-09-10 11:41:14Z andreas $
-#
-#   Copyright (C) 2004 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 """
 Tree.py - A phylogenetic tree
 =============================
@@ -76,7 +55,7 @@ class Tree(Bio.Nexus.Trees.Tree):
 
     def __len__(self):
         """returns the number of nodes in the tree."""
-        return len(self.chain.keys())
+        return len(list(self.chain.keys()))
 
     def root_at_node(self, node, distance=0):
         """root tree at node.
@@ -338,8 +317,7 @@ class Tree(Bio.Nexus.Trees.Tree):
     def get_leaves(self, node_id):
         """Return a list of leaf nodes downward from a node (self, node_id).
         """
-        return filter(lambda x: self.node(x).succ == [],
-                      self.get_nodes(node_id))
+        return [x for x in self.get_nodes(node_id) if self.node(x).succ == []]
 
     def root_midpoint(self):
         """perform midpoint rooting of tree.
@@ -400,13 +378,6 @@ class Tree(Bio.Nexus.Trees.Tree):
 
         self.dfs(self.root,
                  pre_function=dist2other)
-
-#         self.display()
-#         for x in range(0, nnodes):
-#             node = self.node(x)
-#             balance = map_N2Other[x] - map_N2Leaves[x]
-#             print "x=",x, "bl=", node.data.branchlength, \
-#                   "d2root=", map_N2Root[x], "d2leaves=", map_N2Leaves[x], "d2other=", map_N2Other[x], "balance=", balance
 
         # note: need not treat root. Set d2leaves > d2root
         # so that it is never chosen selected.
@@ -555,7 +526,7 @@ class Tree(Bio.Nexus.Trees.Tree):
     def relabel(self, map_old2new, warn=False):
         """relabel taxa in tree using the provided mapping.
         """
-        for node_id, node in self.chain.items():
+        for node_id, node in list(self.chain.items()):
             if not node.data.taxon:
                 continue
 
@@ -569,10 +540,10 @@ class Tree(Bio.Nexus.Trees.Tree):
         """rescale branch length so that they sum up to value."""
 
         t = 0.0
-        for node_id, node in self.chain.items():
+        for node_id, node in list(self.chain.items()):
             t += node.data.branchlength
         if t == 0:
             return
-        for node_id, node in self.chain.items():
+        for node_id, node in list(self.chain.items()):
             node.data.branchlength /= t
         return

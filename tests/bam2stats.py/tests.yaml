@@ -11,14 +11,23 @@ basic:
         references: [basic.tsv]
         options: --force-output
 
-fastq:
-        stdin: paired.bam
-        outputs: [stdout, details]
-        references: [fastq.tsv, details]
-        options: --output-details --fastq-file=<DIR>/paired.fastq.1.gz --force-output
+fastq2:
+  skip_python: 3
+  stdin: paired.bam
+  outputs: [stdout, details]
+  references: [fastq.tsv, details]
+  options: --output-details --fastq-file=<DIR>/paired.fastq.1.gz --force-output
+
+# in python 3, details is randomly sorted due to random hashing in dictionaries
+fastq3:
+  skip_python: 2
+  stdin: paired.bam
+  outputs: [stdout, details]
+  references: [fastq.tsv]
+  options: --output-details --fastq-file=<DIR>/paired.fastq.1.gz --force-output
 
 rna:
-        stdin: paired.bam
-        outputs: [stdout]
-        references: [rna.tsv, rna.mapq, rna.nm]
-        options: --fastq-file=<DIR>/paired.fastq.1.gz --force-output --mask-bed-file=<DIR>/hg19_rna.gff.gz --ignore-masked-reads --output-filename-pattern=rna.%s
+  stdin: paired.bam
+  outputs: [stdout]
+  references: [rna.tsv, rna.mapq, rna.nm]
+  options: --fastq-file=<DIR>/paired.fastq.1.gz --force-output --mask-bed-file=<DIR>/hg19_rna.gff.gz --ignore-masked-reads --output-filename-pattern=rna.%s

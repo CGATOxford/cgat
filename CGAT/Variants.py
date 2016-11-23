@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''
 Variants.py - 
 ======================================================
@@ -241,7 +219,7 @@ def mergeVariants(variants):
                 last_x = x
 
             E.warn("overlapping deletions merged in %i blocks as: %s" %
-                   (len(n), map(str, n)))
+                   (len(n), list(map(str, n))))
             merged_variants.extend(n[:-1])
             this = n[-1]
         else:
@@ -546,8 +524,9 @@ def buildOffsets(variants, phased=True, contig=None):
             offsets1.append((end - 1, offset1))
 
         if E.global_options.loglevel >= 8:
-            print "# variant=", start, end, reference, action, has_wildtype, variantseqs
-            print "# offsets:", offsets0[-1], offsets1[-1]
+            print("# variant=", start, end, reference,
+                  action, has_wildtype, variantseqs)
+            print("# offsets:", offsets0[-1], offsets1[-1])
         # add offsets - applies to the end of the variant
 
     return (kept_variants, removed_variants, (offsets0, offsets1))

@@ -27,7 +27,7 @@ def runPep8(expr):
     # pep8 returns unix error if there are errors
     try:
         output = subprocess.check_output(args, shell=True)
-    except subprocess.CalledProcessError, msg:
+    except subprocess.CalledProcessError as msg:
         output = msg.output
 
     # count python files
