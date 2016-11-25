@@ -145,6 +145,7 @@ import numpy as np
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.BamTools as BamTools
+import itertools
 
 try:
     import pyximport
@@ -154,73 +155,117 @@ except ImportError:
     import CGAT.scripts._bam2bam as _bam2bam
 
 
-def downsample(pysam_in, downsample, paired_end, single_end,
-               randomseed, bamlength):
 
-    reads = int(downsample)
 
-    if paired_end == True:
-        if bamlength % 2 == 0:
-            num_input_reads = bamlength/2
-        else:
-            raise ValueError('''There are unmatched read pairs in the file,
-            please pre-process as described in documentation''')
-    elif single_end == True:
-        num_input_reads = bamlength
-    else:
-        raise ValueError("Read end option not set")
+class Subset_bam(object):
 
-    if reads < num_input_reads:
-        num_of_reads_to_remove = num_input_reads - reads
+    ''' base class for performing downsampling on single and
+    paired bam file
+    '''
 
-        # init the generator and set the seed
-        randomgen = np.random.RandomState()
-        randomgen.seed([randomseed])
+    def __init__(self, pysam_in, downsample, paired_end=None,
+                 single_end=None, randomseed=None):
 
-        # create a array of 1's for the number of pairs of reads wanted after
-        # downsampling length of list == number of pairs wanted after
-        # downsampling
-        wanted_list = np.ones((1,reads),dtype=np.int8)
+        self.pysam_in1, self.pysam_in2 = itertools.tee(pysam_in)
+        self.downsample = downsample
+        self.paired_end = paired_end
+        self.single_end = single_end
+        self.randomseed = randomseed
 
-        # create a array of 0's for the number of pairs of reads to be removed by downsampling
-        # length of list == number of pairs to be removed by downsampling
-        remove_list = np.zeros((1,num_of_reads_to_remove),dtype=np.int8)
+    def dict_of_reads(self, paired=False):
+        read_dict = {}
 
-        # combine the list of 1 & 0 & shuffle - double check list us same length as 
-        # as input bam
-        full_list = np.concatenate((wanted_list, remove_list), axis=1)[0]
-        randomgen.shuffle(full_list)
+        for read in self.pysam_in1:
+            if paired == True:
+                if read.is_proper_pair:
+                    key = read.qname
+                    value = read.qname
+                    read_dict[key] = value
+            else:
+                key = read.qname
+                value = read.qname
+                read_dict[key] = value
 
-        if len(full_list) != num_input_reads:
-            raise ValueError('''length of list to randomly downsample reads is %s
-            but length of file is %s''' % (len(full_list), num_input_reads))
+        return read_dict
 
-        j = 0
-        i = 0
-        include = []
+    def return_read(self, key):
+        '''
+        Return full list of 1 and 0 so dict can be made
+        '''
+        key = set(key)
+        reads = int(self.downsample)
+        num_input_reads = len(key)
 
-        E.info(",".join(list(full_list.astype(str))))
+        if reads < num_input_reads:
+            num_of_reads_to_remove = num_input_reads - reads
 
-        for read in pysam_in:
-            if full_list[i] == 1:
+            # init the generator and set the seed
+            randomgen = np.random.RandomState()
+            randomgen.seed([self.randomseed])
+
+            # create a array of 1's for the number of pairs of reads wanted after
+            # downsampling length of list == number of pairs wanted after
+            # downsampling
+            wanted_list = np.ones((1,reads),dtype=np.int8)
+
+            # create a array of 0's for the number of pairs of reads to be removed by downsampling
+            # length of list == number of pairs to be removed by downsampling
+            remove_list = np.zeros((1,num_of_reads_to_remove),dtype=np.int8)
+
+            # combine the list of 1 & 0 & shuffle - double check list us same length as 
+            # as input bam
+            full_list = np.concatenate((wanted_list, remove_list), axis=1)[0]
+            randomgen.shuffle(full_list)
+
+            if len(full_list) != num_input_reads:
+                raise ValueError('''length of list to randomly downsample reads is %s
+                but length of file is %s''' % (len(full_list), num_input_reads))
+
+            return full_list
+
+    def downsample_paired(self):
+
+        '''
+        still need to specify options to say if read == downsample
+        '''
+        read_dict = self.dict_of_reads(paired=True)
+        key = [key for key, value in read_dict.items()]
+        full_list = self.return_read(key)
+
+        read_dict = dict(zip(key, full_list))
+
+        # iterate over dictionary and if 1 add read to list
+        read_list = []
+        for key, value in read_dict.iteritems():
+            if value == 1:
+                read_list.append(key)
+
+        # yield read if it is in read_list
+        read_list = set(read_list)
+
+        for read in self.pysam_in2:
+            if read.qname in read_list:
                 yield read
-#                E.info("First: %s and %s" % (j, i))
-            if (paired_end is True and j % 2 == 0) or paired_end is False:
-#                   E.info("Second: %s and %s" % (j, i))
-                    i += 1
-            j += 1
 
-    else:
-        num_of_reads_to_remove = 0
-        for read in pysam_in:
-            yield read
+    def downsample_single(self):
 
-def count_reads(pysam_in):
-    count = 0
-    for read in pysam_in:
-        if read.is_paired:
-            count += 1
-    return count
+        read_dict = self.dict_of_reads(paired=False)
+        key = [key for key, value in read_dict.items()]
+
+
+    # reads = int(downsample)
+
+    # if paired_end == True:
+    #     if bamlength % 2 == 0:
+    #         num_input_reads = bamlength/2
+    #     else:
+    #         raise ValueError('''There are unmatched read pairs in the file,
+    #         please pre-process as described in documentation''')
+    # elif single_end == True:
+    #     num_input_reads = bamlength
+    # else:
+    #     raise ValueError("Read end option not set")
+
 
 
 def main(argv=None):
@@ -561,10 +606,13 @@ def main(argv=None):
 
                 else:
                     bamlength = count_reads(pysam_in)
-                    it = downsample(pysam_in=it, downsample=options.downsample,
-                           pysam_out=pysam_out,
-                           paired_end=None, single_end=True,
-                               randomseed=options.randomseed, bamlength=bamlength)
+                    it = downsample_single(pysam_in=it,
+                                           downsample=options.downsample,
+                                           pysam_out=pysam_out,
+                                           paired_end=None,
+                                           single_end=True,
+                                           randomseed=options.randomseed,
+                                           bamlength=bamlength)
 
 
             if "downsample-paired" in options.methods:
@@ -573,11 +621,12 @@ def main(argv=None):
                     raise ValueError("Please provide downsample size")
 
                 else:
-                    bamlength = count_reads(pysam_in)
-                    E.info("bamlength = %s" % bamlength)
-                    it = downsample(pysam_in=it, downsample=options.downsample,
-                           paired_end=True, single_end=None,
-                               randomseed=options.randomseed, bamlength=bamlength)
+                    down = Subset_bam(pysam_in=it,
+                                      downsample=options.downsample,
+                                      paired_end=True,
+                                      single_end=None,
+                                      randomseed=options.randomseed)
+                    it = down.downsample_paired()
 
             # continue processing till end
             for read in it:
