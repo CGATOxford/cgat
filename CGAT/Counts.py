@@ -36,8 +36,9 @@ def geometric_mean(array, axis=0):
     retaining total length
     '''
     non_zero = ma.masked_values(array, 0)
-    log_a = ma.log(non_zero)
-    return ma.exp(log_a.mean(axis=axis))
+    log_a = np.log(non_zero)
+    return log_a.mean(axis=axis)
+#ma.exp(log_a.mean(axis=axis))
 
 
 class Counts(object):
@@ -618,7 +619,7 @@ class Counts(object):
                   dendrogram="both", cexCol=2,
                   labRow = "",
                   hclustfun = function(x) hclust(x, method = 'average'),
-                  distfun = function(x) as.dist(1 - cor(t(x), method="spearman")))
+                  distfun = dist)
         dev.off()
         }''' % locals())
 
