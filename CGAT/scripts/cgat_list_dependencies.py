@@ -58,7 +58,7 @@ def main(argv=None):
                       help="supply help")
 
     parser.set_defaults(
-        directories=["scripts", "CGAT", "CGATPipelines"])
+        directories=["scripts", "CGAT", "CGAT/scripts", "CGATPipelines"])
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)

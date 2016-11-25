@@ -228,7 +228,7 @@ def test_scripts():
     testing_dir = TestUtils.get_tests_directory()
 
     # directory location of scripts
-    scripts_dir = os.path.join(os.path.dirname(testing_dir), "CGAT", "scripts")
+    scripts_dir = os.path.join(os.path.dirname(testing_dir), "CGAT", "scripts", "CGAT/scripts")
 
     # directories with tests (correspond to script names and
     # hence end in .py)
