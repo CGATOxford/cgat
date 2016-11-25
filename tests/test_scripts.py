@@ -228,7 +228,7 @@ def test_scripts():
     testing_dir = TestUtils.get_tests_directory()
 
     # directory location of scripts
-    scripts_dir = os.path.join(os.path.dirname(testing_dir), "CGAT", "scripts", "CGAT/scripts")
+    scripts_dir = os.path.join(os.path.dirname(testing_dir), "CGAT", "scripts")
 
     # directories with tests (correspond to script names and
     # hence end in .py)
@@ -247,9 +247,9 @@ def test_scripts():
                 if "manifest" in values:
                     # take scripts defined in the MANIFEST.in file
                     test_dirs = [x for x in open("MANIFEST.in")
-                                 if x.startswith("include scripts") and
+                                 if x.startswith("include CGAT/scripts") and
                                  x.endswith(".py\n")]
-                    test_dirs = [re.sub("include\s*scripts/", "tests/",
+                    test_dirs = [re.sub("include\s*CGAT/scripts/", "tests/",
                                         x[:-1]) for x in test_dirs]
 
                 if "regex" in values:
