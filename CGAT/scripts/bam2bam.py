@@ -155,8 +155,6 @@ except ImportError:
     import CGAT.scripts._bam2bam as _bam2bam
 
 
-
-
 class Subset_bam(object):
 
     ''' base class for performing downsampling on single and
@@ -203,17 +201,18 @@ class Subset_bam(object):
             randomgen = np.random.RandomState()
             randomgen.seed([self.randomseed])
 
-            # create a array of 1's for the number of pairs of reads wanted after
-            # downsampling length of list == number of pairs wanted after
+            # create a array of 1's for the number of pairs of reads wanted
+            # after downsampling length of list == number of pairs wanted after
             # downsampling
             wanted_list = np.ones((1,reads),dtype=np.int8)
 
-            # create a array of 0's for the number of pairs of reads to be removed by downsampling
+            # create a array of 0's for the number of pairs of reads to be
+            # removed by downsampling
             # length of list == number of pairs to be removed by downsampling
             remove_list = np.zeros((1,num_of_reads_to_remove),dtype=np.int8)
 
-            # combine the list of 1 & 0 & shuffle - double check list us same length as 
-            # as input bam
+            # combine the list of 1 & 0 & shuffle - double check list is same
+            # length as input bam
             full_list = np.concatenate((wanted_list, remove_list), axis=1)[0]
             randomgen.shuffle(full_list)
 
