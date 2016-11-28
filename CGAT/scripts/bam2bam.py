@@ -159,6 +159,16 @@ class Subset_bam(object):
 
     ''' base class for performing downsampling on single and
     paired bam file
+
+    A dictionary of the read names is made and then an
+    array matching the numbers of reads in the dictionary will be
+    created. This array contains 1s that match the number of reads
+    to be downsampled to and 0s to fill out the rest of the array.
+
+    The read is kept if the value in the dictionary matches 1. The
+    read is yielded and iterated over to produce the output bam.
+
+    The script will handle multimapping reads.
     '''
 
     def __init__(self, pysam_in, downsample, paired_end=None,
@@ -171,6 +181,10 @@ class Subset_bam(object):
         self.randomseed = randomseed
 
     def dict_of_reads(self, paired=False):
+
+        '''
+        This will create a dictionary of unieq reads in the bam
+        '''
         read_dict = {}
 
         for read in self.pysam_in1:
@@ -188,7 +202,8 @@ class Subset_bam(object):
 
     def return_read(self, key):
         '''
-        Return full list of 1 and 0 so dict can be made
+        Return full list of 1s matching the number of reads to downsample
+        and 0s matching the dictionary length.
         '''
         key = set(key)
         reads = int(self.downsample)
@@ -231,7 +246,7 @@ class Subset_bam(object):
         key = [key for key, value in read_dict.items()]
         full_list = self.return_read(key)
 
-        read_dict = dict(zip(key, full_list))
+        read_dict = dict(itertools.izip(key, full_list))
 
         # iterate over dictionary and if 1 add read to list
         read_list = []
@@ -239,32 +254,42 @@ class Subset_bam(object):
             if value == 1:
                 read_list.append(key)
 
-        # yield read if it is in read_list
-        read_list = set(read_list)
-
-        for read in self.pysam_in2:
-            if read.qname in read_list:
+        if self.downsample == len(read_list):
+            E.warn('''The downsample reads is equal to the
+            number of unique reads''')
+            for read in self.pysam_in2:
                 yield read
+
+        # yield read if it is in read_list, if the reads is multimapped
+        # then all multimapping reads will be yielded
+        else:
+            read_list = set(read_list)
+            for read in self.pysam_in2:
+                if read.qname in read_list:
+                    yield read
 
     def downsample_single(self):
 
         read_dict = self.dict_of_reads(paired=False)
         key = [key for key, value in read_dict.items()]
 
+        full_list = self.return_read(key)
 
-    # reads = int(downsample)
+        read_dict = dict(itertools.izip(key, itertools.repeat(full_list)))
 
-    # if paired_end == True:
-    #     if bamlength % 2 == 0:
-    #         num_input_reads = bamlength/2
-    #     else:
-    #         raise ValueError('''There are unmatched read pairs in the file,
-    #         please pre-process as described in documentation''')
-    # elif single_end == True:
-    #     num_input_reads = bamlength
-    # else:
-    #     raise ValueError("Read end option not set")
+        # iterate over dictionary and if 1 add read to list
+        read_list = []
+        for key, value in read_dict.iteritems():
+            if value == 1:
+                read_list.append(key)
 
+        # yield read if it is in read_list, if the reads is multimapped
+        # then all multimapping reads will be yielded
+        read_list = set(read_list)
+
+        for read in self.pysam_in2:
+            if read.qname in read_list:
+                yield read
 
 
 def main(argv=None):
@@ -604,14 +629,12 @@ def main(argv=None):
                     raise ValueError("Please provide downsample size")
 
                 else:
-                    bamlength = count_reads(pysam_in)
-                    it = downsample_single(pysam_in=it,
-                                           downsample=options.downsample,
-                                           pysam_out=pysam_out,
-                                           paired_end=None,
-                                           single_end=True,
-                                           randomseed=options.randomseed,
-                                           bamlength=bamlength)
+                    down = Subset_bam(pysam_in=it,
+                                      downsample=options.downsample,
+                                      paired_end=None,
+                                      single_end=True,
+                                      randomseed=options.randomseed)
+                    it = down.downsample_single()
 
 
             if "downsample-paired" in options.methods:
