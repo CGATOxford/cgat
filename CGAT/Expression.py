@@ -262,7 +262,6 @@ class ExperimentalDesign(object):
         if not self.has_pairs:
             self.factors.drop("pair", inplace=True, axis=1)
 
-
     def validate(self, counts=None, model=None):
 
         if counts is not None:
@@ -957,7 +956,7 @@ class DEExperiment_DESeq2(DEExperiment):
             contrast = model_terms[-1]
             contrast_levels = set(design.factors[contrast])
 
-            #performDifferentialTesting
+            # performDifferentialTesting
             R('''
 
             dds = suppressMessages(
@@ -4200,4 +4199,3 @@ def outputSpikeIns(filename_tags,
               sep="\t")
 
     E.info("output %i spike in intervals" % interval_id)
-
