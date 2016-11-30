@@ -91,6 +91,7 @@ import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.packages import importr
 from rpy2.robjects.vectors import FloatVector
+from rpy2.rinterface import RRuntimeError
 import os
 
 try:
@@ -2019,7 +2020,7 @@ def plotPairs():
         pch=".",
         labels=colnames(countsTable),
         log="xy")''')
-    except rpy2.rinterface.RRuntimeError, msg:
+    except RRuntimeError, msg:
         E.warn("can not plot pairwise scatter plot: %s" % msg)
 
 
@@ -2074,7 +2075,7 @@ def plotPCA(groups=True):
         #                "multiplot.R"))
         # r('''multiplot(p1, p2, p3, cols=2)''')
         r('''plot(p1)''')
-    except rpy2.rinterface.RRuntimeError, msg:
+    except RRuntimeError, msg:
         E.warn("could not plot in plotPCA(): %s" % msg)
 
 
@@ -2174,7 +2175,7 @@ def runEdgeR(outfile,
         try:
             R.ggsave('''%(outfile_prefix)sbalance_pairs.png''' % locals())
             r['dev.off']()
-        except rpy2.rinterface.RRuntimeError, msg:
+        except RRuntimeError, msg:
             E.warn("could not plot: %s" % msg)
 
     # build DGEList object
@@ -2400,7 +2401,7 @@ def deseqPlotPCA(outfile, vsd, max_genes=500):
     as.integer(dim(vsd))[1])''' % locals())
     try:
         r('''plotPCA(vsd)''')
-    except rpy2.rinterface.RRuntimeError, msg:
+    except RRuntimeError, msg:
         E.warn("can not plot PCA: %s" % msg)
     r['dev.off']()
 
@@ -3425,7 +3426,7 @@ def outputTagSummary(filename_tags,
     R.svg(outfilename)
     try:
         r('''plotMDS(countsTable)''')
-    except rpy2.rinterface.RRuntimeError, msg:
+    except RRuntimeError, msg:
         E.warn("can not plot mds: %s" % msg)
     r['dev.off']()
 
@@ -3965,7 +3966,7 @@ def runEdgeRPandas(counts,
         MDSplot = r('''function(counts){
         plotMDS(counts)}''')
         MDSplot(r_counts)
-    except rpy2.rinterface.RRuntimeError, msg:
+    except RRuntimeError, msg:
         E.warn("can not plot mds: %s" % msg)
     r['dev.off']()
 
