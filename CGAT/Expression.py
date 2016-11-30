@@ -2075,8 +2075,8 @@ def plotPCA(groups=True):
         #                "multiplot.R"))
         # r('''multiplot(p1, p2, p3, cols=2)''')
         r('''plot(p1)''')
-    except RRuntimeError:
-        E.warn("could not plot in plotPCA()")
+    except RRuntimeError as msg:
+        E.warn("could not plot in plotPCA(): %s" % msg)
 
 
 def runEdgeR(outfile,
@@ -2401,8 +2401,8 @@ def deseqPlotPCA(outfile, vsd, max_genes=500):
     as.integer(dim(vsd))[1])''' % locals())
     try:
         r('''plotPCA(vsd)''')
-    except RRuntimeError:
-        E.warn("can not plot PCA")
+    except RRuntimeError as msg:
+        E.warn("can not plot PCA: %s" % msg)
     r['dev.off']()
 
 
@@ -3202,7 +3202,7 @@ def plotDETagStats(infile, outfile_prefix,
 
         try:
             ggplot.ggsave(filename=outfile, plot=plot)
-        except Exception, msg:
+        except Exception as msg:
             E.warn("no plot for %s: %s" % (column, msg))
 
     def _bplot(table, outfile, column):
@@ -3214,7 +3214,7 @@ def plotDETagStats(infile, outfile_prefix,
 
         try:
             ggplot.ggsave(filename=outfile, plot=plot)
-        except ValueError, msg:
+        except ValueError as msg:
             # boxplot fails if all values are the same
             # see https://github.com/yhat/ggplot/issues/393
             E.warn(msg)
