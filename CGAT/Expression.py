@@ -2020,8 +2020,8 @@ def plotPairs():
         pch=".",
         labels=colnames(countsTable),
         log="xy")''')
-    except RRuntimeError, msg:
-        E.warn("can not plot pairwise scatter plot: %s" % msg)
+    except RRuntimeError:
+        E.warn("can not plot pairwise scatter plot")
 
 
 def plotPCA(groups=True):
@@ -2075,8 +2075,8 @@ def plotPCA(groups=True):
         #                "multiplot.R"))
         # r('''multiplot(p1, p2, p3, cols=2)''')
         r('''plot(p1)''')
-    except RRuntimeError, msg:
-        E.warn("could not plot in plotPCA(): %s" % msg)
+    except RRuntimeError:
+        E.warn("could not plot in plotPCA()")
 
 
 def runEdgeR(outfile,
@@ -2175,8 +2175,8 @@ def runEdgeR(outfile,
         try:
             R.ggsave('''%(outfile_prefix)sbalance_pairs.png''' % locals())
             r['dev.off']()
-        except RRuntimeError, msg:
-            E.warn("could not plot: %s" % msg)
+        except RRuntimeError:
+            E.warn("could not plot")
 
     # build DGEList object
     # ignore message: "Calculating library sizes from column totals"
@@ -2200,8 +2200,8 @@ def runEdgeR(outfile,
     R.png('''%(outfile_prefix)smds.png''' % locals())
     try:
         r('''plotMDS( countsTable )''')
-    except rpy2.rinterface.RRuntimeError, msg:
-        E.warn("can not plot mds: %s" % msg)
+    except RRuntimeError:
+        E.warn("can not plot mds")
     r['dev.off']()
 
     # build design matrix
@@ -2401,8 +2401,8 @@ def deseqPlotPCA(outfile, vsd, max_genes=500):
     as.integer(dim(vsd))[1])''' % locals())
     try:
         r('''plotPCA(vsd)''')
-    except RRuntimeError, msg:
-        E.warn("can not plot PCA: %s" % msg)
+    except RRuntimeError:
+        E.warn("can not plot PCA")
     r['dev.off']()
 
 
@@ -3426,8 +3426,8 @@ def outputTagSummary(filename_tags,
     R.svg(outfilename)
     try:
         r('''plotMDS(countsTable)''')
-    except RRuntimeError, msg:
-        E.warn("can not plot mds: %s" % msg)
+    except RRuntimeError:
+        E.warn("can not plot mds")
     r['dev.off']()
 
 
@@ -3966,8 +3966,8 @@ def runEdgeRPandas(counts,
         MDSplot = r('''function(counts){
         plotMDS(counts)}''')
         MDSplot(r_counts)
-    except RRuntimeError, msg:
-        E.warn("can not plot mds: %s" % msg)
+    except RRuntimeError:
+        E.warn("can not plot mds")
     r['dev.off']()
 
     # build design matrix
