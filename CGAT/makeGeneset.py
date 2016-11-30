@@ -9,7 +9,6 @@ import shutil
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.GTF as GTF
-import CGAT.Pipeline as P
 
 '''
 Filters a GTF to generate a geneset over which to count reads and look for

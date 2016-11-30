@@ -195,7 +195,7 @@ class Counts(object):
             }''' % locals())
 
             normed = pandas2ri.ri2py(getCPM(pandas2ri.py2ri(self.table)))
-            print normed
+            print(normed)
 
         elif method == "total-count":
 

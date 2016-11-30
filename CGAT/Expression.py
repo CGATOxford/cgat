@@ -1017,7 +1017,7 @@ class DEExperiment_DESeq2(DEExperiment):
             else:
                 reduced_model = "~1"
 
-            print '''
+            print('''
             ddsLRT <- suppressMessages(
             DESeq(dds, test="LRT", reduced=formula("%(reduced_model)s"),
                   betaPrior=TRUE, fitType="%(fit_type)s"))
@@ -1049,7 +1049,7 @@ class DEExperiment_DESeq2(DEExperiment):
               }
 
             res['test_id'] = rownames(res)
-            ''' % locals()
+            ''' % locals())
 
             R('''
             ddsLRT <- suppressMessages(
