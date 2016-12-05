@@ -3202,19 +3202,18 @@ def plotDETagStats(infile, outfile_prefix,
             ggplot.geom_density(alpha=0.5)
 
         try:
-            ggplot.ggsave(filename=outfile, plot=plot)
+            plot.save(filename=outfile)
         except Exception as msg:
             E.warn("no plot for %s: %s" % (column, msg))
 
     def _bplot(table, outfile, column):
 
         plot = ggplot.ggplot(
-            ggplot.aes(x=column, y='dmr'),
+            ggplot.aes(x='dmr', y=column),
             data=table) + \
             ggplot.geom_boxplot()
-
         try:
-            ggplot.ggsave(filename=outfile, plot=plot)
+            plot.save(filename=outfile)
         except ValueError as msg:
             # boxplot fails if all values are the same
             # see https://github.com/yhat/ggplot/issues/393
