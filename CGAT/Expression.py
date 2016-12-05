@@ -87,6 +87,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import rpy2
 from rpy2.robjects import r
+from rpy2.robjects import r as R
 import rpy2.robjects as ro
 from rpy2.robjects import pandas2ri
 from rpy2.robjects.packages import importr
