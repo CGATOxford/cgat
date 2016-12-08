@@ -123,11 +123,15 @@ will remove all unmapped reads from the bam-file.
 
 To remove unmapped reads from multiple bam-files, try::
 
-   cgat bam2bam.py --inplace --method=filter --filter-method=mapped *.bam
+   cgat bam2bam --inplace --method=filter --filter-method=mapped *.bam
+
+example for running downsample::
+
+   cgat bam2bam --method=downsample-paired --downsample=30000 -L out.log < Paired.bam > out.bam
 
 Type::
 
-   python bam2bam.py --help
+   python bam2bam --help
 
 for command line help.
 
@@ -183,7 +187,7 @@ class Subset_bam(object):
     def dict_of_reads(self, paired=False):
 
         '''
-        This will create a dictionary of unieq reads in the bam
+        This will create a dictionary of uniqe reads in the bam
         '''
         read_dict = {}
 
@@ -431,8 +435,10 @@ def main(argv=None):
         if bamfile == "-":
             if options.output_sam:
                 pysam_out = pysam.AlignmentFile("-", "wh", template=pysam_in)
+                print "1"
             else:
                 pysam_out = pysam.AlignmentFile("-", "wb", template=pysam_in)
+                print "2"
         else:
             if IOTools.isEmpty(bamfile):
                 E.warn('skipping empty file %s' % bamfile)
