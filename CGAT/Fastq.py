@@ -68,7 +68,7 @@ class Record:
         r = []
         for format, v in RANGES.items():
             m1, m2 = v
-            if mi >= m1 and ma < m2:
+            if mi >= m1 and ma <= m2:
                 r.append(format)
         return r
 
