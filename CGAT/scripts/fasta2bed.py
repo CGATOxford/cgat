@@ -61,6 +61,7 @@ import glob
 import collections
 import pybedtools
 import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 import CGAT.FastaIterator as FastaIterator
 import CGAT.IOTools as IOTools
 
