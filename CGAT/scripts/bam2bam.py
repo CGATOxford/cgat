@@ -259,7 +259,7 @@ class Subset_bam(object):
         key = [key for key, value in read_dict.items()]
         full_list = self.return_read(key)
 
-        read_dict = dict(itertools.izip(key, full_list))
+        read_dict = dict(zip(key, full_list))
 
         # iterate over dictionary and if 1 add read to list
         read_list = []
@@ -292,7 +292,7 @@ class Subset_bam(object):
 
         full_list = self.return_read(key)
 
-        read_dict = dict(itertools.izip(key, full_list))
+        read_dict = dict(zip(key, full_list))
 
         # iterate over dictionary and if 1 add read to list
         read_list = []
@@ -443,13 +443,13 @@ def main(argv=None):
             continue
 
         # reading bam from stdin does not work with only the "r" tag
-        pysam_in = pysam.AlignmentFile(bamfile, "rb")
+        pysam_in = pysam.Samfile(bamfile, "rb")
 
         if bamfile == "-":
             if options.output_sam:
-                pysam_out = pysam.AlignmentFile("-", "wh", template=pysam_in)
+                pysam_out = pysam.Samfile("-", "wh", template=pysam_in)
             else:
-                pysam_out = pysam.AlignmentFile("-", "wb", template=pysam_in)
+                pysam_out = pysam.Samfile("-", "wb", template=pysam_in)
         else:
             if IOTools.isEmpty(bamfile):
                 E.warn('skipping empty file %s' % bamfile)
@@ -458,7 +458,7 @@ def main(argv=None):
             tmpfile.close()
 
             E.debug("writing temporary bam-file to %s" % tmpfile.name)
-            pysam_out = pysam.AlignmentFile(tmpfile.name, "wb",
+            pysam_out = pysam.Samfile(tmpfile.name, "wb",
                                             template=pysam_in)
 
         if "filter" in options.methods:
