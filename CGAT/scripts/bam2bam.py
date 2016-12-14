@@ -263,7 +263,7 @@ class Subset_bam(object):
 
         # iterate over dictionary and if 1 add read to list
         read_list = []
-        for key, value in read_dict.iteritems():
+        for key, value in read_dict.items():
             if value == 1:
                 read_list.append(key)
 
@@ -296,7 +296,7 @@ class Subset_bam(object):
 
         # iterate over dictionary and if 1 add read to list
         read_list = []
-        for key, value in read_dict.iteritems():
+        for key, value in read_dict.items():
             if value == 1:
                 read_list.append(key)
 
