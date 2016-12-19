@@ -149,11 +149,11 @@ import os
 import sys
 import tempfile
 import shutil
+import random
 import pysam
 import numpy as np
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
-import CGAT.BamTools as BamTools
 import itertools
 
 try:
@@ -232,8 +232,9 @@ class SubsetBam(object):
 
             # combine the list of 1 & 0 & shuffle - double check list is same
             # length as input bam
-            full_list = np.concatenate((wanted_list, remove_list), axis=1)[0]
-            np.random.shuffle(full_list)
+            full_list = list(np.concatenate((wanted_list, remove_list),
+                                            axis=1)[0])
+            random.shuffle(full_list)
 
             if len(full_list) != num_input_reads:
                 raise ValueError('''length of list to randomly
@@ -242,6 +243,10 @@ class SubsetBam(object):
                 %s''' % (len(full_list), num_input_reads))
 
             return full_list
+
+        else:
+            raise ValueError('''The length of the downsample matches the number of
+            unique reads in the sample''')
 
     def downsample_paired(self):
 
@@ -400,7 +405,7 @@ def main(argv=None):
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
-    np.random.seed(options.random_seed)
+    # random.seed(options.random_seed)
     bamfiles = []
 
     if options.stdin != sys.stdin:
