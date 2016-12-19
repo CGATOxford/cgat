@@ -1,0 +1,18 @@
+
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+without_header:
+    stdin: ../data/design.tsv
+    outputs: [stdout]
+    references: [without_header.tsv]
+    options: --random-seed=1
+
+with_header:
+    stdin: ../data/design.tsv
+    outputs: [stdout]
+    references: [with_header.tsv]
+    options: --random-seed=1 --keep-header=1
