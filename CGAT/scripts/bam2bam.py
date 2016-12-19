@@ -134,13 +134,7 @@ import pysam
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
-
-try:
-    import pyximport
-    pyximport.install(build_in_temp=False)
-    import _bam2bam
-except ImportError:
-    import CGAT.scripts._bam2bam as _bam2bam
+import CGAT.scripts._bam2bam as _bam2bam
 
 
 def main(argv=None):

@@ -173,12 +173,7 @@ except ImportError:
     # py3: cStringIO dependency of BigWigFile
     pass
 
-try:
-    import pyximport
-    pyximport.install(build_in_temp=False)
-    import _bam2peakshape
-except ImportError:
-    import CGAT.scripts._bam2peakshape as _bam2peakshape
+import CGAT.scripts._bam2peakshape as _bam2peakshape
 
 
 def buildOptionParser(argv):
