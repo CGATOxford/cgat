@@ -63,10 +63,10 @@ downsample_paired:
     stdin: paired.bam
     outputs: [stdout]
     references: [downsample_paired.bam]
-    options: --method=downsample-paired --downsample=3000 -L out.log
+    options: --method=downsample-paired --downsample=3000 --random-seed=1 -L out.log
 
 downsample_single:
     stdin: single.bam
     outputs: [stdout]
     references: [downsample_single.bam]
-    options: --method=downsample-single --downsample=3000 -L out.log
+    options: --method=downsample-single --downsample=3000 --random-seed=1 -L out.log

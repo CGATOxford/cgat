@@ -164,7 +164,7 @@ except ImportError:
     import CGAT.scripts._bam2bam as _bam2bam
 
 
-class Subset_bam(object):
+class SubsetBam(object):
 
     ''' base class for performing downsampling on single and
     paired bam file
@@ -181,13 +181,12 @@ class Subset_bam(object):
     '''
 
     def __init__(self, pysam_in, downsample, paired_end=None,
-                 single_end=None, randomseed=None):
+                 single_end=None):
 
         self.pysam_in1, self.pysam_in2 = itertools.tee(pysam_in)
         self.downsample = downsample
         self.paired_end = paired_end
         self.single_end = single_end
-        self.randomseed = randomseed
 
     def dict_of_reads(self, paired=None):
 
@@ -221,10 +220,6 @@ class Subset_bam(object):
         if reads < num_input_reads:
             num_of_reads_to_remove = num_input_reads - reads
 
-            # init the generator and set the seed
-            randomgen = np.random.RandomState()
-            randomgen.seed([self.randomseed])
-
             # create a array of 1's for the number of pairs of reads wanted
             # after downsampling length of list == number of pairs wanted after
             # downsampling
@@ -238,7 +233,7 @@ class Subset_bam(object):
             # combine the list of 1 & 0 & shuffle - double check list is same
             # length as input bam
             full_list = np.concatenate((wanted_list, remove_list), axis=1)[0]
-            randomgen.shuffle(full_list)
+            np.random.shuffle(full_list)
 
             if len(full_list) != num_input_reads:
                 raise ValueError('''length of list to randomly
@@ -390,11 +385,6 @@ def main(argv=None):
         type="string",
         help="Number of reads to downsample to")
 
-    parser.add_option("-r", "--randomseed", dest="randomseed",
-                      type="int",
-                      help="Optional ability to specify a random seed"
-                      "for downsample analysis")
-
     parser.set_defaults(
         methods=[],
         output_sam=False,
@@ -405,13 +395,12 @@ def main(argv=None):
         inplace=False,
         fastq_pair1=None,
         fastq_pair2=None,
-        downsample=None,
-        randomseed=int(2)
+        downsample=None
     )
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
-
+    np.random.seed(options.random_seed)
     bamfiles = []
 
     if options.stdin != sys.stdin:
@@ -647,11 +636,10 @@ def main(argv=None):
                     raise ValueError("Please provide downsample size")
 
                 else:
-                    down = Subset_bam(pysam_in=it,
+                    down = SubsetBam(pysam_in=it,
                                       downsample=options.downsample,
                                       paired_end=None,
-                                      single_end=True,
-                                      randomseed=options.randomseed)
+                                      single_end=True)
                     it = down.downsample_single()
 
             if "downsample-paired" in options.methods:
@@ -660,11 +648,10 @@ def main(argv=None):
                     raise ValueError("Please provide downsample size")
 
                 else:
-                    down = Subset_bam(pysam_in=it,
+                    down = SubsetBam(pysam_in=it,
                                       downsample=options.downsample,
                                       paired_end=True,
-                                      single_end=None,
-                                      randomseed=options.randomseed)
+                                      single_end=None)
                     it = down.downsample_paired()
 
             # continue processing till end
