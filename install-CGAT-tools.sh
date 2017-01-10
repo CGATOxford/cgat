@@ -133,7 +133,7 @@ get_cgat_env() {
 if [ $TRAVIS_INSTALL ] ; then
 
    CGAT_HOME=$TRAVIS_BUILD_DIR
-   #CONDA_INSTALL_TYPE="cgat-devel"
+   CONDA_INSTALL_TYPE="cgat-scripts-nosetests"
    INSTALL_PYTHON_VERSION=$TRAVIS_PYTHON_VERSION
 
 else
@@ -282,13 +282,9 @@ if [ "$CONDA_INSTALL_TYPE" == "cgat-scripts" ] ; then
 
    conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE gcc=4.8.3 rpy2=2.4 --override-channels --channel https://conda.anaconda.org/cgat --channel defaults --channel https://conda.anaconda.org/r --yes
 
-elif [ "$CONDA_INSTALL_TYPE" == "cgat-devel"  ] ; then
-
-   conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE python=$INSTALL_PYTHON_VERSION --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
-
 else
 
-   conda create -q -n cgat-scripts-nosetests cgat-scripts-nosetests python=$INSTALL_PYTHON_VERSION --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
+   conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE python=$INSTALL_PYTHON_VERSION --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
 
 fi
 
