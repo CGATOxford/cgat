@@ -133,7 +133,7 @@ get_cgat_env() {
 if [ $TRAVIS_INSTALL ] ; then
 
    CGAT_HOME=$TRAVIS_BUILD_DIR
-   CONDA_INSTALL_TYPE="cgat-devel"
+   #CONDA_INSTALL_TYPE="cgat-devel"
    INSTALL_PYTHON_VERSION=$TRAVIS_PYTHON_VERSION
 
 else
@@ -262,10 +262,10 @@ cd $CGAT_HOME
 
 log "downloading miniconda"
 # download and install conda
-wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh
+wget http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh
 
 log "installing miniconda"
-bash Miniconda-latest-Linux-x86_64.sh -b -p $CONDA_INSTALL_DIR
+bash Miniconda3-latest-Linux-x86_64.sh -b -p $CONDA_INSTALL_DIR
 export PATH="$CONDA_INSTALL_DIR/bin:$PATH"
 hash -r
 
@@ -282,9 +282,13 @@ if [ "$CONDA_INSTALL_TYPE" == "cgat-scripts" ] ; then
 
    conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE gcc=4.8.3 rpy2=2.4 --override-channels --channel https://conda.anaconda.org/cgat --channel defaults --channel https://conda.anaconda.org/r --yes
 
+elif [ "$CONDA_INSTALL_TYPE" == "cgat-devel"  ] ; then
+
+   conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE python=$INSTALL_PYTHON_VERSION --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
+
 else
 
-   conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE python=$INSTALL_PYTHON_VERSION --override-channels --channel https://conda.anaconda.org/cgat --channel defaults --channel https://conda.anaconda.org/conda-forge --channel https://conda.anaconda.org/r --channel https://conda.anaconda.org/bioconda --yes
+   conda create -q -n cgat-scripts-nosetests cgat-scripts-nosetests python=$INSTALL_PYTHON_VERSION --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
 
 fi
 
