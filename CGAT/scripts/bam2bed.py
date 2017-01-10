@@ -112,15 +112,8 @@ Command line options
 
 import sys
 import pysam
-
 import CGAT.Experiment as E
-
-try:
-    import pyximport
-    pyximport.install(build_in_temp=False)
-    import _bam2bed
-except ImportError:
-    import CGAT.scripts._bam2bed as _bam2bed
+import CGAT.scripts._bam2bed as _bam2bed
 
 
 def main(argv=None):

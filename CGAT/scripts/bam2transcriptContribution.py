@@ -41,8 +41,6 @@ except ImportError:
 import pysam
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
-import pyximport
-pyximport.install(build_in_temp=False)
 
 
 def main(argv=None):

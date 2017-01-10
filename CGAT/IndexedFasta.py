@@ -54,14 +54,9 @@ import CGAT.Genomics as Genomics
 from .AString import AString
 import pysam
 from future.moves import dbm
+from six import StringIO
 
 IS_PY3 = sys.version_info.major >= 3
-
-
-if IS_PY3:
-    from io import StringIO
-else:
-    from cStringIO import StringIO
 
 
 class Uncompressor:

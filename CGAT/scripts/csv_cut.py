@@ -42,6 +42,7 @@ import sys
 import re
 import CGAT.Experiment as E
 import csv
+import six
 import _csv
 import hashlib
 import CGAT.CSV as CSV
@@ -58,26 +59,6 @@ class UniqueBuffer:
         if key not in self.mKeys:
             self.mKeys[key] = True
             self.mOutfile.write(out)
-
-
-class CommentStripper:
-
-    """iterator class for stripping comments from file.
-    """
-
-    def __init__(self, file):
-        self.mFile = file
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        while 1:
-            line = self.mFile.readline()
-            if not line:
-                raise StopIteration
-            if line[0] != "#":
-                return line
 
 
 def main(argv=None):
@@ -121,12 +102,12 @@ def main(argv=None):
         input_fields = [x[:-1].split("\t")[0] for x in [x for x in IOTools.openFile(options.filename_fields, "r").readlines() if x[0] != "#"]]
 
     if options.unique:
-        outfile = UniqueBuffer(sys.stdout)
+        outfile = UniqueBuffer(options.stdout)
     else:
         outfile = options.stdout
 
     while 1:
-        line = sys.stdin.readline()
+        line = options.stdin.readline()
 
         if not line:
             E.Stop()
@@ -157,11 +138,11 @@ def main(argv=None):
         fields = [x for x in old_fields if x not in fields]
 
     if options.large:
-        reader = CSV.DictReaderLarge(CommentStripper(sys.stdin),
+        reader = CSV.DictReaderLarge(CSV.CommentStripper(options.stdin),
                                      fieldnames=old_fields,
                                      dialect=options.csv_dialect)
     else:
-        reader = csv.DictReader(CommentStripper(sys.stdin),
+        reader = csv.DictReader(CSV.CommentStripper(options.stdin),
                                 fieldnames=old_fields,
                                 dialect=options.csv_dialect)
 
@@ -179,7 +160,7 @@ def main(argv=None):
     while 1:
         ninput += 1
         try:
-            row = next(reader)
+            row = six.next(reader)
         except _csv.Error as msg:
             options.stderr.write("# error while parsing: %s\n" % (msg))
             nerrors += 1
