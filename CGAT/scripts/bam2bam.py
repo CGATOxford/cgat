@@ -101,10 +101,10 @@ The script implements the following methods:
    retains multimapping reads. The use of this requires downsampling
    parameter to be set and optionally randomseed.
 
-``downsample-paried``
+``downsample-paired``
 
    generates a downsampled :term:`bam` file by randomly subsampling
-   reads from a single ended :term:`bam` file. The downsampling
+   reads from a pair ended :term:`bam` file. The downsampling
    retains multimapping reads. The use of this requires downsampling
    parameter to be set and optionally randomseed.
 
@@ -136,7 +136,7 @@ cgat bam2bam --method=downsample-paired --downsample=30000
 
 Type::
 
-   python bam2bam --help
+   cgat bam2bam --help
 
 for command line help.
 
@@ -387,7 +387,7 @@ def main(argv=None):
 
     parser.add_option(
         "--downsample", dest="downsample",
-        type="string",
+        type=int,
         help="Number of reads to downsample to")
 
     parser.set_defaults(
