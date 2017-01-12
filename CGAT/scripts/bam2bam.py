@@ -211,12 +211,13 @@ class SubsetBam(object):
         It will retain multimapping reads if they have not been
         pre-filtered
         '''
-        random.seed(self.random_seed)
+        if self.random_seed is not None:
+            random.seed(1)
 
-        read_list = self.list_of_reads(paired=True)
-        read_list = random.sample(read_list, self.downsample)
+        collect_list = self.list_of_reads(paired=True)
+        read_list = random.sample(collect_list, self.downsample)
 
-        if self.downsample == len(read_list):
+        if self.downsample == len(collect_list):
             E.warn('''The downsample reads is equal to the
             number of unique reads''')
             for read in self.pysam_in2:
@@ -237,13 +238,13 @@ class SubsetBam(object):
         This function will downsample a single bam file.
         It will retain multimapping reads if not pre-filtered
         '''
+        if self.random_seed is not None:
+            random.seed(self.random_seed)
 
-        random.seed(self.random_seed)
+        collect_list = self.list_of_reads(paired=False)
+        read_list = random.sample(collect_list, self.downsample)
 
-        read_list = self.list_of_reads(paired=False)
-        read_list = random.sample(read_list, self.downsample)
-
-        if self.downsample == len(read_list):
+        if self.downsample == len(collect_list):
             E.warn('''The downsample reads is equal to the
             number of unique reads''')
             for read in self.pysam_in2:
