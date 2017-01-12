@@ -1,7 +1,7 @@
 '''bam2bam.py - modify bam files
 =============================
 
-:Author: Andreas Heger
+:Author: Andreas Heger & Adam Cribbs
 :Release: $Id$
 :Date: |today|
 :Tags: Genomics NGS BAM Manipulation
@@ -104,7 +104,7 @@ The script implements the following methods:
 ``downsample-paried``
 
    generates a downsampled :term:`bam` file by randomly subsampling
-   reads from a single ended :term:`bam` file. The downsampling
+   reads from a paired ended :term:`bam` file. The downsampling
    retains multimapping reads. The use of this requires downsampling
    parameter to be set and optionally randomseed.
 
@@ -136,7 +136,7 @@ cgat bam2bam --method=downsample-paired --downsample=30000
 
 Type::
 
-   python bam2bam --help
+   cgat bam2bam --help
 
 for command line help.
 
@@ -151,7 +151,6 @@ import tempfile
 import shutil
 import random
 import pysam
-import numpy as np
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import itertools
@@ -181,72 +180,29 @@ class SubsetBam(object):
     '''
 
     def __init__(self, pysam_in, downsample, paired_end=None,
-                 single_end=None):
+                 single_end=None, random_seed=None):
 
         self.pysam_in1, self.pysam_in2 = itertools.tee(pysam_in)
         self.downsample = downsample
         self.paired_end = paired_end
         self.single_end = single_end
+        self.random_seed = random_seed
 
-    def dict_of_reads(self, paired=None):
+    def list_of_reads(self, paired=None):
 
         '''
         This will create a dictionary of uniqe reads in the bam
         '''
-        read_dict = {}
+        read_list = []
 
         for read in self.pysam_in1:
             if paired is True:
                 if read.is_proper_pair:
-                    key = read.qname
-                    value = read.qname
-                    read_dict[key] = value
+                    read_list.append(read.qname)
             else:
-                key = read.qname
-                value = read.qname
-                read_dict[key] = value
+                read_list.append(read.qname)
 
-        return read_dict
-
-    def return_read(self, key):
-        '''
-        Return full list of 1s matching the number of reads to downsample
-        and 0s matching the dictionary length.
-        '''
-        key = set(key)
-        reads = int(self.downsample)
-        num_input_reads = len(key)
-
-        if reads < num_input_reads:
-            num_of_reads_to_remove = num_input_reads - reads
-
-            # create a array of 1's for the number of pairs of reads wanted
-            # after downsampling length of list == number of pairs wanted after
-            # downsampling
-            wanted_list = np.ones((1, reads), dtype=np.int8)
-
-            # create a array of 0's for the number of pairs of reads to be
-            # removed by downsampling
-            # length of list == number of pairs to be removed by downsampling
-            remove_list = np.zeros((1, num_of_reads_to_remove), dtype=np.int8)
-
-            # combine the list of 1 & 0 & shuffle - double check list is same
-            # length as input bam
-            full_list = list(np.concatenate((wanted_list, remove_list),
-                                            axis=1)[0])
-            random.shuffle(full_list)
-
-            if len(full_list) != num_input_reads:
-                raise ValueError('''length of list to randomly
-                downsample reads is %s
-                but length of file is
-                %s''' % (len(full_list), num_input_reads))
-
-            return full_list
-
-        else:
-            raise ValueError('''The length of the downsample matches the number of
-            unique reads in the sample''')
+        return set(read_list)
 
     def downsample_paired(self):
 
@@ -255,17 +211,10 @@ class SubsetBam(object):
         It will retain multimapping reads if they have not been
         pre-filtered
         '''
-        read_dict = self.dict_of_reads(paired=True)
-        key = [key for key, value in read_dict.items()]
-        full_list = self.return_read(key)
+        random.seed(self.random_seed)
 
-        read_dict = dict(zip(key, full_list))
-
-        # iterate over dictionary and if 1 add read to list
-        read_list = []
-        for key, value in read_dict.items():
-            if value == 1:
-                read_list.append(key)
+        read_list = self.list_of_reads(paired=True)
+        read_list = random.sample(read_list, self.downsample)
 
         if self.downsample == len(read_list):
             E.warn('''The downsample reads is equal to the
@@ -273,10 +222,11 @@ class SubsetBam(object):
             for read in self.pysam_in2:
                 yield read
 
-        # yield read if it is in read_list, if the reads is multimapped
+        # yield read if it is in read_list, if the read is multimapped
         # then all multimapping reads will be yielded
         else:
-            read_list = set(read_list)
+            E.warn('''Multimaping reads have been detected and these will
+            be output to the final bam file''')
             for read in self.pysam_in2:
                 if read.qname in read_list:
                     yield read
@@ -287,30 +237,26 @@ class SubsetBam(object):
         This function will downsample a single bam file.
         It will retain multimapping reads if not pre-filtered
         '''
-        read_dict = self.dict_of_reads(paired=False)
-        key = [key for key, value in read_dict.items()]
 
-        full_list = self.return_read(key)
+        random.seed(self.random_seed)
 
-        read_dict = dict(zip(key, full_list))
-
-        # iterate over dictionary and if 1 add read to list
-        read_list = []
-        for key, value in read_dict.items():
-            if value == 1:
-                read_list.append(key)
+        read_list = self.list_of_reads(paired=False)
+        read_list = random.sample(read_list, self.downsample)
 
         if self.downsample == len(read_list):
             E.warn('''The downsample reads is equal to the
             number of unique reads''')
+            for read in self.pysam_in2:
+                yield read
 
         # yield read if it is in read_list, if the reads is multimapped
         # then all multimapping reads will be yielded
-        read_list = set(read_list)
-
-        for read in self.pysam_in2:
-            if read.qname in read_list:
-                yield read
+        else:
+            E.warn('''Multimaping reads have been detected and these will
+            be output to the final bam file''')
+            for read in self.pysam_in2:
+                if read.qname in read_list:
+                    yield read
 
 
 def main(argv=None):
@@ -387,7 +333,7 @@ def main(argv=None):
 
     parser.add_option(
         "--downsample", dest="downsample",
-        type="string",
+        type="int",
         help="Number of reads to downsample to")
 
     parser.set_defaults(
@@ -644,7 +590,8 @@ def main(argv=None):
                     down = SubsetBam(pysam_in=it,
                                       downsample=options.downsample,
                                       paired_end=None,
-                                      single_end=True)
+                                      single_end=True,
+                                     random_seed=options.random_seed)
                     it = down.downsample_single()
 
             if "downsample-paired" in options.methods:
@@ -656,7 +603,8 @@ def main(argv=None):
                     down = SubsetBam(pysam_in=it,
                                       downsample=options.downsample,
                                       paired_end=True,
-                                      single_end=None)
+                                      single_end=None,
+                                     random_seed=options.random_seed)
                     it = down.downsample_paired()
 
             # continue processing till end
