@@ -154,13 +154,14 @@ import pysam
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import itertools
-
+from orderedset import OrderedSet
 try:
     import pyximport
     pyximport.install(build_in_temp=False)
     import _bam2bam
 except ImportError:
     import CGAT.scripts._bam2bam as _bam2bam
+
 
 class SubsetBam(object):
 
@@ -201,7 +202,7 @@ class SubsetBam(object):
             else:
                 read_list.append(read.qname)
 
-        return set(read_list)
+        return OrderedSet(read_list)
 
     def downsample_paired(self):
 
@@ -400,7 +401,7 @@ def main(argv=None):
 
             E.debug("writing temporary bam-file to %s" % tmpfile.name)
             pysam_out = pysam.Samfile(tmpfile.name, "wb",
-                                            template=pysam_in)
+                                      template=pysam_in)
 
         if "filter" in options.methods:
 
