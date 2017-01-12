@@ -154,7 +154,7 @@ import pysam
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import itertools
-from orderedset import OrderedSet
+
 try:
     import pyximport
     pyximport.install(build_in_temp=False)
@@ -202,7 +202,7 @@ class SubsetBam(object):
             else:
                 read_list.append(read.qname)
 
-        return OrderedSet(read_list)
+        return sorted(set(read_list))
 
     def downsample_paired(self):
 
