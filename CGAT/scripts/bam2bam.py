@@ -101,7 +101,7 @@ The script implements the following methods:
    retains multimapping reads. The use of this requires downsampling
    parameter to be set and optionally randomseed.
 
-``downsample-paried``
+``downsample-paired``
 
    generates a downsampled :term:`bam` file by randomly subsampling
    reads from a paired ended :term:`bam` file. The downsampling
