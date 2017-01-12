@@ -162,7 +162,6 @@ try:
 except ImportError:
     import CGAT.scripts._bam2bam as _bam2bam
 
-
 class SubsetBam(object):
 
     ''' base class for performing downsampling on single and
@@ -212,7 +211,7 @@ class SubsetBam(object):
         pre-filtered
         '''
         if self.random_seed is not None:
-            random.seed(1)
+            random.seed(self.random_seed)
 
         collect_list = self.list_of_reads(paired=True)
         read_list = random.sample(collect_list, self.downsample)
@@ -347,7 +346,8 @@ def main(argv=None):
         inplace=False,
         fastq_pair1=None,
         fastq_pair2=None,
-        downsample=None
+        downsample=None,
+        random_seed=None
     )
 
     # add common options (-h/--help, ...) and parse command line
