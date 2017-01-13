@@ -202,7 +202,7 @@ class SubsetBam(object):
             else:
                 read_list.append(read.qname)
 
-        return set(read_list)
+        return sorted(set(read_list))
 
     def downsample_paired(self):
 
@@ -211,12 +211,13 @@ class SubsetBam(object):
         It will retain multimapping reads if they have not been
         pre-filtered
         '''
-        random.seed(self.random_seed)
+        if self.random_seed is not None:
+            random.seed(self.random_seed)
 
-        read_list = self.list_of_reads(paired=True)
-        read_list = random.sample(read_list, self.downsample)
+        collect_list = self.list_of_reads(paired=True)
+        read_list = random.sample(collect_list, self.downsample)
 
-        if self.downsample == len(read_list):
+        if self.downsample == len(collect_list):
             E.warn('''The downsample reads is equal to the
             number of unique reads''')
             for read in self.pysam_in2:
@@ -237,13 +238,13 @@ class SubsetBam(object):
         This function will downsample a single bam file.
         It will retain multimapping reads if not pre-filtered
         '''
+        if self.random_seed is not None:
+            random.seed(self.random_seed)
 
-        random.seed(self.random_seed)
+        collect_list = self.list_of_reads(paired=False)
+        read_list = random.sample(collect_list, self.downsample)
 
-        read_list = self.list_of_reads(paired=False)
-        read_list = random.sample(read_list, self.downsample)
-
-        if self.downsample == len(read_list):
+        if self.downsample == len(collect_list):
             E.warn('''The downsample reads is equal to the
             number of unique reads''')
             for read in self.pysam_in2:
@@ -346,7 +347,8 @@ def main(argv=None):
         inplace=False,
         fastq_pair1=None,
         fastq_pair2=None,
-        downsample=None
+        downsample=None,
+        random_seed=None
     )
 
     # add common options (-h/--help, ...) and parse command line
@@ -399,7 +401,7 @@ def main(argv=None):
 
             E.debug("writing temporary bam-file to %s" % tmpfile.name)
             pysam_out = pysam.Samfile(tmpfile.name, "wb",
-                                            template=pysam_in)
+                                      template=pysam_in)
 
         if "filter" in options.methods:
 
