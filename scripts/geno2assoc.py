@@ -498,7 +498,6 @@ def main(argv=None):
     elif options.method == "estimate_haplotypes":
         gwas_object._run_tasks(estimate_haplotypes="haplotype")
     elif options.method == "lmm":
-        print options.lmm_method
         gwas_object.mixed_model(lmm_method=options.lmm_method,
                                 grm=options.grm_prefix,
                                 qcovar=options.covariate_file,
