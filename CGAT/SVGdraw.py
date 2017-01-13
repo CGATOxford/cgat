@@ -35,6 +35,7 @@ O'Reilly (www.oreilly.com) python books as information sources. A svg viewer
 is available from www.adobe.com
 '''
 
+from six import StringIO
 import sys
 
 __version__ = "1.0"
@@ -1012,8 +1013,7 @@ class drawing:
         # Voeg een element toe aan de grafiek toe.
     if use_dom_implementation == 0:
         def toXml(self, filename='', compress=False):
-            import io
-            xml = io.StringIO()
+            xml = StringIO()
             xml.write("<?xml version='1.0' encoding='UTF-8'?>\n")
             xml.write(
                 "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\" \"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd \">\n")
@@ -1021,7 +1021,7 @@ class drawing:
             if not filename:
                 if compress:
                     import gzip
-                    f = io.StringIO()
+                    f = StringIO()
                     zf = gzip.GzipFile(fileobj=f, mode='wb')
                     zf.write(xml.getvalue())
                     zf.close()
@@ -1079,12 +1079,11 @@ class drawing:
                 return elementroot
             root = appender(self.svg, root)
             if not filename:
-                import io
-                xml = io.StringIO()
+                xml = StringIO()
                 PrettyPrint(root, xml)
                 if compress:
                     import gzip
-                    f = io.StringIO()
+                    f = StringIO()
                     zf = gzip.GzipFile(fileobj=f, mode='wb')
                     zf.write(xml.getvalue())
                     zf.close()
@@ -1096,8 +1095,7 @@ class drawing:
                 try:
                     if filename[-4:] == 'svgz':
                         import gzip
-                        import io
-                        xml = io.StringIO()
+                        xml = StringIO()
                         PrettyPrint(root, xml)
                         f = gzip.GzipFile(
                             filename=filename, mode='wb', compresslevel=9)

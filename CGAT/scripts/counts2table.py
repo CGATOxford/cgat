@@ -24,19 +24,10 @@ data to apply some common filtering methods.
 The methods implemented are:
 
 sleuth
-   Application of sleuth. Use --sleuth-genewise to test at gene rather
-   than transcript level
-   For genewise analysis, also require --gene-biomart option
-   Use following R code to identify the correct database
-   (e.g hsapiens_gene_ensembl)
-   > library(biomaRt)
-   > listDatasets(useEnsembl(biomart="ensembl"))
+   Application of sleuth.
 
 deseq2
    Application of DESeq2
-
-deseq
-   Application of DESeq
 
 edger
    Application of EdgeR
@@ -48,6 +39,12 @@ mock
    A mock analysis. No differential analysis is performed,
    but fold changes are computed and output.
 
+Use --sleuth-genewise to test at gene rather than transcript level.
+For genewise analysis, also require --gene-biomart option Use
+following R code to identify the correct database, e.g
+hsapiens_gene_ensembl) > library(biomaRt)
+>listDatasets(useEnsembl(biomart="ensembl"))
+
 Use the option --use-ihw to use the independent hypothesis weighting
 method to calculate a weighted FDR. Note this will replace the
 unweighted BH FDR in the final results table.
@@ -58,13 +55,16 @@ Usage
 Input
 +++++
 
-The input to this script is a table with of measurements reflecting
-expression levels. For the tag counting methods such as DESeq or
+The input to this script is a table of measurements reflecting
+expression levels. For the tag counting methods such as DESeq2 or
 EdgeR, these should be the raw counts, while for other methods such as
-ttest, these can be normalized values such as FPKM values.
+ttest, these can be normalized values such as FPKM values. In
+addition, sleuth does not use an expression table but rather the
+directory of expression estimates from e.g kallisto.
+See option --sleuth-counts-dir
 
 The script further requires a design table describing the tests to
-be performed. The design table has for columns::
+be performed. The design table has four columns::
 
       track   include group   pair
       CW-CD14-R1      0       CD14    1
@@ -139,6 +139,8 @@ Command line options
 To do:
  -- add some E.infos
 
+Document!!!
+
 '''
 
 import sys
@@ -148,6 +150,7 @@ import CGAT.Experiment as E
 import CGAT.Expression as Expression
 import CGAT.IOTools as IOTools
 import CGAT.Counts as Counts
+import CGAT.R as R
 
 
 def main(argv=None):
@@ -163,15 +166,9 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
-    parser.add_option("-t", "--tags-tsv-file", dest="input_filename_tags",
+    parser.add_option("-t", "--tag-tsv-file", dest="input_filename_tags",
                       type="string",
                       help="input file with tag counts [default=%default].")
-
-    parser.add_option(
-        "--result-tsv-file", dest="input_filename_result",
-        type="string",
-        help="input file with results (for plotdetagstats) "
-        "[default=%default].")
 
     parser.add_option("-d", "--design-tsv-file", dest="input_filename_design",
                       type="string",
@@ -179,25 +176,19 @@ def main(argv=None):
                       "[default=%default].")
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-                      choices=("sleuth", "edger", "deseq2", "mock"),
+                      choices=("ttest", "sleuth", "edger", "deseq2", "mock"),
                       help="differential expression method to apply "
                       "[default=%default].")
 
-    parser.add_option("--deseq-dispersion-method",
-                      dest="deseq_dispersion_method",
+    parser.add_option("--deseq2-dispersion-method",
+                      dest="deseq2_dispersion_method",
                       type="choice",
                       choices=("pooled", "per-condition", "blind"),
-                      help="dispersion method for deseq [default=%default].")
+                      help="dispersion method for deseq2 [default=%default].")
 
-    parser.add_option("--deseq-fit-type", dest="deseq_fit_type", type="choice",
+    parser.add_option("--deseq2-fit-type", dest="deseq2_fit_type", type="choice",
                       choices=("parametric", "local"),
-                      help="fit type for deseq [default=%default].")
-
-    parser.add_option("--deseq-sharing-mode",
-                      dest="deseq_sharing_mode",
-                      type="choice",
-                      choices=("maximum", "fit-only", "gene-est-only"),
-                      help="deseq sharing mode [default=%default].")
+                      help="fit type for deseq2 [default=%default].")
 
     parser.add_option("--edger-dispersion",
                       dest="edger_dispersion", type="float",
@@ -207,9 +198,10 @@ def main(argv=None):
     parser.add_option("-f", "--fdr", dest="fdr", type="float",
                       help="fdr to apply [default=%default].")
 
-    parser.add_option("-R", "--output-R-code", dest="save_r_environment",
-                      type="string",
-                      help="save R environment [default=%default].")
+    # currently not implemented
+    #parser.add_option("-R", "--output-R-code", dest="save_r_environment",
+    #                  type="string",
+    #                  help="save R environment to location [default=%default].")
 
     parser.add_option("-r", "--reference-group", dest="ref_group",
                       type="string",
@@ -239,23 +231,17 @@ def main(argv=None):
                       type="string",
                       help=("model for GLM"))
 
-    parser.add_option("--contrasts",
-                      dest="contrasts",
-                      action="append",
-                      help=("contrasts for post-hoc testing writen as comma "
-                            "seperated list `condition,replicate` etc"))
-
-    parser.add_option("--deseq2-fit-type",
-                      dest="deseq2_fit_type",
+    parser.add_option("--contrast",
+                      dest="contrast",
                       type="string",
-                      help=("fit type used for observed dispersion mean "
-                            "relationship in deseq2"))
+                      help=("contrast for differential expression testing"))
 
     parser.add_option("--sleuth-counts-dir",
                       dest="sleuth_counts_dir",
                       type="string",
-                      help=("directory containing counts for sleuth. Sleuth "
-                            "expects counts files to be called abundance.h5"))
+                      help=("directory containing expression estimates"
+                            "from sleuth. Sleuth expects counts"
+                            "files to be called abundance.h5"))
 
     parser.add_option("--outfile-sleuth-count",
                       dest="outfile_sleuth_count",
@@ -283,19 +269,32 @@ def main(argv=None):
                       type="string",
                       help=("name of ensemble gene biomart"))
 
+    parser.add_option("--de-test",
+                      dest="DEtest",
+                      type="choice",
+                      choices=("wald", "lrt"),
+                      help=("Differential expression test"))
+
+    parser.add_option("--Rhistory",
+                      dest="Rhistory",
+                      type="string",
+                      help=("Outfile for R history"))
+
+    parser.add_option("--Rimage",
+                      dest="Rimage",
+                      type="string",
+                      help=("Outfile for R image"))
+
     parser.set_defaults(
         input_filename_tags="-",
-        input_filename_result=None,
         input_filename_design=None,
         output_filename=sys.stdout,
         method="deseq2",
         fdr=0.1,
-        deseq_dispersion_method="pooled",
-        deseq_fit_type="parametric",
-        deseq_sharing_mode="maximum",
+        deseq2_dispersion_method="pooled",
+        deseq2_fit_type="parametric",
         edger_dispersion=0.4,
         ref_group=False,
-        save_r_environment=None,
         filter_min_counts_per_row=None,
         filter_min_counts_per_sample=None,
         filter_percentile_rowsums=None,
@@ -305,31 +304,60 @@ def main(argv=None):
         spike_foldchange_bin_width=0.5,
         spike_max_counts_per_bin=50,
         model=None,
-        contrasts=None,
+        contrast=None,
         output_filename_pattern=None,
-        deseq2_fit_type="parametric",
         sleuth_counts_dir=None,
         outfile_sleuth_count=None,
         outfile_sleuth_tpm=None,
         use_ihw=False,
         sleuth_genewise=False,
-        gene_biomart=None
-    )
+        gene_biomart=None,
+        DEtest="wald",
+        Rhistory=None,
+        Rimage=None)
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
-    outfile_prefix = options.output_filename_pattern + "_" + options.method
+    RH = None
+    if options.Rhistory or options.Rimage:
+        RH = R.R_with_History()
+
+    outfile_prefix = options.output_filename_pattern
+
+    # Expression.py currently expects a refernce group for edgeR and
+    # sleuth, regardless of which test is used
+    if not options.ref_group and (
+            options.method is "edger" or options.method is "sleuth"):
+        raise ValueError("Must provide a reference group ('--reference-group')")
+
+    # create Design object
+    design = Expression.ExperimentalDesign(
+        pd.read_csv(IOTools.openFile(options.input_filename_design, "r"),
+                    sep="\t", index_col=0, comment="#"))
+
+    if len(set(design.table[options.contrast])) > 2:
+
+        if options.method == "deseq2" or options.method == "sleuth":
+            if options.DEtest == "wald":
+                raise ValueError(
+                    "Factor must have exactly two levels for Wald Test. "
+                    "If you have more than two levels in your factor, "
+                    "consider LRT")
+        else:
+            E.info('''There are more than 2 levels for the contrast
+            specified" "(%s:%s). The log2fold changes in the results table
+            and MA plots will be for the first two levels in the
+            contrast. The p-value will be the p-value for the overall
+            significance of the contrast. Hence, some genes will have a
+            signficant p-value but 0-fold change between the first two
+            levels''' % (options.contrast, set(design[options.contrast])))
 
     # Sleuth reads in data itself so we don't need to create a counts object
     if options.method == "sleuth":
         assert options.sleuth_counts_dir, (
-            "need to specify the location of the abundance.h5 counts files")
-
-        # create Design object
-        design = Expression.ExperimentalDesign(
-            pd.read_csv(IOTools.openFile(options.input_filename_design, "r"),
-                        sep="\t", index_col=0, comment="#"))
+            "need to specify the location of the abundance.h5 counts files "
+            " (--sleuth-counts-dir)")
 
         # validate design against counts and model
         design.validate(model=options.model)
@@ -338,13 +366,15 @@ def main(argv=None):
         results = experiment.run(design,
                                  base_dir=options.sleuth_counts_dir,
                                  model=options.model,
-                                 contrasts=options.contrasts,
+                                 contrast=options.contrast,
                                  outfile_prefix=outfile_prefix,
                                  counts=options.outfile_sleuth_count,
                                  tpm=options.outfile_sleuth_tpm,
                                  fdr=options.fdr,
                                  genewise=options.sleuth_genewise,
-                                 gene_biomart=options.gene_biomart)
+                                 gene_biomart=options.gene_biomart,
+                                 DE_test=options.DEtest,
+                                 ref_group=options.ref_group)
 
     else:
         # create Counts object
@@ -355,11 +385,6 @@ def main(argv=None):
             counts = Counts.Counts(pd.io.parsers.read_csv(
                 IOTools.openFile(options.input_filename_tags, "r"),
                 sep="\t", index_col=0, comment="#"))
-
-        # create Design object
-        design = Expression.ExperimentalDesign(
-            pd.read_csv(IOTools.openFile(options.input_filename_design, "r"),
-                        sep="\t", index_col=0, comment="#"))
 
         # validate design against counts and model
         design.validate(counts, options.model)
@@ -396,10 +421,11 @@ def main(argv=None):
             results = experiment.run(counts,
                                      design,
                                      model=options.model,
-                                     disperion=options.edger_dispersion,
+                                     contrast=options.contrast,
+                                     outfile_prefix=outfile_prefix,
                                      ref_group=options.ref_group,
-                                     contrasts=options.contrasts,
-                                     outfile_prefix=outfile_prefix)
+                                     fdr=options.fdr,
+                                     dispersion=options.edger_dispersion)
 
         elif options.method == "deseq2":
 
@@ -407,11 +433,13 @@ def main(argv=None):
             results = experiment.run(counts,
                                      design,
                                      model=options.model,
-                                     contrasts=options.contrasts,
+                                     contrast=options.contrast,
                                      outfile_prefix=outfile_prefix,
                                      fdr=options.fdr,
                                      fit_type=options.deseq2_fit_type,
-                                     ref_group=options.ref_group)
+                                     ref_group=options.ref_group,
+                                     DEtest=options.DEtest,
+                                     R=RH)
 
     results.getResults(fdr=options.fdr)
 
@@ -419,8 +447,10 @@ def main(argv=None):
         results.calculateIHW(alpha=options.fdr)
 
     for contrast in set(results.table['contrast']):
-        results.plotVolcano(contrast, outfile_prefix=outfile_prefix)
-        results.plotMA(contrast, outfile_prefix=outfile_prefix)
+        results.plotVolcano(contrast, outfile_prefix=outfile_prefix, R=RH)
+        results.plotMA(contrast, outfile_prefix=outfile_prefix, R=RH)
+        results.plotPvalueHist(contrast, outfile_prefix=outfile_prefix, R=RH)
+        results.plotPvalueQQ(contrast, outfile_prefix=outfile_prefix, R=RH)
 
     results.table.to_csv(sys.stdout, sep="\t", na_rep="NA", index=False)
 
@@ -433,6 +463,11 @@ def main(argv=None):
         outf.write("category\tcounts\n%s\n"
                    % results.Summary[test_group].asTable())
         outf.close()
+
+    if options.Rhistory:
+        RH.saveHistory(options.Rhistory)
+    if options.Rimage:
+        RH.saveImage(options.Rimage)
 
     E.Stop()
 

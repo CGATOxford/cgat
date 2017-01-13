@@ -43,8 +43,8 @@ Command line options
 
 import sys
 import re
-import io
 import numpy
+from six import StringIO
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.MatlabTools as MatlabTools
@@ -142,9 +142,10 @@ def main(argv=None):
 
     for x in range(len(chunks) - 1):
         ninput += 1
-        matrix, row_headers, col_headers = MatlabTools.readMatrix(io.StringIO("".join(lines[chunks[x] + 1:chunks[x + 1]])),
-                                                                  format=options.input_format,
-                                                                  headers=options.headers)
+        matrix, row_headers, col_headers = MatlabTools.readMatrix(
+            StringIO("".join(lines[chunks[x] + 1:chunks[x + 1]])),
+            format=options.input_format,
+            headers=options.headers)
         nrows, ncols = matrix.shape
 
         if options.loglevel >= 2:

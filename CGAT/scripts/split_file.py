@@ -37,6 +37,7 @@ import string
 import os
 import getopt
 import CGAT.Experiment as E
+import CGAT.IOTools as IOTools
 
 USAGE = """python %s < stdin > stdout
 
@@ -69,7 +70,7 @@ def CreateOpen(file, mode="w", dry_run=False, header=None):
 
     if dry_run:
         print("# opening file %s" % file)
-        returnIOTools.openFile("/dev/null", mode)
+        return IOTools.openFile("/dev/null", mode)
 
     if mode in ("w", "a"):
         dirname = os.path.dirname(file)
