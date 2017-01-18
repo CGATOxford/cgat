@@ -499,7 +499,7 @@ class GCTA(GWASProgram):
         # combinations to use.
         filters = []
         filter_dict = {}
-        for key, value in kwargs.iteritems():
+        for key, value in kwargs.items():
             filter_dict[key] = value
 
         for each in filter_dict.keys():
@@ -661,7 +661,7 @@ class GCTA(GWASProgram):
                             "no_covar": " --mlma-no-adj-covar "},
                     "remove_relations": {"cutoff": " --grm-cutoff %s "}}
 
-        for task, value in kwargs.iteritems():
+        for task, value in kwargs.items():
             # check for PCA first as it is not nested in task_map
             if task == "pca":
                 try:
@@ -1210,7 +1210,7 @@ class Plink2(GWASProgram):
         # combinations to use.
         filters = []
         filter_dict = {}
-        for key, value in kwargs.iteritems():
+        for key, value in kwargs.items():
             filter_dict[key] = value
 
         # need to check for covariates and qual scores - these
@@ -1444,7 +1444,7 @@ class Plink2(GWASProgram):
                     "pca": " --pca %s ",
                     "estimate_haplotypes": " --blocks "}
 
-        for task, value in kwargs.iteritems():
+        for task, value in kwargs.items():
             # check for PCA first as it is not nested in task_map
             if task == "pca":
                 try:
@@ -1540,7 +1540,7 @@ class Plink2(GWASProgram):
                      "case_control_fst": "--fst %s "}
 
         statement = []
-        for key, value in kwargs.iteritems():
+        for key, value in kwargs.tems():
             if value:
                 try:
                     assert stats_map[key]
@@ -1967,7 +1967,7 @@ class Plink2(GWASProgram):
         state = []
 
         # put everything in an accessible dictionary first
-        for task, value in kwargs.iteritems():
+        for task, value in kwargs.items():
             task_dict[task] = value
 
         # LD pruning can be passed multiple parameters,
@@ -2011,7 +2011,7 @@ class Plink2(GWASProgram):
         except KeyError:
             pass
 
-        for task, value in task_dict.iteritems():
+        for task, value in task_dict.items():
             try:
                 sub_task = qc_dict[task]
                 try:
