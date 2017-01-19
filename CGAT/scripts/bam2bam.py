@@ -1,7 +1,7 @@
 '''bam2bam.py - modify bam files
 =============================
 
-:Author: Andreas Heger
+:Author: Andreas Heger & Adam Cribbs
 :Release: $Id$
 :Date: |today|
 :Tags: Genomics NGS BAM Manipulation
@@ -94,6 +94,20 @@ The script implements the following methods:
    keep only the first base of reads so that read counting tools will
    only consider the first base in the counts
 
+``downsample-single``
+
+   generates a downsampled :term:`bam` file by randomly subsampling
+   reads from a single ended :term:`bam` file. The downsmpling
+   retains multimapping reads. The use of this requires downsampling
+   parameter to be set and optionally randomseed.
+
+``downsample-paired``
+
+   generates a downsampled :term:`bam` file by randomly subsampling
+   reads from a paired ended :term:`bam` file. The downsampling
+   retains multimapping reads. The use of this requires downsampling
+   parameter to be set and optionally randomseed.
+
 
 By default, the script works from stdin and outputs to stdout.
 If the ``--inplace option`` is given, the script will modify
@@ -107,17 +121,22 @@ Usage
 
 For example::
 
-   cgat bam2bam.py --method=filter --filter-method=mapped < in.bam > out.bam
+   cgat bam2bam --method=filter --filter-method=mapped < in.bam > out.bam
 
 will remove all unmapped reads from the bam-file.
 
 To remove unmapped reads from multiple bam-files, try::
 
-   cgat bam2bam.py --inplace --method=filter --filter-method=mapped *.bam
+   cgat bam2bam --inplace --method=filter --filter-method=mapped *.bam
+
+example for running downsample::
+
+cgat bam2bam --method=downsample-paired --downsample=30000
+--randomseed=1 -L out.log < Paired.bam > out.bam
 
 Type::
 
-   python bam2bam.py --help
+   cgat bam2bam --help
 
 for command line help.
 
@@ -130,10 +149,11 @@ import os
 import sys
 import tempfile
 import shutil
+import random
 import pysam
-
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
+import itertools
 
 try:
     import pyximport
@@ -141,6 +161,103 @@ try:
     import _bam2bam
 except ImportError:
     import CGAT.scripts._bam2bam as _bam2bam
+
+
+class SubsetBam(object):
+
+    ''' base class for performing downsampling on single and
+    paired bam file
+
+    A dictionary of the read names is made and then an
+    array matching the numbers of reads in the dictionary will be
+    created. This array contains 1s that match the number of reads
+    to be downsampled to and 0s to fill out the rest of the array.
+
+    The read is kept if the value in the dictionary matches 1. The
+    read is yielded and iterated over to produce the output bam.
+
+    The script will handle multimapping reads.
+    '''
+
+    def __init__(self, pysam_in, downsample, paired_end=None,
+                 single_end=None, random_seed=None):
+
+        self.pysam_in1, self.pysam_in2 = itertools.tee(pysam_in)
+        self.downsample = downsample
+        self.paired_end = paired_end
+        self.single_end = single_end
+        self.random_seed = random_seed
+
+    def list_of_reads(self, paired=None):
+
+        '''
+        This will create a dictionary of uniqe reads in the bam
+        '''
+        read_list = []
+
+        for read in self.pysam_in1:
+            if paired is True:
+                if read.is_proper_pair:
+                    read_list.append(read.qname)
+            else:
+                read_list.append(read.qname)
+
+        return sorted(set(read_list))
+
+    def downsample_paired(self):
+
+        '''
+        This function will downsample a paired bam file.
+        It will retain multimapping reads if they have not been
+        pre-filtered
+        '''
+        if self.random_seed is not None:
+            random.seed(self.random_seed)
+
+        collect_list = self.list_of_reads(paired=True)
+        read_list = random.sample(collect_list, self.downsample)
+
+        if self.downsample == len(collect_list):
+            E.warn('''The downsample reads is equal to the
+            number of unique reads''')
+            for read in self.pysam_in2:
+                yield read
+
+        # yield read if it is in read_list, if the read is multimapped
+        # then all multimapping reads will be yielded
+        else:
+            E.warn('''Multimaping reads have been detected and these will
+            be output to the final bam file''')
+            for read in self.pysam_in2:
+                if read.qname in read_list:
+                    yield read
+
+    def downsample_single(self):
+
+        '''
+        This function will downsample a single bam file.
+        It will retain multimapping reads if not pre-filtered
+        '''
+        if self.random_seed is not None:
+            random.seed(self.random_seed)
+
+        collect_list = self.list_of_reads(paired=False)
+        read_list = random.sample(collect_list, self.downsample)
+
+        if self.downsample == len(collect_list):
+            E.warn('''The downsample reads is equal to the
+            number of unique reads''')
+            for read in self.pysam_in2:
+                yield read
+
+        # yield read if it is in read_list, if the reads is multimapped
+        # then all multimapping reads will be yielded
+        else:
+            E.warn('''Multimaping reads have been detected and these will
+            be output to the final bam file''')
+            for read in self.pysam_in2:
+                if read.qname in read_list:
+                    yield read
 
 
 def main(argv=None):
@@ -165,7 +282,9 @@ def main(argv=None):
                                "strip-sequence",
                                "strip-quality",
                                "unstrip",
-                               "unset-unmapped-mapq"),
+                               "unset-unmapped-mapq",
+                               "downsample-single",
+                               "downsample-paired"),
                       help="methods to apply [%default]")
 
     parser.add_option("--strip-method", dest="strip_method", type="choice",
@@ -213,6 +332,11 @@ def main(argv=None):
         "in pair. Used for unstripping sequence "
         "and quality scores  [%default]")
 
+    parser.add_option(
+        "--downsample", dest="downsample",
+        type="int",
+        help="Number of reads to downsample to")
+
     parser.set_defaults(
         methods=[],
         output_sam=False,
@@ -223,11 +347,13 @@ def main(argv=None):
         inplace=False,
         fastq_pair1=None,
         fastq_pair2=None,
+        downsample=None,
+        random_seed=None
     )
 
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
-
+    # random.seed(options.random_seed)
     bamfiles = []
 
     if options.stdin != sys.stdin:
@@ -274,7 +400,8 @@ def main(argv=None):
             tmpfile.close()
 
             E.debug("writing temporary bam-file to %s" % tmpfile.name)
-            pysam_out = pysam.Samfile(tmpfile.name, "wb", template=pysam_in)
+            pysam_out = pysam.Samfile(tmpfile.name, "wb",
+                                      template=pysam_in)
 
         if "filter" in options.methods:
 
@@ -455,6 +582,32 @@ def main(argv=None):
                         pysam_in.close()
                         pysam_out.close()
                         continue
+
+            if "downsample-single" in options.methods:
+
+                if not options.downsample:
+                    raise ValueError("Please provide downsample size")
+
+                else:
+                    down = SubsetBam(pysam_in=it,
+                                      downsample=options.downsample,
+                                      paired_end=None,
+                                      single_end=True,
+                                     random_seed=options.random_seed)
+                    it = down.downsample_single()
+
+            if "downsample-paired" in options.methods:
+
+                if not options.downsample:
+                    raise ValueError("Please provide downsample size")
+
+                else:
+                    down = SubsetBam(pysam_in=it,
+                                      downsample=options.downsample,
+                                      paired_end=True,
+                                      single_end=None,
+                                     random_seed=options.random_seed)
+                    it = down.downsample_paired()
 
             # continue processing till end
             for read in it:

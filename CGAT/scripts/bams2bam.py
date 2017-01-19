@@ -65,13 +65,7 @@ import CGAT.GTF as GTF
 import CGAT.IOTools as IOTools
 import CGAT.Bed as Bed
 import CGAT.IndexedGenome as IndexedGenome
-
-try:
-    import pyximport
-    pyximport.install(build_in_temp=False)
-    import _bams2bam
-except ImportError:
-    import CGAT.scripts._bams2bam as _bams2bam
+import CGAT.scripts._bams2bam as _bams2bam
 
 
 def main(argv=None):
