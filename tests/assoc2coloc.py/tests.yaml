@@ -6,12 +6,12 @@ version:
 
 test_binary_pheno:
     stdin: null
-    options: --trait1-results=<DIR>/trait1.tsv.gz  --trait2-results=<DIR>/trait2.tsv.gz  --trait1-prevalence=0.111  --trait1-type=cc  --trait2-type=cc  --trait2-prevalence=0.171  --maf-snp-column=RSID  --maf-table=<DIR>/maf_table.tsv.gz  --log=test_binary_pheno.log  --R-script=../R
+    options: --trait1-results=<DIR>/trait1.tsv.gz  --trait2-results=<DIR>/trait2.tsv.gz  --trait1-prevalence=0.111  --trait1-type=cc  --trait2-type=cc  --trait2-prevalence=0.171  --maf-snp-column=RSID  --maf-table=<DIR>/maf_table.tsv.gz  --log=test_binary_pheno.log  --R-script=../../R
     references: [binary_pheno_out.tsv]
     outputs: [stdout]
 
 test_eqtl:
     stdin: null
-    options: --trait1-results=<DIR>/trait1.tsv.gz  --trait2-results=<DIR>/exprs_trait.tsv.gz  --trait1-prevalence=0.111  --trait1-type=cc  --trait2-type=quant --trait2-p-column=Skin_p  --maf-snp-column=RSID  --maf-table=<DIR>/maf_table.tsv.gz --gene-list=<DIR>/gene_list.tsv  --log=test_eqtl.log   --R-script=../R
+    options: --trait1-results=<DIR>/trait1.tsv.gz  --trait2-results=<DIR>/exprs_trait.tsv.gz  --trait1-prevalence=0.111  --trait1-type=cc  --trait2-type=quant --trait2-p-column=Skin_p  --maf-snp-column=RSID  --maf-table=<DIR>/maf_table.tsv.gz --gene-list=<DIR>/gene_list.tsv  --log=test_eqtl.log   --R-script=../../R
     references: [eqtl_out.tsv]
     outputs: [stdout]
