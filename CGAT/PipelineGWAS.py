@@ -2422,7 +2422,6 @@ class GWASResults(object):
 
         # plot QQplot
         qq_save = "_".join([save_path, "qqplot.png"])
-
         self.plotQQ(qq_save)
 
         manhattan_save = "_".join([save_path, "manhattan.png"])
