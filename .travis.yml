@@ -32,6 +32,13 @@ python:
   - "2.7"
   - "3.5"
 
+# Using xvfb to Run Tests That Require a GUI
+# https://docs.travis-ci.com/user/gui-and-headless-browsers/#Using-xvfb-to-Run-Tests-That-Require-a-GUI
+before_script:
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+  - sleep 3 # give xvfb some time to start
+
 script: 
   - travis_wait 30 ./install-CGAT-tools.sh --travis
 
