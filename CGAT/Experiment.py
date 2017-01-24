@@ -790,7 +790,7 @@ def Start(parser=None,
                             cluster_memory_default="2G",
                             cluster_priority=0,
                             cluster_num_jobs=None,
-                            cluster_parallel_environment="make",
+                            cluster_parallel_environment="dedicated",
                             cluster_options="")
         parser.add_option_group(group)
 
