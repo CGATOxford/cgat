@@ -783,15 +783,6 @@ def Start(parser=None,
                          help="additional options for cluster jobs, passed "
                          "on to queuing system [%default].")
 
-        parser.set_defaults(without_cluster=False,
-                            cluster_queue_manager="sge",
-                            cluster_queue="all.q",
-                            cluster_memory_resource="mem_free",
-                            cluster_memory_default="2G",
-                            cluster_priority=0,
-                            cluster_num_jobs=None,
-                            cluster_parallel_environment="dedicated",
-                            cluster_options="")
         parser.add_option_group(group)
 
     if add_output_options or add_pipe_options:
