@@ -459,7 +459,7 @@ class Counts(object):
           suppressMessages(library(ggplot2))
           suppressMessages(library(grid))
 
-          gene_pca <- prcomp(t(counts), center = TRUE)
+          gene_pca <- prcomp(na.omit(t(counts), center = TRUE, scale=TRUE))
 
           m_text = element_text(size=12)
           s_text = element_text(size=8)
