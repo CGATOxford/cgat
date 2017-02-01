@@ -1045,9 +1045,15 @@ class PysamIndexedFasta(CGATIndexedFasta):
         sequence = self.mDatabaseFile.fetch(contig, first_pos, last_pos)
 
         if str(strand) in ("-", "0", "-1"):
-            sequence = string.translate(
-                sequence[::-1],
-                string.maketrans("ACGTacgtNn", "TGCAtgcaNn"))
+            try:
+                # works in py2 only
+                sequence = string.translate(
+                    sequence[::-1],
+                    string.maketrans("ACGTacgtNn", "TGCAtgcaNn"))
+            except AttributeError:
+                # works in py3 only
+                sequence = str(sequence[::-1]).translate(
+                    str.maketrans("ACGTacgtNn", "TGCAtgcaNn"))
 
         return sequence
 
