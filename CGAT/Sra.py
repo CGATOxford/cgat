@@ -124,7 +124,7 @@ def fetch_ENA(dl_path, outdir, protocol="ascp"):
         statement = """ascp -QT -l %%(aspera_bandwidth)s -i $ASCP_KEY_PATH
                        era-fasp@fasp.sra.ebi.ac.uk:/%(dl_path)s %(outdir)s """ % locals()
     elif protocol == "http":
-        fn = os.path.basename(era_path)
+        fn = os.path.basename(dl_path)
         outfile = os.path.join(outdir, fn)
         statement = "wget -O %(outfile)s ftp://ftp.sra.ebi.ac.uk:/%(dl_path)s" % locals()
 
@@ -141,7 +141,7 @@ def fetch_ENA_files(accession):
     try:
         paths = urllib2.urlopen(url).readlines()[1:]
     except:
-        print "couldn't access %s" %url
+        print "couldn't access %s" % url
         raise
 
     paths = list(itertools.chain.from_iterable(
