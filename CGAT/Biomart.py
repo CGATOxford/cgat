@@ -46,9 +46,20 @@ def importFromBiomart(outfile,
 
     R.library("biomaRt")
 
-    keys = columns.keys()
+    keys = list(columns.keys())
 
-    mart = R.useMart(biomart=biomart, dataset=dataset, host=host)
+    # The default value for host in the biomaRt package is
+    # www.biomart.org but for some reason R errors if you specify
+    # host manually but then use the default - but it is fine if
+    # host is anything valid apart from www.biomart.org.  So I have
+    # changed this to only specify a value if the value you
+    # are specifying is different to the default KB
+
+    if host == 'www.biomart.org':
+        mart = R.useMart(biomart=biomart, dataset=dataset)
+    else:
+        mart = R.useMart(biomart=biomart, dataset=dataset, host=host)
+
     result = R.getBM(attributes=keys, mart=mart)
 
     outf = IOTools.openFile(outfile, "w")
@@ -102,11 +113,19 @@ def biomart_iterator(columns,
 
     R.library("biomaRt")
 
-    mart = R.useMart(biomart=biomart,
-                     dataset=dataset,
-                     host=host,
-                     path=path,
-                     archive=archive)
+    # The default value for host in the biomaRt package is
+    # www.biomart.org but for some reason R errors if you specify
+    # host manually but then use the default - but it is fine if
+    # host is anything valid apart from www.biomart.org.  So I have
+    # changed this to only specify a value if the value you
+    # are specifying is different to the default KB
+
+    if host == 'www.biomart.org':
+        mart = R.useMart(biomart=biomart, dataset=dataset, path=path,
+                         archive=archive)
+    else:
+        mart = R.useMart(biomart=biomart, dataset=dataset, host=host,
+                         path=path, archive=archive)
 
     if filters is not None:
         filter_names = rpy2.robjects.vectors.StrVector(filters)
@@ -132,4 +151,4 @@ def biomart_iterator(columns,
         (str(tuple(result.colnames)), tuple(columns))
 
     for data in zip(*[result[x] for x in range(len(columns))]):
-        yield dict(zip(columns, data))
+        yield dict(list(zip(columns, data)))

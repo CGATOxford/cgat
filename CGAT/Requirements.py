@@ -62,8 +62,6 @@ def readDefinitions(filename):
     return config
 
 
-# Taken from python 3.3.2
-
 def getstatusoutput(cmd):
     """Return (status, output) of executing cmd in a shell.
 
@@ -147,7 +145,7 @@ def getRPackageList():
     b = R('''installed.packages(
     fields=c("Package", "Version"))[,c("Version")]
     ''')
-    return dict(zip(a, b))
+    return dict(list(zip(a, b)))
 
 
 class RPackageChecker(RequirementChecker):
@@ -351,10 +349,9 @@ def checkRequirementsFromAllModules():
     all_modules = sys.modules
     counter = E.Counter()
     results = []
-    for module in sys.modules.keys():
+    for module in list(sys.modules.keys()):
         if all_modules[module] is not None:
             results.extend(checkRequirementsFromModule(
                 all_modules[module],
                 counter))
     return counter, results
-

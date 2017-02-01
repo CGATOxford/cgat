@@ -1,9 +1,3 @@
-##########################################################################
-#
-# This module provides a class for interacting with this the Sloan-Kettering
-# Cancer Bioinfomatics Portal Web serice. Can also be run from the command line
-#
-###########################################################################
 '''CBioPortal.py - Interface with the Sloan-Kettering cBioPortal webservice
 ========================================================================
 
@@ -65,8 +59,8 @@ examples::
 or more tersely::
 
    portal.CBioProtal()
-   portal.getPercentAltered(study = "prad_mskcc", case_set_id = "prad_all_complete", 
-                            gene_list = ["TP53","BCL2","MYC"], 
+   portal.getPercentAltered(study = "prad_mskcc", case_set_id = "prad_all_complete",
+                            gene_list = ["TP53","BCL2","MYC"],
                             genetic_profile_id =["prad_mskcc_mrna"])
 
 Any warnings returned by the query are stored in CBioPortal.last_warnings.
@@ -82,17 +76,13 @@ Reference
 ---------
 
 '''
-import urllib2
+from future.moves.urllib.request import urlopen
 import re
 import optparse
 import sys
 from CGAT import IOTools as IOTools
 from collections import OrderedDict as odict
 from CGAT import Experiment as E
-
-##########################################################################
-##########################################################################
-##########################################################################
 
 
 class CBioPortal():
@@ -176,7 +166,7 @@ class CBioPortal():
 
                 return query1 + query2
 
-        data = urllib2.urlopen(query)
+        data = urlopen(query)
 
         line = data.readline()
         self.last_query = query
@@ -213,7 +203,7 @@ class CBioPortal():
                 line = data.readline()
                 continue
             line = line.strip()
-            return_table.append(odict(zip(headers, line.split("\t"))))
+            return_table.append(odict(list(zip(headers, line.split("\t")))))
 
         return return_table
 
@@ -395,7 +385,7 @@ class CBioPortal():
             gene_symbol: HUGO Gene Symbol.
             case_id: Case ID.
             sequencing_center: Sequencer Center responsible for identifying
-                this mutation. 
+                this mutation.
                                For example: broad.mit.edu.
             mutation_status: somatic or germline mutation status. all mutations
                          returned will be of type somatic.
@@ -610,7 +600,7 @@ class CBioPortal():
         gene_list = ",".join(gene_list)
         command = "%s/link.do?cancer_study_id=%s&gene_list=%s&report=oncoprint_html" % (
             url, study, gene_list)
-        return urllib2.urlopen(command).read()
+        return urlopen(command).read()
 
     def setDefaultStudy(self, study=None, study_name=None):
         '''sets a new study as the default study. Will check that the study
@@ -665,8 +655,6 @@ class CBioPortal():
                 return self.case_list
             else:
                 raise ValueError("No case_set_id provided and no default set")
-
-##########################################################################
 
     def _getAndCheckGeneticProfiles(self, genetic_profile_id=None, study=None):
 
@@ -797,8 +785,6 @@ class CBioPortal():
         self.last_warnings = warnings
         return return_table
 
-##########################################################################
-
     def getTotalAltered(self, gene_list, study=None, study_name=None, case_set_id=None, genetic_profile_id=None, threshold=2):
         ''' Calculate the percent of cases in which any one of the specified genes are altered '''
 
@@ -840,9 +826,9 @@ class CBioPortal():
             for gene in data:
 
                 altered = len([x for x in gene
-                              if self._guessAlteration(x[case_id],
-                                                       x['GENETIC_PROFILE_ID'],
-                                                       profiles, threshold)])
+                               if self._guessAlteration(x[case_id],
+                                                        x['GENETIC_PROFILE_ID'],
+                                                        profiles, threshold)])
                 if (altered > 0):
                     case_altered = True
 

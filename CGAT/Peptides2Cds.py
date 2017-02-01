@@ -270,10 +270,6 @@ def AlignCodonBased(seq_wobble, seq_cds, seq_peptide, map_p2c, options,
     assert(map_p2c.getColTo() <= seq_cds.getLength())
 
 
-# --------------------------------------------------------------------------
-# --------------------------------------------------------------------------
-# --------------------------------------------------------------------------
-# --------------------------------------------------------------------------
 def getMapPeptide2Cds(peptide_sequence, cds_sequence, options):
     """get map between peptide sequence and cds sequence.
 
@@ -304,7 +300,7 @@ def getMapPeptide2Cds(peptide_sequence, cds_sequence, options):
     try:
         AlignCodonBased(
             seq_wobble, seq_cds, seq_peptide, map_p2c, options=options)
-    except ValueError, msg:
+    except ValueError as msg:
         raise ValueError("mapping error for sequence: %s" % (msg))
 
     # if there are more than five frameshifts - do exhaustive alignment

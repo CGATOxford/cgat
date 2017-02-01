@@ -8,7 +8,7 @@ length_test:
     stdin: na_test.fasta
     outputs: [stdout]
     references: [length.tsv]
-    options: --section=length --split-fasta-identifier
+    options: --section=length --split-fasta-identifier --add-total
 
 seq_test:
     stdin: na_test.fasta
@@ -32,43 +32,43 @@ dn_test:
     stdin: na_test.fasta
     outputs: [stdout]
     references: [dn.tsv]
-    options: --section=dn --split-fasta-identifier
+    options: --section=dn --split-fasta-identifier --add-total
     
 cpg_test:
     stdin: na_test.fasta
     outputs: [stdout]
     references: [cpg.tsv]
-    options: --section=cpg --split-fasta-identifier
+    options: --section=cpg --split-fasta-identifier --add-total
     
 degeneracy_test:
     stdin: na_test.fasta
     outputs: [stdout]
     references: [degeneracy.tsv]
-    options: --section=degeneracy --split-fasta-identifier
+    options: --section=degeneracy --split-fasta-identifier --add-total
     
 aa_test:
     stdin: na_test.fasta
     outputs: [stdout]
     references: [aa.tsv]
-    options: --section=aa --split-fasta-identifier
+    options: --section=aa --split-fasta-identifier --add-total
     
 gaps_test:
     stdin: hg19.chr19.fasta
     outputs: [stdout]
     references: [gaps.tsv]
-    options: --section=gaps
+    options: --section=gaps --add-total
     
 codon_test:
     stdin: na_test.fasta
     outputs: [stdout]
     references: [codons.tsv]
-    options: --section=codons
+    options: --section=codons --add-total
 
 codon_usage_test:
     stdin: na_test.fasta
     outputs: [stdout]
     references: [codon-usage.tsv]
-    options: --section=codon-usage
+    options: --section=codon-usage --add-total
 
 codon_translator_test:
     stdin: na_test.fasta
@@ -80,13 +80,13 @@ codon_bias_test:
     stdin: na_test.fasta
     outputs: [stdout]
     references: [codon-bias.tsv]
-    options: --section=codon-bias
+    options: --section=codon-bias --add-total
 
 aminoacid_test:
     stdin: aa_test.fasta
     outputs: [stdout]
     references: [amino-acid.tsv]
-    options: --section=aa --sequence-type=aa
+    options: --section=aa --sequence-type=aa --add-total
     
 aa_len_hid_seq_test:
     stdin: aa_test.fasta

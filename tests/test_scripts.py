@@ -19,6 +19,8 @@ CGAT_TASK_STEPSIZE
 
 """
 
+from __future__ import print_function
+
 import subprocess
 import tempfile
 import os
@@ -29,10 +31,18 @@ import gzip
 import yaml
 import time
 import hashlib
+import sys
+import platform
 
 import TestUtils
 
 from nose.tools import ok_
+
+PYTHON_VERSION = platform.python_version()
+IS_PY3 = sys.version_info.major >= 3
+
+TRAVIS = os.environ.get("TRAVIS", False) == "true"
+JENKINS = os.environ.get("USER", "") == "jenkins"
 
 SUBDIRS = ("gpipe", "optic")
 
@@ -114,9 +124,10 @@ def check_script(test_name, script, stdin,
         options = ""
 
     options = re.sub("\n", "", options)
+    short_name = os.path.basename(script)[:-3]
 
     # use /bin/bash in order to enable "<( )" syntax in shells
-    statement = ("/bin/bash -c '%(stdin)s python %(script)s "
+    statement = ("/bin/bash -c '%(stdin)s cgat %(short_name)s "
                  " %(options)s"
                  " > %(stdout)s'") % locals()
 
@@ -127,7 +138,7 @@ def check_script(test_name, script, stdin,
                                cwd=tmpdir)
 
     if DEBUG:
-        print "tmpdir=", tmpdir
+        print("tmpdir={}".format(tmpdir), end=" ")
 
     process_stdout, process_stderr = process.communicate()
 
@@ -165,15 +176,30 @@ def check_script(test_name, script, stdin,
                       (reference, tmpdir, statement)
 
             if not fail:
-                for a, b in zip(_read(output), _read(reference)):
-                    if a != b:
-                        fail = True
-                        msg = ("files %s and %s are not the same\n"
-                               "%s\nmd5: output=%s reference=%s") %\
-                            (output, reference, statement,
-                             compute_checksum(output),
-                             compute_checksum(reference))
-                        break
+                a = _read(output)
+                b = _read(reference)
+                if a != b:
+                    fail = True
+                    msg = ("files %s and %s are not the same\n"
+                           "%s\nmd5: output=%i, %s reference=%i, %s") %\
+                        (output, reference, statement,
+                         len(a),
+                         compute_checksum(output),
+                         len(b),
+                         compute_checksum(reference))
+
+                    diffs = []
+                    for aa, bb in zip(a, b):
+                        if aa != bb:
+                            diffs.append((aa, bb))
+                            if len(diffs) > 10:
+                                break
+
+                    msg += "first 10 differences: {}".format(
+                        "\n--\n".join(
+                            ["\n".join(map(str, (x)))
+                             for x in diffs]))
+                    break
 
     t2 = time.time()
     LOGFILE.write("%s\t%s\t%f\n" % (script,
@@ -195,7 +221,6 @@ def check_script(test_name, script, stdin,
 
 def test_scripts():
     '''yield list of scripts to test.'''
-
     # the current directory
     current_dir = os.getcwd()
 
@@ -203,7 +228,7 @@ def test_scripts():
     testing_dir = TestUtils.get_tests_directory()
 
     # directory location of scripts
-    scripts_dir = os.path.join(os.path.dirname(testing_dir), "scripts")
+    scripts_dir = os.path.join(os.path.dirname(testing_dir), "CGAT", "scripts")
 
     # directories with tests (correspond to script names and
     # hence end in .py)
@@ -222,14 +247,14 @@ def test_scripts():
                 if "manifest" in values:
                     # take scripts defined in the MANIFEST.in file
                     test_dirs = [x for x in open("MANIFEST.in")
-                                 if x.startswith("include scripts") and
+                                 if x.startswith("include CGAT/scripts") and
                                  x.endswith(".py\n")]
-                    test_dirs = [re.sub("include\s*scripts/", "tests/",
+                    test_dirs = [re.sub("include\s*CGAT/scripts/", "tests/",
                                         x[:-1]) for x in test_dirs]
 
                 if "regex" in values:
                     rx = re.compile(values["regex"])
-                    test_dirs = filter(rx.search, test_dirs)
+                    test_dirs = list(filter(rx.search, test_dirs))
 
     # ignore those which don't exist as tests (files added through MANIFEST.in,
     # such as version.py, __init__.py, ...
@@ -267,9 +292,20 @@ def test_scripts():
 
         script_tests = yaml.load(open(fn))
 
-        for test, values in script_tests.items():
+        for test, values in sorted(list(script_tests.items())):
             check_script.description = os.path.join(script_name, test)
-
+            if "skip_python" in values:
+                versions = [x.strip() for x in
+                            str(values["skip_python"]).split(",")]
+                versions = [x for x in versions
+                            if PYTHON_VERSION.startswith(x)]
+                if len(versions) > 0:
+                    continue
+            if "skip_travis" in values and TRAVIS:
+                continue
+            if "skip_jenkins" in values and JENKINS:
+                continue
+ 
             # deal with scripts in subdirectories. These are prefixed
             # by a "<subdir>_" for example: optic_compare_projects.py
             # is optic/compare_procjets.py
@@ -293,11 +329,18 @@ def test_scripts():
 def _read(fn):
     if fn.endswith(".gz"):
         with gzip.open(fn) as inf:
-            for line in inf:
-                if not line.startswith("#"):
-                    yield line
+            data = inf.read()
     else:
-        with open(fn) as inf:
-            for line in inf:
-                if not line.startswith("#"):
-                    yield line
+        with open(fn, "rb") as inf:
+            data = inf.read()
+
+    if IS_PY3:
+        try:
+            data = data.decode("ascii")
+        except UnicodeDecodeError:
+            return data
+
+    data = [x for x in data.splitlines()
+            if not x.startswith("#")]
+
+    return data

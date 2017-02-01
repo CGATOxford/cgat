@@ -5,15 +5,13 @@ Seeks are allowed, but are efficient only for files compressed by
 the dictzip utility (which adhere to the gzip format).  Files may
 be concatenated to overcome dictzip's 1.8 Gb size limit."""
 
-# based on Andrew Kuchling's minigzip.py distributed with the zlib module
-# Random access read/write and seek-whence support by Gerton Lunter, 3/3/07
 
 import struct
 import sys
 import time
 import bisect
 import zlib
-import __builtin__
+import builtins
 
 __all__ = ["GzipFile", "open"]
 
@@ -30,13 +28,13 @@ def U32(i):
     If it's >= 2GB when viewed as a 32-bit unsigned int, return a long.
     """
     if i < 0:
-        i += 1L << 32
+        i += 1 << 32
     return i
 
 
 def LOWU32(i):
     """Return the low-order 32 bits of an int, as a non-negative int."""
-    return i & 0xFFFFFFFFL
+    return i & 0xFFFFFFFF
 
 
 def write32(output, value):
@@ -114,7 +112,7 @@ class GzipFile:
         if mode and 'b' not in mode:
             mode += 'b'
         if fileobj is None:
-            fileobj = self.myfileobj = __builtin__.open(filename, mode or 'rb')
+            fileobj = self.myfileobj = builtins.open(filename, mode or 'rb')
         if filename is None:
             if hasattr(fileobj, 'name'):
                 filename = fileobj.name
@@ -147,17 +145,17 @@ class GzipFile:
             self.buffersize = buffersize
             # dictzip's default chunk size of 58315 is too conservative
             if chunksize > 65400:
-                raise IOError, "Chunk size " + \
-                    str(chunksize) + " is too large; maximum is 65400"
+                raise IOError("Chunk size " +
+                              str(chunksize) + " is too large; maximum is 65400")
             if self.dictzip and buffersize // chunksize > 32764:
-                raise IOError, "Buffer size " + \
-                    str(buffersize) + \
-                    " is too large; may result in too many chunks"
+                raise IOError("Buffer size " +
+                              str(buffersize) +
+                              " is too large; may result in too many chunks")
 
             self._init_write(filename)
 
         else:
-            raise IOError, "Mode " + mode + " not supported"
+            raise IOError("Mode " + mode + " not supported")
 
         self.fileobj = fileobj
         self.offset = 0
@@ -238,7 +236,7 @@ class GzipFile:
         if self.dictzip:
             flags |= FEXTRA
         self.fileobj.write(chr(flags))
-        write32u(self.fileobj, long(time.time()))
+        write32u(self.fileobj, int(time.time()))
         self.fileobj.write('\002')                 # extraflag
         self.fileobj.write('\377')                 # os (unknown)
         if self.dictzip:
@@ -287,15 +285,15 @@ class GzipFile:
             if xtra[ptr] != 'R' or xtra[ptr + 1] != 'A':
                 continue     # magic word for dictzip data is 'R'andom 'A'ccess
             if xtra[ptr + 4] != '\001' or xtra[ptr + 5] != '\000':
-                raise IOError, "Unrecognized DictZip version: " + \
-                    str(ord(xtra[ptr + 4]) + 256 * ord(xtra[ptr + 5]))
+                raise IOError("Unrecognized DictZip version: " +
+                              str(ord(xtra[ptr + 4]) + 256 * ord(xtra[ptr + 5])))
             # chunk length
             chlen = ord(xtra[ptr + 6]) + 256 * ord(xtra[ptr + 7])
             # chunk count
             chcnt = ord(xtra[ptr + 8]) + 256 * ord(xtra[ptr + 9])
             if chcnt * 2 != sublen - 6:
-                raise IOError, "Invalid DictZip header: wrong number of chunks:" + \
-                    str(chcnt) + " expected " + str((sublen - 6) // 2)
+                raise IOError("Invalid DictZip header: wrong number of chunks:" +
+                              str(chcnt) + " expected " + str((sublen - 6) // 2))
             flushpoints = [0]
             for idx in range(chcnt):
                 flushpoints.append(
@@ -303,16 +301,16 @@ class GzipFile:
             # ignore other subfields
             return (chlen, flushpoints)
         if xptr != xlen:
-            raise IOError, "Bad extra field in gzip header"
+            raise IOError("Bad extra field in gzip header")
         return None
 
     def _read_gzip_header(self):
         magic = self.fileobj.read(2)
         if magic != '\037\213':
-            raise IOError, 'Not a gzipped file'
+            raise IOError('Not a gzipped file')
         method = ord(self.fileobj.read(1))
         if method != 8:
-            raise IOError, 'Unknown compression method'
+            raise IOError('Unknown compression method')
         flag = ord(self.fileobj.read(1))
         # modtime = self.fileobj.read(4)
         # extraflag = self.fileobj.read(1)
@@ -345,7 +343,7 @@ class GzipFile:
             import errno
             raise IOError(errno.EBADF, "write() on read-only GzipFile object")
         if self.fileobj is None:
-            raise ValueError, "write() on closed GzipFile object"
+            raise ValueError("write() on closed GzipFile object")
         if len(data) > 0:
             self.offset += len(data)
             if self.dictzip:
@@ -441,13 +439,13 @@ class GzipFile:
         pos = self.fileobj.tell()   # Save current position
         self.fileobj.seek(0, 2)     # Seek to end of file
         if pos == self.fileobj.tell():
-            raise EOFError, "Reached EOF"
+            raise EOFError("Reached EOF")
         else:
             self.fileobj.seek(pos)  # Return to original position
 
     def _read(self, size):
         if self.fileobj is None:
-            raise EOFError, "Reached EOF"
+            raise EOFError("Reached EOF")
 
         if self._new_member:
             # If the _new_member flag is set, we have to
@@ -472,7 +470,7 @@ class GzipFile:
             uncompress = self.decompress.flush()
             self._read_eof()
             self._add_read_data(uncompress)
-            raise EOFError, 'Reached EOF'
+            raise EOFError('Reached EOF')
 
         uncompress = self.decompress.decompress(buf)
         self._add_read_data(uncompress)
@@ -509,9 +507,9 @@ class GzipFile:
         crc32 = read32(self.fileobj)
         isize = U32(read32(self.fileobj))   # may exceed 2GB
         if U32(crc32) != U32(self.crc):
-            raise IOError, "CRC check failed"
+            raise IOError("CRC check failed")
         elif isize != LOWU32(self.size):
-            raise IOError, "Incorrect length of data produced"
+            raise IOError("Incorrect length of data produced")
 
     def _endmember(self):
         if self.mode == WRITE:
@@ -643,7 +641,7 @@ class GzipFile:
 
     def readline(self, size=-1):
         if size < 0:
-            size = sys.maxint
+            size = sys.maxsize
         bufs = []
         readsize = min(100, size)    # Read from the file in small chunks
         while True:
@@ -675,7 +673,7 @@ class GzipFile:
     def readlines(self, sizehint=0):
         # Negative numbers result in reading all the lines
         if sizehint <= 0:
-            sizehint = sys.maxint
+            sizehint = sys.maxsize
         L = []
         while sizehint > 0:
             line = self.readline()
@@ -693,7 +691,7 @@ class GzipFile:
     def __iter__(self):
         return self
 
-    def next(self):
+    def __next__(self):
         line = self.readline()
         if line:
             return line
@@ -719,10 +717,10 @@ def _test():
                 g = sys.stdout
             else:
                 if arg[-3:] != ".gz" and arg[-3:] != ".dz":
-                    print "filename doesn't end in .gz or .dz:", repr(arg)
+                    print("filename doesn't end in .gz or .dz:", repr(arg))
                     continue
                 f = open(arg, "rb")
-                g = __builtin__.open(arg[:-3], "wb")
+                g = builtins.open(arg[:-3], "wb")
         else:
             if dictzip:
                 buffersize = 1000000
@@ -735,7 +733,7 @@ def _test():
                 g = GzipFile(
                     filename="", mode="wb", fileobj=sys.stdout, chunksize=1000, buffersize=buffersize)
             else:
-                f = __builtin__.open(arg, "rb")
+                f = builtins.open(arg, "rb")
                 g = open(
                     arg + ext, "wb", chunksize=1000, buffersize=buffersize)
         blocksize = 1024

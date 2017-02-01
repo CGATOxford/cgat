@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''Database.py - Database utility functions
 ===========================================
 
@@ -68,7 +46,7 @@ def executewait(dbhandle, statement, error=Exception, regex_error="locked",
     while 1:
         try:
             cc.execute(statement)
-        except error, msg:
+        except error as msg:
             if retries == 0:
                 raise
             if not re.search("locked", str(msg)):
@@ -274,7 +252,7 @@ def write_DataFrame(dataframe,
 
         if type(index) is str:
             istat = indexStat(tablename, index)
-            print istat
+            print(istat)
             db_execute(cc, istat)
         elif isinstance(index, (tuple, list)):
             for column in index:
@@ -282,4 +260,3 @@ def write_DataFrame(dataframe,
                 db_execute(cc, istat)
 
         cc.close()
-

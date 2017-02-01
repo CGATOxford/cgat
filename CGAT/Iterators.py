@@ -31,7 +31,7 @@ def sample(iterable, sample_size=None):
     random.shuffle(saved)
     if not sample_size:
         sample_size = len(saved)
-    for x in xrange(sample_size):
+    for x in range(sample_size):
         yield saved[x]
 
 
@@ -59,7 +59,7 @@ def group_by_distance(iterable, distance=1):
     """
     i = iter(iterable)
     end = None
-    start = end = cur = i.next()
+    start = end = cur = next(i)
 
     for cur in i:
         if cur < end:

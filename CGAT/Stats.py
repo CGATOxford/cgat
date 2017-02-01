@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''
 Stats.py - statistical utility functions
 ========================================
@@ -42,6 +20,7 @@ import scipy.interpolate
 import collections
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
+from functools import reduce
 
 
 def getSignificance(pvalue, thresholds=[0.05, 0.01, 0.001]):
@@ -90,10 +69,10 @@ class Result(object):
         return getattr(self._data, key)
 
     def keys(self):
-        return self._data.keys()
+        return list(self._data.keys())
 
     def values(self):
-        return self._data.values()
+        return list(self._data.values())
 
     def __iter__(self):
         return self._data.__iter__()
@@ -130,11 +109,6 @@ class Result(object):
         # required for correct unpickling, otherwise
         # maximum recursion threshold will be reached
         object.__setattr__(self, "_data", d)
-
-#################################################################
-#################################################################
-#################################################################
-# Perform log likelihood test
 
 
 class LogLikelihoodTest:
@@ -302,11 +276,6 @@ def doPearsonChiSquaredTest(p, sample_size, observed,
     result.mExpected = e
     return result
 
-#################################################################
-#################################################################
-#################################################################
-# Convenience functions and objects for statistical analysis
-
 
 class DistributionalParameters:
 
@@ -342,7 +311,7 @@ class DistributionalParameters:
 
         # convert
         self.mNErrors = 0
-        if type(values[0]) not in (types.IntType, types.FloatType):
+        if type(values[0]) not in (int, float):
             n = []
             for x in values:
                 try:
@@ -471,7 +440,7 @@ class Summary(Result):
 
             # convert
             self._nerrors = 0
-            if type(values[0]) not in (types.IntType, types.FloatType):
+            if type(values[0]) not in (int, float):
                 n = []
                 for x in values:
                     try:
@@ -484,8 +453,8 @@ class Summary(Result):
             # use a non-sort algorithm?
             n.sort()
             if len(n):
-                self.q1 = n[len(n) / 4]
-                self.q3 = n[len(n) * 3 / 4]
+                self.q1 = n[len(n) // 4]
+                self.q3 = n[len(n) * 3 // 4]
             else:
                 self.q1 = self.q3 = 0
 
@@ -560,11 +529,11 @@ def smoothPValues(pvalues,
 
     for i in range(len(vlambda)):
         pi0[i] = numpy.mean([x >= vlambda[i]
-                            for x in pvalues]) / (1.0 - vlambda[i])
+                             for x in pvalues]) / (1.0 - vlambda[i])
 
     R.assign("pi0", pi0)
     R.assign("vlambda", vlambda)
-    print "pi0=", pi0
+    print("pi0=", pi0)
 
     if smooth_log_pi0:
         pi0 = math.log(pi0)
@@ -574,7 +543,7 @@ def smoothPValues(pvalues,
     spi0 = R("""spi0 <- smooth.spline(vlambda,pi0, df = smooth_df)""")
     pi0 = R("""pi0 <- predict( spi0, x = max(vlambda) )$y""")
 
-    print spi0
+    print(spi0)
     if smooth_log_pi0:
         pi0 = math.exp(pi0)
 
@@ -617,7 +586,7 @@ def getPi0(pvalues,
 
         for i in range(len(vlambda)):
             pi0[i] = numpy.mean([x >= vlambda[i]
-                                for x in pvalues]) / (1.0 - vlambda[i])
+                                 for x in pvalues]) / (1.0 - vlambda[i])
 
         R.assign("pi0", pi0)
         R.assign("vlambda", vlambda)
@@ -748,7 +717,7 @@ http://genomics.princeton.edu/storeylab/qvalue/linux.html.
 
         for i in range(len(vlambda)):
             pi0[i] = numpy.mean([x >= vlambda[i]
-                                for x in pvalues]) / (1.0 - vlambda[i])
+                                 for x in pvalues]) / (1.0 - vlambda[i])
 
         R.assign("pi0", pi0)
         R.assign("vlambda", vlambda)
@@ -924,7 +893,7 @@ def doFDRPython(pvalues,
 
             for i in range(len(vlambda)):
                 pi0[i] = numpy.mean([x >= vlambda[i]
-                                    for x in pvalues]) / (1.0 - vlambda[i])
+                                     for x in pvalues]) / (1.0 - vlambda[i])
 
             if pi0_method == "smoother":
 
@@ -956,12 +925,12 @@ def doFDRPython(pvalues,
                 mse = numpy.zeros(len(vlambda), numpy.float)
                 pi0_boot = numpy.zeros(len(vlambda), numpy.float)
 
-                for i in xrange(100):
+                for i in range(100):
                     # sample pvalues
                     idx_boot = numpy.random.random_integers(0, m - 1, m)
                     pvalues_boot = pvalues[idx_boot]
 
-                    for x in xrange(len(vlambda)):
+                    for x in range(len(vlambda)):
                         # compute number of pvalues larger than lambda[x]
                         pi0_boot[x] = numpy.mean(
                             pvalues_boot > vlambda[x]) / (1.0 - vlambda[x])
@@ -991,7 +960,7 @@ def doFDRPython(pvalues,
     val2bin = len(bins) - numpy.digitize(pvalues, bins)
     v = numpy.zeros(m, dtype=numpy.int)
     lastbin = None
-    for x in xrange(m - 1, -1, -1):
+    for x in range(m - 1, -1, -1):
         bin = val2bin[idx[x]]
         if bin != lastbin:
             c = x
@@ -1004,7 +973,7 @@ def doFDRPython(pvalues,
 
     # bound qvalues by 1 and make them monotonic
     qvalues[idx[m - 1]] = min(qvalues[idx[m - 1]], 1.0)
-    for i in xrange(m - 2, -1, -1):
+    for i in range(m - 2, -1, -1):
         qvalues[idx[i]] = min(min(qvalues[idx[i]], qvalues[idx[i + 1]]), 1.0)
 
     result = FDRResult()
@@ -1249,12 +1218,6 @@ def doWelchsTTest(n1, mean1, std1,
 
     return result
 
-###################################################################
-###################################################################
-###################################################################
-##
-###################################################################
-
 
 def getAreaUnderCurve(xvalues, yvalues):
     '''compute area under curve from a set of discrete x,y coordinates
@@ -1276,12 +1239,6 @@ def getAreaUnderCurve(xvalues, yvalues):
         last_x, last_y = x, y
 
     return auc
-
-###################################################################
-###################################################################
-###################################################################
-##
-###################################################################
 
 
 def getSensitivityRecall(values):
@@ -1309,11 +1266,6 @@ def getSensitivityRecall(values):
 
     return result
 
-###################################################################
-###################################################################
-###################################################################
-##
-###################################################################
 ROCResult = collections.namedtuple("ROCResult",
                                    "value pred tp fp tn fn tpr fpr tnr fnr rtpr rfnr")
 
@@ -1430,12 +1382,6 @@ def getPerformance(values,
 
     return result
 
-###################################################################
-###################################################################
-###################################################################
-##
-###################################################################
-
 
 def doMannWhitneyUTest(xvals, yvals):
     '''apply the Mann-Whitney U test to test for the difference of medians.'''
@@ -1451,11 +1397,6 @@ def doMannWhitneyUTest(xvals, yvals):
     return result
 
 
-###################################################################
-###################################################################
-###################################################################
-# adjust P-Value
-###################################################################
 def adjustPValues(pvalues, method='fdr', n=None):
     '''returns an array of adjusted pvalues
 
@@ -1540,7 +1481,6 @@ def adjustPValues(pvalues, method='fdr', n=None):
     return numpy.minimum(p0, numpy.ones(len(p0)))
 
 
-# Taken from http://wiki.scipy.org/Cookbook/SavitzkyGolay
 def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     r"""Smooth (and optionally differentiate) data with a Savitzky-Golay filter.
     The Savitzky-Golay filter removes high frequency noise from data.
@@ -1600,15 +1540,15 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
         raise TypeError("window_size size must be a positive odd number")
     if window_size < order + 2:
         raise TypeError("window_size is too small for the polynomials order")
-    order_range = range(order + 1)
+    order_range = list(range(order + 1))
     half_window = (window_size - 1) // 2
     # precompute coefficients
     b = numpy.mat([[k**i for i in order_range]
-                   for k in range(-half_window, half_window+1)])
+                   for k in range(-half_window, half_window + 1)])
     m = numpy.linalg.pinv(b).A[deriv] * rate**deriv * math.factorial(deriv)
     # pad the signal at the extremes with
     # values taken from the signal itself
-    firstvals = y[0] - numpy.abs(y[1:half_window+1][::-1] - y[0])
-    lastvals = y[-1] + numpy.abs(y[-half_window-1:-1][::-1] - y[-1])
+    firstvals = y[0] - numpy.abs(y[1:half_window + 1][::-1] - y[0])
+    lastvals = y[-1] + numpy.abs(y[-half_window - 1:-1][::-1] - y[-1])
     y = numpy.concatenate((firstvals, y, lastvals))
     return numpy.convolve(m[::-1], y, mode='valid')

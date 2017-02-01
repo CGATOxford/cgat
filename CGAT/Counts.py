@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''
 Counts.py - methods for manipulating counts data frames
 ==========================================================
@@ -42,6 +20,7 @@ import CGAT.IOTools as IOTools
 import pandas as pd
 from rpy2.robjects import r as R
 from rpy2.robjects import pandas2ri
+import rpy2.robjects as ro
 import numpy as np
 import numpy.ma as ma
 import copy
@@ -49,7 +28,6 @@ import random
 import sys
 import sklearn.preprocessing as preprocessing
 
-# activate pandas/rpy conversion
 pandas2ri.activate()
 
 
@@ -58,8 +36,9 @@ def geometric_mean(array, axis=0):
     retaining total length
     '''
     non_zero = ma.masked_values(array, 0)
-    log_a = ma.log(non_zero)
-    return ma.exp(log_a.mean(axis=axis))
+    log_a = np.log(non_zero)
+    return log_a.mean(axis=axis)
+#ma.exp(log_a.mean(axis=axis))
 
 
 class Counts(object):
@@ -144,7 +123,6 @@ class Counts(object):
         self.table = self.table[take]
 
     def normalise(self, method="deseq-size-factors", row_title="total"):
-
         '''return a table with normalized count data.
 
         Implemented methods are:
@@ -202,6 +180,23 @@ class Counts(object):
 
             normed = self.table / self.size_factors
 
+        elif method == "edger":
+
+            getCPM = R('''
+            suppressMessages(library(edgeR))
+
+            function(counts){
+            countsTable = DGEList(counts)
+            countsTable = calcNormFactors(countsTable)
+
+            countsTable.cpm <- cpm(countsTable, normalized.lib.sizes=TRUE)
+
+            return (as.data.frame(countsTable.cpm))
+            }''' % locals())
+
+            normed = pandas2ri.ri2py(getCPM(pandas2ri.py2ri(self.table)))
+            print(normed)
+
         elif method == "total-count":
 
             # compute column-wise sum
@@ -223,9 +218,9 @@ class Counts(object):
             normed = self.table * 1000000.0 / self.size_factors
         else:
             raise NotImplementedError(
-                "normalization method '%s' not implemented" % method)
+                "normalisation method '%s' not implemented" % method)
 
-        # make sure we did not lose any rows or columns
+        # make sure we did not lose any rows or columns before replacing table
         assert normed.shape == self.table.shape
 
         self.table = normed
@@ -483,7 +478,8 @@ class Counts(object):
           theme(axis.text.x = m_text,
                 axis.title.y = m_text,
                 axis.title.x = m_text,
-                axis.text.y = m_text)
+                axis.text.y = m_text,
+                aspect.ratio=1)
 
           ggsave("%(variance_plot_filename)s", width=10, height=10, unit="cm")
 
@@ -512,7 +508,7 @@ class Counts(object):
           theme_bw() +
           theme(axis.text.x = s_text, axis.text.y = s_text,
                 title = m_text, legend.text = m_text,
-                legend.title = m_text)
+                legend.title = m_text, aspect.ratio=1)
 
           ggsave("%(pca_plot_filename)s", width=10, height=10, unit="cm")
 
@@ -520,22 +516,23 @@ class Counts(object):
 
         makePCA(r_counts, r_design)
 
-    def plotPairwiseCorrelations(self, outfile, subset=False):
+    def plotPairwise(self, outfile_scatter, outfile_heatmap, subset=False):
         ''' use the R base pairs function to plot all pairwise
         correlations between the samples
 
         subset will randomly subset n rows to speed up plotting'''
 
         plotGGpairs = R('''
-        function(df){
+        library(ggplot2)
+        library(reshape2)
 
-        write.table(df, file="%(outfile)s.tsv", sep="\t")
+        function(df, df2){
 
         colnames(df) <- gsub("-", "_", colnames(df))
 
         width <- height <-  length(colnames(df)) * 100
 
-        png("%(outfile)s", width=width, height=height, units = "px")
+        png("%(outfile_scatter)s", width=width, height=height, units = "px")
 
         panel.cor <- function(x, y, digits = 2, prefix = "", cex.cor, ...){
           usr <- par("usr"); on.exit(par(usr))
@@ -561,46 +558,74 @@ class Counts(object):
               diag.panel=panel.hist)
 
         dev.off()
+
+        # use the full (not subsetted) df for heatmap correlation
+        colnames(df2) <- gsub("-", "_", colnames(df2))
+        df_cor <- as.matrix(cor(df2))
+        df_cor_melt <- melt(df_cor)
+
+        p = ggplot(df_cor_melt, aes(Var1, Var2, fill=value)) +
+        geom_tile() +
+        xlab("") + ylab("") +
+        scale_fill_continuous(low="white", high="dodgerblue4", name="Correlation") +
+        theme_bw() +
+        theme(
+        axis.text.x = element_text(angle=90, vjust=0.5, hjust=0),
+        aspect.ratio=1)
+
+        ggsave("%(outfile_heatmap)s", width=10, height=10, unit="cm")
         }''' % locals())
 
         if subset:
             if len(self.table.index) > subset:
                 rows = random.sample(self.table.index, subset)
-                r_counts = pandas2ri.py2ri(self.table.ix[rows])
+                subset_counts = pandas2ri.py2ri(self.table.ix[rows])
             else:
-                r_counts = pandas2ri.py2ri(self.table)
+                subset_counts = pandas2ri.py2ri(self.table)
         else:
-            r_counts = pandas2ri.py2ri(self.table)
+            subset_counts = pandas2ri.py2ri(self.table)
 
-        plotGGpairs(r_counts)
+        plotGGpairs(subset_counts, pandas2ri.py2ri(self.table))
 
-    def heatmap(self, plotfile):
-        ''' plots a heatmap '''
+    def heatmap(self, plotfile, zscore=False):
+        ''' plots a heatmap
+        set zscore=True to use a divergent colour scale
+        '''
         # to do: add option to parse design file and add coloured row for
         # variable specified in design file.
 
         plotHeatmap = R('''
-        function(df){
+        function(df, zscore){
 
         library("Biobase")
         library("RColorBrewer")
         library("gplots")
 
+        if(zscore[1]==TRUE){
+        #hmcol <- colorRampPalette(colors = c("red", "white", "blue"))
+        PuOr <- brewer.pal(11, "PuOr")
+        hmcol <- c(colorRampPalette(c(PuOr[1], PuOr[6]))(100),
+                   colorRampPalette(c(PuOr[6], PuOr[11]))(100)[-1])
+        }
+        else{
         hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
+        }
+
         png("%(plotfile)s", width=1000, height=1000, units="px")
-        write.table(df, file="%(plotfile)s.tsv", sep="\t")
+
         heatmap.2(as.matrix(df),
-                  col = hmcol, scale="none", trace="none", margin=c(18, 10),
-                  dendrogram="column", cexCol=2,
+                  col = hmcol,
+                  scale="none", trace="none", margin=c(18, 10),
+                  dendrogram="both", cexCol=2,
                   labRow = "",
                   hclustfun = function(x) hclust(x, method = 'average'),
-                  distfun = function(x) as.dist(1 - cor(t(x), method="spearman")))
+                  distfun = dist)
         dev.off()
         }''' % locals())
 
         r_counts = pandas2ri.py2ri(self.table)
 
-        plotHeatmap(r_counts)
+        plotHeatmap(r_counts, ro.BoolVector([zscore]))
 
     def shuffleRows(self,
                     min_cbin, max_cbin, width_cbin,
@@ -627,8 +652,8 @@ class Counts(object):
         # make bins with an extra bin at the end to capture spike-ins with
         # initial or changes values over the intended range.
         # these are ignored later
-        c_bins = np.arange(min_cbin, max_cbin+width_cbin, width_cbin)
-        i_bins = np.arange(min_ibin, max_ibin+width_ibin, width_ibin)
+        c_bins = np.arange(min_cbin, max_cbin + width_cbin, width_cbin)
+        i_bins = np.arange(min_ibin, max_ibin + width_ibin, width_ibin)
 
         bin_counts = np.zeros((len(i_bins) + 1, len(c_bins) + 1))
 
@@ -662,9 +687,10 @@ class Counts(object):
 
                 # for each initial and change value coordinate
                 for idx, coord in enumerate(zip(initial_idx, change_idx)):
-                    # ignore spike-in if change or initial fall into the final bin
+                    # ignore spike-in if change or initial fall into the final
+                    # bin
                     if coord[0] < len(i_bins) and coord[1] < len(c_bins):
-                        if coord in indices.keys():
+                        if coord in list(indices.keys()):
                             # if max fill of bin not reached
                             if bin_counts[coord] < s_max:
                                 # ...append tuple of df indeces for groups
@@ -739,17 +765,21 @@ class Counts(object):
             initial_bin, change_bin, size_bin = key
 
             # initial and change values are the center of the bin
-            initial = ((initial_bin*width_ibin) + min_ibin - (width_ibin*0.5))
-            change = ((change_bin*width_cbin) + min_cbin - (width_cbin*0.5))
-            size = ((size_bin*width_sbin) + min_sbin - 1)
+            initial = ((initial_bin * width_ibin) +
+                       min_ibin - (width_ibin * 0.5))
+            change = ((change_bin * width_cbin) +
+                      min_cbin - (width_cbin * 0.5))
+            size = ((size_bin * width_sbin) + min_sbin - 1)
             return initial, change, size
 
         def getInitialChange(key, width_ibin, min_ibin, width_cbin, min_cbin):
             initial_bin, change_bin = key
 
             # initial and change values are the center of the bin
-            initial = ((initial_bin*width_ibin) + min_ibin - (width_ibin*0.5))
-            change = ((change_bin*width_cbin) + min_cbin - (width_cbin*0.5))
+            initial = ((initial_bin * width_ibin) +
+                       min_ibin - (width_ibin * 0.5))
+            change = ((change_bin * width_cbin) +
+                      min_cbin - (width_cbin * 0.5))
             return initial, change
 
         n = 0
@@ -768,16 +798,16 @@ class Counts(object):
                     n += 1
 
         elif spike_type == "cluster":
-            for key in indices.keys():
+            for key in sorted(indices.keys()):
                 initial, change, size = getInitialChangeSize(
                     key, width_ibin, min_ibin, width_cbin,
                     min_cbin, width_sbin, min_sbin)
-                for values in indices[key]:
+                for values in sorted(indices[key]):
                     (c1s, c1e, c2s, c2e, c1rs, c1re,
                      c2rs, c2re) = values
                     cluster_id = "_".join(
                         map(str, ("spike-in", initial, change,
-                                  size, c1rs-c1s, n)))
+                                  size, c1rs - c1s, n)))
 
                     temp_cluster_df = self.table.ix[c1s:c1e, keep_cols]
                     temp_cluster_df['contig'] = cluster_id
@@ -793,12 +823,6 @@ class Counts(object):
                     n += 1
 
 
-########################################################################
-# these functions for spike-in should be re-written to work with the ###
-# counts class                                                       ###
-########################################################################
-
-
 def means2idxarrays(g1, g2, i_bins, c_bins, difference):
     '''take two arrays of values and return the initial values
     and differences as numpy digitised arrays'''
@@ -810,14 +834,14 @@ def means2idxarrays(g1, g2, i_bins, c_bins, difference):
         initial = g1
 
     elif difference == "logfold":
-        change = [np.log2((g2[x]+1.0) / (g1[x]+1.0))
+        change = [np.log2((g2[x] + 1.0) / (g1[x] + 1.0))
                   for x in range(0, len(g1))]
-        initial = [np.log2(g1[x]+1.0) for x in range(0, len(g1))]
+        initial = [np.log2(g1[x] + 1.0) for x in range(0, len(g1))]
 
     elif difference == "abs_logfold":
-        change = [abs(np.log2((g2[x]+1.0) / (g1[x]+1.0)))
+        change = [abs(np.log2((g2[x] + 1.0) / (g1[x] + 1.0)))
                   for x in range(0, len(g1))]
-        initial = [max(np.log2(g1[x]+1.0), np.log2(g2[x]+1.0))
+        initial = [max(np.log2(g1[x] + 1.0), np.log2(g2[x] + 1.0))
                    for x in range(0, len(g1))]
 
     # return arrays of len(change) with the index position in c_bins
@@ -868,9 +892,9 @@ def shuffleCluster(i_bins, c_bins, tracks_map, groups,
     return indeces from which the spike in clusters can be obtained from the
     original dataframe
     '''
-    s_bins = range(s_bins_min, s_bins_max+1, s_bins_width, )
+    s_bins = list(range(s_bins_min, s_bins_max + 1, s_bins_width,))
 
-    counts = np.zeros((len(i_bins)+1, len(c_bins)+1, len(s_bins)+1))
+    counts = np.zeros((len(i_bins) + 1, len(c_bins) + 1, len(s_bins) + 1))
 
     indices = {(key1, key2, key3): []
                for key1 in np.digitize(i_bins, i_bins)
@@ -884,18 +908,18 @@ def shuffleCluster(i_bins, c_bins, tracks_map, groups,
             group2_mean = []
             g1_rand_s = []
             g2_rand_s = []
-            g1_rand = np.random.permutation(clusters_dict.keys())
-            g2_rand = np.random.permutation(clusters_dict.keys())
+            g1_rand = np.random.permutation(list(clusters_dict.keys()))
+            g2_rand = np.random.permutation(list(clusters_dict.keys()))
             for perm in range(0, len(g1_rand)):
                 cluster1 = clusters_dict[g1_rand[perm]].ix[
                     :, tracks_map[groups[0]]]
                 cluster2 = clusters_dict[g2_rand[perm]].ix[
                     :, tracks_map[groups[1]]]
                 c1_rand_s = random.randint(
-                    min(cluster1.index), max(cluster1.index)-size)
+                    min(cluster1.index), max(cluster1.index) - size)
                 c1_e = int(c1_rand_s + size)
                 c2_rand_s = random.randint(
-                    min(cluster2.index), max(cluster2.index)-size)
+                    min(cluster2.index), max(cluster2.index) - size)
                 c2_e = int(c2_rand_s + size)
 
                 c1_mean = np.mean(np.mean(cluster1.ix[c1_rand_s: c1_e]))
@@ -908,7 +932,7 @@ def shuffleCluster(i_bins, c_bins, tracks_map, groups,
             change_idx, initial_idx,  = means2idxarrays(
                 group1_mean, group2_mean, i_bins,
                 c_bins,  difference)
-            size_idx = np.digitize([size]*len(initial_idx), s_bins)
+            size_idx = np.digitize([size] * len(initial_idx), s_bins)
             for idx, coord in enumerate(zip(
                     initial_idx, change_idx, size_idx)):
                 if counts[coord] < s_max:
@@ -934,21 +958,13 @@ def thresholdBins(indices, counts, s_min):
     '''use counts (np array) to remove bins from indices based on
     threshold (s_min)'''
     output_indices_keep = copy.copy(indices)
-    for key in indices.keys():
+    for key in sorted(indices.keys()):
         if counts[key] < s_min:
             output_indices_keep.pop(key)
 
-    E.info("%s/%s bins retained" % (len(output_indices_keep.keys()),
-                                    len(indices.keys())))
+    E.info("%s/%s bins retained" % (len(list(output_indices_keep.keys())),
+                                    len(list(indices.keys()))))
     return output_indices_keep
-
-##########################################################################
-##########################################################################
-
-##########################################################################
-# remove the functions below (now methods for class Counts or          ###
-# class ExpDesign (expression.py)                                      ###
-##########################################################################
 
 
 def loadTagDataPandas(tags_filename, design_filename):
@@ -1131,6 +1147,3 @@ def normalizeTagData(counts, method="deseq-size-factors"):
     assert normed.shape == counts.shape
 
     return normed, size_factors
-
-##########################################################################
-##########################################################################

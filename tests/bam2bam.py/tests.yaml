@@ -58,3 +58,31 @@ unset_mapq:
     outputs: [stdout]
     references: [mapq_unset.bam]
     options: -v 0 --method=unset-unmapped-mapq
+
+downsample_paired_py2:
+    skip_python: 3
+    stdin: paired.bam
+    outputs: [stdout]
+    references: [downsample_paired.bam]
+    options: --method=downsample-paired --downsample=3000 --random-seed=1 -L out.log
+
+downsample_single_py2:
+    skip_python: 3
+    stdin: single.bam
+    outputs: [stdout]
+    references: [downsample_single.bam]
+    options: --method=downsample-single --downsample=3000 --random-seed=1 -L out.log
+
+downsample_paired_py3:
+    skip_python: 2
+    stdin: paired.bam
+    outputs: [stdout]
+    references: [downsample_paired_py3.bam]
+    options: --method=downsample-paired --downsample=3000 --random-seed=1 -L out.log
+
+downsample_single_py3:
+    skip_python: 2
+    stdin: single.bam
+    outputs: [stdout]
+    references: [downsample_single_py3.bam]
+    options: --method=downsample-single --downsample=3000 --random-seed=1 -L out.log

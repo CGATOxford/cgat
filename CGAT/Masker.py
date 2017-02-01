@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''
 Masker.py - Wrapper for sequence masking tools
 ==============================================
@@ -43,9 +21,7 @@ import random
 from CGAT import Experiment as E
 from CGAT import Genomics as Genomics
 from CGAT import FastaIterator as FastaIterator
-import cStringIO as StringIO
-
-# Class for calling masking programs.
+from six import StringIO
 
 
 class Masker:
@@ -193,7 +169,7 @@ class Masker:
                 (statement, err))
 
         result = [
-            x.sequence for x in FastaIterator.iterate(StringIO.StringIO(out))]
+            x.sequence for x in FastaIterator.iterate(StringIO(out))]
 
         os.remove(infile)
 
@@ -247,10 +223,10 @@ class MaskerRandom (Masker):
             x for x in range(0, len(sequence), frame) if sequence[x] != "-"]
         to_mask = random.sample(
             positions, int(len(positions) * self.mProportion))
-        print int(len(positions) * self.mProportion)
+        print(int(len(positions) * self.mProportion))
 
         s = list(sequence)
-        print to_mask
+        print(to_mask)
         for x in to_mask:
             for y in range(x, x + frame):
                 s[x] == "x"
@@ -259,11 +235,11 @@ class MaskerRandom (Masker):
 
 if __name__ == "__main__":
     x = MaskerRandom()
-    print x("AAA AAA AAA AAA --- AAA AAA AAA AAA")
+    print(x("AAA AAA AAA AAA --- AAA AAA AAA AAA"))
 
     x = MaskerDustMasker()
-    print x.maskSequences(("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                           "GGGGGGGGGG", ))
+    print(x.maskSequences(("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                           "GGGGGGGGGG", )))
 
 
 def maskSequences(sequences, masker=None):

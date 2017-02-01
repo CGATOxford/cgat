@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''IndexedFasta.py - fast random access in fasta files
 ===================================================
 
@@ -65,15 +43,20 @@ import re
 import struct
 import math
 import tarfile
-import anydbm
 import random
 import zlib
 import gzip
 import tempfile
-import cStringIO
+import io
 from CGAT import Experiment as E
-from AString import AString
+import CGAT.IOTools as IOTools
+import CGAT.Genomics as Genomics
+from .AString import AString
 import pysam
+from future.moves import dbm
+from six import StringIO
+
+IS_PY3 = sys.version_info.major >= 3
 
 
 class Uncompressor:
@@ -148,21 +131,27 @@ def writeFragments(outfile_fasta,
 
 def gzip_mangler(s):
 
-    xfile = cStringIO.StringIO()
-
+    xfile = StringIO()
     gzipfile = gzip.GzipFile(fileobj=xfile, mode="wb")
     gzipfile.write(s)
     gzipfile.close()
 
     m = xfile.getvalue()
     xfile.close()
+    # write identifier
+
     return m
 
 
 def gzip_demangler(s):
-
-    gzipfile = gzip.GzipFile(fileobj=cStringIO.StringIO(s), mode="rb")
+    if sys.version_info.major >= 3:
+        gzipfile = io.TextIOWrapper(
+            gzip.GzipFile(fileobj=io.BytesIO(s), mode="rb"),
+            encoding="ascii")
+    else:
+        gzipfile = gzip.GzipFile(fileobj=io.BytesIO(s), mode="rb")
     m = gzipfile.readline()
+
     return m
 
 
@@ -188,7 +177,7 @@ class TranslatorPhred(Translator):
     def __init__(self, *args, **kwargs):
         Translator.__init__(self, *args, **kwargs)
         self.mMapScore2Char = [chr(33 + x) for x in range(0, 93)]
-        self.mMapScore2Score = range(0, 93)
+        self.mMapScore2Score = list(range(0, 93))
 
     def translate(self, sequence):
         return array.array("I", (ord(x) - 33 for x in sequence))
@@ -233,7 +222,7 @@ class TranslatorRange200(Translator):
         try:
             return "".join(self.mMapScore2Char[int(x)]
                            for x in self.mRegEx.split(sequence.strip()))
-        except ValueError, msg:
+        except ValueError as msg:
             raise ValueError(msg + " parsing error in fragment: %s" % sequence)
 
     def translate(self, sequence):
@@ -255,9 +244,9 @@ class TranslatorBytes(Translator):
         try:
             return "".join(chr(int(x)) for x in
                            self.mRegEx.split(sequence.strip()))
-        except ValueError, msg:
-            print "parsing error in line: %s" % sequence
-            print "message=%s" % str(msg)
+        except ValueError as msg:
+            print("parsing error in line: %s" % sequence)
+            print("message=%s" % str(msg))
             return ""
 
     def translate(self, sequence):
@@ -283,9 +272,15 @@ class MultipleFastaIterator:
     def __iter__(self):
         return self
 
+    def __next__(self):
+        try:
+            return next(self.iterator)
+        except StopIteration:
+            return None
+
     def next(self):
         try:
-            return self.iterator.next()
+            return next(self.iterator)
         except StopIteration:
             return None
 
@@ -325,14 +320,22 @@ class MultipleFastaIterator:
             if self.format == "tar.gz" or self.format == "tar" or \
                (self.format == "auto" and filename.endswith("tar.gz")):
                 if filename == "-":
-                    tf = tarfile.open(fileobj=sys.stdin, mode="r|*")
+                    if IS_PY3:
+                        tf = tarfile.open(fileobj=sys.stdin.buffer, mode="r|*")
+                    else:
+                        tf = tarfile.open(fileobj=sys.stdin, mode="r|*")
                 else:
                     tf = tarfile.open(filename, mode="r")
                 for f in tf:
                     b, ext = os.path.splitext(f.name)
                     if ext.lower() in (".fasta", ".fa"):
                         E.info("extracting %s" % f.name)
-                        infile = tf.extractfile(f)
+                        if sys.version_info.major >= 3:
+                            infile = io.TextIOWrapper(
+                                tf.extractfile(f),
+                                encoding="ascii")
+                        else:
+                            infile = tf.extractfile(f)
                         for x in _iter(infile):
                             yield x
                     else:
@@ -343,11 +346,11 @@ class MultipleFastaIterator:
                 continue
             elif self.format == "fasta.gz" or (self.format == "auto" and
                                                filename.endswith(".gz")):
-                infile = gzip.open(filename, "r")
+                infile = IOTools.openFile(filename, "r")
             elif filename == "-":
                 infile = sys.stdin
             else:
-                infile = open(filename, "r")
+                infile = IOTools.openFile(filename, "r")
 
             for x in _iter(infile):
                 yield x
@@ -405,7 +408,7 @@ def createDatabase(db, iterator,
             db_name = db + ".gz"
             write_chunks = True
         elif compression == "dictzip":
-            import dictzip
+            from . import dictzip
 
             def mangler(x):
                 return x
@@ -427,7 +430,7 @@ def createDatabase(db, iterator,
             db_name = db + ".debug"
             write_chunks = True
         elif compression == "rle":
-            import RLE
+            from . import RLE
             mangler = RLE.compress
             db_name = db + ".rle"
             write_chunks = True
@@ -462,13 +465,16 @@ def createDatabase(db, iterator,
             db_name, "wb", buffersize=1000000, chunksize=random_access_points)
         compression = None
     else:
-        outfile_fasta = open(db_name, "wb")
+        outfile_fasta = open(db_name, "w")
 
     identifiers = {}
     lsequence = 0
     identifier_pos, sequence_pos = 0, 0
 
-    translation = string.maketrans("xX", "nN")
+    if sys.version_info.major >= 3:
+        translation = str.maketrans("xX", "nN")
+    else:
+        translation = string.maketrans("xX", "nN")
 
     fragments = []
     lfragment = 0
@@ -478,7 +484,7 @@ def createDatabase(db, iterator,
     while 1:
 
         try:
-            result = iterator.next()
+            result = next(iterator)
         except StopIteration:
             break
 
@@ -523,7 +529,6 @@ def createDatabase(db, iterator,
 
                 outfile_index.write("\t%i\n" % lsequence)
 
-            # write identifier
             identifier_pos = outfile_fasta.tell()
             outfile_fasta.write(mangler(">%s\n" % out_identifier))
             sequence_pos = outfile_fasta.tell()
@@ -573,12 +578,10 @@ def createDatabase(db, iterator,
 
     # add synonyms for the table
     if synonyms:
-        for key, vals in synonyms.items():
+        for key, vals in list(synonyms.items()):
             for val in vals:
                 outfile_index.write("%s\t%s\n" % (key, val))
 
-# map of names
-# order is suffix data, suffix index, noSeek
 NAME_MAP = {
     'uncompressed': ('fasta', 'idx', False),
     'lzo': ('lzo',   'cdx', True),
@@ -641,11 +644,10 @@ class CGATIndexedFasta:
         if compress is set to true, the index will not be loaded,
         but a compressed index will be created instead.
         """
-
         if self.mMethod == "uncompressed":
             self.mDatabaseFile = open(self.mDbname, "r")
         elif self.mMethod == "dictzip":
-            import dictzip
+            from . import dictzip
             self.mDatabaseFile = dictzip.GzipFile(self.mDbname)
         elif self.mMethod == "lzo":
             import lzo
@@ -666,9 +668,12 @@ class CGATIndexedFasta:
         if compress:
             # if os.path.exists(filename_index):
             #     raise OSError("file %s already exists" % filename_index)
-            self.mIndex = anydbm.open(filename_index, "n")
+            self.mIndex = dbm.open(filename_index, "n")
         elif os.path.exists(filename_index):
-            self.mIndex = anydbm.open(filename_index, "r")
+            self.mIndex = dbm.open(filename_index, "r")
+            if len(self.mIndex) == 0:
+                raise ValueError(
+                    "length of index is 0, possibly a python version problem")
             self.mIsLoaded = True
             return
         else:
@@ -689,7 +694,7 @@ class CGATIndexedFasta:
                 if len(data) > 4:
                     (identifier, pos_id, block_size, lsequence) = data[
                         0], int(data[1]), int(data[2]), int(data[-1])
-                    points = map(int, data[3:-1])
+                    points = list(map(int, data[3:-1]))
                     self.mIndex[identifier] = (
                         pos_id, block_size, lsequence, points)
                 else:
@@ -727,7 +732,7 @@ class CGATIndexedFasta:
                     if k not in self.mIndex:
                         self.mSynonyms[k] = target
 
-        k = self.mSynonyms.items()
+        k = list(self.mSynonyms.items())
 
         # fix the ambiguity between chrMT and chrM between UCSC and ENSEMBL
         if "chrM" in self.mIndex and "MT" not in self.mIndex:
@@ -739,9 +744,9 @@ class CGATIndexedFasta:
             _add(key, val)
 
         # add pointers to self
-        for key in self.mIndex.keys():
+        for key in list(self.mIndex.keys()):
             _add(key, key)
-       
+
     def setTranslator(self, translator=None):
         """set the :class:`Translator` to use."""
         self.mTranslator = translator
@@ -779,7 +784,7 @@ class CGATIndexedFasta:
         if not self.mIsLoaded:
             self._loadIndex()
         results = []
-        for contig in self.mIndex.values():
+        for contig in list(self.mIndex.values()):
             data = self.mIndex[self.getToken(contig)]
             try:
                 pos_id, pos_seq, lcontig = struct.unpack("QQi", data)
@@ -798,7 +803,7 @@ class CGATIndexedFasta:
         """return a list of contigs (no synonyms)."""
         if not self.mIsLoaded:
             self._loadIndex()
-        return self.mIndex.keys()
+        return list(self.mIndex.keys())
 
     def getContigSizes(self, with_synonyms=True):
         """return hash with contig sizes including synonyms."""
@@ -806,11 +811,11 @@ class CGATIndexedFasta:
             self._loadIndex()
 
         contig_sizes = {}
-        for key, val in self.mIndex.items():
+        for key, val in list(self.mIndex.items()):
             contig_sizes[key] = self.getLength(key)
 
         if with_synonyms:
-            for key, val in self.mSynonyms.items():
+            for key, val in list(self.mSynonyms.items()):
                 contig_sizes[key] = self.getLength(val)
 
         return contig_sizes
@@ -851,7 +856,7 @@ class CGATIndexedFasta:
         # -> block_size for unseekable streams
         try:
             pos_id, dummy, lsequence = struct.unpack("QQi", data)
-        except struct.error:
+        except (struct.error, TypeError):
             pos_id, dummy, lsequence, points = data
 
         pos_seq = dummy
@@ -905,18 +910,17 @@ class CGATIndexedFasta:
             p.fromstring(self.mDatabaseFile.read(last_pos - first_pos))
 
         if str(strand) in ("-", "0", "-1"):
-            p.reverse()
-            p = AString(string.translate(
-                p[:],
-                string.maketrans("ACGTacgt", "TGCAtgca")))
+            p = AString(Genomics.complement(str(p)))
 
         if self.mTranslator:
             return self.mTranslator.translate(p)
         elif as_array:
             return p
         else:
-            # cast to string
-            return p[:]
+            if IS_PY3:
+                return p.tostring().decode("ascii")
+            else:
+                return p.tostring()
 
     def getRandomCoordinates(self, size):
         """returns coordinates for a random fragment of size #.
@@ -932,25 +936,26 @@ class CGATIndexedFasta:
         if not self.mIsLoaded:
             self._loadIndex()
 
-        token = random.choice(self.mIndex.keys())
+        token = random.choice(list(self.mIndex.keys()))
         strand = random.choice(("+", "-"))
         data = self.mIndex[token]
         try:
             pos_id, pos_seq, lcontig = struct.unpack("QQi", data)
-        except struct.error:
+        except (struct.error, TypeError):
             pos_id, pos_seq, lcontig, points = data
 
-        rpos = random.randint(0, lcontig)
+        start, end = 0, 0
         if size >= lcontig:
-            start = 0
             end = lcontig
         else:
-            if random.choice(("True", "False")):
-                start = rpos
-                end = min(rpos + size, lcontig)
-            else:
-                start = max(0, rpos - size)
-                end = rpos
+            while end - start == 0:
+                rpos = random.randint(0, lcontig)
+                if random.choice(("True", "False")):
+                    start = rpos
+                    end = min(rpos + size, lcontig)
+                else:
+                    start = max(0, rpos - size)
+                    end = rpos
 
         return token, strand, start, end
 
@@ -1056,13 +1061,6 @@ def IndexedFasta(dbname, *args, **kwargs):
         return PysamIndexedFasta(dbname, *args, **kwargs)
     else:
         return CGATIndexedFasta(dbname, *args, **kwargs)
-
-###############################################################################
-###############################################################################
-###############################################################################
-# converter functions. Some code duplication could be avoided but
-# I preferred to keep the functions lean.
-###############################################################################
 
 
 def _one_forward_closed(x, y, c, l):
@@ -1183,8 +1181,6 @@ def getConverter(format):
                 return _zero_both_closed
             else:
                 return _zero_both_open
-
-# Test function for benchmarking purposes
 
 
 def benchmarkRandomFragment(fasta, size):

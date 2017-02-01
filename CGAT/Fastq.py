@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''Fastq.py - methods for dealing with fastq files
 ===============================================
 
@@ -41,16 +19,16 @@ Reference
 
 '''
 
+import string
+
 from math import log
 
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 
-# see http://en.wikipedia.org/wiki/FASTQ_format
-# ranges are conservative - they are open-ended
 RANGES = {
     'sanger': (33, 75),
-    'illumina-1.8': (33, 76),
+    'illumina-1.8': (33, 79),
     'solexa': (59, 106),
     'phred64': (64, 106),
 }
@@ -72,6 +50,7 @@ class Record:
        ``illumina-1.8``, ``solexa`` or ``phred64``.
 
     """
+
     def __init__(self, identifier, seq, quals, format=None):
         self.identifier, self.seq, self.quals, format = (
             identifier, seq, quals, format)
@@ -87,11 +66,27 @@ class Record:
         c = [ord(x) for x in self.quals]
         mi, ma = min(c), max(c)
         r = []
-        for format, v in RANGES.iteritems():
+        for format, v in RANGES.items():
             m1, m2 = v
-            if mi >= m1 and ma < m2:
+            if mi >= m1 and ma <= m2:
                 r.append(format)
         return r
+
+    def guessDataType(self):
+        '''return the datatype. This is done by inspecting the
+        sequence for basecalls/colorspace ints'''
+
+        datatypes = set()
+
+        # don't check the first character as it may be a basecall even with cs
+        if sum([x in ["0", "1", "2", "3", "."]
+                for x in self.seq[1:]]) == len(self.seq[1:]):
+            datatypes.add("colorspace")
+        elif sum([x.upper() in string.ascii_uppercase
+                  for x in self.seq]) == len(self.seq):
+            datatypes.add("basecalls")
+
+        return datatypes
 
     def trim(self, trim3, trim5=0):
         """remove nucleotides/quality scores from the 3' and 5' ends."""
@@ -353,6 +348,50 @@ def guessFormat(infile, max_lines=10000, raises=True):
             "could not guess format - could be one of %s." % str(quals))
 
 
+def guessDataType(infile, max_lines=10000, raises=True):
+    '''guess datatype of FASTQ File from [colourspace, basecalls]
+
+    Arguments
+    ---------
+    infile : File
+    File or file-like object to iterate over
+    max_lines : int
+       Number of lines to examine for guessing the datatype
+    raises : bool
+       Raise ValueError if format is ambiguous
+
+    Returns
+    -------
+    formats : list
+       list of datatypes compatible with the file (should only ever be one!)
+
+    Raises
+    ------
+    ValueError
+        If the ranges of the fastq records are not compatible.
+
+    '''
+
+    datatype = set(("colorspace", "basecalls"))
+
+    myiter = iterate(infile)
+    for c, record in enumerate(myiter):
+        datatype.intersection_update(record.guessDataType())
+
+        if len(datatype) == 0:
+            raise ValueError("could not guess datatype")
+        if len(datatype) == 1:
+            break
+        if c > max_lines:
+            break
+
+    if len(datatype) == 1:
+        return list(datatype)[0]
+    else:
+        raise ValueError(
+            "could not guess datatype - could be one of %s." % str(datatype))
+
+
 def getOffset(format, raises=True):
     '''returns the ASCII offset for a certain format.
 
@@ -391,5 +430,5 @@ def getReadLength(filename):
     '''
 
     with IOTools.openFile(filename) as infile:
-        record = iterate(infile).next()
+        record = next(iterate(infile))
         return len(record.seq)
