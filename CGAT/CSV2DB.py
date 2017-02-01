@@ -60,13 +60,12 @@ def executewait(dbhandle, statement, error,
             cc.execute(statement, args)
             return cc
         except sqlite3.OperationalError as e:
-            msg = e.message
             E.warn("import failed: msg=%s, statement=\n  %s" %
-                   (msg, statement))
+                   (str(e), statement))
         # TODO: check for database locked msg
             if not retry:
                 raise e
-            if not re.search("locked", str(msg)):
+            if not re.search("locked", str(e)):
                 raise e
             time.sleep(wait)
             i -= 1
