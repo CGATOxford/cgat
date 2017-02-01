@@ -141,7 +141,7 @@ def fetch_ENA_files(accession):
     try:
         paths = urllib2.urlopen(url).readlines()[1:]
     except:
-        print "couldn't access %s" % url
+        E.debug("couldn't access %s" % url)
         raise
 
     paths = list(itertools.chain.from_iterable(
