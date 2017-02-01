@@ -16,12 +16,11 @@ import os
 import glob
 import tempfile
 import shutil
-import urllib2
 import itertools
 import CGAT.Experiment as E
 import CGAT.Fastq as Fastq
 import CGAT.IOTools as IOTools
-
+from future.moves.urllib.request import urlopen
 
 def peek(sra, outdir=None):
     """return the full file names for all files which will be extracted
@@ -139,7 +138,7 @@ def fetch_ENA_files(accession):
           % accession
 
     try:
-        paths = urllib2.urlopen(url).readlines()[1:]
+        paths = urlopen(url).readlines()[1:]
     except:
         E.debug("couldn't access %s" % url)
         raise
