@@ -22,6 +22,7 @@ import CGAT.Fastq as Fastq
 import CGAT.IOTools as IOTools
 from future.moves.urllib.request import urlopen
 
+
 def peek(sra, outdir=None):
     """return the full file names for all files which will be extracted
 
