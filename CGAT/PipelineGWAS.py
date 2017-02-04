@@ -2530,7 +2530,7 @@ class GWASResults(object):
         R('''out.df <- rdf''')
         R('''out.df$Group <- cut''')
 
-        regions_df = py2ri.ri2py_dataframe(R["out.df"])
+        regions_df = pd.DataFrame(py2ri.ri2py(R["out.df"]))
 
         return regions_df
 

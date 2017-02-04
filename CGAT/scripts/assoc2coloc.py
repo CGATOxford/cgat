@@ -224,7 +224,7 @@ def testColoc(trait1, trait2, trait1_type, trait2_type,
         R('''genes <- dim(res.df)[1]''')
         genes = R["genes"]
     try:
-        coloc_results = py2ri.ri2py_dataframe(R["res.df"])
+        coloc_results = pd.DataFrame(py2ri.ri2py(R["res.df"]))
         coloc_results.index = genes
     except TypeError:
         # if there are no results only a single vector of 0's
