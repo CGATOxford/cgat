@@ -2534,7 +2534,7 @@ class GWASResults(object):
         try:
             regions_df = pd.DataFrame(py2ri.ri2py(R["out.df"]))
         except NotImplementedError:
-            regions_df = pd.DataFrame(py2ri.ri2py_dataframe(R["out.df"]))
+            regions_df = pd.DataFrame(R["out.df"])
 
         return regions_df
 
