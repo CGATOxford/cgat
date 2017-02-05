@@ -99,8 +99,10 @@ import sys
 import CGAT.Experiment as E
 from rpy2.robjects import r as R
 from rpy2.robjects import pandas2ri as py2ri
+from rpy2.robjects import numpy2ri as np2ri
 import rpy2.robjects as ro
 import pandas as pd
+import numpy as np
 
 
 def testColoc(trait1, trait2, trait1_type, trait2_type,
@@ -176,13 +178,14 @@ def testColoc(trait1, trait2, trait1_type, trait2_type,
 
     E.info("Pushing results tables into R environment")
     py2ri.activate()
-    r_trait1 = py2ri.py2ri_pandasdataframe(trait1)
+    np2ri.activate()
+    r_trait1 = py2ri.py2ri(trait1)
     R.assign("r.trait1", r_trait1)
 
-    r_trait2 = py2ri.py2ri_pandasdataframe(trait2)
+    r_trait2 = py2ri.py2ri(trait2)
     R.assign("r.trait2", r_trait2)
 
-    r_maf = py2ri.py2ri_pandasdataframe(maf_table)
+    r_maf = py2ri.py2ri(maf_table)
     R.assign("r.mafs", r_maf)
 
     if trait1_prev:
@@ -224,7 +227,10 @@ def testColoc(trait1, trait2, trait1_type, trait2_type,
         R('''genes <- dim(res.df)[1]''')
         genes = R["genes"]
     try:
-        coloc_results = pd.DataFrame(py2ri.ri2py(R["res.df"]))
+        try:
+            coloc_results = pd.DataFrame(py2ri.ri2py(R["res.df"]))
+        except NotImplementedError:
+            coloc_results = pd.DataFrame(np.asarray(R["res.df"]))
         coloc_results.index = genes
     except TypeError:
         # if there are no results only a single vector of 0's
