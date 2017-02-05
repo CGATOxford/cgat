@@ -1,0 +1,12 @@
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+test_manhattan:
+    stdin: null
+    outputs: [stdout]
+    skip_python: 3
+    references: [gwas.results]
+    options: --plot-type=manhattan  --resolution=genome_wide  --save-path=<DIR>/manhattan.png  --log=manhattan.log  <DIR>/chr1.results,<DIR>/chr2.results,<DIR>/chr3.results,<DIR>/chr4.results,<DIR>/chr5.results,<DIR>/chr6.results,<DIR>/chr7.results,<DIR>/chr8.results,<DIR>/chr9.results,<DIR>/chr10.results,<DIR>/chr11.results,<DIR>/chr12.results,<DIR>/chr13.results,<DIR>/chr14.results,<DIR>/chr15.results,<DIR>/chr16.results,<DIR>/chr17.results,<DIR>/chr18.results,<DIR>/chr19.results,<DIR>/chr20.results,<DIR>/chr21.results,<DIR>/chr22.results
