@@ -78,7 +78,7 @@ def main(argv=None):
         raise ValueError("Nothing to do")
 
     # Analyse the bamfile
-    samfile = pysam.Samfile(options.filename, "rb")
+    samfile = pysam.AlignmentFile(options.filename, "rb")
     uniq_map, best_map, uORb_map = {}, {}, {}
     properly_paired = 0
 
@@ -136,8 +136,8 @@ def main(argv=None):
         E.info("Writing proper pairs with unique or best read to %s" %
                options.outfile)
 
-        samfile = pysam.Samfile(options.filename, "rb")
-        outbam = pysam.Samfile(options.outfile, "wb", template=samfile)
+        samfile = pysam.AlignmentFile(options.filename, "rb")
+        outbam = pysam.AlignmentFile(options.outfile, "wb", template=samfile)
 
         for read in samfile.fetch():
             if read.is_proper_pair:

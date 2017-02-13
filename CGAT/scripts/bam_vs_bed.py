@@ -161,7 +161,7 @@ def main(argv=None):
     # get information about
     if filename_bam.endswith(".bam"):
         format = "-abam"
-        samfile = pysam.Samfile(filename_bam, "rb")
+        samfile = pysam.AlignmentFile(filename_bam, "rb")
         total = samfile.mapped
         # latest bedtools uses bed12 format when bam is input
         ncolumns_bam = 12

@@ -1,6 +1,6 @@
 #cimport csamtools
 
-from pysam.csamfile cimport *
+from pysam.libcalignmentfile cimport *
 import collections
 import CGAT.Experiment as E
 import numpy
@@ -247,11 +247,11 @@ cdef class CounterBam(Counter):
 
     #################################################
     # bigwig versions
-    def coverageInInterval( self,
-                             Samfile samfile,
-                             contig,
-                             int start, 
-                             int end ):
+    def coverageInInterval(self,
+                           AlignmentFile samfile,
+                           contig,
+                           int start, 
+                           int end):
         '''return coverage in window on *contig* bounded by *start* and *end*.
 
         Reads are optionally shifted by shift/2. Reads are shifted upstream

@@ -18,7 +18,7 @@ def isPaired(bamfile, alignments=1000):
     True if any of the alignments are paired.
     '''
 
-    samfile = pysam.Samfile(bamfile)
+    samfile = pysam.AlignmentFile(bamfile)
     n = 0
     for read in samfile:
         if read.is_paired:
@@ -81,7 +81,7 @@ def estimateInsertSizeDistribution(bamfile,
         'can only estimate insert size from' \
         'paired bam files'
 
-    samfile = pysam.Samfile(bamfile)
+    samfile = pysam.AlignmentFile(bamfile)
 
     def get_core_distribution(inserts, n):
         # compute median absolute deviation
@@ -173,7 +173,7 @@ def estimateTagSize(bamfile,
        `error`.
 
     '''
-    samfile = pysam.Samfile(bamfile)
+    samfile = pysam.AlignmentFile(bamfile)
     sizes = [read.rlen for read in samfile.head(alignments)]
     mi, ma = min(sizes), max(sizes)
 
@@ -199,7 +199,7 @@ def estimateTagSize(bamfile,
 def getNumberOfAlignments(bamfile):
     '''return number of alignments in bamfile.
     '''
-    samfile = pysam.Samfile(bamfile)
+    samfile = pysam.AlignmentFile(bamfile)
     return samfile.mapped
 
 
@@ -237,7 +237,7 @@ def isStripped(bamfile):
     '''
     Check if the sequence is stripped in a bam file.
     '''
-    bam = pysam.Samfile(bamfile)
+    bam = pysam.AlignmentFile(bamfile)
     read = bam.next()
     if read.seq is None:
         return True
