@@ -1,5 +1,5 @@
-from pysam.chtslib cimport *
-from pysam.csamfile cimport *
+from pysam.libchtslib cimport *
+from pysam.libcalignmentfile cimport *
 
 from libc.stdlib cimport abs
 
