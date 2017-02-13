@@ -248,7 +248,7 @@ cdef class CounterBam(Counter):
     #################################################
     # bigwig versions
     def coverageInInterval( self,
-                             Samfile samfile,
+                             AlignmentFiles samfile,
                              contig,
                              int start, 
                              int end ):

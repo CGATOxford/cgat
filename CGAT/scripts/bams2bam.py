@@ -158,7 +158,7 @@ def main(argv=None):
         raise ValueError("please supply one bam file")
 
     bamfile_genome = args[0]
-    genome_samfile = pysam.Samfile(bamfile_genome, "rb")
+    genome_samfile = pysam.AlignmentFile(bamfile_genome, "rb")
 
     if options.remove_contigs:
         options.remove_contigs = options.remove_contigs.split(",")
@@ -200,28 +200,28 @@ def main(argv=None):
         E.info("read %i regions" % len(regions_to_remove))
 
     if options.filename_transcriptome:
-        transcripts_samfile = pysam.Samfile(options.filename_transcriptome,
+        transcripts_samfile = pysam.AlignmentFile(options.filename_transcriptome,
                                             "rb")
     else:
         transcripts_samfile = None
 
     if options.output_sam:
-        output_samfile = pysam.Samfile("-", "wh", template=genome_samfile)
+        output_samfile = pysam.AlignmentFile("-", "wh", template=genome_samfile)
     else:
-        output_samfile = pysam.Samfile("-", "wb", template=genome_samfile)
+        output_samfile = pysam.AlignmentFile("-", "wb", template=genome_samfile)
 
     if options.filename_mismapped:
         if not options.force and os.path.exists(options.filename_mismapped):
             raise IOError("output file %s already exists" %
                           options.filename_mismapped)
-        output_mismapped = pysam.Samfile(options.filename_mismapped,
+        output_mismapped = pysam.AlignmentFile(options.filename_mismapped,
                                          "wb",
                                          template=genome_samfile)
     else:
         output_mismapped = None
 
     if options.filename_junctions:
-        junctions_samfile = pysam.Samfile(options.filename_junctions,
+        junctions_samfile = pysam.AlignmentFile(options.filename_junctions,
                                           "rb")
     else:
         junctions_samfile = None

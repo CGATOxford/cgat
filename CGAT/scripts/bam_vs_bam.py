@@ -90,7 +90,7 @@ def main(argv=None):
 
     samfiles = []
     for f in args:
-        samfiles.append(pysam.Samfile(f, "rb"))
+        samfiles.append(pysam.AlignmentFile(f, "rb"))
 
     if options.filename_intervals:
         raise NotImplementedError(

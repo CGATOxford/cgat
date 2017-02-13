@@ -5,11 +5,11 @@ import collections, array, struct, sys
 import CGAT.Experiment as E
 
 
-def filter( Samfile genome_samfile,
-            Samfile output_samfile,
-            Samfile output_mismapped,
-            Samfile transcripts_samfile,
-            Samfile junctions_samfile,
+def filter( AlignmentFiles genome_samfile,
+            AlignmentFiles output_samfile,
+            AlignmentFiles output_mismapped,
+            AlignmentFiles transcripts_samfile,
+            AlignmentFiles junctions_samfile,
             transcripts,
             regions = None,
             unique = False,

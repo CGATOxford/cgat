@@ -579,9 +579,9 @@ def main(argv=None):
             smooth_method=options.smooth_method)
 
     elif options.format == "bam":
-        fg_file = pysam.Samfile(infile, "rb")
+        fg_file = pysam.AlignmentFile(infile, "rb")
         for control_file in options.control_files:
-            control_files.append(pysam.Samfile(control_file, "rb"))
+            control_files.append(pysam.AlignmentFile(control_file, "rb"))
         counter = _bam2peakshape.CounterBam(
             shift=options.shift,
             smooth_method=options.smooth_method)

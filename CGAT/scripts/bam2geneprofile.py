@@ -629,10 +629,10 @@ def main(argv=None):
     # Select rangecounter based on file type
     if len(options.infiles) > 0:
         if options.infiles[0].endswith(".bam"):
-            bamfiles = [pysam.Samfile(x, "rb") for x in options.infiles]
+            bamfiles = [pysam.AlignmentFile(x, "rb") for x in options.infiles]
 
             if options.controlfiles:
-                controlfiles = [pysam.Samfile(x, "rb")
+                controlfiles = [pysam.AlignmentFile(x, "rb")
                                 for x in options.controlfiles]
             else:
                 controlfiles = None

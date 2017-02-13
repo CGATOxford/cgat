@@ -36,9 +36,9 @@ cdef class SetNH:
                         read.set_tag("NH", nh)
 
 
-def filter_bam(Samfile input_samfile,
-               Samfile output_samfile,
-               Samfile reference_samfile,
+def filter_bam(AlignmentFiles input_samfile,
+               AlignmentFiles output_samfile,
+               AlignmentFiles reference_samfile,
                remove_nonunique = False,
                remove_unique = False,
                remove_contigs = None,
