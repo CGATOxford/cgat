@@ -147,21 +147,9 @@ else
    fi
 
    if [ "$INSTALL_SCRIPTS" == "1" ] ; then
-      if [ "$INSTALL_LITE" == "1" ] ; then
-         CONDA_INSTALL_TYPE="cgat-scripts-lite"
-      elif [ "$INSTALL_DEVEL" == "1" ] ; then
-         CONDA_INSTALL_TYPE="cgat-scripts"
-      else
-         CONDA_INSTALL_TYPE="cgat-scripts"
-      fi
+      CONDA_INSTALL_TYPE="cgat-scripts"
    elif [ "$INSTALL_DEVEL" == "1" ] ; then
-      if [ "$INSTALL_LITE" == "1" ] ; then
-         CONDA_INSTALL_TYPE="cgat-devel-lite"
-      elif [ "$INSTALL_DEVEL" == "1" ] ; then
-         CONDA_INSTALL_TYPE="cgat-devel"
-      else
-         CONDA_INSTALL_TYPE="cgat-devel"
-      fi
+      CONDA_INSTALL_TYPE="cgat-devel"
    elif [ $INSTALL_TEST ] || [ $INSTALL_UPDATE ] ; then
       if [ -d $CGAT_HOME/conda-install ] ; then
          AUX=`find $CGAT_HOME/conda-install/envs/cgat-* -maxdepth 0`
@@ -315,9 +303,6 @@ if [ "$OS" != "travis" ] ; then
       # SLV: workaround until bx-python is available with Python 3
       pip install bx-python
 
-      # AH: workaround to get pysam 0.9.1.4 into environment
-      pip install --upgrade --use-wheel --no-index --find-links=https://www.cgat.org/downloads/public/pysam/wheels pysam
-
       # Set up other environment variables
       setup_env_vars
 
@@ -418,13 +403,13 @@ if [ $TRAVIS_INSTALL ] ; then
 
 else
 
-   if [ "$CONDA_INSTALL_TYPE" == "cgat-scripts-lite" ] || [ "$CONDA_INSTALL_TYPE" == "cgat-scripts" ] ; then
+   if [ "$CONDA_INSTALL_TYPE" == "cgat-scripts" ] ; then
       echo
       echo " You are using the CGAT Code Collection uploaded to pip. "
       echo " This version of the code has been well tested before release. "
       echo " Nothing to test. "
       echo
-   elif [ "$CONDA_INSTALL_TYPE" == "cgat-devel-lite" ] || [ "$CONDA_INSTALL_TYPE" == "cgat-devel" ] ; then
+   elif [ "$CONDA_INSTALL_TYPE" == "cgat-devel" ] ; then
       # prepare environment
       source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_TYPE
 
@@ -603,9 +588,6 @@ OS_PKGS=
 # conda installation type
 INSTALL_SCRIPTS=
 INSTALL_DEVEL=
-# is installation lite or full?
-INSTALL_LITE=
-INSTALL_FULL=
 # test current installation
 INSTALL_TEST=
 # update current installation
@@ -622,13 +604,11 @@ INSTALL_PYTHON_VERSION=
 # which github branch to use (default: master)
 INSTALL_BRANCH="master"
 # variable to store input parameters
-INPUT_ARGS=$(getopt -n "$0" -o h0123456789:zp:b: --long "help,
+INPUT_ARGS=$(getopt -n "$0" -o h01234567:zp:b: --long "help,
                                                        travis,
                                                        install-os-packages,
                                                        cgat-scripts,
                                                        cgat-devel,
-                                                       lite,
-                                                       full,
                                                        test,
                                                        update,
                                                        uninstall,
@@ -664,16 +644,6 @@ do
   elif [ "$1" == "--cgat-devel" ] ; then
 
       INSTALL_DEVEL=1
-      shift ;
-
-  elif [ "$1" == "--lite" ] ; then
-
-      INSTALL_LITE=1
-      shift ;
-
-  elif [ "$1" == "--full" ] ; then
-
-      INSTALL_FULL=1
       shift ;
 
   elif [ "$1" == "--test" ] ; then
@@ -725,15 +695,7 @@ do
 done # while-loop
 
 # sanity checks
-if [ $INSTALL_LITE ] && [ $INSTALL_FULL ] ; then
-
-   echo 
-   echo " Incorrect input arguments: mixing --full and --lite options is not permitted."
-   echo " Installation aborted. Please run -h option."
-   echo
-   exit 1
-
-elif [ $INSTALL_SCRIPTS ] && [ $INSTALL_DEVEL ] ; then
+if [ $INSTALL_SCRIPTS ] && [ $INSTALL_DEVEL ] ; then
 
    echo
    echo " Incorrect input arguments: mixing --cgat-scripts and --cgat-devel is not permitted."
