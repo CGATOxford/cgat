@@ -310,6 +310,9 @@ if [ "$OS" != "travis" ] ; then
       sed -i 's/CGATScripts/scripts/g' setup.py
 
       # Python preparation
+      # remove install_requires (no longer required with conda package)
+      sed -i'' -e '/REPO_REQUIREMENT/,/pass/d' setup.py
+      sed -i'' -e '/# dependencies/,/dependency_links=dependency_links,/d' setup.py
       python setup.py develop
 
       DEV_RESULT=$?
@@ -383,6 +386,9 @@ if [ $TRAVIS_INSTALL ] ; then
    # python preparation
    log "install CGAT code into conda environment"
    cd $CGAT_HOME
+   # remove install_requires (no longer required with conda package)
+   sed -i'' -e '/REPO_REQUIREMENT/,/pass/d' setup.py
+   sed -i'' -e '/# dependencies/,/dependency_links=dependency_links,/d' setup.py
    python setup.py develop
 
    log "starting tests"
@@ -419,6 +425,9 @@ else
          cd $CGAT_HOME/cgat-code
       fi
 
+      # remove install_requires (no longer required with conda package)
+      sed -i'' -e '/REPO_REQUIREMENT/,/pass/d' setup.py
+      sed -i'' -e '/# dependencies/,/dependency_links=dependency_links,/d' setup.py
       python setup.py develop
       OUTPUT_DIR=`pwd`
 
