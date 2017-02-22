@@ -178,6 +178,7 @@ else
 fi # if travis install
 
 CONDA_INSTALL_DIR=$CGAT_HOME/conda-install
+CONDA_INSTALL_ENV=$(echo $CONDA_INSTALL_TYPE | md5sum | cut -c1-9)
 
 } # get_cgat_env
 
@@ -185,12 +186,12 @@ CONDA_INSTALL_DIR=$CGAT_HOME/conda-install
 # setup environment variables
 setup_env_vars() {
 
-export CFLAGS=$CFLAGS" -I/usr/include/x86_64-linux-gnu -I$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/include -L/usr/lib/x86_64-linux-gnu -L$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/lib"
-export CPATH=$CPATH" -I/usr/include/x86_64-linux-gnu -I$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/include -L/usr/lib/x86_64-linux-gnu -L$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/lib"
-export C_INCLUDE_PATH=$C_INCLUDE_PATH:/usr/include/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/include
-export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/usr/include/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/include
-export LIBRARY_PATH=$LIBRARY_PATH:/usr/lib/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/lib
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/lib:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/lib/R/lib
+export CFLAGS=$CFLAGS" -I/usr/include/x86_64-linux-gnu -I$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/include -L/usr/lib/x86_64-linux-gnu -L$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/lib"
+export CPATH=$CPATH" -I/usr/include/x86_64-linux-gnu -I$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/include -L/usr/lib/x86_64-linux-gnu -L$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/lib"
+export C_INCLUDE_PATH=$C_INCLUDE_PATH:/usr/include/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/include
+export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/usr/include/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/include
+export LIBRARY_PATH=$LIBRARY_PATH:/usr/lib/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/lib
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/lib:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/lib/R/lib
 
 } # setup_env_vars
 
@@ -274,11 +275,11 @@ log "installing conda CGAT environment"
 # keep rpy2-2.4 for production scripts
 if [ "$CONDA_INSTALL_TYPE" == "cgat-scripts" ] ; then
 
-   conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE gcc=4.8.3 rpy2=2.4 --override-channels --channel https://conda.anaconda.org/cgat --channel defaults --channel https://conda.anaconda.org/r --yes
+   conda create -q -n $CONDA_INSTALL_ENV $CONDA_INSTALL_TYPE gcc=4.8.3 rpy2=2.4 --override-channels --channel https://conda.anaconda.org/cgat --channel defaults --channel https://conda.anaconda.org/r --yes
 
 else
 
-   conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE python=$INSTALL_PYTHON_VERSION --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
+   conda create -q -n $CONDA_INSTALL_ENV $CONDA_INSTALL_TYPE python=$INSTALL_PYTHON_VERSION --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
 
 fi
 
@@ -304,7 +305,7 @@ if [ "$OS" != "travis" ] ; then
       fi
 
       # activate cgat environment
-      source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_TYPE
+      source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_ENV
 
       # SLV: workaround until bx-python is available with Python 3
       pip install bx-python
@@ -355,7 +356,7 @@ if [ "$OS" != "travis" ] ; then
       echo " The CGAT code was successfully installed!"
       echo
       echo " To activate the CGAT environment type: "
-      echo " $ source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_TYPE"
+      echo " $ source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_ENV"
       [ $INSTALL_SCRIPTS ] && echo " cgat --help"
       echo
       echo " To deactivate the environment, use:"
@@ -383,7 +384,7 @@ if [ $TRAVIS_INSTALL ] || [ $JENKINS_INSTALL ] ; then
 
    # enable Conda env
    log "activating CGAT conda environment"
-   source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_TYPE
+   source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_ENV
 
    # SLV: workaround until bx-python is available with Python 3
    log "pip-installing additional packages"
@@ -423,7 +424,7 @@ else
       echo
    elif [ "$CONDA_INSTALL_TYPE" == "cgat-devel" ] ; then
       # prepare environment
-      source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_TYPE
+      source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_ENV
 
       if [ $INSTALL_ZIP ] ; then
          cd $CGAT_HOME/cgat-master
@@ -488,7 +489,7 @@ conda_update() {
 # get environment variables: CGAT_HOME, CONDA_INSTALL_DIR, CONDA_INSTALL_TYPE
 get_cgat_env
 
-source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_TYPE
+source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_ENV
 conda update --all
 
 if [ ! $? -eq 0 ] ; then
