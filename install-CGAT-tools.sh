@@ -136,6 +136,12 @@ if [ $TRAVIS_INSTALL ] ; then
    CONDA_INSTALL_TYPE="cgat-scripts-nosetests"
    INSTALL_PYTHON_VERSION=$TRAVIS_PYTHON_VERSION
 
+elif [ $JENKINS_INSTALL ] ; then
+
+   CGAT_HOME=$WORKSPACE
+   CONDA_INSTALL_TYPE="cgat-scripts-nosetests"
+   INSTALL_PYTHON_VERSION=$JENKINS_PYTHON_VERSION
+
 else
 
    if [ -z $CGAT_HOME  ] ; then
@@ -373,7 +379,7 @@ get_cgat_env
 setup_env_vars
 
 # setup environment and run tests
-if [ $TRAVIS_INSTALL ] ; then
+if [ $TRAVIS_INSTALL ] || [ $JENKINS_INSTALL ] ; then
 
    # enable Conda env
    log "activating CGAT conda environment"
@@ -592,6 +598,8 @@ fi
 # these variables will store the information about input parameters
 # travis execution
 TRAVIS_INSTALL=
+# jenkins testing
+JENKINS_INSTALL=
 # install operating system's dependencies
 OS_PKGS=
 # conda installation type
@@ -613,18 +621,19 @@ INSTALL_PYTHON_VERSION=
 # which github branch to use (default: master)
 INSTALL_BRANCH="master"
 # variable to store input parameters
-INPUT_ARGS=$(getopt -n "$0" -o h01234567:zp:b: --long "help,
-                                                       travis,
-                                                       install-os-packages,
-                                                       cgat-scripts,
-                                                       cgat-devel,
-                                                       test,
-                                                       update,
-                                                       uninstall,
-                                                       location:,
-                                                       zip,
-                                                       python:,
-                                                       branch:"  -- "$@")
+INPUT_ARGS=$(getopt -n "$0" -o htj1234567:zp:b: --long "help,
+                                                        travis,
+                                                        jenkins,
+                                                        install-os-packages,
+                                                        cgat-scripts,
+                                                        cgat-devel,
+                                                        test,
+                                                        update,
+                                                        uninstall,
+                                                        location:,
+                                                        zip,
+                                                        python:,
+                                                        branch:"  -- "$@")
 eval set -- "$INPUT_ARGS"
 
 # process all the input parameters first
@@ -638,6 +647,11 @@ do
   elif [ "$1" == "--travis" ] ; then
       
       TRAVIS_INSTALL=1
+      shift ;
+
+  elif [ "$1" == "--jenkins" ] ; then
+
+      JENKINS_INSTALL=1
       shift ;
 
   elif [ "$1" == "--install-os-packages" ] ; then
@@ -719,6 +733,11 @@ fi
 if [ $TRAVIS_INSTALL ] ; then
 
   OS="travis"
+  conda_install
+  conda_test
+
+elif [ $JENKINS_INSTALL  ] ; then
+
   conda_install
   conda_test
 
