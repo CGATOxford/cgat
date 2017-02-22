@@ -266,6 +266,7 @@ hash -r
 
 # install cgat environment
 log "updating conda environment"
+conda config --set allow_softlinks False
 conda update -q conda --yes
 conda info -a
 
