@@ -401,17 +401,14 @@ if [ $TRAVIS_INSTALL ] || [ $JENKINS_INSTALL ] ; then
 
    log "starting tests"
    # run nosetests
-
-   [ $TEST_IMPORT ] && nosetests -v tests/test_import.py
-
-   [ $TEST_STYLE  ] && nosetests -v tests/test_style.py
-
-   if [ $TEST_CMDLINE ] ; then
+   if [ $TEST_IMPORT ] ; then
+      nosetests -v tests/test_import.py ;
+   elif [ $TEST_STYLE ] ; then
+      nosetests -v tests/test_style.py ;
+   elif [ $TEST_CMDLINE ] ; then
       echo -e "restrict:\n    manifest:\n" > tests/_test_commandline.yaml
       nosetests -v tests/test_commandline.py ;
-   fi
-
-   if [ $TEST_PRODUCTION_SCRIPTS  ] ; then
+   elif [ $TEST_PRODUCTION_SCRIPTS  ] ; then
       echo -e "restrict:\n    manifest:\n" > tests/_test_scripts.yaml
       nosetests -v tests/test_scripts.py ;
    else
