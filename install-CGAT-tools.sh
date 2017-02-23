@@ -136,6 +136,12 @@ if [ $TRAVIS_INSTALL ] ; then
    CONDA_INSTALL_TYPE="cgat-scripts-nosetests"
    INSTALL_PYTHON_VERSION=$TRAVIS_PYTHON_VERSION
 
+elif [ $JENKINS_INSTALL ] ; then
+
+   CGAT_HOME=$WORKSPACE
+   CONDA_INSTALL_TYPE="cgat-scripts-nosetests"
+   INSTALL_PYTHON_VERSION=$JENKINS_PYTHON_VERSION
+
 else
 
    if [ -z $CGAT_HOME  ] ; then
@@ -172,6 +178,7 @@ else
 fi # if travis install
 
 CONDA_INSTALL_DIR=$CGAT_HOME/conda-install
+CONDA_INSTALL_ENV=$(echo $CONDA_INSTALL_TYPE | cut -c1-6)
 
 } # get_cgat_env
 
@@ -179,12 +186,12 @@ CONDA_INSTALL_DIR=$CGAT_HOME/conda-install
 # setup environment variables
 setup_env_vars() {
 
-export CFLAGS=$CFLAGS" -I/usr/include/x86_64-linux-gnu -I$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/include -L/usr/lib/x86_64-linux-gnu -L$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/lib"
-export CPATH=$CPATH" -I/usr/include/x86_64-linux-gnu -I$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/include -L/usr/lib/x86_64-linux-gnu -L$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/lib"
-export C_INCLUDE_PATH=$C_INCLUDE_PATH:/usr/include/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/include
-export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/usr/include/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/include
-export LIBRARY_PATH=$LIBRARY_PATH:/usr/lib/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/lib
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/lib:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_TYPE/lib/R/lib
+export CFLAGS=$CFLAGS" -I/usr/include/x86_64-linux-gnu -I$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/include -L/usr/lib/x86_64-linux-gnu -L$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/lib"
+export CPATH=$CPATH" -I/usr/include/x86_64-linux-gnu -I$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/include -L/usr/lib/x86_64-linux-gnu -L$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/lib"
+export C_INCLUDE_PATH=$C_INCLUDE_PATH:/usr/include/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/include
+export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/usr/include/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/include
+export LIBRARY_PATH=$LIBRARY_PATH:/usr/lib/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/lib
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/lib:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/lib/R/lib
 
 } # setup_env_vars
 
@@ -259,6 +266,7 @@ hash -r
 
 # install cgat environment
 log "updating conda environment"
+conda config --set allow_softlinks False
 conda update -q conda --yes
 conda info -a
 
@@ -268,11 +276,11 @@ log "installing conda CGAT environment"
 # keep rpy2-2.4 for production scripts
 if [ "$CONDA_INSTALL_TYPE" == "cgat-scripts" ] ; then
 
-   conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE gcc=4.8.3 rpy2=2.4 --override-channels --channel https://conda.anaconda.org/cgat --channel defaults --channel https://conda.anaconda.org/r --yes
+   conda create -q -n $CONDA_INSTALL_ENV $CONDA_INSTALL_TYPE gcc=4.8.3 rpy2=2.4 --override-channels --channel https://conda.anaconda.org/cgat --channel defaults --channel https://conda.anaconda.org/r --yes
 
 else
 
-   conda create -q -n $CONDA_INSTALL_TYPE $CONDA_INSTALL_TYPE python=$INSTALL_PYTHON_VERSION --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
+   conda create -q -n $CONDA_INSTALL_ENV $CONDA_INSTALL_TYPE python=$INSTALL_PYTHON_VERSION --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
 
 fi
 
@@ -298,7 +306,7 @@ if [ "$OS" != "travis" ] ; then
       fi
 
       # activate cgat environment
-      source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_TYPE
+      source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_ENV
 
       # SLV: workaround until bx-python is available with Python 3
       pip install bx-python
@@ -349,7 +357,7 @@ if [ "$OS" != "travis" ] ; then
       echo " The CGAT code was successfully installed!"
       echo
       echo " To activate the CGAT environment type: "
-      echo " $ source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_TYPE"
+      echo " $ source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_ENV"
       [ $INSTALL_SCRIPTS ] && echo " cgat --help"
       echo
       echo " To deactivate the environment, use:"
@@ -373,11 +381,11 @@ get_cgat_env
 setup_env_vars
 
 # setup environment and run tests
-if [ $TRAVIS_INSTALL ] ; then
+if [ $TRAVIS_INSTALL ] || [ $JENKINS_INSTALL ] ; then
 
    # enable Conda env
    log "activating CGAT conda environment"
-   source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_TYPE
+   source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_ENV
 
    # SLV: workaround until bx-python is available with Python 3
    log "pip-installing additional packages"
@@ -393,7 +401,13 @@ if [ $TRAVIS_INSTALL ] ; then
 
    log "starting tests"
    # run nosetests
-   if [ $TEST_IMPORT ] ; then
+   if [ $TEST_ALL ] ; then
+      log "test_import.py" && nosetests -v tests/test_import.py && \
+      log "test_style.py" && nosetests -v tests/test_style.py && \
+      echo -e "restrict:\n    manifest:\n" > tests/_test_commandline.yaml && \
+      log "test_commandline" && nosetests -v tests/test_commandline.py && \
+      log "test_scripts" && nosetests -v tests/test_scripts.py ;
+   elif [ $TEST_IMPORT ] ; then
       nosetests -v tests/test_import.py ;
    elif [ $TEST_STYLE ] ; then
       nosetests -v tests/test_style.py ;
@@ -417,7 +431,7 @@ else
       echo
    elif [ "$CONDA_INSTALL_TYPE" == "cgat-devel" ] ; then
       # prepare environment
-      source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_TYPE
+      source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_ENV
 
       if [ $INSTALL_ZIP ] ; then
          cd $CGAT_HOME/cgat-master
@@ -482,7 +496,7 @@ conda_update() {
 # get environment variables: CGAT_HOME, CONDA_INSTALL_DIR, CONDA_INSTALL_TYPE
 get_cgat_env
 
-source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_TYPE
+source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_ENV
 conda update --all
 
 if [ ! $? -eq 0 ] ; then
@@ -592,6 +606,8 @@ fi
 # these variables will store the information about input parameters
 # travis execution
 TRAVIS_INSTALL=
+# jenkins testing
+JENKINS_INSTALL=
 # install operating system's dependencies
 OS_PKGS=
 # conda installation type
@@ -613,18 +629,19 @@ INSTALL_PYTHON_VERSION=
 # which github branch to use (default: master)
 INSTALL_BRANCH="master"
 # variable to store input parameters
-INPUT_ARGS=$(getopt -n "$0" -o h01234567:zp:b: --long "help,
-                                                       travis,
-                                                       install-os-packages,
-                                                       cgat-scripts,
-                                                       cgat-devel,
-                                                       test,
-                                                       update,
-                                                       uninstall,
-                                                       location:,
-                                                       zip,
-                                                       python:,
-                                                       branch:"  -- "$@")
+INPUT_ARGS=$(getopt -n "$0" -o htj1234567:zp:b: --long "help,
+                                                        travis,
+                                                        jenkins,
+                                                        install-os-packages,
+                                                        cgat-scripts,
+                                                        cgat-devel,
+                                                        test,
+                                                        update,
+                                                        uninstall,
+                                                        location:,
+                                                        zip,
+                                                        python:,
+                                                        branch:"  -- "$@")
 eval set -- "$INPUT_ARGS"
 
 # process all the input parameters first
@@ -638,6 +655,11 @@ do
   elif [ "$1" == "--travis" ] ; then
       
       TRAVIS_INSTALL=1
+      shift ;
+
+  elif [ "$1" == "--jenkins" ] ; then
+
+      JENKINS_INSTALL=1
       shift ;
 
   elif [ "$1" == "--install-os-packages" ] ; then
@@ -719,6 +741,11 @@ fi
 if [ $TRAVIS_INSTALL ] ; then
 
   OS="travis"
+  conda_install
+  conda_test
+
+elif [ $JENKINS_INSTALL  ] ; then
+
   conda_install
   conda_test
 
