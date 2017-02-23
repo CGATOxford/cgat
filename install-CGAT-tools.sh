@@ -178,7 +178,7 @@ else
 fi # if travis install
 
 CONDA_INSTALL_DIR=$CGAT_HOME/conda-install
-CONDA_INSTALL_ENV=$(echo $CONDA_INSTALL_TYPE | md5sum | cut -c1-9)
+CONDA_INSTALL_ENV=$(echo $CONDA_INSTALL_TYPE | cut -c1-6)
 
 } # get_cgat_env
 
