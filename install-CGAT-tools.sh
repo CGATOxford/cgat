@@ -403,9 +403,9 @@ if [ $TRAVIS_INSTALL ] || [ $JENKINS_INSTALL ] ; then
    # run nosetests
    if [ $TEST_ALL ] ; then
       log "test_import.py" && nosetests -v tests/test_import.py && \
-      log "test_style.py" nosetests -v tests/test_style.py && \
-      log "test_commandline" nosetests -v tests/test_commandline.py && \
-      log "test_scripts" nosetests -v tests/test_scripts.py ;
+      log "test_style.py" && nosetests -v tests/test_style.py && \
+      log "test_commandline" && nosetests -v tests/test_commandline.py && \
+      log "test_scripts" && nosetests -v tests/test_scripts.py ;
    elif [ $TEST_IMPORT ] ; then
       nosetests -v tests/test_import.py ;
    elif [ $TEST_STYLE ] ; then
