@@ -44,7 +44,7 @@ def getMapColumn2Type(rows, ignore_empty=False, get_max_values=False):
                 if h not in max_values:
                     max_values[h] = int(row[h])
                 else:
-                    max_values[h] = max(h, int(row[h]))
+                    max_values[h] = max(max_values[h], int(row[h]))
 
             elif isinstance(row[h], float):
                 t = float

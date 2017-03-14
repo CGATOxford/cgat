@@ -641,14 +641,14 @@ def main(argv=None):
     if options.bam_files:
         bam_files = []
         for bamfile in options.bam_files.split(","):
-            bam_files.append(pysam.Samfile(bamfile, "rb"))
+            bam_files.append(pysam.AlignmentFile(bamfile, "rb"))
     else:
         bam_files = None
 
     if options.control_bam_files:
         control_bam_files = []
         for bamfile in options.control_bam_files.split(","):
-            control_bam_files.append(pysam.Samfile(bamfile, "rb"))
+            control_bam_files.append(pysam.AlignmentFile(bamfile, "rb"))
     else:
         control_bam_files = None
 

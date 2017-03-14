@@ -233,7 +233,7 @@ def main(argv=None):
         raise ValueError("please provide a bam file")
 
     # Read BAM file using Pysam
-    samfile = pysam.Samfile(options.samfile, "rb")
+    samfile = pysam.AlignmentFile(options.samfile, "rb")
 
     # Create temporary files / folders
     tmpdir = tempfile.mkdtemp()

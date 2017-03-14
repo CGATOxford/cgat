@@ -163,7 +163,7 @@ def main(argv=None):
     if len(args) == 0:
         args.append("-")
 
-    samfile = pysam.Samfile(args[0], "rb")
+    samfile = pysam.AlignmentFile(args[0], "rb")
 
     options.bed_format = int(options.bed_format)
 

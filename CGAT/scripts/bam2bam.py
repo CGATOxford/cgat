@@ -385,13 +385,13 @@ def main(argv=None):
             continue
 
         # reading bam from stdin does not work with only the "r" tag
-        pysam_in = pysam.Samfile(bamfile, "rb")
+        pysam_in = pysam.AlignmentFile(bamfile, "rb")
 
         if bamfile == "-":
             if options.output_sam:
-                pysam_out = pysam.Samfile("-", "wh", template=pysam_in)
+                pysam_out = pysam.AlignmentFile("-", "wh", template=pysam_in)
             else:
-                pysam_out = pysam.Samfile("-", "wb", template=pysam_in)
+                pysam_out = pysam.AlignmentFile("-", "wb", template=pysam_in)
         else:
             if IOTools.isEmpty(bamfile):
                 E.warn('skipping empty file %s' % bamfile)
@@ -400,7 +400,7 @@ def main(argv=None):
             tmpfile.close()
 
             E.debug("writing temporary bam-file to %s" % tmpfile.name)
-            pysam_out = pysam.Samfile(tmpfile.name, "wb",
+            pysam_out = pysam.AlignmentFile(tmpfile.name, "wb",
                                       template=pysam_in)
 
         if "filter" in options.methods:
@@ -420,7 +420,7 @@ def main(argv=None):
                         "requiring reference bam file for removing by "
                         "mismatches")
 
-                pysam_ref = pysam.Samfile(options.reference_bam, "rb")
+                pysam_ref = pysam.AlignmentFile(options.reference_bam, "rb")
             else:
                 pysam_ref = None
 

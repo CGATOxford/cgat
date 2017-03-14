@@ -76,7 +76,7 @@ def main(argv=None):
 
     # read in bamfile
     E.info("reading bam file")
-    samfile = pysam.Samfile(options.bamfile)
+    samfile = pysam.AlignmentFile(options.bamfile)
 
     E.info("iterating over contigs")
     c = 0

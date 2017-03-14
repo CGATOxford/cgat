@@ -1,5 +1,5 @@
-from pysam.chtslib cimport *
-from pysam.csamfile cimport *
+from pysam.libchtslib cimport *
+from pysam.libcalignmentfile cimport *
 
 import collections, array, struct, itertools
 import CGAT.Experiment as E
@@ -36,9 +36,9 @@ cdef class SetNH:
                         read.set_tag("NH", nh)
 
 
-def filter_bam(Samfile input_samfile,
-               Samfile output_samfile,
-               Samfile reference_samfile,
+def filter_bam(AlignmentFile input_samfile,
+               AlignmentFile output_samfile,
+               AlignmentFile reference_samfile,
                remove_nonunique = False,
                remove_unique = False,
                remove_contigs = None,

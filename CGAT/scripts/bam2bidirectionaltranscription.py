@@ -140,7 +140,7 @@ def main(argv=None):
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
 
-    bam = pysam.Samfile(options.bam)
+    bam = pysam.AlignmentFile(options.bam)
     gtffile = IOTools.openFile(options.annotation)
 
     if options.merge_transcripts:
