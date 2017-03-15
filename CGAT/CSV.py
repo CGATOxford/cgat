@@ -105,7 +105,7 @@ class UnicodeCsvReader(object):
         row = next(self.csv_reader)
         # now decode
         if PY3:
-            return [str(cell, self.encode) for cell in row]
+            return [str(cell, self.encoding) for cell in row]
         else:
             return [str(cell) for cell in row]
 
