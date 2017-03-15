@@ -179,11 +179,8 @@ def main(argv=None):
                       "[default=%default].")
 
     parser.add_option("-m", "--method", dest="method", type="choice",
-<<<<<<< HEAD:scripts/counts2table.py
-                      choices=("sleuth", "edger", "deseq2", "mock", "dexseq"),
-=======
-                      choices=("ttest", "sleuth", "edger", "deseq2", "mock"),
->>>>>>> master:CGAT/scripts/counts2table.py
+                      choices=("ttest", "sleuth", "edger", "deseq2", "mock",
+                               "dexseq"),
                       help="differential expression method to apply "
                       "[default=%default].")
 
@@ -477,13 +474,8 @@ def main(argv=None):
             results = experiment.run(counts,
                                      design,
                                      model=options.model,
-<<<<<<< HEAD:scripts/counts2table.py
-                                     contrasts=options.contrasts,
-                                     outfileprefix=outfile_prefix,
-=======
                                      contrast=options.contrast,
                                      outfile_prefix=outfile_prefix,
->>>>>>> master:CGAT/scripts/counts2table.py
                                      fdr=options.fdr,
                                      fit_type=options.deseq2_fit_type,
                                      ref_group=options.ref_group,
