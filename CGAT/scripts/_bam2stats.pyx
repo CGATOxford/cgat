@@ -1,8 +1,8 @@
 import sys
-from pysam.chtslib cimport *
-from pysam.csamfile cimport *
-from pysam.cfaidx cimport *
-from pysam.cutils cimport force_str, force_bytes
+from pysam.libchtslib cimport *
+from pysam.libcalignmentfile cimport *
+from pysam.libcfaidx cimport *
+from pysam.libcutils cimport force_str, force_bytes
 from libc.string cimport strchr
 from libc.stdint cimport int8_t
 from libc.stdio cimport puts, printf

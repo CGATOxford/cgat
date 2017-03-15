@@ -189,7 +189,7 @@ def touchFile(filename, times=None):
     as empty 'gzip' files, i.e., with a header.
     '''
     existed = os.path.exists(filename)
-    fhandle = file(filename, 'a')
+    fhandle = open(filename, 'a')
 
     if filename.endswith(".gz") and not existed:
         # this will automatically add a gzip header

@@ -40,26 +40,6 @@ import CGAT.Experiment as E
 import CGAT.CSV as CSV
 
 
-class CommentStripper:
-
-    """iterator class for stripping comments from file.
-    """
-
-    def __init__(self, file):
-        self.mFile = file
-
-    def __iter__(self):
-        return self
-
-    def __next__(self):
-        while 1:
-            line = self.mFile.readline()
-            if not line:
-                raise StopIteration
-            if line[0] != "#":
-                return line
-
-
 def main(argv=None):
     """script main.
 
@@ -97,10 +77,10 @@ def main(argv=None):
     statement = " ".join(args)
 
     if options.large:
-        reader = CSV.DictReaderLarge(CommentStripper(sys.stdin),
+        reader = CSV.DictReaderLarge(CSV.CommentStripper(sys.stdin),
                                      dialect=options.csv_dialect)
     else:
-        reader = csv.DictReader(CommentStripper(sys.stdin),
+        reader = csv.DictReader(CSV.CommentStripper(sys.stdin),
                                 dialect=options.csv_dialect)
 
     exec("f = lambda r: %s" % statement, locals())

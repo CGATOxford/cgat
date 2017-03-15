@@ -108,7 +108,7 @@ def main(argv=None):
     genomefile, referencenames, referencelengths = None, None, None
 
     if options.filename_genome_bam:
-        genomefile = pysam.Samfile(options.filename_genome_bam, "rb")
+        genomefile = pysam.AlignmentFile(options.filename_genome_bam, "rb")
     elif options.filename_contigs:
         contigs = IOTools.ReadMap(IOTools.openFile(options.filename_contigs))
         data = list(zip(*list(contigs.items())))
@@ -117,8 +117,8 @@ def main(argv=None):
         raise ValueError(
             "please provide either --template-bam-file or --contigs-tsv-file")
 
-    infile = pysam.Samfile("-", "rb")
-    outfile = pysam.Samfile("-", "wb", template=genomefile,
+    infile = pysam.AlignmentFile("-", "rb")
+    outfile = pysam.AlignmentFile("-", "wb", template=genomefile,
                             referencenames=referencenames,
                             referencelengths=referencelengths)
 

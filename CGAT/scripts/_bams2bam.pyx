@@ -1,23 +1,23 @@
-from pysam.chtslib cimport *
-from pysam.csamfile cimport *
+from pysam.libchtslib cimport *
+from pysam.libcalignmentfile cimport *
 
 import collections, array, struct, sys
 import CGAT.Experiment as E
 
 
-def filter( Samfile genome_samfile,
-            Samfile output_samfile,
-            Samfile output_mismapped,
-            Samfile transcripts_samfile,
-            Samfile junctions_samfile,
-            transcripts,
-            regions = None,
-            unique = False,
-            remove_contigs = None,
-            colour_mismatches = False,
-            ignore_mismatches = False,
-            ignore_junctions = True,
-            ignore_transcripts = False ):
+def filter(AlignmentFile genome_samfile,
+           AlignmentFile output_samfile,
+           AlignmentFile output_mismapped,
+           AlignmentFile transcripts_samfile,
+           AlignmentFile junctions_samfile,
+           transcripts,
+           regions = None,
+           unique = False,
+           remove_contigs = None,
+           colour_mismatches = False,
+           ignore_mismatches = False,
+           ignore_junctions = True,
+           ignore_transcripts = False ):
     '''
     To conserve memory, the tid and NM flag from *transcripts_samfile*
     are packed into memory. As a consequence, this method requires 

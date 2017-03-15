@@ -118,7 +118,7 @@ def runSailfishQuant(fasta_index, fastq_files, output_dir,
                                                                    fq)])
         fstr_format = " ".join(["%s" for hq in first_mates])
         fdecomp_format = fstr_format % first_mates
-        decomp_first = " -1 <(zcat %s)" % fdecomp_format
+        decomp_first = " -1 <( zcat %s )" % fdecomp_format
 
         states.append(decomp_first)
 
@@ -126,7 +126,7 @@ def runSailfishQuant(fasta_index, fastq_files, output_dir,
                                                                     sq)])
         sstr_format = " ".join(["%s" for aq in second_mates])
         sdecomp_format = sstr_format % second_mates
-        decomp_second = " -2 <(zcat %s)" % sdecomp_format
+        decomp_second = " -2 <( zcat %s )" % sdecomp_format
 
         states.append(decomp_second)
 
@@ -135,7 +135,7 @@ def runSailfishQuant(fasta_index, fastq_files, output_dir,
                                                                    fq)])
         fstr_format = " ".join(["%s" for sq in first_mates])
         fdecomp_format = fstr_format % first_mates
-        decomp_first = " -r <(zcat %s)" % fdecomp_format
+        decomp_first = " -r <( zcat %s )" % fdecomp_format
 
         states.append(decomp_first)
 
@@ -161,7 +161,6 @@ def runSailfishQuant(fasta_index, fastq_files, output_dir,
     # subprocess cannot handle process substitution
     # therefore needs to be wrapped in /bin/bash -c '...'
     # for bash to interpret the substitution correctly
-
     process = subprocess.Popen(statement, shell=True,
                                executable="/bin/bash")
 

@@ -55,13 +55,7 @@ import subprocess
 import CGAT.Experiment as E
 import pysam
 import CGAT.IOTools as IOTools
-
-try:
-    import pyximport
-    pyximport.install(build_in_temp=False)
-    import _bam2bed
-except ImportError:
-    import CGAT.scripts._bam2bed as _bam2bed
+import CGAT.scripts._bam2bed as _bam2bed
 
 
 class SpanWriter(object):
@@ -239,7 +233,7 @@ def main(argv=None):
         raise ValueError("please provide a bam file")
 
     # Read BAM file using Pysam
-    samfile = pysam.Samfile(options.samfile, "rb")
+    samfile = pysam.AlignmentFile(options.samfile, "rb")
 
     # Create temporary files / folders
     tmpdir = tempfile.mkdtemp()

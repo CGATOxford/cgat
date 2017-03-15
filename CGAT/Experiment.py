@@ -757,7 +757,8 @@ def Start(parser=None,
                          type="int",
                          help="set job priority on cluster [%default].")
         group.add_option("--cluster-queue-manager", dest="cluster_queue_manager",
-                         type="string",
+                         type="choice",
+                         choices=("sge", "slurm"),
                          help="set cluster queue manager [%default].")
         group.add_option("--cluster-queue", dest="cluster_queue",
                          type="string",
@@ -782,15 +783,6 @@ def Start(parser=None,
                          help="additional options for cluster jobs, passed "
                          "on to queuing system [%default].")
 
-        parser.set_defaults(without_cluster=False,
-                            cluster_queue_manager=None,
-                            cluster_queue=None,
-                            cluster_memory_resource=None,
-                            cluster_memory_default=None,
-                            cluster_priority=None,
-                            cluster_num_jobs=None,
-                            cluster_parallel_environment=None,
-                            cluster_options=None)
         parser.add_option_group(group)
 
     if add_output_options or add_pipe_options:

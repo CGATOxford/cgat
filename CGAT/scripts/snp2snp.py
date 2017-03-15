@@ -43,7 +43,7 @@ def validateSNPs(options, fastafile):
 
     for filename in options.filename_references:
         for f in glob.glob(filename):
-            callers.append(pysam.SNPCaller(pysam.Samfile(f, "rb"), fastafile))
+            callers.append(pysam.SNPCaller(pysam.AlignmentFile(f, "rb"), fastafile))
 
     if len(callers) == 0:
         E.warning("no transcript data available")

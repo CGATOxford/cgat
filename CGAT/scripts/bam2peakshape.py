@@ -173,12 +173,7 @@ except ImportError:
     # py3: cStringIO dependency of BigWigFile
     pass
 
-try:
-    import pyximport
-    pyximport.install(build_in_temp=False)
-    import _bam2peakshape
-except ImportError:
-    import CGAT.scripts._bam2peakshape as _bam2peakshape
+import CGAT.scripts._bam2peakshape as _bam2peakshape
 
 
 def buildOptionParser(argv):
@@ -584,9 +579,9 @@ def main(argv=None):
             smooth_method=options.smooth_method)
 
     elif options.format == "bam":
-        fg_file = pysam.Samfile(infile, "rb")
+        fg_file = pysam.AlignmentFile(infile, "rb")
         for control_file in options.control_files:
-            control_files.append(pysam.Samfile(control_file, "rb"))
+            control_files.append(pysam.AlignmentFile(control_file, "rb"))
         counter = _bam2peakshape.CounterBam(
             shift=options.shift,
             smooth_method=options.smooth_method)
