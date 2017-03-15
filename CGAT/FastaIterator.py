@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 """FastaIterator.py - Iteration over fasta files
 ================================================
 
@@ -64,7 +42,7 @@ class FastaRecord:
         ''' str method for writing out'''
 
         if self.fold:
-            seq = [self.sequence[i:i+self.fold]
+            seq = [self.sequence[i:i + self.fold]
                    for i in range(0, len(self.sequence), self.fold)]
         else:
             seq = (self.sequence,)
@@ -87,8 +65,11 @@ class FastaIterator:
     def __iter__(self):
         return self
 
+    def __next__(self):
+        return next(self.iterator)
+
     def next(self):
-        return self.iterator.next()
+        return next(self.iterator)
 
 
 def iterate(infile, comment="#", fold=False):
@@ -164,7 +145,7 @@ def iterate_together(*args):
     iterators = [FastaIterator(x) for x in args]
 
     while 1:
-        yield [x.next() for x in iterators]
+        yield [next(x) for x in iterators]
 
 
 def count(filename):

@@ -2,49 +2,34 @@
 # use container-based infrastructure on Travis
 # http://docs.travis-ci.com/user/workers/container-based-infrastructure/
 # http://blog.travis-ci.com/2014-12-17-faster-builds-with-container-based-infrastructure/
-sudo: false
+#sudo: false
+
+# use VM infrastructure on Travis
+# exit code 137 indicates that your build is now taking more memory
+# or rather it's running alongside other builds requiring a lot of memory.
+# This can happen because your builds are running on container-based infrastructure and they will share the host's 4 GB memory.
+# To mitigate this situation, run your builds on our sudo-enabled Precise infrastructure.
+# Over there, your builds will run on a fully independent VM with 7.5 GB of (unshared) memory.
+sudo: required
+dist: precise
 
 language: python
 
 env:
   global:
-    - CGAT_TASK_STEPSIZE=44
-  matrix:
-    - CGAT_TASK_ID=1
-    - CGAT_TASK_ID=45
-    - CGAT_TASK_ID=90
-    - CGAT_TASK_ID=135
-    - CGAT_TASK_ID=180
-    - CGAT_TASK_ID=225
-    - CGAT_TASK_ID=270
-    - CGAT_TASK_ID=315
-    - TEST_STYLE=1
-    - TEST_CMDLINE=1
-    - TEST_IMPORT=1
-    - TEST_PRODUCTION_SCRIPTS=1
+    - TEST_ALL=1
 
 python:
   - "2.7"
+  - "3.5"
+
+# Using xvfb to Run Tests That Require a GUI
+# https://docs.travis-ci.com/user/gui-and-headless-browsers/#Using-xvfb-to-Run-Tests-That-Require-a-GUI
+before_script:
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+  - sleep 3 # give xvfb some time to start
 
 script: 
-  - ./install-CGAT-tools.sh --travis
+  - travis_wait 30 ./install-CGAT-tools.sh --travis
 
-notifications:
-  email:
-    - sebastian.luna.valero@gmail.com
-    - andreas.heger@gmail.com
-    - david.sims@dpag.ox.ac.uk
-    - stephen.sansom@kennedy.ox.ac.uk
-    - i.sudbery@sheffield.ac.uk
-    - Jethro.Johnson@jax.org
-    - antonio.berlanga@dpag.ox.ac.uk
-    - katherine.fawcett@dpag.ox.ac.uk
-    - thomas.smith2@dpag.ox.ac.uk
-    - michael.morgan@dpag.ox.ac.uk
-    - xiaoming.hu@dpag.ox.ac.uk
-    - nicholas.ilott@kennedy.ox.ac.uk
-    - katherine.brown@dpag.ox.ac.uk
-    - charlotte.george@dpag.ox.ac.uk
-    - adam.cribbs@dpag.ox.ac.uk
-    - hania.pavlou@dpag.ox.ac.uk
-    - jakub.scaber@ndcn.ox.ac.uk

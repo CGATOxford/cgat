@@ -35,8 +35,6 @@ Apart from basic iteration, this module provides the following utilities:
 
 """
 
-import copy
-import types
 import collections
 from CGAT import Intervals as Intervals
 from CGAT import Genomics as Genomics
@@ -299,21 +297,21 @@ def iterator_sorted_chunks(gff_iterator, sort_by="contig-start"):
     # get all chunks and annotate with sort order
     if sort_by == "contig-start":
         chunks = ([(x[0].contig, min([y.start for y in x]), x)
-                  for x in gff_iterator])
+                   for x in gff_iterator])
         chunks.sort()
         for contig, start, chunk in chunks:
             chunk.sort(key=lambda x: (x.contig, x.start))
             yield chunk
     elif sort_by == "contig-strand-start":
         chunks = ([(x[0].contig, x[0].strand, min([y.start for y in x]), x)
-                  for x in gff_iterator])
+                   for x in gff_iterator])
         chunks.sort()
         for contig, start, strand, chunk in chunks:
             chunk.sort(key=lambda x: (x.contig, x.strand, x.start))
             yield chunk
     elif sort_by == "contig-strand-start-end":
         chunks = ([(x[0].contig, x[0].strand, min([y.start for y in x]), x)
-                  for x in gff_iterator])
+                   for x in gff_iterator])
         chunks.sort()
         for contig, start, strand, chunk in chunks:
             chunk.sort(key=lambda x: (x.contig, x.strand, x.start, x.end))
@@ -435,7 +433,7 @@ def iterator_overlaps(gff_iterator, min_overlap=0):
     The input should be sorted by contig,start
     """
 
-    last = gff_iterator.next()
+    last = next(gff_iterator)
     matches = [last]
     end = last.end
     for this in gff_iterator:
@@ -499,10 +497,10 @@ def asRanges(gffs, feature=None):
     The returned intervals are sorted.
     """
 
-    if isinstance(feature, basestring):
-        gg = filter(lambda x: x.feature == feature, gffs)
+    if isinstance(feature, str):
+        gg = [x for x in gffs if x.feature == feature]
     elif feature:
-        gg = filter(lambda x: x.feature in feature, gffs)
+        gg = [x for x in gffs if x.feature in feature]
     else:
         gg = gffs[:]
 
@@ -750,7 +748,7 @@ def toDot(v):
 
 def quote(v):
     '''return a quoted attribute.'''
-    if type(v) in types.StringTypes:
+    if type(v) in (str,):
         return '"%s"' % v
     else:
         return str(v)
@@ -798,7 +796,7 @@ class Entry:
         self.strand = "."
         self.gene_id = None
         self.transcript_id = None
-        self.attributes = {}
+        self.attributes = collections.OrderedDict()
 
     def read(self, line):
         """read gff entry from line in GTF/GFF format.
@@ -817,7 +815,7 @@ class Entry:
             raise ValueError("parsing error in line `%s`" % line)
 
         # note: frame might be .
-        (self.start, self.end) = map(int, (self.start, self.end))
+        (self.start, self.end) = list(map(int, (self.start, self.end)))
         self.start -= 1
 
         self.parseInfo(data[8], line)
@@ -839,12 +837,12 @@ class Entry:
         # The current heuristic is to split on a semicolon followed by a
         # space, which seems to be part of the specification, see
         # http://mblab.wustl.edu/GTF22.html
-        fields = map(lambda x: x.strip(), attributes.split("; ")[:-1])
-        self.attributes = {}
+        fields = [x.strip() for x in attributes.split("; ")[:-1]]
+        self.attributes = collections.OrderedDict()
 
         for f in fields:
 
-            d = map(lambda x: x.strip(), f.split(" "))
+            d = [x.strip() for x in f.split(" ")]
 
             n, v = d[0], " ".join(d[1:])
             if len(d) > 2:
@@ -877,7 +875,7 @@ class Entry:
 
     def getAttributeField(self, full=True):
         aa = []
-        for k, v in self.attributes.items():
+        for k, v in list(self.attributes.items()):
             if isinstance(v, str):
                 aa.append('%s "%s"' % (k, v))
             elif isinstance(v, list) or isinstance(v, tuple):
@@ -988,7 +986,7 @@ class Entry:
         except AttributeError:
             pass
 
-        self.attributes = copy.copy(other.asDict())
+        self.attributes = collections.OrderedDict(other.asDict().items())
         # from gff - remove gene_id and transcript_id from attributes
         try:
             del self.attributes["gene_id"]
@@ -1003,7 +1001,7 @@ class Entry:
         return self.attributes
 
     def clearAttributes(self):
-        self.attributes = {}
+        self.attributes = collections.OrderedDict()
 
     def addAttribute(self, key, value=None):
         self.attributes[key] = value
@@ -1012,6 +1010,12 @@ class Entry:
         # note: does compare by strand as well!
         return cmp((self.contig, self.strand, self.start),
                    (other.contig, other.strand, other.start))
+
+    # python 3 compatibility
+    def __lt__(self, other):
+        # note: does compare by strand as well!
+        return (self.contig, self.strand, self.start) < \
+            (other.contig, other.strand, other.start)
 
     def __setitem__(self, key, value):
         self.addAttribute(key, value)

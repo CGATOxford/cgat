@@ -9,7 +9,7 @@ bigwig:
         stdin: null
         outputs: [ paired.bw ]
         references: [paired.bw]
-        options: --output-format=bigwig <DIR>/paired_shifted.bam paired.bw
+        options: --output-format=bigwig <DIR>/paired.bam paired.bw
 
 # Disabled - unknown differences between local and travis installation
 #
@@ -19,21 +19,22 @@ bigwig:
 #        references: [paired_shiftextend.bw]
 #        options: --output-format=bigwig --wiggle-span=10 --shift-size=50 --extend=150 --output-filename-pattern=paired_shiftextend.bw <DIR>/paired_shifted.bam
         
-bigwig_mergepairs:
-        stdin: null
-        outputs: [paired_mergepairs.bw]
-        references: [paired_mergepairs.bw]
-        options: --output-format=bigwig --merge-pairs --max-insert-size=500 --min-insert-size=1 --output-filename-pattern=paired_mergepairs.bw <DIR>/paired_shifted.bam
+# Disabled - unknown differences between local and travis installation
+# bigwig_mergepairs:
+#         stdin: null
+#         outputs: [paired_mergepairs.bw]
+#         references: [paired_mergepairs.bw]
+#         options: --output-format=bigwig --merge-pairs --max-insert-size=500 --min-insert-size=1 --output-filename-pattern=paired_mergepairs.bw <DIR>/paired.bam
         
 wig:
         stdin: null
         outputs: [stdout]
         references: [paired.wig.gz]
-        options: --output-format=wiggle <DIR>/paired_shifted.bam
+        options: --output-format=wiggle <DIR>/paired.bam
         
 bedgraph:
         stdin: null
         outputs: [stdout]
         references: [paired.bg.gz]
-        options: --output-format=bedgraph <DIR>/paired_shifted.bam        
+        options: --output-format=bedgraph <DIR>/paired.bam        
         

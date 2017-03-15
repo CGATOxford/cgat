@@ -1,24 +1,3 @@
-##########################################################################
-#   Gene prediction pipeline
-#
-#   $Id: Tree.py 2784 2009-09-10 11:41:14Z andreas $
-#
-#   Copyright (C) 2004 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 """TreeTools.py - Tools for working with trees
 ===========================================
 
@@ -34,7 +13,7 @@ import Bio.Nexus.Nexus
 import Bio.Nexus.Trees
 import string
 import re
-import StringIO
+from six import StringIO
 from CGAT import Tree as Tree
 
 
@@ -61,7 +40,7 @@ def Newick2Nexus(infile):
     """
     lines = ["#NEXUS\nBegin trees;\n"]
 
-    if isinstance(infile, basestring):
+    if isinstance(infile, str):
         tlines = [infile]
     else:
         tlines = [x for x in infile]
@@ -128,7 +107,7 @@ def Newick2Nexus(infile):
 
     # previoulsy, a string was ok, now a string
     # is interpreted as a filename.
-    nexus = Bio.Nexus.Nexus.Nexus(StringIO.StringIO("".join(lines)))
+    nexus = Bio.Nexus.Nexus.Nexus(StringIO("".join(lines)))
 
     if len(nexus.trees) == 0:
         raise ValueError("no tree found in file %s" % str(infile))
@@ -199,7 +178,7 @@ def WriteNexus(nexus, **kwargs):
 
 def GetTaxa(tree):
     """retrieve all taxa of leaves in a tree."""
-    return map(lambda x: tree.node(x).get_data().taxon, tree.get_terminals())
+    return [tree.node(x).get_data().taxon for x in tree.get_terminals()]
 
 
 def GetTaxonomicNames(tree):
@@ -221,7 +200,7 @@ def MapTaxa(tree, map_old2new, remove_unknown=False):
     """
 
     unknown = []
-    for n, node in tree.chain.items():
+    for n, node in list(tree.chain.items()):
         if node.data.taxon:
             try:
                 node.data.taxon = map_old2new[node.data.taxon]
@@ -242,7 +221,7 @@ def Branchlength2Support(tree):
     (e.g. paup), and has thus been read in as branchlength.
     """
 
-    for n in tree.chain.keys():
+    for n in list(tree.chain.keys()):
         tree.node(n).data.support = tree.node(n).data.branchlength
 
 
@@ -456,7 +435,7 @@ def CountDuplications(tree, species,
     """
     result = []
     taxa = GetTaxaForSpecies(tree, species, pattern_species)
-    ids = map(tree.search_taxon, taxa)
+    ids = list(map(tree.search_taxon, taxa))
     for x in range(len(ids) - 1):
         for y in range(x + 1, len(ids)):
             t = tree.common_ancestor(ids[x], ids[y])
@@ -500,14 +479,14 @@ def Transcript2GeneTree(tree,
     # sort identities by taxa
     ids.sort(
         lambda x, y: cmp(tree.node(x).get_data().taxon, tree.node(y).get_data().taxon))
-    taxa = map(lambda x: tree.node(x).get_data().taxon, ids)
+    taxa = [tree.node(x).get_data().taxon for x in ids]
 
-    print ids
-    print taxa
+    print(ids)
+    print(taxa)
 
     for x in range(len(taxa) - 1):
         for y in range(x + 1, len(taxa)):
-            print ids[x], ids[y], taxa[x], taxa[y]
+            print(ids[x], ids[y], taxa[x], taxa[y])
 
 
 def MapTerminalTaxa(tree, mapping):
@@ -662,7 +641,7 @@ def Reroot(tree, taxa):
     TreeDFS(tree, tree.root,
             descend_condition=has_taxa)
 
-    nodes = filter(lambda x: extra_subtree[x], range(nnodes))
+    nodes = [x for x in range(nnodes) if extra_subtree[x]]
 
     if len(nodes) == 0:
         # no rerooting, if all or no taxa within tree
@@ -762,9 +741,9 @@ def IsCompatible(tree1, tree2):
     l1 = GetTaxonomicNames(tree1)
     l2 = GetTaxonomicNames(tree2)
 
-    for n in tree2.chain.keys():
+    for n in list(tree2.chain.keys()):
         tree2.node(n).data.support = 1.0
-    for n in tree1.chain.keys():
+    for n in list(tree1.chain.keys()):
         tree1.node(n).data.support = 1.0
 
     for l in l1:
@@ -780,7 +759,7 @@ def IsCompatible(tree1, tree2):
 def Tree2Graph(tree):
     """return tree as a list of edges in a graph."""
     links = []
-    for node_id1, node1 in tree.chain.items():
+    for node_id1, node1 in list(tree.chain.items()):
         if node1.prev is not None:
             links.append((node_id1, node1.prev, node1.get_data().branchlength))
     return links
@@ -819,7 +798,7 @@ def Graph2Tree(links, label_ancestral_nodes=False):
         tree.chain[c].data.branchlength = branchlength
 
     # set taxon names for children and find root
-    for i, n in tree.chain.items():
+    for i, n in list(tree.chain.items()):
         if n.prev == []:
             tree.root = i
 
@@ -827,14 +806,14 @@ def Graph2Tree(links, label_ancestral_nodes=False):
             n.data.taxon = map_id2node[i]
 
     # set pointer to last id
-    tree.id = len(tree.chain.items()) - 1
+    tree.id = len(list(tree.chain.items())) - 1
 
     return tree
 
 
 def GetAllNodes(tree):
     """return all nodes in the tree."""
-    return tree.chain.keys()
+    return list(tree.chain.keys())
 
 
 def GetDistancesBetweenTaxa(tree, taxa1, taxa2):
@@ -930,7 +909,7 @@ def Unroot(tree):
     # calculate branch length along branch that has
     # been split by root. This value needs to be assigned
     # to the remaining childs branchlength.
-    n = sum(map(lambda x: tree.node(x).data.branchlength, root_node.succ))
+    n = sum([tree.node(x).data.branchlength for x in root_node.succ])
 
     if len(tree.node(root_node.succ[0]).succ) > 1:
         x = root_node.succ[0]
@@ -986,9 +965,9 @@ def GetNodeMap(tree1, tree2):
     if not tree1.is_identical(tree2):
         raise ValueError("trees are not the same")
 
-    map_a2b = [0] * len(tree1.chain.keys())
+    map_a2b = [0] * len(list(tree1.chain.keys()))
 
-    for i, n in tree1.chain.items():
+    for i, n in list(tree1.chain.items()):
         t = tree1.get_taxa(i)
         o = tree2.is_monophyletic(t)
         if o != -1:
@@ -1277,13 +1256,13 @@ def ReconciliateByRio(gene_tree, species_tree,
                 if extract_gene:
                     try:
                         genes1 = set(
-                            zip(map(extract_species, taxa1), map(extract_gene, taxa1)))
+                            zip(list(map(extract_species, taxa1)), list(map(extract_gene, taxa1))))
                     except AttributeError:
                         raise AttributeError(
                             "could not parse %s" % (",".join(taxa1)))
                     try:
                         genes2 = set(
-                            zip(map(extract_species, taxa2), map(extract_gene, taxa2)))
+                            zip(list(map(extract_species, taxa2)), list(map(extract_gene, taxa2))))
                     except AttributeError:
                         raise AttributeError(
                             "could not parse %s" % (",".join(taxa2)))
@@ -1300,9 +1279,9 @@ def ReconciliateByRio(gene_tree, species_tree,
                             is_ok = True
                             for species in species1.intersection(species2):
                                 sg1 = set(
-                                    filter(lambda x: x[0] == species, genes1))
+                                    [x for x in genes1 if x[0] == species])
                                 sg2 = set(
-                                    filter(lambda x: x[0] == species, genes2))
+                                    [x for x in genes2 if x[0] == species])
                                 if sg1.intersection(sg2) != sg1.union(sg2):
                                     is_ok = False
                             if is_ok:
@@ -1366,10 +1345,6 @@ def ReconciliateByRio(gene_tree, species_tree,
     return node_types
 
 
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------------
-# -------------------------------------------------------------------
-# Count duplications
 def CountDuplications(gene_tree, species_tree, node_types,
                       extract_species,
                       extract_gene=None):
@@ -1392,12 +1367,12 @@ def CountDuplications(gene_tree, species_tree, node_types,
         node_type = node_types[x]
         if node_type:
             if node_type.mType not in ("Speciation"):
-                print "\t".join(map(str, (node_type,
-                                          (min_branch_lengths[node_type.mGeneNode] + max_branch_lengths[node_type.mGeneNode]) / 2)))
+                print("\t".join(map(str, (node_type,
+                                          (min_branch_lengths[node_type.mGeneNode] + max_branch_lengths[node_type.mGeneNode]) / 2))))
                 for s in species_tree.node(node_type.mSpeciesNode).succ:
-                    print "\t" * 5 + ",".join(species_tree.get_taxa(s))
+                    print("\t" * 5 + ",".join(species_tree.get_taxa(s)))
                 for s in gene_tree.node(node_type.mGeneNode).succ:
-                    print "\t" * 5 + ",".join(gene_tree.get_taxa(s))
+                    print("\t" * 5 + ",".join(gene_tree.get_taxa(s)))
 
 
 def GetParentNodeWhereTrue(node_id, tree, stop_function):
@@ -1508,7 +1483,7 @@ def convertTree2Graph(tree):
 
     graph = {}
     edges = []
-    for i, n in tree.chain.items():
+    for i, n in list(tree.chain.items()):
         if i not in graph:
             graph[i] = []
         for nn in n.succ:
@@ -1534,9 +1509,11 @@ def calculatePatternsFromTree(tree, sort_order):
     patterns = []
     for a, b in edges:
         result = traverseGraph(graph, a, [b, ])
-        patterns.append(getPattern(tree, result.keys(), map_taxon2position))
+        patterns.append(getPattern(tree, list(
+            result.keys()), map_taxon2position))
         result = traverseGraph(graph, b, [a, ])
-        patterns.append(getPattern(tree, result.keys(), map_taxon2position))
+        patterns.append(getPattern(tree, list(
+            result.keys()), map_taxon2position))
 
     patterns.append("1" * notus)
     return patterns

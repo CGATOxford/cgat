@@ -26,24 +26,24 @@ This is a cython extension class."""
 cdef extern from "connected_components.h":
 
     ctypedef struct cSComponents "CharComponents":
-        int add (char *, char *)
-        int get( char * )
-        int getComponent( int )
-        int getIndex( char *)
-        char * getToken( int )
-        int getNumNodes( )
+        int add(char *, char *)
+        int get(char *)
+        int getComponent(int)
+        int getIndex(char *)
+        char * getToken(int)
+        int getNumNodes()
         void reset()
 
     cSComponents *new_SComponents "new CharComponents" ()
     void del_SComponents "delete" (cSComponents * c)
 
     ctypedef struct cIComponents "IntComponents":
-        int add (int, int)
-        int get( int )
-        int getComponent( int )
-        int getIndex( int)
-        int getToken( int )
-        int getNumNodes( )
+        int add(int, int)
+        int get(int)
+        int getComponent(int)
+        int getIndex(int)
+        int getToken(int)
+        int getNumNodes()
         void reset()
 
     cIComponents *new_IComponents "new IntComponents" ()
@@ -56,11 +56,11 @@ cdef class SComponents:
         self.thisptr = new_SComponents()
     def __dealloc__(self):
         del_SComponents(self.thisptr)
-    def add(self, a,b):
+    def add(self, a, b):
         """add an edge between nodes a and b
         return True, if the link joins two previously disconnected componenents.
         """
-        return self.thisptr.add( a, b ) > 0
+        return self.thisptr.add(a, b) > 0
     def getNumNodes(self):
         """return the number of nodes in the graph."""
         return self.thisptr.getNumNodes()
@@ -90,8 +90,9 @@ cdef class SComponents:
         
         for x in range(1, self.thisptr.getNumNodes() + 1):
             c = self.thisptr.getComponent(x)
-            if c not in components: components[c] = []
-            components[ c  ].append( self.thisptr.getToken( x ) )
+            if c not in components:
+                components[c] = []
+            components[c].append(self.thisptr.getToken(x))
         
         return components.values()
 

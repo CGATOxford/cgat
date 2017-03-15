@@ -31,6 +31,7 @@ BamOnlyIntervalWithControlLibrary:
     bam_control_unsorted.gz]
 
 WigOnlyInterval:
+    skip_python: "3"
     stdin: null
     options: >
       --format=bigwig --force-output --use-interval
@@ -40,6 +41,7 @@ WigOnlyInterval:
 
 
 WigOnlyIntervalWithControlLibrary:
+    skip_python: "3"
     stdin: null
     options: >
       --format=bigwig --force-output --use-interval
