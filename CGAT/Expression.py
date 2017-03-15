@@ -1216,6 +1216,7 @@ class DEResult_DEXSeq(DEResult):
         # need to implement DEXSeq specific MA plot
         raise ValueError("MA plotting is not yet implemented for DESeq")
 
+
 class DEExperiment_Sleuth(DEExperiment):
     '''DEExperiment object to run sleuth on kallisto bootstrap files
     Unlike the other DEExperiment instances, this does not operate on
