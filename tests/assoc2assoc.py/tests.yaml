@@ -1,0 +1,26 @@
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+test_splitregions:
+    stdin: null
+    skip_python: 3
+    outputs: [<DIR>/chr20_hits.tsv, <DIR>/chr16_hits.tsv]
+    references: [chr20_32819223_rs565102642_significant.tsv, chr16_89933714_rs71137684_significant.tsv]
+    options:  --task=get_hits  --output-directory=<DIR>  --p-threshold=0.00000005  --log=get_hits.log  <DIR>/gwas.results
+
+test_getsnps:
+    stdin: null
+    skip_python: 3
+    outputs: [stdout]
+    references: [snp.results]
+    options: --task=extract_results  --log=get_snps.log  --snp-set=<DIR>/snp_list.tsv  <DIR>/gwas.results
+
+test_mergefreq:
+    stdin: null
+    skip_python: 3
+    outputs: [stdout]
+    references: [merged_freq.results]
+    options: --task=merge_freq  --log=merge_freq.log  --frequency-directory=<DIR>/freqs.dir/  <DIR>/gwas.results

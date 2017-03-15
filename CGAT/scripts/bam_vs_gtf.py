@@ -125,7 +125,7 @@ def main(argv=None):
     exons = GTF.readAndIndex(
         GTF.iterator(IOTools.openFile(options.filename_exons)))
 
-    pysam_in = pysam.Samfile("-", "rb")
+    pysam_in = pysam.AlignmentFile("-", "rb")
 
     nspliced = 0
     nspliced_ignored = 0

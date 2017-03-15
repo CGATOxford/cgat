@@ -561,7 +561,7 @@ def main(argv=sys.argv):
         contigs = genome_fasta.getContigSizes()
 
     if options.bam_file:
-        samfile = pysam.Samfile(options.bam_file)
+        samfile = pysam.AlignmentFile(options.bam_file)
         contigs = dict(list(zip(samfile.references, samfile.lengths)))
 
     processor = Bed.iterator(options.stdin)

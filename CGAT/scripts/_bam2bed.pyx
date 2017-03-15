@@ -1,12 +1,12 @@
-from pysam.chtslib cimport *
-from pysam.csamfile cimport *
+from pysam.libchtslib cimport *
+from pysam.libcalignmentfile cimport *
 
 from libc.stdlib cimport abs
 
 import collections, array, struct, itertools
 import CGAT.Experiment as E
 
-def merge_pairs(Samfile input_samfile,
+def merge_pairs(AlignmentFile input_samfile,
                 outfile,
                 min_insert_size = 0,
                 max_insert_size = 400,

@@ -39,12 +39,8 @@ the counting window to the summit of every individual peak.
 library to enable side-by-side comparison; (2) randomize the given
 regions to provide a semi-control.
 
-
-
 Usage
 -----
-
-
 
 Quick start examples
 ++++++++++++++++++++
@@ -317,12 +313,7 @@ except ImportError:
     # py3: cStringIO dependency of BigWigFile
     pass
 
-try:
-    import pyximport
-    pyximport.install(build_in_temp=False)
-    import _bam2geneprofile
-except ImportError:
-    import CGAT.scripts._bam2geneprofile as _bam2geneprofile
+import CGAT.scripts._bam2geneprofile as _bam2geneprofile
 
 
 def main(argv=None):
@@ -638,10 +629,10 @@ def main(argv=None):
     # Select rangecounter based on file type
     if len(options.infiles) > 0:
         if options.infiles[0].endswith(".bam"):
-            bamfiles = [pysam.Samfile(x, "rb") for x in options.infiles]
+            bamfiles = [pysam.AlignmentFile(x, "rb") for x in options.infiles]
 
             if options.controlfiles:
-                controlfiles = [pysam.Samfile(x, "rb")
+                controlfiles = [pysam.AlignmentFile(x, "rb")
                                 for x in options.controlfiles]
             else:
                 controlfiles = None

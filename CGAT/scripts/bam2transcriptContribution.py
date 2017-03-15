@@ -41,8 +41,6 @@ except ImportError:
 import pysam
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
-import pyximport
-pyximport.install(build_in_temp=False)
 
 
 def main(argv=None):
@@ -132,11 +130,11 @@ def main(argv=None):
     # requires that the CIGAR string 'N' is present
 
     # uses pysam to write out a bam file of the spliced reads only
-    allreads = pysam.Samfile(options.bam_file)
+    allreads = pysam.AlignmentFile(options.bam_file)
     spliced_bamname = IOTools.snip(options.bam_file, ".bam") + "_spliced_reads.bam"
 
     # open file for outputting spliced alignments
-    splicedreads = pysam.Samfile(spliced_bamname, "wb", template=allreads)
+    splicedreads = pysam.AlignmentFile(spliced_bamname, "wb", template=allreads)
 
     # cigar string in pysam for spliced alignment is (3, int)
     spliced = collections.defaultdict(list)

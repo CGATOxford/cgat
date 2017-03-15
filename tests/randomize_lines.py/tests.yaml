@@ -1,0 +1,34 @@
+
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+without_header_py2:
+    skip_python: 3
+    stdin: ../data/design.tsv
+    outputs: [stdout]
+    references: [without_header_py2.tsv]
+    options: --random-seed=1
+
+with_header_py2:
+    skip_python: 3
+    stdin: ../data/design.tsv
+    outputs: [stdout]
+    references: [with_header_py2.tsv]
+    options: --random-seed=1 --keep-header=1
+
+without_header:
+    skip_python: 2
+    stdin: ../data/design.tsv
+    outputs: [stdout]
+    references: [without_header.tsv]
+    options: --random-seed=1
+
+with_header:
+    skip_python: 2
+    stdin: ../data/design.tsv
+    outputs: [stdout]
+    references: [with_header.tsv]
+    options: --random-seed=1 --keep-header=1

@@ -265,7 +265,7 @@ def main(argv=None):
     # return total counts as first column
     indicators.insert(0, lambda read: True)
     E.info("reading input file %s" % args[0])
-    samfile = pysam.Samfile(args[0], "r")
+    samfile = pysam.AlignmentFile(args[0], "r")
 
     profile_generator = ProfileGenerator(indicators)
 

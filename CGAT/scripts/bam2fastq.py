@@ -88,9 +88,9 @@ def main(argv=None):
         fastqfile2 += ".gz"
 
     if options.stdin != sys.stdin:
-        samfile = pysam.Samfile(options.stdin.name, "rb")
+        samfile = pysam.AlignmentFile(options.stdin.name, "rb")
     else:
-        samfile = pysam.Samfile("-", "rb")
+        samfile = pysam.AlignmentFile("-", "rb")
 
     tmpdir = tempfile.mkdtemp()
 

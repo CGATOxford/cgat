@@ -176,7 +176,7 @@ def main(argv=None):
 
     infiles = []
     for arg in args:
-        infiles.append(pysam.Samfile(arg, 'rb'))
+        infiles.append(pysam.AlignmentFile(arg, 'rb'))
 
     if options.headers:
         headers = options.headers.split(",")

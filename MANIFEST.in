@@ -65,6 +65,7 @@ include CGAT/scripts/gtf2tsv.py
 include CGAT/scripts/gtf2table.py
 include CGAT/scripts/gtfs2tsv.py
 include CGAT/scripts/index_fasta.py
+include CGAT/scripts/randomize_lines.py
 include CGAT/scripts/split_gff.py
 include CGAT/scripts/vcf2vcf.py
 

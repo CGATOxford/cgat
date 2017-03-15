@@ -159,7 +159,6 @@ def main(argv=None):
 
     while 1:
         ninput += 1
-
         try:
             row = six.next(reader)
         except _csv.Error as msg:
