@@ -1013,7 +1013,7 @@ def Protein2Wobble(s):
     c = []
     for x in s:
         c.append(Wobble[x])
-    return c.join("")
+    return "".join(c)
 
 
 def Alignment2PeptideAlignment(alignment,
@@ -1878,7 +1878,6 @@ def ReadPeptideSequences(infile, filter=None, as_array=False,
                          regex_identifier=None):
     """read peptide sequence from fasta infile.
     """
-
     sequences = ParseFasta2Hash(
         infile, filter, regex_identifier=regex_identifier)
 
@@ -1931,5 +1930,4 @@ def ParseFasta2Hash(infile, filter=None, regex_identifier=None):
     if not filter or key in filter:
         if key:
             parsed[key] = p
-
     return parsed
