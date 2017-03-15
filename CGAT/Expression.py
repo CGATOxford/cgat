@@ -128,7 +128,7 @@ def runDETest(raw_DataFrame,
 def splitModel(model):
     '''returns the terms in the model'''
     return [x for x in
-            re.split("[\.:,~+\\s*]", re.sub("~(\s*0\s*)?", "", model)) if
+            re.split("[\.:,~+\s*]", re.sub("~(\s*)?", "", model)) if
             len(x) > 0]
 
 
@@ -162,7 +162,7 @@ class ExperimentalDesign(object):
        whether or not this sample should be included
        in the design
 
-    group
+    groups
        a label grouping several samples into a group
 
     pair
@@ -191,7 +191,7 @@ class ExperimentalDesign(object):
 
     table : pandas DataFrame
        dataframe object describing the design
-    group : list
+    groups : list
        list of groups in the design
     conditions : list
        group for each sample
@@ -215,8 +215,11 @@ class ExperimentalDesign(object):
         if isinstance(filename_or_table, str):
             self.table = pandas.read_csv(filename_or_table, sep="\t",
                                          index_col=0)
-        else:
+        elif isinstance(filename_or_table, pandas.core.frame.DataFrame):
             self.table = filename_or_table
+        else:
+            raise ValueError("Type needs to be string or pandas data frame."
+                             "Type = %s", type(filename_or_table))
 
         assert self.table.shape, "design table is empty"
 

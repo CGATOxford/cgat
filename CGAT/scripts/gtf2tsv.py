@@ -46,7 +46,7 @@ Example::
 
 To build a map between gene and transcrip identiers, type::
 
-   cgat bam2tsv --output-map=transcript2gene < in.gtf
+   cgat gtf2tsv --output-map=transcript2gene < in.gtf
 
 +---------------+---------------+
 |transcript_id  |gene_id        |
