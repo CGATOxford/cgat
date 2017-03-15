@@ -14,6 +14,9 @@ and adds the capability to skip comment characters.
 
 import six
 import csv
+import sys
+
+PY3 = sys.version_info > (3,)
 
 
 def getMapColumn2Type(rows, ignore_empty=False, get_max_values=False):
@@ -101,7 +104,10 @@ class UnicodeCsvReader(object):
         # read and split the csv row into fields
         row = next(self.csv_reader)
         # now decode
-        return [str(cell) for cell in row]
+        if PY3:
+            return [str(cell, self.encode) for cell in row]
+        else:
+            return [str(cell) for cell in row]
 
     def next(self):
         return self.__next__()
