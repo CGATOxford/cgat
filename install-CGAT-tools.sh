@@ -1,5 +1,21 @@
 #!/usr/bin/env bash
 
+# References
+# http://kvz.io/blog/2013/11/21/bash-best-practices/
+# http://jvns.ca/blog/2017/03/26/bash-quirks/
+
+# exit when a command fails
+set -o errexit
+
+# exit if any pipe commands fail
+set -o pipefail
+
+# exit when your script tries to use undeclared variables
+#set -o nounset
+
+# trace what gets executed
+#set -o xtrace
+
 # log installation information
 log() {
    echo "# install-CGAT-tools.sh log | `hostname` | `date` | $1 "
@@ -153,9 +169,9 @@ else
    fi
 
    if [ "$INSTALL_SCRIPTS" == "1" ] ; then
-      CONDA_INSTALL_TYPE="cgat-scripts"
+      CONDA_INSTALL_TYPE="cgat-scripts-devel"
    elif [ "$INSTALL_DEVEL" == "1" ] ; then
-      CONDA_INSTALL_TYPE="cgat-devel"
+      CONDA_INSTALL_TYPE="cgat-scripts-devel"
    elif [ $INSTALL_TEST ] || [ $INSTALL_UPDATE ] ; then
       if [ -d $CGAT_HOME/conda-install ] ; then
          AUX=`find $CGAT_HOME/conda-install/envs/cgat-* -maxdepth 0`
@@ -186,12 +202,12 @@ CONDA_INSTALL_ENV=$(echo $CONDA_INSTALL_TYPE | cut -c1-6)
 # setup environment variables
 setup_env_vars() {
 
-export CFLAGS=$CFLAGS" -I/usr/include/x86_64-linux-gnu -I$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/include -L/usr/lib/x86_64-linux-gnu -L$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/lib"
-export CPATH=$CPATH" -I/usr/include/x86_64-linux-gnu -I$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/include -L/usr/lib/x86_64-linux-gnu -L$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/lib"
-export C_INCLUDE_PATH=$C_INCLUDE_PATH:/usr/include/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/include
-export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:/usr/include/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/include
-export LIBRARY_PATH=$LIBRARY_PATH:/usr/lib/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/lib
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/lib/x86_64-linux-gnu:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/lib:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/lib/R/lib
+export CFLAGS=$CFLAGS" -I$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/include -L$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/lib"
+export CPATH=$CPATH" -I$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/include -L$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/lib"
+export C_INCLUDE_PATH=$C_INCLUDE_PATH:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/include
+export CPLUS_INCLUDE_PATH=$CPLUS_INCLUDE_PATH:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/include
+export LIBRARY_PATH=$LIBRARY_PATH:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/lib
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/lib:$CONDA_INSTALL_DIR/envs/$CONDA_INSTALL_ENV/lib/R/lib
 
 } # setup_env_vars
 
@@ -209,6 +225,7 @@ echo " LD_LIBRARY_PATH: "$LD_LIBRARY_PATH
 echo " CGAT_HOME: "$CGAT_HOME
 echo " CONDA_INSTALL_DIR: "$CONDA_INSTALL_DIR
 echo " CONDA_INSTALL_TYPE: "$CONDA_INSTALL_TYPE
+echo " CONDA_INSTALL_ENV: "$CONDA_INSTALL_ENV
 echo " PYTHONPATH: "$PYTHONPATH
 [ ! $INSTALL_TEST ] && echo " INSTALL_PYTHON_VERSION: "$INSTALL_PYTHON_VERSION
 [ ! $INSTALL_TEST ] && echo " INSTALL_BRANCH: "$INSTALL_BRANCH
@@ -269,8 +286,6 @@ log "updating conda environment"
 conda config --set allow_softlinks False
 conda update -q conda --yes
 conda info -a
-
-printenv
 
 log "installing conda CGAT environment"
 # keep rpy2-2.4 for production scripts
@@ -604,6 +619,7 @@ if [ $# -eq 0 ] ; then
 fi
 
 # these variables will store the information about input parameters
+OS="default"
 # travis execution
 TRAVIS_INSTALL=
 # jenkins testing
@@ -612,7 +628,7 @@ JENKINS_INSTALL=
 OS_PKGS=
 # conda installation type
 INSTALL_SCRIPTS=
-INSTALL_DEVEL=
+INSTALL_DEVEL=1
 # test current installation
 INSTALL_TEST=
 # update current installation
