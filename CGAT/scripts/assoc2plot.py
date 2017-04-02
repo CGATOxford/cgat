@@ -63,6 +63,11 @@ def main(argv=None):
                       "depicts the whole genome, a single chromosome or "
                       "a specific locus")
 
+    parser.add_option("--file-format", dest="file_format", type="choice",
+                      choices=["plink", "cassi", "cassi_covar"],
+                      help="input file format, used to parse the file "
+                      "properly")
+    
     parser.add_option("--save-path", dest="save_path", type="string",
                       help="path and filename to save image to")
 
@@ -70,7 +75,8 @@ def main(argv=None):
     (options, args) = E.Start(parser, argv=argv)
 
     parser.set_defaults(resolution="genome_wide",
-                        plot_type="manhattan")
+                        plot_type="manhattan",
+                        file_format="plink")
 
     # if the input is a list of files, split them
     infile = argv[-1]
@@ -84,10 +90,12 @@ def main(argv=None):
 
     if len(infiles) > 1:
         results = gwas.GWASResults(assoc_file=infiles,
-                                   epistasis=epi)
+                                   epistasis=epi,
+                                   file_format=options.file_format)
     elif len(infiles) == 1:
         results = gwas.GWASResults(assoc_file=infile,
-                                   epistasis=epi)
+                                   epistasis=epi,
+                                   file_format=options.file_format)
     else:
         raise IOError("no input files detected, please specifiy association "
                       "results files as the last command line argument")
