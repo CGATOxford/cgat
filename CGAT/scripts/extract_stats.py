@@ -52,15 +52,35 @@ import pandas.io.sql as pdsql
 import numpy as np
 import re
 import sqlite3 as sql
+from sqlalchemy import *
+import MySQLdb
 
 
-def getTableFromDb(db, table):
+def getTableFromDb(db, table, backend,
+                   username, db_hostname,
+                   db_port):
     '''
     Get a table from a database with pandas
     '''
 
-    state = ''' SELECT * FROM %(table)s;''' % locals()
-    dbh = sql.connect(db)
+    state = text(''' SELECT * FROM %(table)s;''' % locals())
+    if backend == "sqlite":
+        create_string = "sqlite:///{}".format(db)
+    elif backend == "mysql":
+        dbhandle = MySQLdb.connect(host=db_hostname,
+                                   user=username,
+                                   passwd="",
+                                   port=db_port,
+                                   db=db)
+        
+        #create_string = '''mysql://cgat@gandalf.anat.ox.ac.uk/%(db)s''' % locals()
+    else:
+        raise TypeError("database backend not recognised")
+
+    #engine = create_engine(create_string)
+    #dbh = engine.connect()
+    #dbh = sql.connect(db)
+    
     df = pdsql.read_sql(state, dbh)
     df.index = df["track"]
     df.drop(labels="track", inplace=True,
@@ -219,6 +239,19 @@ def main(argv=None):
     parser.add_option("-d", "--database", dest="database", type="string",
                       help="SQLite database containing relevant tables")
 
+    parser.add_option("--database-backend", dest="database_backend",
+                      type="choice", choices=["sqlite", "mysql"],
+                      help="database backend to use")
+
+    parser.add_option("--database-username", dest="database_username",
+                      type="string", help="MySQL username")
+
+    parser.add_option("--database-hostname", dest="database_hostname",
+                      type="string", help="MySQL server hostname")
+
+    parser.add_option("--database-port", dest="databse_port",
+                      type="string", help="MySQL server port")
+
     parser.add_option("-t", "--table-name", dest="table", type="string",
                       help="table in SQLite DB to extract")
 
@@ -226,8 +259,13 @@ def main(argv=None):
     (options, args) = E.Start(parser, argv=argv)
 
     if options.task == "extract_table":
+        print options.database_hostname
         out_df = getTableFromDb(db=options.database,
-                                table=options.table)
+                                table=options.table,
+                                backend=options.database_backend,
+                                username=options.database_username,
+                                db_hostname=options.database_hostname,
+                                db_port=int(options.databse_port))
 
     elif options.task == "get_coverage":
         out_df = getModelCoverage(db=options.database,
