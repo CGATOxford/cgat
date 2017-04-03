@@ -755,6 +755,9 @@ class CGATIndexedFasta:
         if not self.mIsLoaded:
             self._loadIndex()
 
+        # First Convert the contig to string to compare string with strings
+        contig = str(contig)
+
         if contig in self.mSynonyms:
             contig = self.mSynonyms[contig]
 
