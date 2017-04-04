@@ -295,7 +295,7 @@ if [ "$CONDA_INSTALL_TYPE" == "cgat-scripts" ] ; then
 
 else
 
-   conda create -q -n $CONDA_INSTALL_ENV $CONDA_INSTALL_TYPE python=$INSTALL_PYTHON_VERSION --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
+   conda create -q -n $CONDA_INSTALL_ENV $CONDA_INSTALL_TYPE python=$INSTALL_PYTHON_VERSION gcc --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
 
 fi
 
@@ -325,6 +325,10 @@ if [ "$OS" != "travis" ] ; then
 
       # SLV: workaround until bx-python is available with Python 3
       pip install bx-python
+
+      # SLV: workaround to
+      # https://github.com/conda/conda/issues/4955
+      conda upgrade pysam --yes
 
       # Set up other environment variables
       setup_env_vars
@@ -405,6 +409,10 @@ if [ $TRAVIS_INSTALL ] || [ $JENKINS_INSTALL ] ; then
    # SLV: workaround until bx-python is available with Python 3
    log "pip-installing additional packages"
    pip install bx-python
+
+   # SLV: workaround to
+   # https://github.com/conda/conda/issues/4955
+   conda upgrade pysam --yes
 
    # python preparation
    log "install CGAT code into conda environment"
