@@ -328,7 +328,7 @@ if [[ "$OS" != "travis" ]] ; then
 
       # SLV: workaround to
       # https://github.com/conda/conda/issues/4955
-      conda install -f htslib=1.3 --yes
+      conda install -f htslib=1.3 --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
 
       # Set up other environment variables
       setup_env_vars
@@ -412,7 +412,8 @@ if [[ $TRAVIS_INSTALL ]] || [[ $JENKINS_INSTALL ]] ; then
 
    # SLV: workaround to
    # https://github.com/conda/conda/issues/4955
-   conda install -f htslib=1.3 --yes
+   conda install -f htslib=1.3 --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
+
 
    # python preparation
    log "install CGAT code into conda environment"
