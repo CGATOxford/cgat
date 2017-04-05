@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''IOTools - tools for I/O operations
 ==================================
 
@@ -33,7 +11,7 @@ These include methods for
   :func:`checkPresenceOfFiles`
 
 * manipulating file, such as :func:`openFile`, :func:`zapFile`,
-  :func:`cloneFile`, :func:`touchFile`.
+  :func:`cloneFile`, :func:`touchFile`, :func:`shadowFile`.
 
 * converting values for input/output, such as :func:`val2str`,
   :func:`str2val`, :func:`prettyPercent`, :func:`human2bytes`,
@@ -52,17 +30,20 @@ Reference
 
 '''
 
-import string
-import re
-import os
 import collections
 import glob
-import stat
 import gzip
-import subprocess
 import itertools
 import numpy
 import numpy.ma
+import os
+import re
+import shutil
+import stat
+import string
+import subprocess
+import sys
+import time
 
 
 def getFirstLine(filename, nlines=1):
@@ -208,7 +189,7 @@ def touchFile(filename, times=None):
     as empty 'gzip' files, i.e., with a header.
     '''
     existed = os.path.exists(filename)
-    fhandle = file(filename, 'a')
+    fhandle = open(filename, 'a')
 
     if filename.endswith(".gz") and not existed:
         # this will automatically add a gzip header
@@ -252,18 +233,41 @@ def openFile(filename, mode="r", create_dir=False):
             os.makedirs(dirname)
 
     if ext.lower() in (".gz", ".z"):
-        return gzip.open(filename, mode)
+        if sys.version_info.major >= 3:
+            if mode == "r":
+                return gzip.open(filename, 'rt', encoding="ascii")
+            elif mode == "w":
+                return gzip.open(filename, 'wt', encoding="ascii")
+            else:
+                raise NotImplementedError(
+                    "mode '{}' not implemented".format(mode))
+        else:
+            return gzip.open(filename, mode)
     else:
         return open(filename, mode)
 
 
-def zapFile(filename):
+def force_str(iterator, encoding="ascii"):
+    """iterate over lines in iterator and force to string"""
+    if sys.version_info.major >= 3:
+        for line in iterator:
+            yield line.decode(encoding)
+    else:
+        for line in iterator:
+            yield line
+
+
+def zapFile(filename, outfile=None):
     '''replace *filename* with empty file.
 
     File attributes such as accession times are preserved.
 
     If the file is a link, the link will be broken and replaced with
     an empty file having the same attributes as the file linked to.
+
+    It also takes an optional outfile. If the outfile has zero byte,
+        it usually means there's an error in generating the outfile,
+        and it will throw an error and stop.
 
     Returns
     -------
@@ -273,6 +277,10 @@ def zapFile(filename):
        If the file was a link, the file being linked to.
 
     '''
+    # outfile as zero byte? Let's throw an error and stop
+    if outfile and os.path.getsize(outfile) == 0:
+        raise ValueError('%s has size zero!' % outfile)
+
     # stat follows times to links
     original = os.stat(filename)
 
@@ -316,6 +324,24 @@ def cloneFile(infile, outfile):
         os.symlink(target, outfile)
     except OSError:
         pass
+
+
+def shadowFile(infile, outfile):
+    '''move ```infile``` as ```outfile```, and
+    touch ```infile```.
+    This could be useful when one wants to skip
+    some steps in a pipeline.
+    Note that zapFile is not needed when shadowFile
+    is used
+    '''
+    if outfile != infile:
+        shutil.move(infile, outfile)
+        touchFile(infile)
+        # reset outfile's timestamp
+        time.sleep(1)
+        touchFile(outfile)
+    else:
+        raise ValueError('Panic: infile and outfile names cannot be the same')
 
 
 def val2str(val, format="%5.2f", na="na"):
@@ -387,7 +413,8 @@ def which(program):
        The full path to the program. Returns None if not found.
 
     """
-    # see http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
+    # see http://stackoverflow.com/questions/377017/test-if-
+    #  executable-exists-in-python
 
     def is_exe(fpath):
         return os.path.exists(fpath) and os.access(fpath, os.X_OK)
@@ -575,7 +602,7 @@ def human2bytes(s):
         s = s[1:]
     num = float(num)
     letter = s.strip()
-    for name, sset in SYMBOLS.items():
+    for name, sset in list(SYMBOLS.items()):
         if letter in sset:
             break
     else:
@@ -587,7 +614,7 @@ def human2bytes(s):
             raise ValueError("can't interpret %r" % init)
     prefix = {sset[0]: 1}
     for i, s in enumerate(sset[1:]):
-        prefix[s] = 1 << (i+1)*10
+        prefix[s] = 1 << (i + 1) * 10
 
     return int(num * prefix[letter])
 
@@ -619,7 +646,7 @@ def convertDictionary(d, map={}):
     else:
         default = False
 
-    for k, vv in d.items():
+    for k, vv in list(d.items()):
 
         if vv is None:
             continue
@@ -639,7 +666,7 @@ def convertDictionary(d, map={}):
                 else:
                     d[k] = v
                 continue
-        except TypeError, msg:
+        except TypeError as msg:
             raise TypeError("conversion in field: %s, %s" % (k, msg))
 
         try:
@@ -647,10 +674,10 @@ def convertDictionary(d, map={}):
                 d[k] = int(v)
             elif rx_float.match(v):
                 d[k] = float(v)
-        except TypeError, msg:
+        except TypeError as msg:
             raise TypeError(
                 "expected string or buffer: offending value = '%s' " % str(v))
-        except ValueError, msg:
+        except ValueError as msg:
             raise ValueError("conversion error: %s, %s" % (msg, str(d)))
     return d
 
@@ -673,7 +700,7 @@ class nested_dict(collections.defaultdict):
         iterate through values with nested keys flattened into a tuple
         """
 
-        for key, value in self.iteritems():
+        for key, value in self.items():
             if isinstance(value, nested_dict):
                 for keykey, value in value.iterflattened():
                     yield (key,) + keykey, value
@@ -719,10 +746,10 @@ def invert_dictionary(dict, make_unique=False):
     """
     inv = {}
     if make_unique:
-        for k, v in dict.iteritems():
+        for k, v in dict.items():
             inv[v] = k
     else:
-        for k, v in dict.iteritems():
+        for k, v in dict.items():
             inv.setdefault(v, []).append(k)
     return inv
 
@@ -801,7 +828,7 @@ class FilePool:
 
     def __del__(self):
         """close all open files."""
-        for file in self.mFiles.values():
+        for file in list(self.mFiles.values()):
             file.close()
 
     def __len__(self):
@@ -809,20 +836,20 @@ class FilePool:
 
     def close(self):
         """close all open files."""
-        for file in self.mFiles.values():
+        for file in list(self.mFiles.values()):
             file.close()
 
     def values(self):
-        return self.mCounts.values()
+        return list(self.mCounts.values())
 
     def keys(self):
-        return self.mCounts.keys()
+        return list(self.mCounts.keys())
 
     def iteritems(self):
-        return self.mCounts.iteritems()
+        return iter(self.mCounts.items())
 
     def items(self):
-        return self.mCounts.items()
+        return list(self.mCounts.items())
 
     def __iter__(self):
         return self.mCounts.__iter__()
@@ -863,7 +890,7 @@ class FilePool:
         if filename not in self.mFiles:
 
             if self.maxopen and len(self.mFiles) > self.maxopen:
-                for f in self.mFiles.values():
+                for f in list(self.mFiles.values()):
                     f.close()
                 self.mFiles = {}
 
@@ -873,7 +900,7 @@ class FilePool:
 
         try:
             self.mFiles[filename].write(line)
-        except ValueError, msg:
+        except ValueError as msg:
             raise ValueError(
                 "error while writing to %s: msg=%s" % (filename, msg))
         self.mCounts[filename] += 1
@@ -882,7 +909,7 @@ class FilePool:
         """delete all files below a minimum size `min_size` bytes."""
 
         ndeleted = 0
-        for filename, counts in self.mCounts.items():
+        for filename, counts in list(self.mCounts.items()):
             if counts < min_size:
                 os.remove(filename)
                 ndeleted += 1
@@ -919,7 +946,7 @@ class FilePoolMemory(FilePool):
         if self.isClosed:
             raise IOError("write on closed FilePool in close()")
 
-        for filename, data in self.data.iteritems():
+        for filename, data in self.data.items():
             f = self.openFile(filename, "a")
             if self.mHeader:
                 f.write(self.mHeader)
@@ -1118,7 +1145,7 @@ def readMultiMap(infile,
         try:
             key = map_functions[0](d[columns[0]])
             val = map_functions[1](d[columns[1]])
-        except (ValueError, IndexError), msg:
+        except (ValueError, IndexError) as msg:
             raise ValueError("parsing error in line %s: %s" % (l[:-1], msg))
 
         if key not in m:
@@ -1185,20 +1212,20 @@ def readTable(file,
 
     """
 
-    lines = filter(lambda x: x[0] != "#", file.readlines())
+    lines = [x for x in file.readlines() if x[0] != "#"]
 
     if len(lines) == 0:
         return None, []
 
     if take == "all":
         num_cols = len(string.split(lines[0][:-1], "\t"))
-        take = range(0, num_cols)
+        take = list(range(0, num_cols))
     else:
         num_cols = len(take)
 
     if headers:
         headers = lines[0][:-1].split("\t")
-        headers = map(lambda x: headers[x], take)
+        headers = [headers[x] for x in take]
         del lines[0]
 
     num_rows = len(lines)
@@ -1213,7 +1240,7 @@ def readTable(file,
     max_data = None
     for l in lines:
         data = l[:-1].split("\t")
-        data = map(lambda x: data[x], take)
+        data = [data[x] for x in take]
 
         # try conversion. Unparseable fields set to missing_value
         for x in range(len(data)):
@@ -1284,12 +1311,12 @@ def writeTable(outfile, table, columns=None, fillvalue=""):
 
     if type(table) == dict:
         if columns is None:
-            columns = table.keys()
+            columns = list(table.keys())
         outfile.write("\t".join(columns) + "\n")
         # get data
         data = [table[x] for x in columns]
         # transpose
-        data = list(itertools.izip_longest(*data, fillvalue=fillvalue))
+        data = list(itertools.zip_longest(*data, fillvalue=fillvalue))
 
         for d in data:
             outfile.write("\t".join(map(str, d)) + "\n")

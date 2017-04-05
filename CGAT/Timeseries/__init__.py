@@ -26,8 +26,7 @@ from rpy2.robjects.packages import importr
 from rpy2.robjects import r as R
 import rpy2.robjects as ro
 import random
-
-import cmetrics as c2m
+from CGAT.Timeseries import cmetrics as c2m
 
 
 def get_r_path():
@@ -35,9 +34,6 @@ def get_r_path():
     """
     return os.path.dirname(__file__)
 
-#################################
-# Clustering assessment functions
-#################################
 
 
 def get_label_map(labels):
@@ -240,9 +236,6 @@ def adjustedMutualInformation(cluster1, cluster2):
     return ami
 
 
-#################################################
-# Data transformation and normalisation functions
-#################################################
 
 
 def deseqNormalize(infile,
@@ -488,7 +481,6 @@ def clusterPCA(infile,
     R('''sink(file='sink_file.txt')''')
     R('''suppressMessages(library("reshape2"))''')
     R('''suppressMessages(library("WGCNA"))''')
-
     # AH: these were hard-coded paths, parameterized them to point to the
     # directory of this module's location
     R('''source("%s")''' % os.path.join(get_r_path(), "summarySE.R"))
@@ -540,9 +532,6 @@ def clusterPCA(infile,
     return eigen_frame
 
 
-#########################
-# Differential expression
-#########################
 
 
 def conditionDESeq2(data_frame, header, alpha, res_dir):
@@ -676,9 +665,9 @@ def genSigGenes(file_list, alpha, out_dir):
             header = "%s" % header
 
         elif infle.split("/")[0].split(".")[0] == "diff_timepoints":
-            header = infle.split("/")[1].split("-")[0]
+            header = infle.split("/")[-1].split("-")[0]
             header = "%s_%s" % (header.split("_")[0],
-                                header.split("_")[2])
+                                header.split("_")[-1])
 
         in_df = pd.read_table(infle, sep="\t", header=0, index_col=0)
         sig_genes = in_df[in_df['padj'] <= alpha]
@@ -689,7 +678,7 @@ def genSigGenes(file_list, alpha, out_dir):
         condition = "%s-condition" % condition
 
     elif file_list[0].split("/")[0].split(".")[0] == "diff_timepoints":
-        condition = file_list[0].split("/")[1].split("_")[0]
+        condition = file_list[0].split("/")[-1].split(".")[0]
         condition = "%s-time" % condition
 
     drawVennDiagram(deg_dict, condition, out_dir)
@@ -727,7 +716,7 @@ def drawVennDiagram(deg_dict, header, out_dir):
         cat1, cat2, cat3 = keys
 
         R('''png("%(out_dir)s/%(header)s-venn.png", '''
-          '''width=1.8, height=1.8, res=90, units="in")''' % locals())
+          '''width=480, height=480)''' % locals())
         R('''draw.triple.venn(%(area1)d, %(area2)d, %(area3)d, '''
           '''%(n12)d, %(n23)d, %(n13)d, %(n123)d, '''
           '''c('%(cat1)s', '%(cat2)s', '%(cat3)s'), '''
@@ -755,7 +744,7 @@ def drawVennDiagram(deg_dict, header, out_dir):
         cat1, cat2, cat3, cat4 = keys
 
         R('''png("%(out_dir)s/%(header)s-venn.png",'''
-          '''width=2.3, height=2.3, res=300, units="in")''' % locals())
+          '''width=480, height=480)''' % locals())
         R('''draw.quad.venn(%(area1)d, %(area2)d, %(area3)d, %(area4)d,'''
           '''%(n12)d, %(n13)d, %(n14)d, %(n23)d, %(n24)d, %(n34)d,'''
           '''%(n123)d, %(n124)d, %(n134)d, %(n234)d, %(n1234)d,'''
@@ -803,7 +792,7 @@ def drawVennDiagram(deg_dict, header, out_dir):
         cat1, cat2, cat3, cat4, cat5 = keys
 
         R('''png("%(out_dir)s/%(header)s-venn.png", '''
-          '''height=1.8, width=1.8, res=90, units="in")''' % locals())
+          '''height=480, width=480)''' % locals())
         R('''draw.quintuple.venn(%(area1)d, %(area2)d, %(area3)d, '''
           '''%(area4)d, %(area5)d, %(n12)d, %(n13)d, %(n14)d,'''
           '''%(n15)d, %(n23)d, %(n24)d, %(n25)d, %(n34)d, %(n35)d,'''
@@ -924,9 +913,6 @@ def maSigPro(infile,
     return diff_genes
 
 
-##########################################
-# Clustering and distance metric functions
-##########################################
 
 
 def splitReplicates(infile,
@@ -983,13 +969,13 @@ def genResampleData(data_frame,
     random.seed(seed)
     for it in range(1, replicates + 1):
         df = pd.DataFrame()
-        df_dict = {}
+        df_list = []
         for i in times:
             k = str(random.randint(1,
                                    len(sample_reps)))
             series = vst_long.loc[str(i), 'R%s' % k]
-            df_dict[str(i)] = series
-        df = pd.DataFrame(df_dict)
+            df_list.append((str(i), series))
+        df = pd.DataFrame.from_items(df_list)
         cols = df.columns.tolist()
         cols = [int(x) for x in cols]
         cols.sort()
@@ -1002,7 +988,7 @@ def genResampleData(data_frame,
         seg_file = "%s/%s.tsv" % (out_dir, table)
         df.to_csv(seg_file, sep="\t")
 
-    sys.stdout.write("%i replicate datasets generated\n" % replicates)
+    E.info("%i replicate datasets generated" % replicates)
 
 
 def temporalCorrelate(series1, series2):
@@ -1438,7 +1424,6 @@ def consensusClustering(infile,
       '''cluster_matched$cluster)''')
 
     # plot and save dendrogram of clustering
-
     # AH: disabled, requires plots.dir to exist which might not be the case
     # AH: and thus causes this method to fail. Path names need to be parameterizable.
     # R('''png("plots.dir/%(condition)s-dendrogram-consensus_clustering.png")'''

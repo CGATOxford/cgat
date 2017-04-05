@@ -1,26 +1,3 @@
-#! /bin/env python
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''
 CSV2DB.py - utilities for uploading a table to database
 =======================================================
@@ -54,11 +31,11 @@ Code
 
 '''
 import os
+import csv
 import string
 import re
 import time
 import tempfile
-import types
 
 from CGAT import Experiment as E
 from CGAT import CSV as CSV
@@ -83,13 +60,12 @@ def executewait(dbhandle, statement, error,
             cc.execute(statement, args)
             return cc
         except sqlite3.OperationalError as e:
-            msg = e.message
             E.warn("import failed: msg=%s, statement=\n  %s" %
-                   (msg, statement))
+                   (str(e), statement))
         # TODO: check for database locked msg
             if not retry:
                 raise e
-            if not re.search("locked", str(msg)):
+            if not re.search("locked", str(e)):
                 raise e
             time.sleep(wait)
             i -= 1
@@ -113,7 +89,7 @@ def quoteRow(row, take,
             d[t] = null
         elif v in missing_values:
             d[t] = null
-        elif map_column2type[t] in (types.IntType, types.FloatType):
+        elif map_column2type[t] in (int, float):
             d[t] = str(row[t])
         else:
             d[t] = string_value % row[t]
@@ -159,16 +135,16 @@ def createTable(dbhandle,
         if ignored:
             E.info("ignored columns: %s" % str(ignored))
 
-        headers = map_column2type.keys()
+        headers = list(map_column2type.keys())
         headers.sort()
 
     elif headers:
-        map_column2type = dict(zip(headers, [None, ] * len(headers)))
+        map_column2type = dict(list(zip(headers, [None, ] * len(headers))))
         ignored = 0
 
     columns_to_ignore = set([x.lower() for x in ignore_columns])
     columns_to_rename = dict([x.lower().split(":")
-                             for x in rename_columns])
+                              for x in rename_columns])
 
     take = []
     # associate headers to field names
@@ -232,11 +208,11 @@ def createTable(dbhandle,
                 dbhandle.commit()
                 cc.close()
                 E.info("existing table %s deleted" % tablename)
-            except sqlite3.OperationalError, msg:
+            except sqlite3.OperationalError as msg:
                 E.warn(msg)
                 time.sleep(5)
                 continue
-            except error, msg:
+            except error as msg:
                 E.warn("could not delete existing table %s: %s" %
                        (tablename, str(msg)))
                 dbhandle.rollback()
@@ -263,7 +239,7 @@ def createTable(dbhandle,
                 cc.execute(statement)
                 cc.close()
                 dbhandle.commit()
-            except error, msg:
+            except error as msg:
                 E.warn("table creation failed: msg=%s, statement=\n  %s" %
                        (msg, statement))
                 # TODO: check for database locked msg
@@ -329,8 +305,8 @@ def run(infile, options, report_step=10000):
         import sqlite3
         dbhandle = sqlite3.connect(options.database_name)
         try:
-            os.chmod(options.database_name, 0664)
-        except OSError, msg:
+            os.chmod(options.database_name, 0o664)
+        except OSError as msg:
             E.warn("could not change permissions of database: %s" % msg)
 
         # Avoid the following error:
@@ -357,7 +333,7 @@ def run(infile, options, report_step=10000):
         # use , as separator
         quick_import_statement = \
             "sqlite3 %s '.import %%s %s'" % \
-            (options.database, options.tablename)
+            (options.database_name, options.tablename)
 
         quick_import_separator = "|"
 
@@ -369,13 +345,13 @@ def run(infile, options, report_step=10000):
                                        dialect=options.dialect,
                                        fieldnames=options.header)
     else:
-        reader = CSV.DictReader(infile,
+        reader = csv.DictReader(CSV.CommentStripper(infile),
                                 dialect=options.dialect,
                                 fieldnames=options.header)
 
     if options.replace_header:
         try:
-            reader.next()
+            next(reader)
         except StopIteration:
             pass
 
@@ -389,11 +365,11 @@ def run(infile, options, report_step=10000):
 
         try:
             rows.append(IOTools.convertDictionary(row, map=options.map))
-        except TypeError, msg:
+        except TypeError as msg:
             E.warn(
                 "incomplete line? Type error in conversion: "
                 "'%s' with data: %s" % (msg, str(row)))
-        except ValueError, msg:
+        except ValueError as msg:
             E.warn(
                 "incomplete line? Type error in conversion: "
                 "'%s' with data: %s" % (msg, str(row)))
@@ -535,7 +511,7 @@ def run(infile, options, report_step=10000):
         while 1:
             try:
                 dbhandle.executemany(statement, data)
-            except error, msg:
+            except error as msg:
                 E.warn("import failed: msg=%s, statement=\n  %s" %
                        (msg, statement))
                 # TODO: check for database locked msg
@@ -576,7 +552,7 @@ def run(infile, options, report_step=10000):
             cc = executewait(dbhandle, statement, error, options.retry)
             cc.close()
             E.info("added index on column %s" % (index))
-        except error, msg:
+        except error as msg:
             E.info("adding index on column %s failed: %s" % (index, msg))
 
     statement = "SELECT COUNT(*) FROM %s" % (options.tablename)

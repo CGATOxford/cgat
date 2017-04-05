@@ -69,7 +69,7 @@ def check_style(filename):
              in report.counters.items() if x not in IGNORE]
     total = sum(take)
     ok_(total == 0,
-        'pep8 style violations: %s' % ','.join(found))
+        'pep8 style violations in %s: %s' % (filename, ','.join(found)))
 
 
 def test_style():

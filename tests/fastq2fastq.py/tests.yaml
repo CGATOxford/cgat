@@ -65,7 +65,7 @@ change_format:
    stdin: THP1-stimulated-R1.short.fastq.gz
    outputs: [stdout]
    references: [test_change_format.fastq.gz]
-   options: --guess-format=sanger --target-format=integer
+   options: --guess-format=sanger --target-format=integer --method=change-format
 
 paired_sample:
     stdin: WTCHG_45714_249_1_sequence.short.fastq.gz

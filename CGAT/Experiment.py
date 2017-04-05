@@ -1,25 +1,3 @@
-##########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id$
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''Experiment.py - Tools for writing reproducible scripts
 =========================================================
 
@@ -306,6 +284,7 @@ import optparse
 import textwrap
 import random
 import uuid
+import CGAT.IOTools as IOTools
 
 
 class DefaultOptions:
@@ -322,9 +301,6 @@ global_args = None
 global_id = uuid.uuid4()
 global_benchmark = collections.defaultdict(int)
 
-##########################################################################
-# The code for BetterFormatter has been taken from
-# http://code.google.com/p/yjl/source/browse/Python/snippet/BetterFormatter.py
 __copyright__ = """
 Copyright (c) 2001-2006 Gregory P. Ward.  All rights reserved.
 Copyright (c) 2002-2006 Python Software Foundation.  All rights reserved.
@@ -426,10 +402,6 @@ class BetterFormatter(optparse.IndentedHelpFormatter):
         return "".join(result)
 
 
-# End of BetterFormatter()
-#################################################################
-#################################################################
-#################################################################
 class AppendCommaOption(optparse.Option):
 
     '''Option with additional parsing capabilities.
@@ -440,21 +412,6 @@ class AppendCommaOption(optparse.Option):
 
     * Option values of "None" and "" are treated as default values.
     '''
-#    def check_value( self, opt, value ):
-# do not check type for ',' separated lists
-#        if "," in value:
-#            return value
-#        else:
-#            return optparse.Option.check_value( self, opt, value )
-#
-#    def take_action(self, action, dest, opt, value, values, parser):
-#        if action == "append" and "," in value:
-#            lvalue = value.split(",")
-#            values.ensure_value(dest, []).extend(lvalue)
-#        else:
-#            optparse.Option.take_action(
-#                self, action, dest, opt, value, values, parser)
-#
 
     def convert_value(self, opt, value):
         if value is not None:
@@ -577,12 +534,12 @@ def getParams(options=None):
     if options:
         members = options.__dict__
         for k, v in sorted(members.items()):
-            result.append("# %-40s: %s" % (k, str(v).encode("string_escape")))
+            result.append("# %-40s: %s" % (k, str(v)))
     else:
         vars = inspect.currentframe().f_back.f_locals
-        for var in filter(lambda x: re.match("param_", x), vars.keys()):
+        for var in [x for x in list(vars.keys()) if re.match("param_", x)]:
             result.append("# %-40s: %s" %
-                          (var, str(vars[var]).encode("string_escape")))
+                          (var, str(vars[var])))
 
     if result:
         return "\n".join(result)
@@ -597,7 +554,7 @@ def getFooter():
     return "# job finished in %i seconds at %s -- %s -- %s" %\
            (time.time() - global_starting_time,
             time.asctime(time.localtime(time.time())),
-            " ".join(map(lambda x: "%5.2f" % x, os.times()[:4])),
+            " ".join(["%5.2f" % x for x in os.times()[:4]]),
             global_id)
 
 
@@ -672,10 +629,16 @@ def Start(parser=None,
            use cluster
        ``--cluster-priority``
            cluster priority to request
+       ``--cluster-queue-manager``
+           cluster queue manager to use
        ``--cluster-queue``
            cluster queue to use
        ``--cluster-num-jobs``
            number of jobs to submit to the cluster at the same time
+       ``--cluster-memory-resource``
+           name of the cluster memory resource (SGE specific option)
+       ``--cluster-memory-default``
+           default amount of memory allocated per job.
        ``--cluster-options``
            additional options to the cluster for each job.
 
@@ -793,9 +756,19 @@ def Start(parser=None,
         group.add_option("--cluster-priority", dest="cluster_priority",
                          type="int",
                          help="set job priority on cluster [%default].")
+        group.add_option("--cluster-queue-manager", dest="cluster_queue_manager",
+                         type="choice",
+                         choices=("sge", "slurm"),
+                         help="set cluster queue manager [%default].")
         group.add_option("--cluster-queue", dest="cluster_queue",
                          type="string",
                          help="set cluster queue [%default].")
+        group.add_option("--cluster-memory-resource", dest="cluster_memory_resource",
+                         type="string",
+                         help="set cluster memory resource [%default].")
+        group.add_option("--cluster-memory-default", dest="cluster_memory_default",
+                         type="string",
+                         help="set cluster memory default [%default].")
         group.add_option("--cluster-num-jobs", dest="cluster_num_jobs",
                          type="int",
                          help="number of jobs to submit to the queue execute "
@@ -810,12 +783,6 @@ def Start(parser=None,
                          help="additional options for cluster jobs, passed "
                          "on to queuing system [%default].")
 
-        parser.set_defaults(without_cluster=False,
-                            cluster_queue=None,
-                            cluster_priority=None,
-                            cluster_num_jobs=None,
-                            cluster_parallel_environment=None,
-                            cluster_options=None)
         parser.add_option_group(group)
 
     if add_output_options or add_pipe_options:
@@ -969,7 +936,7 @@ def Stop():
         global_options.stdlog.write(
             "######### Time spent in benchmarked functions #########\n")
         global_options.stdlog.write("# function\tseconds\tpercent\n")
-        for key, value in global_benchmark.items():
+        for key, value in list(global_benchmark.items()):
             global_options.stdlog.write(
                 "# %s\t%6i\t%5.2f%%\n" % (key, value,
                                           (100.0 * float(value) / t)))
@@ -999,8 +966,8 @@ def Stop():
                  "host", "system", "release", "machine",
                  "start", "end", "path", "cmd")) + "\n")
 
-        csystem, host, release, version, machine = map(str, os.uname())
-        uusr, usys, c_usr, c_sys = map(lambda x: "%5.2f" % x, os.times()[:4])
+        csystem, host, release, version, machine = list(map(str, os.uname()))
+        uusr, usys, c_usr, c_sys = ["%5.2f" % x for x in os.times()[:4]]
         t_end = time.time()
         c_wall = "%5.2f" % (t_end - global_starting_time)
 
@@ -1095,10 +1062,7 @@ def openOutputFile(section, mode="w"):
                 raise OSError(
                     ("file %s already exists, use --force-output to "
                      "overwrite existing files.") % fn)
-            if fn.endswith(".gz"):
-                return gzip.open(fn, mode)
-            else:
-                return open(fn, mode)
+            return IOTools.openFile(fn, mode)
     except AttributeError:
         return global_options.stdout
 
@@ -1140,18 +1104,21 @@ class Counter(object):
         self._counts[name] = value
 
     def __str__(self):
-        return ", ".join("%s=%i" % x for x in self._counts.iteritems())
+        return ", ".join("%s=%i" % x for x in self._counts.items())
 
     def __iadd__(self, other):
         try:
-            for key, val in other.iteritems():
+            for key, val in other.items():
                 self._counts[key] += val
         except:
             raise TypeError("unknown type")
         return self
 
     def iteritems(self):
-        return self._counts.iteritems()
+        return iter(self._counts.items())
+
+    def items(self):
+        return iter(self._counts.items())
 
     def asTable(self):
         '''return values as tab-separated table (without header).
@@ -1159,7 +1126,7 @@ class Counter(object):
         Key, value pairs are sorted lexicographically.
         '''
         return '\n'.join("%s\t%i" % x
-                         for x in sorted(self._counts.iteritems()))
+                         for x in sorted(self._counts.items()))
 
 
 def run(statement,
@@ -1207,8 +1174,6 @@ def run(statement,
         return retcode
 
 
-# some convenient decorators
-
 def benchmark(func):
     """decorator collecting wall clock time spent in decorated method."""
 
@@ -1216,16 +1181,13 @@ def benchmark(func):
         t1 = time.time()
         res = func(*arg)
         t2 = time.time()
-        key = "%s:%i" % (func.func_name, func.func_code.co_firstlineno)
+        key = "%s:%i" % (func.__name__, func.__code__.co_firstlineno)
         global_benchmark[key] += t2 - t1
         global_options.stdlog.write(
             '## benchmark: %s completed in %6.4f s\n' % (key, (t2 - t1)))
         global_options.stdlog.flush()
         return res
     return wrapper
-
-# there are differences whether you cache a function or
-# an objects method
 
 
 def cachedmethod(function):
@@ -1283,9 +1245,6 @@ class Memoize(object):
         else:
             object = self.cache[args] = self.fn(self.instance, *args)
             return object
-
-######################################################################
-# Deprecated old call interface
 
 
 def GetFooter():

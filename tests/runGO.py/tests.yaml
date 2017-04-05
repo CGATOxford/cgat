@@ -13,12 +13,16 @@ genelists_BH:
             --filename-input=%DIR%/go.tsv.gz 
             --genes-tsv-file=%DIR%/genelists.tsv.gz 
             --min-counts=10 -
-            --filename-ontology=%DIR%/ontology.obo 
+            --filename-ontology=%DIR%/ontology.obo
+            --random-seed=1
             --fdr
             --fdr-method=BH 
             --gene2name-map-tsv-file=%DIR%/gene2name.tsv 
 
+# output not identical in travis/jenkins environments
 genelists_empirical:
+    skip_travis: true
+    skip_jenkins: true
     stdin: null
     outputs: [stdout]
     references: [genelists_empirical.tsv.gz]

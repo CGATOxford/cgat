@@ -1,32 +1,3 @@
-# Copyright (c) 2002, Fedor Baart & Hans de Wit (Stichting Farmaceutische Kengetallen)
-# All rights reserved.
-##
-# Redistribution and use in source and binary forms, with or without modification,
-# are permitted provided that the following conditions are met:
-##
-# Redistributions of source code must retain the above copyright notice, this
-# list of conditions and the following disclaimer.
-##
-# Redistributions in binary form must reproduce the above copyright notice,
-# this list of conditions and the following disclaimer in the documentation and/or
-# other materials provided with the distribution.
-##
-# Neither the name of the Stichting Farmaceutische Kengetallen nor the names of
-# its contributors may be used to endorse or promote products derived from this
-# software without specific prior written permission.
-##
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
-# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
-# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
-# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-##
-# Thanks to Gerald Rosennfellner for his help and useful comments.
 '''
 SVGdraw.py - generate SVG drawings
 ======================================================
@@ -64,20 +35,11 @@ O'Reilly (www.oreilly.com) python books as information sources. A svg viewer
 is available from www.adobe.com
 '''
 
-import exceptions
+from six import StringIO
 import sys
 
 __version__ = "1.0"
 
-# there are two possibilities to generate svg: via a dom
-# implementation and directly using <element>text</element> strings
-# the latter is way faster (and shorter in coding) the former is only
-# used in debugging svg programs maybe it will be removed alltogether
-# after a while with the following variable you indicate whether to
-# use the dom implementation Note that PyXML is required for using the
-# dom implementation.  It is also possible to use the standard
-# minidom. But I didn't try that one.  Anyway the text based approach
-# is about 60 times faster than using the full dom implementation.
 use_dom_implementation = 0
 
 if use_dom_implementation != 0:
@@ -85,26 +47,10 @@ if use_dom_implementation != 0:
         from xml.dom import implementation
         from xml.dom.ext import PrettyPrint
     except:
-        raise exceptions.ImportError, "PyXML is required for using the dom implementation"
+        raise ImportError("PyXML is required for using the dom implementation")
 
-# The implementation is used for the creating the XML document.
-# The prettyprint module is used for converting the xml document object to
-# a xml file
-
-assert sys.version_info[0] >= 2
-if sys.version_info[1] < 2:
-    True = 1
-    False = 0
-    file = open
 
 sys.setrecursionlimit = 50
-# The recursion limit is set conservative so mistakes like s=svg() s.addElement(s)
-# won't eat up too much processor time.
-
-# the following code is pasted form xml.sax.saxutils
-# it makes it possible to run the code without the xml sax package installed
-# To make it possible to have <rubbish> in your text elements, it is
-# necessary to escape the texts
 
 
 def _escape(data, entities={}):
@@ -117,7 +63,7 @@ def _escape(data, entities={}):
     data = data.replace("&", "&amp;")
     data = data.replace("<", "&lt;")
     data = data.replace(">", "&gt;")
-    for chars, entity in entities.items():
+    for chars, entity in list(entities.items()):
         data = data.replace(chars, entity)
     return data
 
@@ -289,7 +235,7 @@ class SVGelement:
         self.text = text
         self.namespace = namespace
         self.cdata = cdata
-        for arg in args.keys():
+        for arg in list(args.keys()):
             self.attributes[arg] = args[arg]
 
     def addElement(self, SVGelement):
@@ -302,7 +248,7 @@ class SVGelement:
     def toXml(self, level, f):
         f.write('\t' * level)
         f.write('<' + self.type)
-        for attkey in self.attributes.keys():
+        for attkey in list(self.attributes.keys()):
             f.write(' ' + _escape(str(attkey)) + '=' +
                     _quoteattr(str(self.attributes[attkey])))
         if self.namespace:
@@ -356,7 +302,7 @@ class tspan(SVGelement):
 
     def __repr__(self):
         s = "<tspan"
-        for key, value in self.attributes.items():
+        for key, value in list(self.attributes.items()):
             s += ' %s="%s"' % (key, value)
         s += '>'
         s += self.text
@@ -382,7 +328,7 @@ class tref(SVGelement):
     def __repr__(self):
         s = "<tref"
 
-        for key, value in self.attributes.items():
+        for key, value in list(self.attributes.items()):
             s += ' %s="%s"' % (key, value)
         s += '/>'
         return s
@@ -440,11 +386,11 @@ class rect(SVGelement):
     def __init__(self, x=None, y=None, width=None, height=None, fill=None, stroke=None, stroke_width=None, **args):
         if width is None or height is None:
             if width is not None:
-                raise ValueError, 'height is required'
+                raise ValueError('height is required')
             if height is not None:
-                raise ValueError, 'width is required'
+                raise ValueError('width is required')
             else:
-                raise ValueError, 'both height and width are required'
+                raise ValueError('both height and width are required')
         SVGelement.__init__(
             self, 'rect', {'width': width, 'height': height}, **args)
         if x is not None:
@@ -469,11 +415,11 @@ class ellipse(SVGelement):
     def __init__(self, cx=None, cy=None, rx=None, ry=None, fill=None, stroke=None, stroke_width=None, **args):
         if rx is None or ry is None:
             if rx is not None:
-                raise ValueError, 'rx is required'
+                raise ValueError('rx is required')
             if ry is not None:
-                raise ValueError, 'ry is required'
+                raise ValueError('ry is required')
             else:
-                raise ValueError, 'both rx and ry are required'
+                raise ValueError('both rx and ry are required')
         SVGelement.__init__(self, 'ellipse', {'rx': rx, 'ry': ry}, **args)
         if cx is not None:
             self.attributes['cx'] = cx
@@ -496,7 +442,7 @@ class circle(SVGelement):
 
     def __init__(self, cx=None, cy=None, r=None, fill=None, stroke=None, stroke_width=None, **args):
         if r is None:
-            raise ValueError, 'r is required'
+            raise ValueError('r is required')
         SVGelement.__init__(self, 'circle', {'r': r}, **args)
         if cx is not None:
             self.attributes['cx'] = cx
@@ -769,11 +715,11 @@ class image(SVGelement):
     def __init__(self, url, x=None, y=None, width=None, height=None, **args):
         if width is None or height is None:
             if width is not None:
-                raise ValueError, 'height is required'
+                raise ValueError('height is required')
             if height is not None:
-                raise ValueError, 'width is required'
+                raise ValueError('width is required')
             else:
-                raise ValueError, 'both height and width are required'
+                raise ValueError('both height and width are required')
         SVGelement.__init__(
             self, 'image', {'xlink:href': url, 'width': width, 'height': height}, **args)
         if x is not None:
@@ -1067,8 +1013,7 @@ class drawing:
         # Voeg een element toe aan de grafiek toe.
     if use_dom_implementation == 0:
         def toXml(self, filename='', compress=False):
-            import cStringIO
-            xml = cStringIO.StringIO()
+            xml = StringIO()
             xml.write("<?xml version='1.0' encoding='UTF-8'?>\n")
             xml.write(
                 "<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.0//EN\" \"http://www.w3.org/TR/2001/REC-SVG-20010904/DTD/svg10.dtd \">\n")
@@ -1076,7 +1021,7 @@ class drawing:
             if not filename:
                 if compress:
                     import gzip
-                    f = cStringIO.StringIO()
+                    f = StringIO()
                     zf = gzip.GzipFile(fileobj=f, mode='wb')
                     zf.write(xml.getvalue())
                     zf.close()
@@ -1124,7 +1069,7 @@ class drawing:
                     textnode = root.createTextNode(element.text)
                     e.appendChild(textnode)
                 # in element.attributes is supported from python 2.2
-                for attribute in element.attributes.keys():
+                for attribute in list(element.attributes.keys()):
                     e.setAttribute(
                         attribute, str(element.attributes[attribute]))
                 if element.elements:
@@ -1134,12 +1079,11 @@ class drawing:
                 return elementroot
             root = appender(self.svg, root)
             if not filename:
-                import cStringIO
-                xml = cStringIO.StringIO()
+                xml = StringIO()
                 PrettyPrint(root, xml)
                 if compress:
                     import gzip
-                    f = cStringIO.StringIO()
+                    f = StringIO()
                     zf = gzip.GzipFile(fileobj=f, mode='wb')
                     zf.write(xml.getvalue())
                     zf.close()
@@ -1151,8 +1095,7 @@ class drawing:
                 try:
                     if filename[-4:] == 'svgz':
                         import gzip
-                        import cStringIO
-                        xml = cStringIO.StringIO()
+                        xml = StringIO()
                         PrettyPrint(root, xml)
                         f = gzip.GzipFile(
                             filename=filename, mode='wb', compresslevel=9)
@@ -1163,21 +1106,23 @@ class drawing:
                         PrettyPrint(root, f)
                         f.close()
                 except:
-                    print "Cannot write SVG file: " + filename
+                    print("Cannot write SVG file: " + filename)
 
     def validate(self):
         try:
             import xml.parsers.xmlproc.xmlval
         except:
-            raise exceptions.ImportError, 'PyXml is required for validating SVG'
+            raise ImportError('PyXml is required for validating SVG')
         svg = self.toXml()
         xv = xml.parsers.xmlproc.xmlval.XMLValidator()
         try:
             xv.feed(svg)
         except:
-            raise "SVG is not well formed, see messages above"
+            raise ValueError("SVG is not well formed, see messages above")
         else:
-            print "SVG well formed"
+            print("SVG well formed")
+
+
 if __name__ == '__main__':
 
     d = drawing()
@@ -1210,4 +1155,4 @@ if __name__ == '__main__':
             s.addElement(c)
     d.setSVG(s)
 
-    print d.toXml()
+    print(d.toXml())
