@@ -328,7 +328,7 @@ if [[ "$OS" != "travis" ]] ; then
 
       # SLV: workaround to
       # https://github.com/conda/conda/issues/4955
-      conda upgrade pysam --yes
+      conda install -f htslib=1.3 --yes
 
       # Set up other environment variables
       setup_env_vars
@@ -412,7 +412,7 @@ if [[ $TRAVIS_INSTALL ]] || [[ $JENKINS_INSTALL ]] ; then
 
    # SLV: workaround to
    # https://github.com/conda/conda/issues/4955
-   conda upgrade pysam --yes
+   conda install -f htslib=1.3 --yes
 
    # python preparation
    log "install CGAT code into conda environment"
