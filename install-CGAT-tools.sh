@@ -737,24 +737,21 @@ do
 done # while-loop
 
 # sanity checks
-if [[ $INSTALL_SCRIPTS ]] && [[ $INSTALL_DEVEL ]] ; then
-
-   echo
-   echo " Incorrect input arguments: mixing --cgat-scripts and --cgat-devel is not permitted."
-   echo " Installation aborted. Please run -h option."
-   echo
-   exit 1
-
-elif [[ ! $INSTALL_SCRIPTS  ]] && [[ ! $INSTALL_DEVEL ]] ; then
-
-   echo
-   echo " Error: you need to either specify --cgat-scripts or --cgat-devel."
-   echo " Installation aborted. Please run -h option."
-   echo
-   exit 1
-
+if [[ ! $TRAVIS_INSTALL ]] && [[ ! $JENKINS_INSTALL ]] ; then
+    if [[ $INSTALL_SCRIPTS ]] && [[ $INSTALL_DEVEL ]] ; then
+       echo
+       echo " Incorrect input arguments: mixing --cgat-scripts and --cgat-devel is not permitted."
+       echo " Installation aborted. Please run -h option."
+       echo
+       exit 1
+    elif [[ ! $INSTALL_SCRIPTS  ]] && [[ ! $INSTALL_DEVEL ]] ; then
+       echo
+       echo " Error: you need to either specify --cgat-scripts or --cgat-devel."
+       echo " Installation aborted. Please run -h option."
+       echo
+       exit 1
+    fi
 fi
-
 
 # perform actions according to the input parameters processed
 if [[ $TRAVIS_INSTALL ]] ; then
