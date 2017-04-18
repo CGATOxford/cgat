@@ -210,7 +210,8 @@ def main(argv=None):
                 # check this is the first time we've dealt with this gene?
                 assert current_gene not in genes, (
                     "the fasta does not appear to be sorted in gene order, the"
-                    " same gene is observed in non-consecutive positions!")
+                    " same gene is observed in non-consecutive positions!"
+                    "%s" % current_gene)
 
                 genes.add(current_gene)
 
