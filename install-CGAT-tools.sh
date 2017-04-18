@@ -326,10 +326,6 @@ if [[ "$OS" != "travis" ]] ; then
       # SLV: workaround until bx-python is available with Python 3
       pip install bx-python
 
-      # SLV: workaround to
-      # https://github.com/conda/conda/issues/4955
-      conda install -f htslib=1.3 --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
-
       # Set up other environment variables
       setup_env_vars
 
@@ -409,11 +405,6 @@ if [[ $TRAVIS_INSTALL ]] || [[ $JENKINS_INSTALL ]] ; then
    # SLV: workaround until bx-python is available with Python 3
    log "pip-installing additional packages"
    pip install bx-python
-
-   # SLV: workaround to
-   # https://github.com/conda/conda/issues/4955
-   conda install -f htslib=1.3 --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
-
 
    # python preparation
    log "install CGAT code into conda environment"
@@ -750,6 +741,14 @@ if [[ $INSTALL_SCRIPTS ]] && [[ $INSTALL_DEVEL ]] ; then
 
    echo
    echo " Incorrect input arguments: mixing --cgat-scripts and --cgat-devel is not permitted."
+   echo " Installation aborted. Please run -h option."
+   echo
+   exit 1
+
+elif [[ ! $INSTALL_SCRIPTS  ]] && [[ ! $INSTALL_DEVEL ]] ; then
+
+   echo
+   echo " Error: you need to either specify --cgat-scripts or --cgat-devel."
    echo " Installation aborted. Please run -h option."
    echo
    exit 1
