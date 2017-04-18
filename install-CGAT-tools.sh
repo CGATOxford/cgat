@@ -168,9 +168,9 @@ else
       INSTALL_PYTHON_VERSION=2
    fi
 
-   if [[ "$INSTALL_SCRIPTS" == "1" ]] ; then
+   if [[ $INSTALL_SCRIPTS ]] ; then
       CONDA_INSTALL_TYPE="cgat-scripts-devel"
-   elif [[ "$INSTALL_DEVEL" == "1" ]] ; then
+   elif [[ $INSTALL_DEVEL ]] ; then
       CONDA_INSTALL_TYPE="cgat-scripts-devel"
    elif [[ $INSTALL_TEST ]] || [[ $INSTALL_UPDATE ]] ; then
       if [[ -d $CGAT_HOME/conda-install ]] ; then
