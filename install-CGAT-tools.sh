@@ -168,9 +168,9 @@ else
       INSTALL_PYTHON_VERSION=2
    fi
 
-   if [[ "$INSTALL_SCRIPTS" == "1" ]] ; then
+   if [[ $INSTALL_SCRIPTS ]] ; then
       CONDA_INSTALL_TYPE="cgat-scripts-devel"
-   elif [[ "$INSTALL_DEVEL" == "1" ]] ; then
+   elif [[ $INSTALL_DEVEL ]] ; then
       CONDA_INSTALL_TYPE="cgat-scripts-devel"
    elif [[ $INSTALL_TEST ]] || [[ $INSTALL_UPDATE ]] ; then
       if [[ -d $CGAT_HOME/conda-install ]] ; then
@@ -737,20 +737,12 @@ do
 done # while-loop
 
 # sanity checks
-if [[ ! $TRAVIS_INSTALL ]] && [[ ! $JENKINS_INSTALL ]] ; then
-    if [[ $INSTALL_SCRIPTS ]] && [[ $INSTALL_DEVEL ]] ; then
-       echo
-       echo " Incorrect input arguments: mixing --cgat-scripts and --cgat-devel is not permitted."
-       echo " Installation aborted. Please run -h option."
-       echo
-       exit 1
-    elif [[ ! $INSTALL_SCRIPTS  ]] && [[ ! $INSTALL_DEVEL ]] ; then
-       echo
-       echo " Error: you need to either specify --cgat-scripts or --cgat-devel."
-       echo " Installation aborted. Please run -h option."
-       echo
-       exit 1
-    fi
+if [[ $INSTALL_SCRIPTS ]] && [[ $INSTALL_DEVEL ]] ; then
+   echo
+   echo " Incorrect input arguments: mixing --cgat-scripts and --cgat-devel is not permitted."
+   echo " Installation aborted. Please run -h option."
+   echo
+   exit 1
 fi
 
 # perform actions according to the input parameters processed
