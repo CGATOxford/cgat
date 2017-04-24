@@ -1,5 +1,5 @@
 
-.. automodule:: contigs2stats
+.. automodule:: CGAT.scripts.contigs2stats
 
-.. program-output:: python ../scripts/contigs2stats.py --help
+.. program-output:: cgat contigs2stats -?
 

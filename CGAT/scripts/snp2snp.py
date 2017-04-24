@@ -2,9 +2,6 @@
 snp2snp.py - manipulate lists of SNPs
 =============================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

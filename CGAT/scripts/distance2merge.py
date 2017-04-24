@@ -2,9 +2,6 @@
 distance2merge.py
 =============================================
 
-:Author: Mike Morgan
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

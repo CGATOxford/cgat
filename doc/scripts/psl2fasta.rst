@@ -1,5 +1,5 @@
 
-.. automodule:: psl2fasta
+.. automodule:: CGAT.scripts.psl2fasta
 
-.. program-output:: python ../scripts/psl2fasta.py --help
+.. program-output:: cgat psl2fasta -?
 

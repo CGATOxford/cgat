@@ -1,5 +1,5 @@
 
-.. automodule:: split_genome
+.. automodule:: CGAT.scripts.split_genome
 
-.. program-output:: python ../scripts/split_genome.py --help
+.. program-output:: cgat split-genome -?
 

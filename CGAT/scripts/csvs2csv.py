@@ -2,9 +2,6 @@
 csvs2csv.py - join tables
 =========================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

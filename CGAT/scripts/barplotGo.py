@@ -2,9 +2,6 @@
 barplotGo.py
 =============================================
 
-:Author: 
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

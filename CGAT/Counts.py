@@ -2,9 +2,6 @@
 Counts.py - methods for manipulating counts data frames
 ==========================================================
 
-:Author: Tom Smith
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Utility functions for dealing with counts data frames

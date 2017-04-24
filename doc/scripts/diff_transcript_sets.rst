@@ -1,5 +1,5 @@
 
-.. automodule:: diff_transcript_sets
+.. automodule:: CGAT.scripts.diff_transcript_sets
 
-.. program-output:: python ../scripts/diff_transcript_sets.py --help
+.. program-output:: cgat diff-transcript-sets -?
 

@@ -2,9 +2,6 @@
 compare_clusters.py - compare two partitions of the same data
 =============================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

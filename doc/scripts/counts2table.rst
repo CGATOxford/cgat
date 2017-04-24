@@ -1,5 +1,5 @@
 
-.. automodule:: counts2table
+.. automodule:: CGAT.scripts.counts2table
 
-.. program-output:: python ../scripts/counts2table.py --help
+.. program-output:: cgat counts2table -?
 

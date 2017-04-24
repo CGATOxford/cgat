@@ -2,9 +2,6 @@
 psl2chain.py - convert psl formatted file to a chain formatted file
 ===================================================================
 
-:Author: Andreas Heger
-:Release: $Id: psl2chain.py 2901 2010-04-13 14:38:07Z andreas $
-:Date: |today|
 :Tags: Python
 
 Purpose

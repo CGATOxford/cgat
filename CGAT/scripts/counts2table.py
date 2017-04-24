@@ -1,9 +1,6 @@
 '''counts2table.py - wrap various differential expression tools
 =============================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

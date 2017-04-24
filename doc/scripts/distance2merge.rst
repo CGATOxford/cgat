@@ -1,5 +1,5 @@
 
-.. automodule:: distance2merge
+.. automodule:: CGAT.scripts.distance2merge
 
-.. program-output:: python ../scripts/distance2merge.py --help
+.. program-output:: cgat distance2merge -?
 

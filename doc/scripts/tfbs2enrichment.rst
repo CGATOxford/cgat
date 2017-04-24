@@ -1,5 +1,5 @@
 
-.. automodule:: tfbs2enrichment
+.. automodule:: CGAT.scripts.tfbs2enrichment
 
-.. program-output:: python ../scripts/tfbs2enrichment.py --help
+.. program-output:: cgat tfbs2enrichment -?
 

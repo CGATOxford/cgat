@@ -2,9 +2,6 @@
 r_table2scatter.py - R based plots and stats
 ============================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

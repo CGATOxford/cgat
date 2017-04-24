@@ -2,9 +2,6 @@
 plot_matrix.py - plot a matrix (imshow)
 =======================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

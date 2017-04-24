@@ -1,9 +1,6 @@
 '''chain2stats.py
 ==============
 
-:Author: Stephen Sansom
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics GenomeAlignment Summary CHAIN
 
 Purpose

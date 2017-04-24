@@ -1,5 +1,5 @@
 
-.. automodule:: bam2transcriptContribution
+.. automodule:: CGAT.scripts.bam2transcriptContribution
 
-.. program-output:: python ../scripts/bam2transcriptContribution.py --help
+.. program-output:: cgat bam2transcriptContribution -?
 

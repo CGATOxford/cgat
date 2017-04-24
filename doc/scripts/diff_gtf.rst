@@ -1,5 +1,5 @@
 
-.. automodule:: diff_gtf
+.. automodule:: CGAT.scripts.diff_gtf
 
-.. program-output:: python ../scripts/diff_gtf.py --help
+.. program-output:: cgat diff-gtf -?
 

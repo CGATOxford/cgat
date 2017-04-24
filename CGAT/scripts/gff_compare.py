@@ -1,9 +1,6 @@
 '''gff_compare.py - compare two gene sets
 ======================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

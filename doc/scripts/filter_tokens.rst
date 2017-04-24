@@ -1,5 +1,5 @@
 
-.. automodule:: filter_tokens
+.. automodule:: CGAT.scripts.filter_tokens
 
-.. program-output:: python ../scripts/filter_tokens.py --help
+.. program-output:: cgat filter-tokens -?
 

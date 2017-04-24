@@ -1,5 +1,5 @@
 
-.. automodule:: bam2UniquePairs
+.. automodule:: CGAT.scripts.bam2UniquePairs
 
-.. program-output:: python ../scripts/bam2UniquePairs.py --help
+.. program-output:: cgat bam2UniquePairs -?
 

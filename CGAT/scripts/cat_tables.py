@@ -2,9 +2,6 @@
 cat_tables.py - concatenate tables
 ==================================
 
-:Author: Andreas Heger
-:Release: $Id: cgat_script_template.py 2781 2009-09-10 11:33:14Z andreas $
-:Date: |today|
 :Tags: Python
 
 Purpose

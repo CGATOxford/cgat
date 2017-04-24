@@ -2,9 +2,6 @@
 quality2fasta.py - convert quality scores to fasta/fastq output
 ===============================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

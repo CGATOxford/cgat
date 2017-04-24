@@ -3,8 +3,6 @@ assoc2assoc.py filter, transform and process results from genome-wide analyses
 ====================================================
 
 :Author:
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

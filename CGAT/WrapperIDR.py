@@ -3,9 +3,6 @@
 WrapperIDR.py - wrap idr analysis
 =================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

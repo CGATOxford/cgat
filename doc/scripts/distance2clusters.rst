@@ -1,5 +1,5 @@
 
-.. automodule:: distance2clusters
+.. automodule:: CGAT.scripts.distance2clusters
 
-.. program-output:: python ../scripts/distance2clusters.py --help
+.. program-output:: cgat distance2clusters -?
 

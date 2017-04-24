@@ -1,5 +1,5 @@
 
-.. automodule:: png2svg
+.. automodule:: CGAT.scripts.png2svg
 
-.. program-output:: python ../scripts/png2svg.py --help
+.. program-output:: cgat png2svg -?
 

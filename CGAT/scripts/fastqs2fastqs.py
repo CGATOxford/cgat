@@ -1,9 +1,6 @@
 '''fastqs2fastqs.py - manipulate (merge/reconcile) fastq files
 =============================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics NGS FASTQ FASTQ Manipulation
 
 Purpose

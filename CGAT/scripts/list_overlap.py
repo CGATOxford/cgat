@@ -1,9 +1,6 @@
 '''list_overlap.py - compute overlap between lists
 ===============================================
 
-:Author: 
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

@@ -1,5 +1,5 @@
 
-.. automodule:: combine_files
+.. automodule:: CGAT.scripts.combine_files
 
-.. program-output:: python ../scripts/combine_files.py --help
+.. program-output:: cgat combine-files -?
 

@@ -1,5 +1,5 @@
 
-.. automodule:: diff_chains
+.. automodule:: CGAT.scripts.diff_chains
 
-.. program-output:: python ../scripts/diff_chains.py --help
+.. program-output:: cgat diff-chains -?
 

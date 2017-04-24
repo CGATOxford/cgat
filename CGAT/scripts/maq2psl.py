@@ -2,9 +2,6 @@
 maq2psl.py - wonvert the output of maqview to psl format
 ========================================================
 
-:Author: Andreas Heger
-:Release: $Id: maq2psl.py 2781 2009-09-10 11:33:14Z andreas $
-:Date: |today|
 :Tags: Python
 
 Purpose

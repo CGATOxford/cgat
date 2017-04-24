@@ -1,9 +1,6 @@
 '''bam2bam.py - modify bam files
 =============================
 
-:Author: Andreas Heger & Adam Cribbs
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics NGS BAM Manipulation
 
 Purpose
@@ -131,8 +128,8 @@ To remove unmapped reads from multiple bam-files, try::
 
 example for running downsample::
 
-cgat bam2bam --method=downsample-paired --downsample=30000
---randomseed=1 -L out.log < Paired.bam > out.bam
+   cgat bam2bam --method=downsample-paired --downsample=30000
+        --randomseed=1 -L out.log < Paired.bam > out.bam
 
 Type::
 

@@ -2,9 +2,6 @@
 tfbs2enrichment.py - template for CGAT scripts
 ====================================================
 
-:Author: Mike Morgan
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

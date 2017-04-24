@@ -1,5 +1,5 @@
 
-.. automodule:: geo2table
+.. automodule:: CGAT.scripts.geo2table
 
-.. program-output:: python ../scripts/geo2table.py --help
+.. program-output:: cgat geo2table -?
 

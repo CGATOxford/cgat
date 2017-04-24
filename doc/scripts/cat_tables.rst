@@ -1,5 +1,5 @@
 
-.. automodule:: cat_tables
+.. automodule:: CGAT.scripts.cat_tables
 
-.. program-output:: python ../scripts/cat_tables.py --help
+.. program-output:: cgat cat-tables -?
 

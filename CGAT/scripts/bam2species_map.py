@@ -1,9 +1,6 @@
 '''bam2species_map.py
 =============================================
 
-:Author: Nick Ilott
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

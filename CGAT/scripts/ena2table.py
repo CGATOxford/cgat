@@ -3,8 +3,6 @@ cgat_script_template.py
 =============================================
 
 :Author:
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

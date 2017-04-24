@@ -1,9 +1,6 @@
 '''cgat2rdf.py - create rdf description of CGAT script
 ====================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

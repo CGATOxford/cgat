@@ -1,5 +1,5 @@
 
-.. automodule:: wig2bed
+.. automodule:: CGAT.scripts.wig2bed
 
-.. program-output:: python ../scripts/wig2bed.py --help
+.. program-output:: cgat wig2bed -?
 

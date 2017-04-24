@@ -3,8 +3,6 @@ diffgene2venn.py - template for CGAT scripts
 ====================================================
 
 :Author:
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

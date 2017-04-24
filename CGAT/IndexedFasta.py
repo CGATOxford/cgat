@@ -51,7 +51,7 @@ import io
 from CGAT import Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Genomics as Genomics
-from .AString import AString
+from CGAT.AString import AString
 import pysam
 from future.moves import dbm
 from six import StringIO

@@ -2,9 +2,6 @@
 data2spike.py - generate spike-in from a data frame
 =====================================================
 
-:Author: Tom smith
-:Release: $Id: data2spike.py
-:Date: |today|
 :Tags: Genomics Statistics Power
 
 

@@ -1,9 +1,6 @@
 """RLE.py - a simple run length encoder
 =======================================
 
-:Author: 
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Taken from: http://rosettacode.org/wiki/Run-length_encoding#Python

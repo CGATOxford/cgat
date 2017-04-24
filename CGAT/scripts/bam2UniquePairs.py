@@ -1,9 +1,6 @@
 '''bam2UniquePairs.py - filter/report uniquely mapped read pairs from a (bwa!) bam-file
 ======================================================================================
 
-:Author: Steve Sansom
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics NGS
 
 Purpose

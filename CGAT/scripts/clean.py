@@ -2,9 +2,6 @@
 clean.py - clean up output files from aborted runs
 ==================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

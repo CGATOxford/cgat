@@ -1,5 +1,5 @@
 
-.. automodule:: psl2wiggle
+.. automodule:: CGAT.scripts.psl2wiggle
 
-.. program-output:: python ../scripts/psl2wiggle.py --help
+.. program-output:: cgat psl2wiggle -?
 

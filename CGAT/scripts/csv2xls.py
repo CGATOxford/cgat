@@ -2,9 +2,6 @@
 csv2xls.py - convert table to excel format
 ==========================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

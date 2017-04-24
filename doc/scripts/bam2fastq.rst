@@ -1,5 +1,5 @@
 
-.. automodule:: bam2fastq
+.. automodule:: CGAT.scripts.bam2fastq
 
-.. program-output:: python ../scripts/bam2fastq.py --help
+.. program-output:: cgat bam2fastq -?
 

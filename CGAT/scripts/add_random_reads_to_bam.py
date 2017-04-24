@@ -2,9 +2,6 @@
 Add a number of random reads to an aligned bam file
 ====================================================
 
-:Author: David Sims
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 This program takes two input file: a Samtools indexed genome file and

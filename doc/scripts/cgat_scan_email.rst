@@ -1,5 +1,5 @@
 
-.. automodule:: cgat_scan_email
+.. automodule:: CGAT.scripts.cgat_scan_email
 
-.. program-output:: python ../scripts/cgat_scan_email.py --help
+.. program-output:: cgat cgat-scan-email -?
 

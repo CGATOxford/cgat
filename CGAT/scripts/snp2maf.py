@@ -2,9 +2,6 @@
 snp2map.py - build maf formatted multiple genomic alignments from SNPs
 ======================================================================
 
-:Author: Andreas Heger
-:Release: $Id: snp2maf.py 2875 2010-03-27 17:42:04Z andreas $
-:Date: |today|
 :Tags: Python
 
 Purpose

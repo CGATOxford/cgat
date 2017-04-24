@@ -1,5 +1,5 @@
 
-.. automodule:: fastq2table
+.. automodule:: CGAT.scripts.fastq2table
 
-.. program-output:: python ../scripts/fastq2table.py --help
+.. program-output:: cgat fastq2table -?
 

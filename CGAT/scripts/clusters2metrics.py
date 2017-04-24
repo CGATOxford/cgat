@@ -2,9 +2,6 @@
 clustering.py - clustering metrics
 ====================================================
 
-:Author: Mike Morgan
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

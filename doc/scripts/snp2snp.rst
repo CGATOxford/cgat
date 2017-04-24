@@ -1,5 +1,5 @@
 
-.. automodule:: snp2snp
+.. automodule:: CGAT.scripts.snp2snp
 
-.. program-output:: python ../scripts/snp2snp.py --help
+.. program-output:: cgat snp2snp -?
 

@@ -2,9 +2,6 @@
 liftover.py - simple liftover script
 ======================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

@@ -1,9 +1,6 @@
 '''index_fasta.py - Index fasta formatted files 
 ============================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics Sequences FASTA Manipulation
 
 Purpose

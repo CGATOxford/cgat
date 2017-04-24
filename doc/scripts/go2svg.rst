@@ -1,5 +1,5 @@
 
-.. automodule:: go2svg
+.. automodule:: CGAT.scripts.go2svg
 
-.. program-output:: python ../scripts/go2svg.py --help
+.. program-output:: cgat go2svg -?
 

@@ -3,8 +3,6 @@ combine_files.py - group and merge multiple files
 =================================================
 
 :Author:
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

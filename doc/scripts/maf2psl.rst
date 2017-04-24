@@ -1,5 +1,5 @@
 
-.. automodule:: maf2psl
+.. automodule:: CGAT.scripts.maf2psl
 
-.. program-output:: python ../scripts/maf2psl.py --help
+.. program-output:: cgat maf2psl -?
 

@@ -2,9 +2,6 @@
 merge_tables.py - 
 ======================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

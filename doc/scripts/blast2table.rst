@@ -1,5 +1,5 @@
 
-.. automodule:: blast2table
+.. automodule:: CGAT.scripts.blast2table
 
-.. program-output:: python ../scripts/blast2table.py --help
+.. program-output:: cgat blast2table -?
 

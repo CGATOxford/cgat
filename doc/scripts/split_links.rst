@@ -1,5 +1,5 @@
 
-.. automodule:: split_links
+.. automodule:: CGAT.scripts.split_links
 
-.. program-output:: python ../scripts/split_links.py --help
+.. program-output:: cgat split-links -?
 

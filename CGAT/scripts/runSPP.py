@@ -2,9 +2,6 @@
 runSPP.py - wrap spp peak caller
 ========================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

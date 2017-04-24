@@ -1,5 +1,5 @@
 
-.. automodule:: csv_intersection
+.. automodule:: CGAT.scripts.csv_intersection
 
-.. program-output:: python ../scripts/csv_intersection.py --help
+.. program-output:: cgat csv-intersection -?
 

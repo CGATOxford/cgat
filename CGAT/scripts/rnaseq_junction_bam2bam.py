@@ -1,9 +1,6 @@
 '''rnaseq_junction_bams2bam.py - convert mappings against junctions to genomic coordinates
 ========================================================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics NGS Genesets
 
 Purpose

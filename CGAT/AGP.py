@@ -37,7 +37,8 @@ class AGP(object):
         objects (obj) like scaffolds are assembled from components
         (com) like contigs.
 
-        Component types are
+        Component types are:
+
         W
            WGS sequence
         N

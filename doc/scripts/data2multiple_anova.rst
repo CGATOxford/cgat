@@ -1,5 +1,5 @@
 
-.. automodule:: data2multiple_anova
+.. automodule:: CGAT.scripts.data2multiple_anova
 
-.. program-output:: python ../scripts/data2multiple_anova.py --help
+.. program-output:: cgat data2multiple-anova -?
 

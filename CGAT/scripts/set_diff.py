@@ -2,9 +2,6 @@
 set_diff.py - compare contents of several files
 ===============================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

@@ -2,9 +2,6 @@
 data2histogram.py - histogram data in a table
 =============================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

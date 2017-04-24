@@ -1,5 +1,5 @@
 
-.. automodule:: substitute_tokens
+.. automodule:: CGAT.scripts.substitute_tokens
 
-.. program-output:: python ../scripts/substitute_tokens.py --help
+.. program-output:: cgat substitute-tokens -?
 

@@ -1,5 +1,5 @@
 
-.. automodule:: data2bins
+.. automodule:: CGAT.scripts.data2bins
 
-.. program-output:: python ../scripts/data2bins.py --help
+.. program-output:: cgat data2bins -?
 

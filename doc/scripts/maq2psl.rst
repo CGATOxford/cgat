@@ -1,5 +1,5 @@
 
-.. automodule:: maq2psl
+.. automodule:: CGAT.scripts.maq2psl
 
-.. program-output:: python ../scripts/maq2psl.py --help
+.. program-output:: cgat maq2psl -?
 

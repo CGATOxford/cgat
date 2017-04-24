@@ -2,9 +2,6 @@
 vcfstats_sqlite.py - reformat output of vcf-stats for database loading
 ======================================================================
 
-:Author: David Sims
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

@@ -1,5 +1,5 @@
 
-.. automodule:: bam2geneprofile
+.. automodule:: CGAT.scripts.bam2geneprofile
 
-.. program-output:: python ../scripts/bam2geneprofile.py --help
+.. program-output:: cgat bam2geneprofile -?
 

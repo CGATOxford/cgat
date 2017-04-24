@@ -2,9 +2,6 @@
 Masker.py - Wrapper for sequence masking tools
 ==============================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Code

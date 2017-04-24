@@ -1,9 +1,6 @@
 """diff_chains.py - compare to chain formatted files
 =================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics GenomeAlignment CHAIN Comparison
 
 Purpose

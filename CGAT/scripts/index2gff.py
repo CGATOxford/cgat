@@ -2,9 +2,6 @@
 index2gff.py - convert indexed fasta file to gff file
 =====================================================
 
-:Author: Andreas Heger
-:Release: $Id: index2gff.py 2880 2010-04-07 08:44:13Z andreas $
-:Date: |today|
 :Tags: Python
 
 Purpose

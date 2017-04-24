@@ -2,9 +2,6 @@
 psl2table.py - output stats for psl formatted alignments
 ================================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

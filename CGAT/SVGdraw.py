@@ -2,9 +2,6 @@
 SVGdraw.py - generate SVG drawings
 ======================================================
 
-:Author: Fedor Baart & Hans de Wit
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 This module has been copied from 3rd party resources.

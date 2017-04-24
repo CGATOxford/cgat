@@ -2,9 +2,6 @@
 r_mann_whitney_u.py - Mann-Whitney U test
 =========================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

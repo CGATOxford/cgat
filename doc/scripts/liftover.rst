@@ -1,5 +1,5 @@
 
-.. automodule:: liftover
+.. automodule:: CGAT.scripts.liftover
 
-.. program-output:: python ../scripts/liftover.py --help
+.. program-output:: cgat liftover -?
 

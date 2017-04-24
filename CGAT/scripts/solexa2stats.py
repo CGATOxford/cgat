@@ -1,9 +1,6 @@
 '''solexa2stats.py - compute stats from solexa export files
 ========================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

@@ -2,9 +2,6 @@
 extractseq.py - extract sequences/sequence regions from a fasta file
 ====================================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

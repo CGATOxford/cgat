@@ -2,9 +2,6 @@
 contigs2random_sample.py
 =============================================
 
-:Author: Nick Ilott
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

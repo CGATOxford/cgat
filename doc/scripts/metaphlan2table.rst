@@ -1,5 +1,5 @@
 
-.. automodule:: metaphlan2table
+.. automodule:: CGAT.scripts.metaphlan2table
 
-.. program-output:: python ../scripts/metaphlan2table.py --help
+.. program-output:: cgat metaphlan2table -?
 

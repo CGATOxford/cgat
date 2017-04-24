@@ -1,5 +1,5 @@
 
-.. automodule:: gff2stats
+.. automodule:: CGAT.scripts.gff2stats
 
-.. program-output:: python ../scripts/gff2stats.py --help
+.. program-output:: cgat gff2stats -?
 

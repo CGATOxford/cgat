@@ -1,5 +1,5 @@
 
-.. automodule:: set_diff
+.. automodule:: CGAT.scripts.set_diff
 
-.. program-output:: python ../scripts/set_diff.py --help
+.. program-output:: cgat set-diff -?
 

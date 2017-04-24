@@ -2,9 +2,6 @@
 bed.plot.py - create genomic snapshots using the IGV Viewer
 ===========================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

@@ -3,8 +3,6 @@ genes2ensembl.py - map gene identifiers to ENSEMBL identifiers
 ==============================================================
 
 :Author:
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

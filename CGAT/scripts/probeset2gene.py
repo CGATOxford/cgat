@@ -2,9 +2,6 @@
 probeset2gene - 
 =============================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

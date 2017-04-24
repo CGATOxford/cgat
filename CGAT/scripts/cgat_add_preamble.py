@@ -1,10 +1,7 @@
 '''
 add_cgat_script_template.py - add template to python scipts
-======================================================
+===========================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose
@@ -41,9 +38,6 @@ SCRIPT = """####################################################################
 %(filename)s - 
 ======================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose
@@ -80,9 +74,6 @@ MODULE = """####################################################################
 %(filename)s - 
 ======================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Code

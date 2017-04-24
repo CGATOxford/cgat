@@ -1,5 +1,5 @@
 
-.. automodule:: bam_vs_gtf
+.. automodule:: CGAT.scripts.bam_vs_gtf
 
-.. program-output:: python ../scripts/bam_vs_gtf.py --help
+.. program-output:: cgat bam-vs-gtf -?
 

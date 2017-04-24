@@ -2,9 +2,6 @@
 transfac2transfac.py - filter transfac motif files
 ====================================================
 
-:Author: Stephen Sansom
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

@@ -1,9 +1,6 @@
 """gtf2alleles.py - predict effects of variants on gene set
 ========================================================
 
-:Author: Andreas Heger
-:Release: $Id: gtf2alleles.py 2886 2010-04-07 08:47:46Z andreas $
-:Date: |today|
 :Tags: Python
 
 Purpose

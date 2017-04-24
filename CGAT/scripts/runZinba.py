@@ -2,9 +2,6 @@
 runZinba.py - wrap zinba peak caller
 ========================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

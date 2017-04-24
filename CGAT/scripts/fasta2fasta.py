@@ -1,9 +1,6 @@
 '''fasta2fasta.py - operate on sequences
 =====================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Sequences
 
 Purpose

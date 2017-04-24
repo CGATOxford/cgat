@@ -1,5 +1,5 @@
 
-.. automodule:: r_table2scatter
+.. automodule:: CGAT.scripts.r_table2scatter
 
-.. program-output:: python ../scripts/r_table2scatter.py --help
+.. program-output:: cgat r-table2scatter -?
 

@@ -1,8 +1,6 @@
 '''counts2counts.py - perform transformations on counts tables
 ==============================================================
 
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose
@@ -40,7 +38,7 @@ spike-ins by row
     --spike-initial-bin-max=10
 
 spike-ins by cluster
-++++++++++++++++
+++++++++++++++++++++
 
     zcat counts.tsv.gz | cgat counts2counts
     --design-tsv-file=design.tsv --method="spike" --spike-type="row"

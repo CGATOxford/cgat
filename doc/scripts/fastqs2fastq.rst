@@ -1,5 +1,5 @@
 
-.. automodule:: fastqs2fastq
+.. automodule:: CGAT.scripts.fastqs2fastq
 
-.. program-output:: python ../scripts/fastqs2fastq.py --help
+.. program-output:: cgat fastqs2fastq -?
 

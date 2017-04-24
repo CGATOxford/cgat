@@ -1,9 +1,6 @@
 """snp2table.py - annotate variants
 ================================
 
-:Author: Andreas Heger
-:Release: $Id: snp2table.py 2861 2010-02-23 17:36:32Z andreas $
-:Date: |today|
 :Tags: Python
 
 Purpose

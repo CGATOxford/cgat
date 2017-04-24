@@ -1,5 +1,5 @@
 
-.. automodule:: add_random_reads_to_bam
+.. automodule:: CGAT.scripts.add_random_reads_to_bam
 
-.. program-output:: python ../scripts/add_random_reads_to_bam.py --help
+.. program-output:: cgat add-random-reads-to-bam -?
 

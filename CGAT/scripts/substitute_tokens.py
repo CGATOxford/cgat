@@ -2,9 +2,6 @@
 substitute_tokens.py - substitute fields in tables
 ==================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

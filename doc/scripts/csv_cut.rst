@@ -1,5 +1,5 @@
 
-.. automodule:: csv_cut
+.. automodule:: CGAT.scripts.csv_cut
 
-.. program-output:: python ../scripts/csv_cut.py --help
+.. program-output:: cgat csv-cut -?
 

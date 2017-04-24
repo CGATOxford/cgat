@@ -2,9 +2,6 @@
 numbers2rgb.py - map numbers to RGB values
 ==========================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

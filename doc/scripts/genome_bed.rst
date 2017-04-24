@@ -1,5 +1,5 @@
 
-.. automodule:: genome_bed
+.. automodule:: CGAT.scripts.genome_bed
 
-.. program-output:: python ../scripts/genome_bed.py --help
+.. program-output:: cgat genome-bed -?
 

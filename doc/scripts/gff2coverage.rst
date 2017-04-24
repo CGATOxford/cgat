@@ -1,5 +1,5 @@
 
-.. automodule:: gff2coverage
+.. automodule:: CGAT.scripts.gff2coverage
 
-.. program-output:: python ../scripts/gff2coverage.py --help
+.. program-output:: cgat gff2coverage -?
 

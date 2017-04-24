@@ -2,9 +2,6 @@
 split_genomic_fasta_file.py - 
 ======================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

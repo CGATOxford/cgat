@@ -2,9 +2,6 @@
 bam_vs_bam.py - compute coverage correlation between bam files
 ==============================================================
 
-:Author: Andreas Heger
-:Release: $Id: bam_vs_bam.py 2861 2010-02-23 17:36:32Z andreas $
-:Date: |today|
 :Tags: Genomics NGS BAM Comparison
 
 Purpose

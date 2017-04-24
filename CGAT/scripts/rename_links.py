@@ -2,9 +2,6 @@
 rename_links.py - rename all links in a directory
 =================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

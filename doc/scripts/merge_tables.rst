@@ -1,5 +1,5 @@
 
-.. automodule:: merge_tables
+.. automodule:: CGAT.scripts.merge_tables
 
-.. program-output:: python ../scripts/merge_tables.py --help
+.. program-output:: cgat merge-tables -?
 

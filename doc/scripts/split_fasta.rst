@@ -1,5 +1,5 @@
 
-.. automodule:: split_fasta
+.. automodule:: CGAT.scripts.split_fasta
 
-.. program-output:: python ../scripts/split_fasta.py --help
+.. program-output:: cgat split-fasta -?
 

@@ -2,9 +2,6 @@
 genelist_analysis.py -analyse gene lists (GO, etc.)
 ===================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

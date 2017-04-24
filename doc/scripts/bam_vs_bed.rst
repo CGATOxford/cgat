@@ -1,5 +1,5 @@
 
-.. automodule:: bam_vs_bed
+.. automodule:: CGAT.scripts.bam_vs_bed
 
-.. program-output:: python ../scripts/bam_vs_bed.py --help
+.. program-output:: cgat bam-vs-bed -?
 

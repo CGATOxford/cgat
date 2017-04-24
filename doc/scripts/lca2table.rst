@@ -1,5 +1,5 @@
 
-.. automodule:: lca2table
+.. automodule:: CGAT.scripts.lca2table
 
-.. program-output:: python ../scripts/lca2table.py --help
+.. program-output:: cgat lca2table -?
 
