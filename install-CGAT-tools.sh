@@ -169,7 +169,7 @@ else
    fi
 
    if [[ $INSTALL_SCRIPTS ]] ; then
-      CONDA_INSTALL_TYPE="cgat-scripts-devel"
+      CONDA_INSTALL_TYPE="cgat-scripts"
    elif [[ $INSTALL_DEVEL ]] ; then
       CONDA_INSTALL_TYPE="cgat-scripts-devel"
    elif [[ $INSTALL_TEST ]] || [[ $INSTALL_UPDATE ]] ; then
@@ -288,19 +288,9 @@ conda update -q conda --yes
 conda info -a
 
 log "installing conda CGAT environment"
-# keep rpy2-2.4 for production scripts
-if [[ "$CONDA_INSTALL_TYPE" == "cgat-scripts" ]] ; then
-
-   conda create -q -n $CONDA_INSTALL_ENV $CONDA_INSTALL_TYPE gcc=4.8.3 rpy2=2.4 --override-channels --channel https://conda.anaconda.org/cgat --channel defaults --channel https://conda.anaconda.org/r --yes
-
-else
-
-   conda create -q -n $CONDA_INSTALL_ENV $CONDA_INSTALL_TYPE python=$INSTALL_PYTHON_VERSION gcc --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
-
-fi
+conda create -q -n $CONDA_INSTALL_ENV $CONDA_INSTALL_TYPE python=$INSTALL_PYTHON_VERSION gcc --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
 
 log "installing CGAT code into conda environment"
-
 # if installation is 'devel' (outside of travis), checkout latest version from github
 if [[ "$OS" != "travis" ]] ; then
 
