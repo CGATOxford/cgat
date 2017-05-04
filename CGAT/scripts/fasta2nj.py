@@ -2,9 +2,6 @@
 fasta2nj.py - convert fasta file to nj input
 ============================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

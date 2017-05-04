@@ -2,9 +2,6 @@
 GO.py - compute GO enrichment from gene lists
 =============================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Code

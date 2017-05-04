@@ -1,5 +1,5 @@
 
-.. automodule:: index2gff
+.. automodule:: CGAT.scripts.index2gff
 
-.. program-output:: python ../scripts/index2gff.py --help
+.. program-output:: cgat index2gff -?
 

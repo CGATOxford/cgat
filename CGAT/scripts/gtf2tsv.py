@@ -1,9 +1,6 @@
 '''gtf2tsv.py - convert gtf file to a tab-separated table
 ======================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics Genesets
 
 Purpose
@@ -46,7 +43,7 @@ Example::
 
 To build a map between gene and transcrip identiers, type::
 
-   cgat bam2tsv --output-map=transcript2gene < in.gtf
+   cgat gtf2tsv --output-map=transcript2gene < in.gtf
 
 +---------------+---------------+
 |transcript_id  |gene_id        |

@@ -1,5 +1,5 @@
 
-.. automodule:: clean
+.. automodule:: CGAT.scripts.clean
 
-.. program-output:: python ../scripts/clean.py --help
+.. program-output:: cgat clean -?
 

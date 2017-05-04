@@ -1,9 +1,6 @@
 '''psl2psl.py - manipulate psl files
 ===================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

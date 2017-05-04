@@ -1,5 +1,5 @@
 
-.. automodule:: go2plot
+.. automodule:: CGAT.scripts.go2plot
 
-.. program-output:: python ../scripts/go2plot.py --help
+.. program-output:: cgat go2plot -?
 

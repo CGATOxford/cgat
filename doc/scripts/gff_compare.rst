@@ -1,5 +1,5 @@
 
-.. automodule:: gff_compare
+.. automodule:: CGAT.scripts.gff_compare
 
-.. program-output:: python ../scripts/gff_compare.py --help
+.. program-output:: cgat gff-compare -?
 

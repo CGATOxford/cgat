@@ -51,7 +51,7 @@ import io
 from CGAT import Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.Genomics as Genomics
-from .AString import AString
+from CGAT.AString import AString
 import pysam
 from future.moves import dbm
 from six import StringIO
@@ -759,6 +759,9 @@ class CGATIndexedFasta:
         """check if token is in index."""
         if not self.mIsLoaded:
             self._loadIndex()
+
+        # First Convert the contig to string to compare string with strings
+        contig = str(contig)
 
         if contig in self.mSynonyms:
             contig = self.mSynonyms[contig]

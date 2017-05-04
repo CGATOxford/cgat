@@ -1,5 +1,5 @@
 
-.. automodule:: fasta2variants
+.. automodule:: CGAT.scripts.fasta2variants
 
-.. program-output:: python ../scripts/fasta2variants.py --help
+.. program-output:: cgat fasta2variants -?
 

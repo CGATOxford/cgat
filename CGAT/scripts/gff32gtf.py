@@ -1,9 +1,6 @@
 '''gff32gtf.py - various methods for converting gff3 files to gtf
 ====================================================
 
-:Author: Ian Sudbery
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

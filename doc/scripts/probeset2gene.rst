@@ -1,5 +1,5 @@
 
-.. automodule:: probeset2gene
+.. automodule:: CGAT.scripts.probeset2gene
 
-.. program-output:: python ../scripts/probeset2gene.py --help
+.. program-output:: cgat probeset2gene -?
 

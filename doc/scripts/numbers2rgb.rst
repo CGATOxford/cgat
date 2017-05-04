@@ -1,5 +1,5 @@
 
-.. automodule:: numbers2rgb
+.. automodule:: CGAT.scripts.numbers2rgb
 
-.. program-output:: python ../scripts/numbers2rgb.py --help
+.. program-output:: cgat numbers2rgb -?
 

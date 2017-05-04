@@ -2,9 +2,6 @@
 diamond2counts.py - count alignments to reference
 ===================================================
 
-:Author: Nick Ilott
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

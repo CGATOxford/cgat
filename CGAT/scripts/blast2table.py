@@ -1,9 +1,6 @@
 '''blast2table.py - output tabular results from BLAST/PSIBLAST runs
 ================================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

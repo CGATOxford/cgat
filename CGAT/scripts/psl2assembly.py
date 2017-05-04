@@ -2,9 +2,6 @@
 psl2assembly.py - assemble (long) reads on genome
 ==================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

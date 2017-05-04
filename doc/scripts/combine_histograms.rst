@@ -1,5 +1,5 @@
 
-.. automodule:: combine_histograms
+.. automodule:: CGAT.scripts.combine_histograms
 
-.. program-output:: python ../scripts/combine_histograms.py --help
+.. program-output:: cgat combine-histograms -?
 

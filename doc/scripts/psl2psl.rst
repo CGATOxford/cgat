@@ -1,5 +1,5 @@
 
-.. automodule:: psl2psl
+.. automodule:: CGAT.scripts.psl2psl
 
-.. program-output:: python ../scripts/psl2psl.py --help
+.. program-output:: cgat psl2psl -?
 

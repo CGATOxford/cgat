@@ -2,9 +2,6 @@
 simulate_function.py - create datapoints for a function
 =======================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

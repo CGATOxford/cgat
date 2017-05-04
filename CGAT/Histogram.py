@@ -3,8 +3,6 @@ Histogram.py - Various functions to deal with histograms
 ===========================================================
 
 :Author:
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Histograms can be calculated from a list/tuple/array of

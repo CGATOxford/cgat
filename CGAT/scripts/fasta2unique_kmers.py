@@ -2,9 +2,6 @@
 fasta2unique_kmers.py
 =============================================
 
-:Author: Tom Smith
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics Sequences FASTA Summary
 
 Purpose

@@ -1,5 +1,5 @@
 
-.. automodule:: genes2genes
+.. automodule:: CGAT.scripts.genes2genes
 
-.. program-output:: python ../scripts/genes2genes.py --help
+.. program-output:: cgat genes2genes -?
 

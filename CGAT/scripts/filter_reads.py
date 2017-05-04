@@ -2,9 +2,6 @@
 filter_reads.py -
 =============================================
 
-:Author: ???
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

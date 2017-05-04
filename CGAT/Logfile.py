@@ -2,9 +2,6 @@
 Logfile.py - logfile parsing
 ============================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

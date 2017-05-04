@@ -1,5 +1,5 @@
 
-.. automodule:: solexa2stats
+.. automodule:: CGAT.scripts.solexa2stats
 
-.. program-output:: python ../scripts/solexa2stats.py --help
+.. program-output:: cgat solexa2stats -?
 

@@ -1,5 +1,5 @@
 
-.. automodule:: cgat
+.. automodule:: CGAT.cgat
 
-.. program-output:: python ../scripts/cgat.py --help
+.. program-output:: cgat
 

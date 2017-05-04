@@ -2,9 +2,6 @@
 go2svg.py - plot results of a GO analysis
 =========================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

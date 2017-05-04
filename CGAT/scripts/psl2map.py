@@ -3,9 +3,6 @@
 psl2map.py - build a mappping from blat alignments
 ==================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

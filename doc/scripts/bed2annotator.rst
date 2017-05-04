@@ -1,5 +1,5 @@
 
-.. automodule:: bed2annotator
+.. automodule:: CGAT.scripts.bed2annotator
 
-.. program-output:: python ../scripts/bed2annotator.py --help
+.. program-output:: cgat bed2annotator -?
 

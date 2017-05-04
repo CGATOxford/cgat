@@ -1,9 +1,6 @@
 '''diff_gtf.py - compute overlap between multiple gtf files
 ===========================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics Intervals Genesets GTF Comparison
 
 Purpose

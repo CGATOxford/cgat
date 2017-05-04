@@ -2,9 +2,6 @@
 psl2gff.py - convert from psl to gff
 ====================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

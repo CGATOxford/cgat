@@ -1,5 +1,5 @@
 
-.. automodule:: csv_select
+.. automodule:: CGAT.scripts.csv_select
 
-.. program-output:: python ../scripts/csv_select.py --help
+.. program-output:: cgat csv-select -?
 

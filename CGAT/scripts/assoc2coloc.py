@@ -2,9 +2,6 @@
 assoc2coloc.py - Colocalization testing between association results for 2 traits
 ================================================================================
 
-:Author: Mike Morgan
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

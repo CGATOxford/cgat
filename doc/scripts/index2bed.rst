@@ -1,5 +1,5 @@
 
-.. automodule:: index2bed
+.. automodule:: CGAT.scripts.index2bed
 
-.. program-output:: python ../scripts/index2bed.py --help
+.. program-output:: cgat index2bed -?
 

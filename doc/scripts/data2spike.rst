@@ -1,5 +1,5 @@
 
-.. automodule:: data2spike
+.. automodule:: CGAT.scripts.data2spike
 
-.. program-output:: python ../scripts/data2spike.py --help
+.. program-output:: cgat data2spike -?
 

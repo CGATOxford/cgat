@@ -1,5 +1,5 @@
 
-.. automodule:: __init__
+.. automodule:: CGAT.scripts.__init__
 
-.. program-output:: python ../scripts/__init__.py --help
+.. program-output:: cgat --init-- -?
 

@@ -1,5 +1,5 @@
 
-.. automodule:: data2roc
+.. automodule:: CGAT.scripts.data2roc
 
-.. program-output:: python ../scripts/data2roc.py --help
+.. program-output:: cgat data2roc -?
 

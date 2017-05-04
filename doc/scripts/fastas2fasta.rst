@@ -1,5 +1,5 @@
 
-.. automodule:: fastas2fasta
+.. automodule:: CGAT.scripts.fastas2fasta
 
-.. program-output:: python ../scripts/fastas2fasta.py --help
+.. program-output:: cgat fastas2fasta -?
 

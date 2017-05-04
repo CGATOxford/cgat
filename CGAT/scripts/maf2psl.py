@@ -2,9 +2,6 @@
 map2psql.py - convert maf formatted file to a psl formatted file
 ================================================================
 
-:Author: Andreas Heger
-:Release: $Id: maf2psl.py 2879 2010-04-06 14:44:34Z andreas $
-:Date: |today|
 :Tags: Python
 
 Purpose

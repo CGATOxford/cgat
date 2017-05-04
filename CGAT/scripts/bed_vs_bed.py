@@ -3,8 +3,6 @@ bed_vs_bed.py - compute enrichment between two bed files
 ========================================================
 
 :Author:
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

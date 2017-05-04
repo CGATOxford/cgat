@@ -1,9 +1,6 @@
 '''bam2stats.py - compute stats from a bam-file
 ===============================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics NGS Summary BAM
 
 Purpose

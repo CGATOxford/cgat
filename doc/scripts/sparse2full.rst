@@ -1,5 +1,5 @@
 
-.. automodule:: sparse2full
+.. automodule:: CGAT.scripts.sparse2full
 
-.. program-output:: python ../scripts/sparse2full.py --help
+.. program-output:: cgat sparse2full -?
 

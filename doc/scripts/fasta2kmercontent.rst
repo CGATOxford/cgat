@@ -1,5 +1,5 @@
 
-.. automodule:: fasta2kmercontent
+.. automodule:: CGAT.scripts.fasta2kmercontent
 
-.. program-output:: python ../scripts/fasta2kmercontent.py --help
+.. program-output:: cgat fasta2kmercontent -?
 

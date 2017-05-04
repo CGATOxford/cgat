@@ -2,9 +2,6 @@
 cgat.py - Computational Genomics Analysis Tools
 ===============================================
 
-:Author: Andreas Heger, CGAT
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics
 
 To use a specific tool, type::

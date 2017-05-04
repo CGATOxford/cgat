@@ -1,9 +1,6 @@
 '''expression2expression.py - RNAseq filtering and normalisation
 =============================================================
 
-:Author: Mike Morgan
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

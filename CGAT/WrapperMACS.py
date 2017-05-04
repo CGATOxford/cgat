@@ -2,9 +2,6 @@
 MACS.py - Parser for MACS output
 ================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 The :mod:`Pipeline` module contains various utility functions

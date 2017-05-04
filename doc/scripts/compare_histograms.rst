@@ -1,5 +1,5 @@
 
-.. automodule:: compare_histograms
+.. automodule:: CGAT.scripts.compare_histograms
 
-.. program-output:: python ../scripts/compare_histograms.py --help
+.. program-output:: cgat compare-histograms -?
 

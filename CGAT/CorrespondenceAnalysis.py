@@ -2,9 +2,6 @@
 CorrespondenceAnalysis.py - 
 ======================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Code

@@ -1,9 +1,6 @@
 '''beds2counts - compute overlap stats between multiple bed files
 =================================================================
 
-:Author: Nick Ilott
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics Intervals Comparison BED Counting
 
 Purpose

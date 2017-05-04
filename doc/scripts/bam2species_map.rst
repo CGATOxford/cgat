@@ -1,5 +1,5 @@
 
-.. automodule:: bam2species_map
+.. automodule:: CGAT.scripts.bam2species_map
 
-.. program-output:: python ../scripts/bam2species_map.py --help
+.. program-output:: cgat bam2species-map -?
 

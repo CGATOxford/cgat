@@ -3,8 +3,6 @@ meme2table - summarize infomation about a meme motif file
 =========================================================
 
 :Author:
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

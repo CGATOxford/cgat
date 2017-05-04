@@ -2,9 +2,6 @@
 WrapperZinba.py - utility functions for zinba output
 ====================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

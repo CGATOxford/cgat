@@ -2,9 +2,6 @@
 combine_gff.py - merge overlapping intervals
 ============================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

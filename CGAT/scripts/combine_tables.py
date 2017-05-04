@@ -1,9 +1,6 @@
 '''combine_tables.py - join tables
 ===============================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

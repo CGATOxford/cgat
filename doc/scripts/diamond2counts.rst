@@ -1,5 +1,5 @@
 
-.. automodule:: diamond2counts
+.. automodule:: CGAT.scripts.diamond2counts
 
-.. program-output:: python ../scripts/diamond2counts.py --help
+.. program-output:: cgat diamond2counts -?
 

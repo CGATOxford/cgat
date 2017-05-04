@@ -2,9 +2,6 @@
 snp2counts.py - count number SNPs in geneset
 ============================================
 
-:Author: Andreas Heger
-:Release: $Id: snp2counts.py 2872 2010-03-03 10:21:13Z andreas $
-:Date: |today|
 :Tags: Python
 
 Purpose

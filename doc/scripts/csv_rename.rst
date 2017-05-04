@@ -1,5 +1,5 @@
 
-.. automodule:: csv_rename
+.. automodule:: CGAT.scripts.csv_rename
 
-.. program-output:: python ../scripts/csv_rename.py --help
+.. program-output:: cgat csv-rename -?
 

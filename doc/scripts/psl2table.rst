@@ -1,5 +1,5 @@
 
-.. automodule:: psl2table
+.. automodule:: CGAT.scripts.psl2table
 
-.. program-output:: python ../scripts/psl2table.py --help
+.. program-output:: cgat psl2table -?
 

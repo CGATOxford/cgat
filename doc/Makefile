@@ -1,6 +1,8 @@
 # Makefile for Sphinx documentation
 #
 
+SHELL=/bin/bash
+
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = sphinx-build
@@ -37,10 +39,13 @@ clean:
 
 _static/toolmap.svg:
 	@echo building toolmap
-	python ../scripts/cgat2dot.py \
-		../scripts/bam2*.py ../scripts/bed2*.py \
-		../scripts/gtf2*.py ../scripts/gff2*.py \
-		../scripts/fastq2*.py ../scripts/fastqs2*.py \
+	cgat cgat2dot \
+		../CGAT/scripts/bam2*.py \
+		../CGAT/scripts/bed2*.py \
+		../CGAT/scripts/gtf2*.py \
+		../CGAT/scripts/gff2*.py \
+		../CGAT/scripts/fastq2*.py \
+		../CGAT/scripts/fastqs2*.py \
 		--log=toolmap.log \
 	> toolmap.dot
 	-mkdir _static

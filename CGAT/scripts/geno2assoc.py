@@ -2,9 +2,6 @@
 geno2assoc.py - perform genome-wide association analyses, filtering and summary
 ===============================================================================
 
-:Author: Mike Morgan
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

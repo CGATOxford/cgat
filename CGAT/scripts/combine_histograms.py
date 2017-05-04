@@ -2,9 +2,6 @@
 combine_histograms.py - combine several histograms
 ==================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

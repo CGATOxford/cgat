@@ -2,9 +2,6 @@
 fasta2kmercontent.py
 =============================================
 
-:Author: Nick Ilott
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics Sequences FASTA Summary
 
 Purpose
@@ -12,13 +9,12 @@ Purpose
 
 This script takes an input :term:`fasta` file from stdin and computes a
 k-nucleotide content for each contig in the file. The output is a
-tab-delimited file of kmer counts:
+tab-delimited file of kmer counts::
 
-     contig1  contig2  contig3  contig4
-n1
-n2
-n3
-
+         contig1  contig2  contig3  contig4
+    n1
+    n2
+    n3
 
 where n is the kmer and contig is the fasta entry.
 
@@ -30,8 +26,9 @@ Note the order of output will not necessarily be the same order as the input.
 Usage
 -----
 Example::
+
    zcat in.fasta.gz | head::
-     
+
     >NODE_1_length_120_cov_4.233333
     TCACGAGCACCGCTATTATCAGCAACTTTTAAGCGACTTTCTTGTTGAATCATTTCAATT
     GTCTCCTTTTAGTTTTATTAGATAATAACAGCTTCTTCCACAACTTCTACAAGACGGAAG

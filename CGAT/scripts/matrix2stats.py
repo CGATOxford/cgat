@@ -2,9 +2,6 @@
 matrix2stats.py - compute statistics on matrices
 ================================================
 
-:Author: Andreas Heger
-:Release: $Id: matrix2stats.py 2795 2009-09-16 15:29:23Z andreas $
-:Date: |today|
 :Tags: Python
 
 Purpose

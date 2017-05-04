@@ -2,9 +2,6 @@
 histogram2histogram.py - operations on histograms
 =================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

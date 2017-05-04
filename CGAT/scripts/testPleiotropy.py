@@ -2,9 +2,6 @@
 testPleiotropy - implementation of the Pleiotropy Estimation and Testing method
 ===============================================================================
 
-:Author: Mike Morgan
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

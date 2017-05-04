@@ -1,5 +1,5 @@
 
-.. automodule:: gff2gff
+.. automodule:: CGAT.scripts.gff2gff
 
-.. program-output:: python ../scripts/gff2gff.py --help
+.. program-output:: cgat gff2gff -?
 

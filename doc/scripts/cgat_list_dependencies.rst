@@ -1,5 +1,5 @@
 
-.. automodule:: cgat_list_dependencies
+.. automodule:: CGAT.scripts.cgat_list_dependencies
 
-.. program-output:: python ../scripts/cgat_list_dependencies.py --help
+.. program-output:: cgat cgat-list-dependencies -?
 

@@ -1,5 +1,5 @@
 
-.. automodule:: gff2bed
+.. automodule:: CGAT.scripts.gff2bed
 
-.. program-output:: python ../scripts/gff2bed.py --help
+.. program-output:: cgat gff2bed -?
 

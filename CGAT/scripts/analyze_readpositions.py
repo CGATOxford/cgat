@@ -2,9 +2,6 @@
 analyze_readpositions.py - compute read coverage on transcripts
 ===============================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

@@ -1,5 +1,5 @@
 
-.. automodule:: plot_data
+.. automodule:: CGAT.scripts.plot_data
 
-.. program-output:: python ../scripts/plot_data.py --help
+.. program-output:: cgat plot-data -?
 

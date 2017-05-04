@@ -1,5 +1,5 @@
 
-.. automodule:: r_mann_whitney_u
+.. automodule:: CGAT.scripts.r_mann_whitney_u
 
-.. program-output:: python ../scripts/r_mann_whitney_u.py --help
+.. program-output:: cgat r-mann-whitney-u -?
 

@@ -2,9 +2,6 @@
 quality2masks.py - mask low-quality bases in multiple alignment
 ===============================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

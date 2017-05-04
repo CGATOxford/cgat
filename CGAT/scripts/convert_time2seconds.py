@@ -2,9 +2,6 @@
 convert_time2seconds.py -
 =============================================
 
-:Author: 
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

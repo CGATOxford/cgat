@@ -1,9 +1,6 @@
 '''csv_cut.py - select columns from a table
 ========================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

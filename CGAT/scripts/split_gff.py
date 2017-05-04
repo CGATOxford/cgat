@@ -1,9 +1,6 @@
 '''split_gff - split a gff file into chunks
 =============================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics Intervals Genesets GFF Manipulation
 
 Purpose

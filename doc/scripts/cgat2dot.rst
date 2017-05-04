@@ -1,5 +1,5 @@
 
-.. automodule:: cgat2dot
+.. automodule:: CGAT.scripts.cgat2dot
 
-.. program-output:: python ../scripts/cgat2dot.py --help
+.. program-output:: cgat cgat2dot -?
 

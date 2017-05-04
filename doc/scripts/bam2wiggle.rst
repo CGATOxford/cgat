@@ -1,5 +1,5 @@
 
-.. automodule:: bam2wiggle
+.. automodule:: CGAT.scripts.bam2wiggle
 
-.. program-output:: python ../scripts/bam2wiggle.py --help
+.. program-output:: cgat bam2wiggle -?
 

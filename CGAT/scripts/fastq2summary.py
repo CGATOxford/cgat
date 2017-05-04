@@ -1,9 +1,6 @@
 '''fastq2summary.py - compute summary stats for a fastq file
 ======================================================
 
-:Author: Tom Smith
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics NGS Sequences FASTQ Annotation
 
 Purpose

@@ -2,9 +2,6 @@
 gff_decorate.py - decorate genomic windows
 ==========================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

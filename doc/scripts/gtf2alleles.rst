@@ -1,5 +1,5 @@
 
-.. automodule:: gtf2alleles
+.. automodule:: CGAT.scripts.gtf2alleles
 
-.. program-output:: python ../scripts/gtf2alleles.py --help
+.. program-output:: cgat gtf2alleles -?
 

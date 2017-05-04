@@ -3,8 +3,6 @@ cgat_get_options.py - build a sorted list of all options used in scripts
 ========================================================================
 
 :Author:
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

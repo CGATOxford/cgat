@@ -1,32 +1,7 @@
-#########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''
 Expression.py - wrap various differential expression tools
 ===========================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose
@@ -128,7 +103,7 @@ def runDETest(raw_DataFrame,
 def splitModel(model):
     '''returns the terms in the model'''
     return [x for x in
-            re.split("[\.:,~+\\s*]", re.sub("~(\s*0\s*)?", "", model)) if
+            re.split("[\.:,~+\s*]", re.sub("~(\s*)?", "", model)) if
             len(x) > 0]
 
 
@@ -162,7 +137,7 @@ class ExperimentalDesign(object):
        whether or not this sample should be included
        in the design
 
-    group
+    groups
        a label grouping several samples into a group
 
     pair
@@ -191,7 +166,7 @@ class ExperimentalDesign(object):
 
     table : pandas DataFrame
        dataframe object describing the design
-    group : list
+    groups : list
        list of groups in the design
     conditions : list
        group for each sample
@@ -215,8 +190,11 @@ class ExperimentalDesign(object):
         if isinstance(filename_or_table, str):
             self.table = pandas.read_csv(filename_or_table, sep="\t",
                                          index_col=0)
-        else:
+        elif isinstance(filename_or_table, pandas.core.frame.DataFrame):
             self.table = filename_or_table
+        else:
+            raise ValueError("Type needs to be string or pandas data frame."
+                             "Type = %s", type(filename_or_table))
 
         assert self.table.shape, "design table is empty"
 

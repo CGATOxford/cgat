@@ -1,5 +1,5 @@
 
-.. automodule:: data2resamples
+.. automodule:: CGAT.scripts.data2resamples
 
-.. program-output:: python ../scripts/data2resamples.py --help
+.. program-output:: cgat data2resamples -?
 

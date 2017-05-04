@@ -1,5 +1,5 @@
 
-.. automodule:: transfac2transfac
+.. automodule:: CGAT.scripts.transfac2transfac
 
-.. program-output:: python ../scripts/transfac2transfac.py --help
+.. program-output:: cgat transfac2transfac -?
 

@@ -1,9 +1,6 @@
 '''fasta2fastq.py - simulate reads from fasta
 =====================================
 
-:Author: Tom Smith
-:Release: $Id$
-:Date: |today|
 :Tags: Sequences
 
 Purpose

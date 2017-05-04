@@ -2,9 +2,6 @@
 gff2view.py - view gff intervals in UCSC genome browser
 =======================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

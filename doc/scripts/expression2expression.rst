@@ -1,5 +1,5 @@
 
-.. automodule:: expression2expression
+.. automodule:: CGAT.scripts.expression2expression
 
-.. program-output:: python ../scripts/expression2expression.py --help
+.. program-output:: cgat expression2expression -?
 

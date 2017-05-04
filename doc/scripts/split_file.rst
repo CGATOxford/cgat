@@ -1,5 +1,5 @@
 
-.. automodule:: split_file
+.. automodule:: CGAT.scripts.split_file
 
-.. program-output:: python ../scripts/split_file.py --help
+.. program-output:: cgat split-file -?
 

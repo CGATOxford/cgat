@@ -1,5 +1,5 @@
 
-.. automodule:: table2graph
+.. automodule:: CGAT.scripts.table2graph
 
-.. program-output:: python ../scripts/table2graph.py --help
+.. program-output:: cgat table2graph -?
 

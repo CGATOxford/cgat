@@ -1,5 +1,5 @@
 
-.. automodule:: gtf2overlap
+.. automodule:: CGAT.scripts.gtf2overlap
 
-.. program-output:: python ../scripts/gtf2overlap.py --help
+.. program-output:: cgat gtf2overlap -?
 

@@ -1,5 +1,5 @@
 
-.. automodule:: combine_gff
+.. automodule:: CGAT.scripts.combine_gff
 
-.. program-output:: python ../scripts/combine_gff.py --help
+.. program-output:: cgat combine-gff -?
 

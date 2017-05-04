@@ -1,5 +1,5 @@
 
-.. automodule:: table2table
+.. automodule:: CGAT.scripts.table2table
 
-.. program-output:: python ../scripts/table2table.py --help
+.. program-output:: cgat table2table -?
 

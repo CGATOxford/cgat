@@ -1,5 +1,5 @@
 
-.. automodule:: clusters2metrics
+.. automodule:: CGAT.scripts.clusters2metrics
 
-.. program-output:: python ../scripts/clusters2metrics.py --help
+.. program-output:: cgat clusters2metrics -?
 

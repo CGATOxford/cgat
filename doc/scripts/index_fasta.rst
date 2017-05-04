@@ -1,5 +1,5 @@
 
-.. automodule:: index_fasta
+.. automodule:: CGAT.scripts.index_fasta
 
-.. program-output:: python ../scripts/index_fasta.py --help
+.. program-output:: cgat index-fasta -?
 

@@ -1,5 +1,5 @@
 
-.. automodule:: fasta2nj
+.. automodule:: CGAT.scripts.fasta2nj
 
-.. program-output:: python ../scripts/fasta2nj.py --help
+.. program-output:: cgat fasta2nj -?
 

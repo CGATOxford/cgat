@@ -1,5 +1,5 @@
 
-.. automodule:: bam2peakshape
+.. automodule:: CGAT.scripts.bam2peakshape
 
-.. program-output:: python ../scripts/bam2peakshape.py --help
+.. program-output:: cgat bam2peakshape -?
 

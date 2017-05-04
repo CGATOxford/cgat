@@ -2,9 +2,6 @@
 matrix2matrix.py - operate on matrices
 ======================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

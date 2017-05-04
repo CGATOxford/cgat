@@ -2,9 +2,6 @@
 fastq2solid.py - convert fastq to solid
 =======================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

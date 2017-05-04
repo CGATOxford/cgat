@@ -1,9 +1,6 @@
 '''data2resamples.py - template for CGAT scripts
 ====================================================
 
-:Author: Mike Morgan
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

@@ -1,5 +1,5 @@
 
-.. automodule:: gtfs2graph
+.. automodule:: CGAT.scripts.gtfs2graph
 
-.. program-output:: python ../scripts/gtfs2graph.py --help
+.. program-output:: cgat gtfs2graph -?
 

@@ -1,5 +1,5 @@
 
-.. automodule:: cgat_get_options
+.. automodule:: CGAT.scripts.cgat_get_options
 
-.. program-output:: python ../scripts/cgat_get_options.py --help
+.. program-output:: cgat cgat-get-options -?
 

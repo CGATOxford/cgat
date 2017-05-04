@@ -2,9 +2,6 @@
 genome_bed.py - Create a bed file tiling a genome from a fai file
 =================================================================
 
-:Author: David Sims
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 This program takes an indexed genome and creates windows of a certain

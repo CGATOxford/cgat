@@ -1,9 +1,6 @@
 '''gtf2table.py - annotate genes/transcripts
 ============================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics Genesets GTF Annotation
 
 Purpose

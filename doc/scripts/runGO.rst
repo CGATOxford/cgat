@@ -1,5 +1,5 @@
 
-.. automodule:: runGO
+.. automodule:: CGAT.scripts.runGO
 
-.. program-output:: python ../scripts/runGO.py --help
+.. program-output:: cgat runGO -?
 

@@ -2,9 +2,6 @@
 gtfs2graph.py - compute overlap graph between genes
 ===================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics Genesets GTF Comparison
 
 Purpose

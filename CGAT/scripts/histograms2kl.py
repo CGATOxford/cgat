@@ -2,9 +2,6 @@
 histograms2kl.py - compute Kullback-Leibler distance
 ====================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

@@ -1,5 +1,5 @@
 
-.. automodule:: quality2fasta
+.. automodule:: CGAT.scripts.quality2fasta
 
-.. program-output:: python ../scripts/quality2fasta.py --help
+.. program-output:: cgat quality2fasta -?
 

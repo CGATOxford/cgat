@@ -1,5 +1,5 @@
 
-.. automodule:: list_overlap
+.. automodule:: CGAT.scripts.list_overlap
 
-.. program-output:: python ../scripts/list_overlap.py --help
+.. program-output:: cgat list-overlap -?
 
