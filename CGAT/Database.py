@@ -127,7 +127,7 @@ def connect(dbhandle, attach=None):
     dbhandle : object
         A DB-API2 conforming database handle
     """
-    if type(dbhandle) is str:
+    if isinstance(dbhandle, basestring):
         try:
             import sqlite3
         except ImportError:
@@ -140,7 +140,7 @@ def connect(dbhandle, attach=None):
     cc = dbhandle.cursor()
 
     if attach is not None:
-        if type(attach) is str:
+        if isinstance(attach, basestring):
             db_execute(cc, attach)
         elif isinstance(attach, (tuple, list)):
             for attach_statement in attach:
@@ -250,7 +250,7 @@ def write_DataFrame(dataframe,
 
         cc = dbhandle.cursor()
 
-        if type(index) is str:
+        if isinstance(index, basestring):
             istat = indexStat(tablename, index)
             print(istat)
             db_execute(cc, istat)
