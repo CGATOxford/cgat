@@ -66,7 +66,9 @@ option. Below is a list of available transformations:
    reconcile chromosome names between ENSEMBL/UCSC or with an indexed
    genomic fasta file (see :doc:`index_fasta`). Raises an exception if
    an unknown contig is found (unless ``--skip-missing`` is set). The
-   method to sanitize is specified by ``--sanitize-method``.
+   method to sanitize is specified by ``--sanitize-method``.The
+   method to sanitize is specified by ``--sanitize-method``. Options for
+   ```--sanitize-method``` include "ucsc", "ensembl", "genome".
    A pattern of contigs to remove can be given in the option
    ``--contig-pattern``.
 
