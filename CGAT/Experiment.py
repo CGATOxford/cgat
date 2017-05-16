@@ -223,7 +223,7 @@ successfull, etc. The :class:`Counter` class helps in record keeping.
 To use, simply create :class:`Counter` object before your main processing
 loop, add counts during processing and output a final log message::
 
-   couter = E.Counter()
+   counter = E.Counter()
 
    for x in range(1000):
       counter.input += 1

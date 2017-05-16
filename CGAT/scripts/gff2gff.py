@@ -91,7 +91,7 @@ Usage
 Make sure that a :term:`gff` formatted file contains only
 features on placed chromosomes::
 
-As an example, to sanatise hg19 chromosome names and remove
+As an example, to sanitise hg19 chromosome names and remove
 chromosome matching the regular expression patterns
 "ChrUn" or "_random", use the following:
 
@@ -126,6 +126,7 @@ import CGAT.Intervals as Intervals
 import collections
 import numpy
 import bx.intervals.intersection
+import pandas as pd
 
 
 def combineGFF(gffs,
@@ -430,6 +431,11 @@ def main(argv=None):
         "contigs to be removed when running method sanitize [%default].")
 
     parser.add_option(
+        "--assembly-report", dest="assembly_report", type="string",
+        help="path to assembly report file which allows mapping of "
+        "ensembl to ucsc contigs when running method sanitize [%default].")
+
+    parser.add_option(
         "--extension-upstream", dest="extension_upstream", type="float",
         help="extension for upstream end [%default].")
 
@@ -478,6 +484,7 @@ def main(argv=None):
         is_gtf=False,
         group_field=None,
         contig_pattern=None,
+        assembly_report=None,
     )
 
     (options, args) = E.Start(parser, argv=argv)
@@ -491,6 +498,23 @@ def main(argv=None):
     if options.genome_file:
         genome_fasta = IndexedFasta.IndexedFasta(options.genome_file)
         contigs = genome_fasta.getContigSizes()
+
+    if options.assembly_report:
+        df = pd.read_csv(options.assembly_report, comment="#",
+                         header=None, sep="\t")
+        # fixes naming inconsistency in assembly report: ensembl chromosome
+        # contigs found in columnn 0, ensembl unassigned contigs found in
+        # column 4.
+        df.ix[df[1] == "assembled-molecule", 4] = df.ix[df[1] == "assembled-molecule", 0]
+        if options.sanitize_method == "ucsc":
+            assembly_dict = df.set_index(4)[9].to_dict()
+        elif options.sanitize_method == "ensembl":
+            assembly_dict = df.set_index(9)[4].to_dict()
+        else:
+            raise ValueError(''' When using assembly report,
+            please specify sanitize method as either
+            "ucsc" or "ensembl" to specify direction of conversion
+            ''')
 
     if options.method in ("forward_coordinates", "forward_strand",
                           "add-flank", "add-upstream-flank",
@@ -685,14 +709,31 @@ def main(argv=None):
     elif options.method == "sanitize":
 
         def toUCSC(id):
-            if not id.startswith("contig") and not id.startswith("chr"):
+            if options.assembly_report:
+                if id in assembly_dict.keys():
+                    id = assembly_dict[id]
+                # elif is needed as normal chromosome names are not correctly
+                # mapped in assembly report files
+                elif not id.startswith("contig") and not id.startswith("chr"):
+                    id = "chr%s" % id
+            elif not id.startswith("contig") and not id.startswith("chr"):
                 id = "chr%s" % id
+            # else do nothing: id is already in ucsc format
             return id
 
         def toEnsembl(id):
-            if id.startswith("contig"):
+            if options.assembly_report:
+                if id in assembly_dict.keys():
+                    id = assembly_dict[id]
+                # elif is needed as normal chromosome names are not correctly
+                # mapped in assembly report files
+                elif id.startswith("contig"):
+                    return id[len("contig"):]
+                elif id.startswith("chr"):
+                    return id[len("chr"):]
+            elif id.startswith("contig"):
                 return id[len("contig"):]
-            if id.startswith("chr"):
+            elif id.startswith("chr"):
                 return id[len("chr"):]
             return id
 
