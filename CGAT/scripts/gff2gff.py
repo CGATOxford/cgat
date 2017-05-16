@@ -712,10 +712,6 @@ def main(argv=None):
             if options.assembly_report:
                 if id in assembly_dict.keys():
                     id = assembly_dict[id]
-                # elif is needed as normal chromosome names are not correctly
-                # mapped in assembly report files
-                elif not id.startswith("contig") and not id.startswith("chr"):
-                    id = "chr%s" % id
             elif not id.startswith("contig") and not id.startswith("chr"):
                 id = "chr%s" % id
             # else do nothing: id is already in ucsc format
@@ -725,12 +721,6 @@ def main(argv=None):
             if options.assembly_report:
                 if id in assembly_dict.keys():
                     id = assembly_dict[id]
-                # elif is needed as normal chromosome names are not correctly
-                # mapped in assembly report files
-                elif id.startswith("contig"):
-                    return id[len("contig"):]
-                elif id.startswith("chr"):
-                    return id[len("chr"):]
             elif id.startswith("contig"):
                 return id[len("contig"):]
             elif id.startswith("chr"):
