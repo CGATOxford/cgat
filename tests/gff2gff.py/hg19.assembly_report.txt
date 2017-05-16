@@ -1,1 +1,1 @@
-/ifs/devel/jakubs/cgat/tests/data/hg19_assembly_report.txt
+../data/hg19_assembly_report.txt
