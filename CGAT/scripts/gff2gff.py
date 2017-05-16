@@ -69,6 +69,15 @@ option. Below is a list of available transformations:
    method to sanitize is specified by ``--sanitize-method``.
    A pattern of contigs to remove can be given in the option
    ``--contig-pattern``.
+   If ``--sanitize-method`` is set to ``ucsc`` or ``ensembl``, the option
+   ``--assembly-report`` is required to allow for accurate mapping
+   between UCSC and Ensembl. If not found in the assembly report the
+   contig names are forced into the desired convention, either by removing
+   or prepending ``chr``, this is useful for :term:`gff` files with custom
+   contigs. The Assembly Report can be found on the NCBI assembly page
+   under the link "Download the full sequence report".
+   If ``--sanitize-method`` is set to ``genome``, the genome file has to be
+   provided via the option ``--genome-file`` or ``--contigs-tsv-file``
 
 ``skip-missing``
 
@@ -79,24 +88,22 @@ option. Below is a list of available transformations:
     agp file to map coordinates from contigs to scaffolds
 
 
-Contigs can either be provided in an indexed fasta genome file
-``--genome-file`` or a file containing contig sizes ``--contigs-tsv-file``
-
-
 
 Usage
 -----
 
-Make sure that a :term:`gff` formatted file contains only
-features on placed chromosomes::
+For many downstream applications it is helpful to make sure
+that a :term:`gff` formatted file contains only features on 
+placed chromosomes.
 
-As an example, to sanitise hg19 chromosome names and remove
+As an example, to sanitise hg38 chromosome names and remove
 chromosome matching the regular expression patterns
-"ChrUn" or "_random", use the following:
+"ChrUn", "_alt" or "_random", use the following:
 
    cat in.gff
-   | gff2gff.py --method=sanitize=genome --genome-file=hg19 --skip-missing
-   | gff2gff.py --remove-contigs="chrUn,_random" > gff.out
+   | gff2gff.py --method=sanitize --sanitize-method=ucsc
+                --assembly-report=/path/to/file --skip-missing
+   | gff2gff.py --remove-contigs="chrUn,_random,_alt" > gff.out
 
 The "--skip-missing" option prevents an exception being
 raised if entries are found on missing chromosomes
@@ -710,6 +717,9 @@ def main(argv=None):
         def assemblyReport(id):
             if id in assembly_dict.keys():
                 id = assembly_dict[id]
+            # if not in dict, the contig name is forced
+            # into the desired convention, this is helpful user
+            # modified gff files that contain additional contigs
             elif options.sanitize_method == "ucsc":
                 if not id.startswith("contig") and not id.startswith("chr"):
                     id = "chr%s" % id
