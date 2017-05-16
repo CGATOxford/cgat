@@ -290,6 +290,10 @@ conda info -a
 log "installing conda CGAT environment"
 conda create -q -n $CONDA_INSTALL_ENV $CONDA_INSTALL_TYPE python=$INSTALL_PYTHON_VERSION gcc --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
 
+# SLV brute force until pysam problem is solved
+conda uninstall pysam
+conda install -f pysam=0.11.1
+
 log "installing CGAT code into conda environment"
 # if installation is 'devel' (outside of travis), checkout latest version from github
 if [[ "$OS" != "travis" ]] ; then
