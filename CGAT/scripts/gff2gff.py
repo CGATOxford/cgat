@@ -739,7 +739,7 @@ def main(argv=None):
                     "--sanitize-method=genome")
             f = genome_fasta.getToken
         else:
-            if assembly_dict is None:
+            if options.assembly_report is None:
                 raise ValueError(
                     "please specify --assembly-report= when using "
                     "--sanitize-method=ucsc or ensembl")
