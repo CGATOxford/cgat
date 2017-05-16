@@ -293,6 +293,7 @@ conda create -q -n $CONDA_INSTALL_ENV $CONDA_INSTALL_TYPE python=$INSTALL_PYTHON
 # SLV brute force until pysam problem is solved
 conda uninstall -n $CONDA_INSTALL_ENV pysam --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
 conda install -n $CONDA_INSTALL_ENV pysam=0.11.1 --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
+conda install -n $CONDA_INSTALL_ENV pybedtools --override-channels --channel conda-forge --channel defaults --channel r --channel bioconda --yes
 
 log "installing CGAT code into conda environment"
 # if installation is 'devel' (outside of travis), checkout latest version from github
