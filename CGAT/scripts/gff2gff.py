@@ -751,7 +751,7 @@ def main(argv=None):
                     continue
                 else:
                     raise
-                    
+
             if genome_fasta:
                 lcontig = genome_fasta.getLength(gff.contig)
                 if lcontig < gff.end:
