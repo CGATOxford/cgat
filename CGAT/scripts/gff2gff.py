@@ -74,9 +74,8 @@ option. Below is a list of available transformations:
 
    skip entries on missing contigs. This prevents exception from being raised
 
-
-
 ``filename-agp``
+
     agp file to map coordinates from contigs to scaffolds
 
 
@@ -708,23 +707,17 @@ def main(argv=None):
 
     elif options.method == "sanitize":
 
-        def toUCSC(id):
-            if options.assembly_report:
-                if id in assembly_dict.keys():
-                    id = assembly_dict[id]
-            elif not id.startswith("contig") and not id.startswith("chr"):
-                id = "chr%s" % id
-            # else do nothing: id is already in ucsc format
-            return id
-
-        def toEnsembl(id):
-            if options.assembly_report:
-                if id in assembly_dict.keys():
-                    id = assembly_dict[id]
-            elif id.startswith("contig"):
-                return id[len("contig"):]
-            elif id.startswith("chr"):
-                return id[len("chr"):]
+        def assemblyReport(id):
+            if id in assembly_dict.keys():
+                id = assembly_dict[id]
+            elif options.sanitize_method == "ucsc":
+                if not id.startswith("contig") and not id.startswith("chr"):
+                    id = "chr%s" % id
+            elif options.sanitize_method == "ensembl":
+                if id.startswith("contig"):
+                    return id[len("contig"):]
+                elif id.startswith("chr"):
+                    return id[len("chr"):]
             return id
 
         if options.sanitize_method == "genome":
@@ -733,10 +726,12 @@ def main(argv=None):
                     "please specify --genome-file= when using "
                     "--sanitize-method=genome")
             f = genome_fasta.getToken
-        elif options.sanitize_method == "ucsc":
-            f = toUCSC
-        elif options.sanitize_method == "ensembl":
-            f = toEnsembl
+        else:
+            if assembly_dict is None:
+                raise ValueError(
+                    "please specify --assembly-report= when using "
+                    "--sanitize-method=ucsc or ensembl")
+            f = assemblyReport
 
         skipped_contigs = collections.defaultdict(int)
         outofrange_contigs = collections.defaultdict(int)
