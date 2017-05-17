@@ -71,35 +71,41 @@ option. Below is a list of available transformations:
    ```--sanitize-method``` include "ucsc", "ensembl", "genome".
    A pattern of contigs to remove can be given in the option
    ``--contig-pattern``.
+   If ``--sanitize-method`` is set to ``ucsc`` or ``ensembl``, the option
+   ``--assembly-report`` is required to allow for accurate mapping
+   between UCSC and Ensembl. If not found in the assembly report the
+   contig names are forced into the desired convention, either by removing
+   or prepending ``chr``, this is useful for :term:`gff` files with custom
+   contigs. The Assembly Report can be found on the NCBI assembly page
+   under the link "Download the full sequence report".
+   If ``--sanitize-method`` is set to ``genome``, the genome file has to be
+   provided via the option ``--genome-file`` or ``--contigs-tsv-file``
 
 ``skip-missing``
 
    skip entries on missing contigs. This prevents exception from being raised
 
-
-
 ``filename-agp``
+
     agp file to map coordinates from contigs to scaffolds
-
-
-Contigs can either be provided in an indexed fasta genome file
-``--genome-file`` or a file containing contig sizes ``--contigs-tsv-file``
 
 
 
 Usage
 -----
 
-Make sure that a :term:`gff` formatted file contains only
-features on placed chromosomes::
+For many downstream applications it is helpful to make sure
+that a :term:`gff` formatted file contains only features on 
+placed chromosomes.
 
-As an example, to sanatise hg19 chromosome names and remove
+As an example, to sanitise hg38 chromosome names and remove
 chromosome matching the regular expression patterns
-"ChrUn" or "_random", use the following:
+"ChrUn", "_alt" or "_random", use the following:
 
    cat in.gff
-   | gff2gff.py --method=sanitize=genome --genome-file=hg19 --skip-missing
-   | gff2gff.py --remove-contigs="chrUn,_random" > gff.out
+   | gff2gff.py --method=sanitize --sanitize-method=ucsc
+                --assembly-report=/path/to/file --skip-missing
+   | gff2gff.py --remove-contigs="chrUn,_random,_alt" > gff.out
 
 The "--skip-missing" option prevents an exception being
 raised if entries are found on missing chromosomes
@@ -128,6 +134,7 @@ import CGAT.Intervals as Intervals
 import collections
 import numpy
 import bx.intervals.intersection
+import pandas as pd
 
 
 def combineGFF(gffs,
@@ -432,6 +439,11 @@ def main(argv=None):
         "contigs to be removed when running method sanitize [%default].")
 
     parser.add_option(
+        "--assembly-report", dest="assembly_report", type="string",
+        help="path to assembly report file which allows mapping of "
+        "ensembl to ucsc contigs when running method sanitize [%default].")
+
+    parser.add_option(
         "--extension-upstream", dest="extension_upstream", type="float",
         help="extension for upstream end [%default].")
 
@@ -480,6 +492,7 @@ def main(argv=None):
         is_gtf=False,
         group_field=None,
         contig_pattern=None,
+        assembly_report=None,
     )
 
     (options, args) = E.Start(parser, argv=argv)
@@ -493,6 +506,23 @@ def main(argv=None):
     if options.genome_file:
         genome_fasta = IndexedFasta.IndexedFasta(options.genome_file)
         contigs = genome_fasta.getContigSizes()
+
+    if options.assembly_report:
+        df = pd.read_csv(options.assembly_report, comment="#",
+                         header=None, sep="\t")
+        # fixes naming inconsistency in assembly report: ensembl chromosome
+        # contigs found in columnn 0, ensembl unassigned contigs found in
+        # column 4.
+        df.ix[df[1] == "assembled-molecule", 4] = df.ix[df[1] == "assembled-molecule", 0]
+        if options.sanitize_method == "ucsc":
+            assembly_dict = df.set_index(4)[9].to_dict()
+        elif options.sanitize_method == "ensembl":
+            assembly_dict = df.set_index(9)[4].to_dict()
+        else:
+            raise ValueError(''' When using assembly report,
+            please specify sanitize method as either
+            "ucsc" or "ensembl" to specify direction of conversion
+            ''')
 
     if options.method in ("forward_coordinates", "forward_strand",
                           "add-flank", "add-upstream-flank",
@@ -686,16 +716,20 @@ def main(argv=None):
 
     elif options.method == "sanitize":
 
-        def toUCSC(id):
-            if not id.startswith("contig") and not id.startswith("chr"):
-                id = "chr%s" % id
-            return id
-
-        def toEnsembl(id):
-            if id.startswith("contig"):
-                return id[len("contig"):]
-            if id.startswith("chr"):
-                return id[len("chr"):]
+        def assemblyReport(id):
+            if id in assembly_dict.keys():
+                id = assembly_dict[id]
+            # if not in dict, the contig name is forced
+            # into the desired convention, this is helpful user
+            # modified gff files that contain additional contigs
+            elif options.sanitize_method == "ucsc":
+                if not id.startswith("contig") and not id.startswith("chr"):
+                    id = "chr%s" % id
+            elif options.sanitize_method == "ensembl":
+                if id.startswith("contig"):
+                    return id[len("contig"):]
+                elif id.startswith("chr"):
+                    return id[len("chr"):]
             return id
 
         if options.sanitize_method == "genome":
@@ -704,10 +738,12 @@ def main(argv=None):
                     "please specify --genome-file= when using "
                     "--sanitize-method=genome")
             f = genome_fasta.getToken
-        elif options.sanitize_method == "ucsc":
-            f = toUCSC
-        elif options.sanitize_method == "ensembl":
-            f = toEnsembl
+        else:
+            if options.assembly_report is None:
+                raise ValueError(
+                    "please specify --assembly-report= when using "
+                    "--sanitize-method=ucsc or ensembl")
+            f = assemblyReport
 
         skipped_contigs = collections.defaultdict(int)
         outofrange_contigs = collections.defaultdict(int)
@@ -722,7 +758,7 @@ def main(argv=None):
                     continue
                 else:
                     raise
-                    
+
             if genome_fasta:
                 lcontig = genome_fasta.getLength(gff.contig)
                 if lcontig < gff.end:
