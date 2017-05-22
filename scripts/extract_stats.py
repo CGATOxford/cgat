@@ -63,9 +63,11 @@ def getTableFromDb(db, table, backend,
     Get a table from a database with pandas
     '''
 
-    state = text(''' SELECT * FROM %(table)s;''' % locals())
+    state = '''SELECT * FROM %(table)s''' % locals()
+    # state = text('''SELECT * FROM %(table)s;''' % locals())
     if backend == "sqlite":
         create_string = "sqlite:///{}".format(db)
+        dbh = sql.connect(db)
     elif backend == "mysql":
         dbhandle = MySQLdb.connect(host=db_hostname,
                                    user=username,
@@ -79,9 +81,8 @@ def getTableFromDb(db, table, backend,
 
     #engine = create_engine(create_string)
     #dbh = engine.connect()
-    #dbh = sql.connect(db)
     
-    df = pdsql.read_sql(state, dbh)
+    df = pdsql.read_sql(sql=state, con=dbh)
     df.index = df["track"]
     df.drop(labels="track", inplace=True,
             axis=1)
@@ -259,7 +260,6 @@ def main(argv=None):
     (options, args) = E.Start(parser, argv=argv)
 
     if options.task == "extract_table":
-        print options.database_hostname
         out_df = getTableFromDb(db=options.database,
                                 table=options.table,
                                 backend=options.database_backend,
