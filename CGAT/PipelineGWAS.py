@@ -2238,7 +2238,7 @@ class GWASResults(object):
                                              "CASE_RSQ", "CTRL_RSQ",
                                              "CASE_DPRIME" "CTRL_DPRIME"]
                 results_frame.loc[:, "BP"] = pd.to_numeric(results_frame["BP"],
-                                                            errors="coerce")
+                                                           errors="coerce")
             elif file_format == "cassi":
                 pass
             elif file_format == "plink":
