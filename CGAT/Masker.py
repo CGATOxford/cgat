@@ -141,12 +141,9 @@ class Masker:
     def maskSequences(self, sequences):
         '''mask a collection of sequences.'''
 
-        outfile, infile = tempfile.mkstemp()
-
-        for x, s in enumerate(sequences):
-            os.write(outfile, ">%i\n%s\n" % (x, s))
-
-        os.close(outfile)
+        with tempfile.NamedTemporaryFile(mode="w+t", delete=False) as infile:
+            for x, s in enumerate(sequences):
+                infile.write(">%i\n%s\n" % (x, s))
 
         statement = self.mCommand % locals()
 
@@ -168,7 +165,7 @@ class Masker:
         result = [
             x.sequence for x in FastaIterator.iterate(StringIO(out))]
 
-        os.remove(infile)
+        os.remove(infile.name)
 
         return result
 
