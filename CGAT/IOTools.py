@@ -189,11 +189,13 @@ def touchFile(filename, times=None):
     as empty 'gzip' files, i.e., with a header.
     '''
     existed = os.path.exists(filename)
-    fhandle = open(filename, 'a')
 
     if filename.endswith(".gz") and not existed:
         # this will automatically add a gzip header
+        fhandle = open(filename, 'a+b')
         fhandle = gzip.GzipFile(filename, fileobj=fhandle)
+    else:
+        fhandle = open(filename, 'a')
 
     try:
         os.utime(filename, times)
@@ -238,13 +240,12 @@ def openFile(filename, mode="r", create_dir=False, encoding="utf-8"):
                 return gzip.open(filename, 'rt', encoding=encoding)
             elif mode == "w":
                 return gzip.open(filename, 'wt', encoding=encoding)
-            else:
-                raise NotImplementedError(
-                    "mode '{}' not implemented".format(mode))
+            elif mode == "a":
+                return gzip.open(filename, 'wt', encoding=encoding)
         else:
             return gzip.open(filename, mode)
     else:
-        return open(filename, mode)
+        return open(filename, mode, encoding=encoding)
 
 
 def force_str(iterator, encoding="ascii"):
@@ -812,14 +813,6 @@ class FilePool:
 
         self.mFiles = {}
         self.mOutputPattern = output_pattern
-
-        self.open = open
-
-        if output_pattern:
-            _, ext = os.path.splitext(output_pattern)
-            if ext.lower() in (".gz", ".z"):
-                self.open = gzip.open
-
         self.mCounts = collections.defaultdict(int)
         self.mHeader = header
         if force and output_pattern:
@@ -881,7 +874,7 @@ class FilePool:
             if dirname and not os.path.exists(dirname):
                 os.makedirs(dirname)
 
-        return self.open(filename, mode)
+        return openFile(filename, mode)
 
     def write(self, identifier, line):
         """write `line` to file specified by `identifier`"""
@@ -894,7 +887,7 @@ class FilePool:
                     f.close()
                 self.mFiles = {}
 
-            self.mFiles[filename] = self.openFile(filename, "a")
+            self.mFiles[filename] = openFile(filename, "a")
             if self.mHeader:
                 self.mFiles[filename].write(self.mHeader)
 
@@ -947,7 +940,7 @@ class FilePoolMemory(FilePool):
             raise IOError("write on closed FilePool in close()")
 
         for filename, data in self.data.items():
-            f = self.openFile(filename, "a")
+            f = openFile(filename, "a")
             if self.mHeader:
                 f.write(self.mHeader)
             f.write("".join(data))
