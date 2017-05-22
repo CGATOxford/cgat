@@ -194,7 +194,7 @@ def iterator_psl_intervals(options):
             except KeyError:
                 tx = []
 
-        if options.stdlog >= 2:
+        if options.loglevel >= 2:
             options.stdlog.write(
                 "###################################################\n")
             options.stdlog.write("# testing %s\n" % (str(match)))
