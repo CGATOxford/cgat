@@ -201,7 +201,7 @@ def touchFile(filename, times=None):
         fhandle.close()
 
 
-def openFile(filename, mode="r", create_dir=False):
+def openFile(filename, mode="r", create_dir=False, encoding="utf-8"):
     '''open file called *filename* with mode *mode*.
 
     gzip - compressed files are recognized by the
@@ -235,9 +235,9 @@ def openFile(filename, mode="r", create_dir=False):
     if ext.lower() in (".gz", ".z"):
         if sys.version_info.major >= 3:
             if mode == "r":
-                return gzip.open(filename, 'rt', encoding="ascii")
+                return gzip.open(filename, 'rt', encoding=encoding)
             elif mode == "w":
-                return gzip.open(filename, 'wt', encoding="ascii")
+                return gzip.open(filename, 'wt', encoding=encoding)
             else:
                 raise NotImplementedError(
                     "mode '{}' not implemented".format(mode))
