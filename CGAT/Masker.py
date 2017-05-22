@@ -141,10 +141,11 @@ class Masker:
     def maskSequences(self, sequences):
         '''mask a collection of sequences.'''
 
-        with tempfile.NamedTemporaryFile(mode="w+t", delete=False) as infile:
+        with tempfile.NamedTemporaryFile(mode="w+t", delete=False) as outf:
             for x, s in enumerate(sequences):
-                infile.write(">%i\n%s\n" % (x, s))
+                outf.write(">%i\n%s\n" % (x, s))
 
+        infile = outf.name
         statement = self.mCommand % locals()
 
         E.debug("statement: %s" % statement)
@@ -161,11 +162,11 @@ class Masker:
             raise RuntimeError(
                 "Error in running %s \n%s\nTemporary directory" %
                 (statement, err))
-
+        
         result = [
-            x.sequence for x in FastaIterator.iterate(StringIO(out))]
+            x.sequence for x in FastaIterator.iterate(StringIO(out.decode()))]
 
-        os.remove(infile.name)
+        os.remove(infile)
 
         return result
 
