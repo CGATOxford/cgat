@@ -1,5 +1,5 @@
 
-.. automodule:: analyze_readpositions
+.. automodule:: CGAT.scripts.analyze_readpositions
 
-.. program-output:: python ../scripts/analyze_readpositions.py --help
+.. program-output:: cgat analyze-readpositions -?
 

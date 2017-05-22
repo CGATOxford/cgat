@@ -1,5 +1,5 @@
 
-.. automodule:: data2histogram
+.. automodule:: CGAT.scripts.data2histogram
 
-.. program-output:: python ../scripts/data2histogram.py --help
+.. program-output:: cgat data2histogram -?
 

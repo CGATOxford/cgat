@@ -2,9 +2,6 @@
 csv_intersection.py - intersect two tables
 ======================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

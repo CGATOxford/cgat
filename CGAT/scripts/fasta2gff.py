@@ -2,9 +2,6 @@
 fasta2gff.py - create random segments from fasta file
 =====================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics Sequences Intervals FASTA GFF Transformation
 
 Purpose

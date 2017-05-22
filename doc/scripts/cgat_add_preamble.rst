@@ -1,5 +1,5 @@
 
-.. automodule:: cgat_add_preamble
+.. automodule:: CGAT.scripts.cgat_add_preamble
 
-.. program-output:: python ../scripts/cgat_add_preamble.py --help
+.. program-output:: cgat cgat-add-preamble -?
 

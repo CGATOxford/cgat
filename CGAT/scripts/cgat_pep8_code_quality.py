@@ -3,8 +3,6 @@ cgat_pep8_check_code_quality.py - check PEP8 conformance of CGAT Code
 =====================================================================
 
 :Author:
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

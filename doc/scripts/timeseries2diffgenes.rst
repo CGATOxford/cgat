@@ -1,5 +1,5 @@
 
-.. automodule:: timeseries2diffgenes
+.. automodule:: CGAT.scripts.timeseries2diffgenes
 
-.. program-output:: python ../scripts/timeseries2diffgenes.py --help
+.. program-output:: cgat timeseries2diffgenes -?
 

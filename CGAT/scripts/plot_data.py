@@ -2,9 +2,6 @@
 plot_data.py - create scatter plot from tabular data
 ====================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

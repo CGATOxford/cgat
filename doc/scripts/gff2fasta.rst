@@ -1,5 +1,5 @@
 
-.. automodule:: gff2fasta
+.. automodule:: CGAT.scripts.gff2fasta
 
-.. program-output:: python ../scripts/gff2fasta.py --help
+.. program-output:: cgat gff2fasta -?
 

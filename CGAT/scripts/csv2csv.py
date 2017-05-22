@@ -2,9 +2,6 @@
 csv2csv.py - operate on tables
 ==============================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

@@ -1,5 +1,5 @@
 
-.. automodule:: fasta2bed
+.. automodule:: CGAT.scripts.fasta2bed
 
-.. program-output:: python ../scripts/fasta2bed.py --help
+.. program-output:: cgat fasta2bed -?
 

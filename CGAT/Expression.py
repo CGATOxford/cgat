@@ -1,32 +1,7 @@
-#########################################################################
-#
-#   MRC FGU Computational Genomics Group
-#
-#   $Id: cgat_script_template.py 2871 2010-03-03 10:20:44Z andreas $
-#
-#   Copyright (C) 2009 Andreas Heger
-#
-#   This program is free software; you can redistribute it and/or
-#   modify it under the terms of the GNU General Public License
-#   as published by the Free Software Foundation; either version 2
-#   of the License, or (at your option) any later version.
-#
-#   This program is distributed in the hope that it will be useful,
-#   but WITHOUT ANY WARRANTY; without even the implied warranty of
-#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#   GNU General Public License for more details.
-#
-#   You should have received a copy of the GNU General Public License
-#   along with this program; if not, write to the Free Software
-#   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-##########################################################################
 '''
 Expression.py - wrap various differential expression tools
 ===========================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose
@@ -1142,6 +1117,84 @@ class DEResult_DESeq2(DEResult):
         # self.table.set_index("test_id", inplace=True)
 
 
+class DEExperiment_DEXSeq(DEExperiment):
+    '''DEExperiment object to run DEXSeq on counts data'''
+
+    def run(self,
+            design,
+            base_dir,
+            model=None,
+            flattenedfile=None,
+            outfile_prefix=None,
+            fdr=0.1):
+
+        pandas2ri.activate()
+
+        # create r objects
+        E.info('running DEXSeq: groups=%s, pairs=%s, replicates=%s, pairs=%s,'
+               ' additional_factors:' %
+               (design.groups, design.pairs, design.has_replicates,
+                design.has_pairs))
+
+        # load DEXSeq
+        R('''suppressMessages(library('DEXSeq'))''')
+
+        # change group to condition
+        sampleTable = design.table.rename(columns={'group': 'condition'})
+
+        allfiles = [file for file in os.listdir(base_dir)]
+        countfiles = []
+        for item in list(design.table.index):
+            countfiles += [base_dir+"/"+x for x in allfiles if item in x]
+
+        E.info("Processing Samples. Sample table:")
+        E.info("%s" % sampleTable)
+        buildCountDataSet = R('''
+        function(countFiles, gff, sampleTable, model){
+
+        full_model <- formula("%(model)s")
+
+        dxd <- suppressMessages(DEXSeqDataSetFromHTSeq(
+                     countFiles,
+                     sampleData=sampleTable,
+                     flattenedfile=gff,
+                     design=full_model))
+
+        dxd = estimateSizeFactors(dxd)
+        dxd = estimateDispersions(dxd)
+
+        png("%(outfile_prefix)s_dispersion.png")
+        plotDispEsts(dxd)
+        dev.off()
+
+        dxd = testForDEU(dxd)
+
+        result = DEXSeqResults(dxd)
+        result = as.data.frame(result)
+
+        return(result)
+        }''' % locals())
+        result = pandas2ri.ri2py(
+            buildCountDataSet(countfiles, flattenedfile, sampleTable, model))
+
+        final_result = DEResult_DEXSeq(result)
+
+        return final_result
+
+
+class DEResult_DEXSeq(DEResult):
+
+    def getResults(self, fdr):
+        ''' post-process test results table into generic results output '''
+
+        self.table = pandas.DataFrame(self.table)
+        # self.table.set_index("test_id", inplace=True)
+
+    def plotMAplot(self, design, outfile_prefix):
+        # need to implement DEXSeq specific MA plot
+        raise ValueError("MA plotting is not yet implemented for DESeq")
+
+
 class DEExperiment_Sleuth(DEExperiment):
     '''DEExperiment object to run sleuth on kallisto bootstrap files
     Unlike the other DEExperiment instances, this does not operate on
@@ -1338,7 +1391,6 @@ class DEExperiment_Sleuth(DEExperiment):
             results_table <- sleuth_results(so, test = '%(contrast)s%(ref_group)s')
 
             return(results_table)
-
             } ''' % locals())
 
             results = pandas2ri.ri2py(differentialTesting(so))
@@ -1786,7 +1838,7 @@ class SAM(object):
 def loadTagData(tags_filename, design_filename):
     '''load tag data for deseq/edger analysis.
 
-    *Infile* is a tab-separated file with counts.
+    *tags_file* is a tab-separated file with counts.
 
     *design_file* is a tab-separated file with the
     experimental design with a minimum of four columns::
@@ -2973,7 +3025,7 @@ def runDESeq2(outfile,
 
     # Check for model and that model terms are in metadata table
     if model:
-        assert contrasts, "Must specifiy contrasts is model design provided"
+        assert contrasts, "Must specifiy contrasts if model design provided"
         terms = set([x for x in re.split("\W", model) if x != ''])
         assert terms.issubset(mdata), \
             "DESeq2: design formula has terms not present in colData"

@@ -1,5 +1,5 @@
 
-.. automodule:: bed2plot
+.. automodule:: CGAT.scripts.bed2plot
 
-.. program-output:: python ../scripts/bed2plot.py --help
+.. program-output:: cgat bed2plot -?
 

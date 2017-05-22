@@ -3,8 +3,6 @@ distance2clusters.py - RNAseq timeseries analysis
 ====================================================
 
 :Author:
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

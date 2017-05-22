@@ -2,9 +2,6 @@
 sparse2full.py - convert a sparse matrix to adjacency matrix
 ============================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

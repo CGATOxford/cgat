@@ -1,5 +1,5 @@
 
-.. automodule:: matrix2stats
+.. automodule:: CGAT.scripts.matrix2stats
 
-.. program-output:: python ../scripts/matrix2stats.py --help
+.. program-output:: cgat matrix2stats -?
 

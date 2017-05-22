@@ -1,5 +1,5 @@
 
-.. automodule:: data2stats
+.. automodule:: CGAT.scripts.data2stats
 
-.. program-output:: python ../scripts/data2stats.py --help
+.. program-output:: cgat data2stats -?
 

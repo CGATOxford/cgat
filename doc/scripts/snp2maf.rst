@@ -1,5 +1,5 @@
 
-.. automodule:: snp2maf
+.. automodule:: CGAT.scripts.snp2maf
 
-.. program-output:: python ../scripts/snp2maf.py --help
+.. program-output:: cgat snp2maf -?
 

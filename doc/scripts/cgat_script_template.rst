@@ -1,5 +1,5 @@
 
-.. automodule:: cgat_script_template
+.. automodule:: CGAT.scripts.cgat_script_template
 
-.. program-output:: python ../scripts/cgat_script_template.py --help
+.. program-output:: cgat cgat-script-template -?
 

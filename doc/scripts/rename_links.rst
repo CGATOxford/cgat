@@ -1,5 +1,5 @@
 
-.. automodule:: rename_links
+.. automodule:: CGAT.scripts.rename_links
 
-.. program-output:: python ../scripts/rename_links.py --help
+.. program-output:: cgat rename-links -?
 

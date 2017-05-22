@@ -2,9 +2,6 @@
 maq2assembly.py - convert output from maq cns2view 
 ===================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

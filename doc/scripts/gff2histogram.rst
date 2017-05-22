@@ -1,5 +1,5 @@
 
-.. automodule:: gff2histogram
+.. automodule:: CGAT.scripts.gff2histogram
 
-.. program-output:: python ../scripts/gff2histogram.py --help
+.. program-output:: cgat gff2histogram -?
 

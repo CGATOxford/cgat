@@ -1,5 +1,5 @@
 
-.. automodule:: annotator_distance
+.. automodule:: CGAT.scripts.annotator_distance
 
-.. program-output:: python ../scripts/annotator_distance.py --help
+.. program-output:: cgat annotator-distance -?
 

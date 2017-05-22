@@ -2,9 +2,6 @@
 csv_set.py - set operations on a table
 ======================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

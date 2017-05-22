@@ -2,9 +2,6 @@
 CSV2DB.py - utilities for uploading a table to database
 =======================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

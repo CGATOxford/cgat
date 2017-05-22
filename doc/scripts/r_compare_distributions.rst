@@ -1,5 +1,5 @@
 
-.. automodule:: r_compare_distributions
+.. automodule:: CGAT.scripts.r_compare_distributions
 
-.. program-output:: python ../scripts/r_compare_distributions.py --help
+.. program-output:: cgat r-compare-distributions -?
 

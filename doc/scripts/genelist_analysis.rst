@@ -1,5 +1,5 @@
 
-.. automodule:: genelist_analysis
+.. automodule:: CGAT.scripts.genelist_analysis
 
-.. program-output:: python ../scripts/genelist_analysis.py --help
+.. program-output:: cgat genelist-analysis -?
 

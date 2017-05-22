@@ -1,5 +1,5 @@
 
-.. automodule:: convert_time2seconds
+.. automodule:: CGAT.scripts.convert_time2seconds
 
-.. program-output:: python ../scripts/convert_time2seconds.py --help
+.. program-output:: cgat convert-time2seconds -?
 

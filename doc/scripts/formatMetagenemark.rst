@@ -1,5 +1,5 @@
 
-.. automodule:: formatMetagenemark
+.. automodule:: CGAT.scripts.formatMetagenemark
 
-.. program-output:: python ../scripts/formatMetagenemark.py --help
+.. program-output:: cgat formatMetagenemark -?
 

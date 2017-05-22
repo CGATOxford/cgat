@@ -2,9 +2,6 @@
 mask_fasta.py - mask fasta formatted sequences
 ==============================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

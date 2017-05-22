@@ -1,5 +1,5 @@
 
-.. automodule:: maq2assembly
+.. automodule:: CGAT.scripts.maq2assembly
 
-.. program-output:: python ../scripts/maq2assembly.py --help
+.. program-output:: cgat maq2assembly -?
 

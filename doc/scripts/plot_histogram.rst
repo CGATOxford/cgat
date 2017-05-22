@@ -1,5 +1,5 @@
 
-.. automodule:: plot_histogram
+.. automodule:: CGAT.scripts.plot_histogram
 
-.. program-output:: python ../scripts/plot_histogram.py --help
+.. program-output:: cgat plot-histogram -?
 

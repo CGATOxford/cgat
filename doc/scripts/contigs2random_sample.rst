@@ -1,5 +1,5 @@
 
-.. automodule:: contigs2random_sample
+.. automodule:: CGAT.scripts.contigs2random_sample
 
-.. program-output:: python ../scripts/contigs2random_sample.py --help
+.. program-output:: cgat contigs2random-sample -?
 

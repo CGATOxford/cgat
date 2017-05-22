@@ -1,5 +1,5 @@
 
-.. automodule:: matrix2matrix
+.. automodule:: CGAT.scripts.matrix2matrix
 
-.. program-output:: python ../scripts/matrix2matrix.py --help
+.. program-output:: cgat matrix2matrix -?
 

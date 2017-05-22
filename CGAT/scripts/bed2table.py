@@ -1,9 +1,6 @@
 '''Bed2table.py - annotate intervals
 =================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics Intervals Summary
 
 Purpose

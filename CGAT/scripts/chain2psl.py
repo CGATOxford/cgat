@@ -1,9 +1,6 @@
 """chain2psl.py - convert a chain file to a psl file
 =================================================
 
-:Author: Andreas Heger
-:Release: $Id: chain2psl.py 2899 2010-04-13 14:37:37Z andreas $
-:Date: |today|
 :Tags: Genomics Intervals GenomeAlignment PSL CHAIN Conversion
 
 Purpose

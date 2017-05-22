@@ -1,9 +1,6 @@
 '''bam2fastq.py - output fastq files from a bam-file
 =================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics NGS Sequences BAM FASTQ Conversion
 
 Purpose

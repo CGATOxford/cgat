@@ -2,9 +2,6 @@
 data2multiple_anova.py - compute multiple ANOVA between samples
 ===============================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

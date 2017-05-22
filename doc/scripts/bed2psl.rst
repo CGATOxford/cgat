@@ -1,5 +1,5 @@
 
-.. automodule:: bed2psl
+.. automodule:: CGAT.scripts.bed2psl
 
-.. program-output:: python ../scripts/bed2psl.py --help
+.. program-output:: cgat bed2psl -?
 

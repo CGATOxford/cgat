@@ -2,9 +2,6 @@
 RateEstimation.py - utilities for computing rate estimates for codon models.
 =============================================================================
 
-:Author: 
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 """

@@ -1,5 +1,5 @@
 
-.. automodule:: barplotGo
+.. automodule:: CGAT.scripts.barplotGo
 
-.. program-output:: python ../scripts/barplotGo.py --help
+.. program-output:: cgat barplotGo -?
 

@@ -1,5 +1,5 @@
 
-.. automodule:: intervaltable2bed
+.. automodule:: CGAT.scripts.intervaltable2bed
 
-.. program-output:: python ../scripts/intervaltable2bed.py --help
+.. program-output:: cgat intervaltable2bed -?
 

@@ -3,8 +3,6 @@ assoc2plot.py - script for post-GWAS plotting
 ====================================================
 
 :Author:
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

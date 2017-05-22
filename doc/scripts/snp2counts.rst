@@ -1,5 +1,5 @@
 
-.. automodule:: snp2counts
+.. automodule:: CGAT.scripts.snp2counts
 
-.. program-output:: python ../scripts/snp2counts.py --help
+.. program-output:: cgat snp2counts -?
 

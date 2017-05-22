@@ -1,5 +1,5 @@
 
-.. automodule:: runSPP
+.. automodule:: CGAT.scripts.runSPP
 
-.. program-output:: python ../scripts/runSPP.py --help
+.. program-output:: cgat runSPP -?
 

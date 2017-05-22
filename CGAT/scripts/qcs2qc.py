@@ -3,8 +3,6 @@ qc2qc.py - format and manipulate output files from GWA QC steps
 ===============================================================
 
 :Author:
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

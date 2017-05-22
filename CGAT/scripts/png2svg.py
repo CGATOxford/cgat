@@ -2,9 +2,6 @@
 png2svg.py - arrange several bitmat images into a single image
 ==============================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

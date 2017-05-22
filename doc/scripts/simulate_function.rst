@@ -1,5 +1,5 @@
 
-.. automodule:: simulate_function
+.. automodule:: CGAT.scripts.simulate_function
 
-.. program-output:: python ../scripts/simulate_function.py --help
+.. program-output:: cgat simulate-function -?
 

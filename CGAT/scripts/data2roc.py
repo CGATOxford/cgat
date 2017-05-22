@@ -1,9 +1,6 @@
 '''data2roc.py - compute ROC data
 ==============================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

@@ -2,9 +2,6 @@
 csv_rename.py - rename columns in a table
 =========================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

@@ -2,9 +2,6 @@
 csv_select.py - select rows from a table
 ========================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

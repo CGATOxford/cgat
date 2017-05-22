@@ -2,9 +2,6 @@
 psl2wiggle.py - convert from psl to wiggle
 ==========================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

@@ -1,5 +1,5 @@
 
-.. automodule:: mask_fasta
+.. automodule:: CGAT.scripts.mask_fasta
 
-.. program-output:: python ../scripts/mask_fasta.py --help
+.. program-output:: cgat mask-fasta -?
 

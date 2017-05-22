@@ -2,9 +2,6 @@
 Genomics.py - Tools for working with genomic data
 =================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Reference

@@ -1,5 +1,5 @@
 
-.. automodule:: bam2bed
+.. automodule:: CGAT.scripts.bam2bed
 
-.. program-output:: python ../scripts/bam2bed.py --help
+.. program-output:: cgat bam2bed -?
 

@@ -1,5 +1,5 @@
 
-.. automodule:: gff_decorate
+.. automodule:: CGAT.scripts.gff_decorate
 
-.. program-output:: python ../scripts/gff_decorate.py --help
+.. program-output:: cgat gff-decorate -?
 

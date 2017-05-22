@@ -1,5 +1,5 @@
 
-.. automodule:: gtf2tsv
+.. automodule:: CGAT.scripts.gtf2tsv
 
-.. program-output:: python ../scripts/gtf2tsv.py --help
+.. program-output:: cgat gtf2tsv -?
 

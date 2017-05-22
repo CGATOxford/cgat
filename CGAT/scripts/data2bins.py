@@ -2,9 +2,6 @@
 data2bins.py - split table according to values in a column
 ==========================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

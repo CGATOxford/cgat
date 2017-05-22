@@ -1,5 +1,5 @@
 
-.. automodule:: gff2plot
+.. automodule:: CGAT.scripts.gff2plot
 
-.. program-output:: python ../scripts/gff2plot.py --help
+.. program-output:: cgat gff2plot -?
 

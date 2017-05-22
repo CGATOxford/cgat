@@ -1,5 +1,5 @@
 
-.. automodule:: cgat_galaxy_wrapper
+.. automodule:: CGAT.scripts.cgat_galaxy_wrapper
 
-.. program-output:: python ../scripts/cgat_galaxy_wrapper.py --help
+.. program-output:: cgat cgat-galaxy-wrapper -?
 

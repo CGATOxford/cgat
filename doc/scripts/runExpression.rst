@@ -1,5 +1,5 @@
 
-.. automodule:: runExpression
+.. automodule:: CGAT.scripts.runExpression
 
-.. program-output:: python ../scripts/runExpression.py --help
+.. program-output:: cgat runExpression -?
 

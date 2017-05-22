@@ -2,9 +2,6 @@
 fasta2bed.py - segment sequences
 ================================
 
-:Author: Andreas Heger
-:Release: $Id: fasta2bed.py 2861 2010-02-23 17:36:32Z andreas $
-:Date: |today|
 :Tags: Genomics Sequences Intervals FASTA BED Conversion
 
 Purpose

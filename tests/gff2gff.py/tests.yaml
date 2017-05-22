@@ -33,17 +33,17 @@ sanitize_ucsc:
     stdin: hg19.small.gtf.gz
     outputs: [stdout]
     references: [sanitize_ucsc.gtf]
-    options: --method=sanitize --sanitize-method=ucsc
+    options: --method=sanitize --sanitize-method=ucsc --assembly-report=%DIR%/hg19.assembly_report.txt
 
 sanitize_ucsc_remove:
     stdin: hg19.small.gtf.gz
     outputs: [stdout]
     references: [sanitize_ucsc_remove.gtf]
-    options: --method=sanitize --sanitize-method=ucsc --contig-pattern=chr19
+    options: --method=sanitize --sanitize-method=ucsc --assembly-report=%DIR%/hg19.assembly_report.txt --contig-pattern=chr19
 
 sanitize_ensembl:
     stdin: hg19.small.gtf.gz
     outputs: [stdout]
     references: [sanitize_ensembl.gtf]
-    options: --method=sanitize --sanitize-method=ensembl
+    options: --method=sanitize --sanitize-method=ensembl --assembly-report=%DIR%/hg19.assembly_report.txt
 

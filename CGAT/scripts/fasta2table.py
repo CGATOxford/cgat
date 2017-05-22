@@ -1,9 +1,6 @@
 '''fasta2table.py - analyze sequence composition, codon usage, bias and degeneracy 
 ====================================================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics Sequences
 
 Purpose

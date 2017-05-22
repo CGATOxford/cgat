@@ -1,5 +1,5 @@
 
-.. automodule:: vcf2vcf
+.. automodule:: CGAT.scripts.vcf2vcf
 
-.. program-output:: python ../scripts/vcf2vcf.py --help
+.. program-output:: cgat vcf2vcf -?
 

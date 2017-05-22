@@ -1,5 +1,5 @@
 
-.. automodule:: bam2bam
+.. automodule:: CGAT.scripts.bam2bam
 
-.. program-output:: python ../scripts/bam2bam.py --help
+.. program-output:: cgat bam2bam -?
 

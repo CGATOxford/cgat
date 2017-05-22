@@ -1,5 +1,5 @@
 
-.. automodule:: r_test
+.. automodule:: CGAT.scripts.r_test
 
-.. program-output:: python ../scripts/r_test.py --help
+.. program-output:: cgat r-test -?
 

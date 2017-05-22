@@ -2,9 +2,6 @@
 snpPriority.py - score SNPs based on their LD score and SE weighted effect sizes
 ===============================================================================
 
-:Author: Mike Morgan
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

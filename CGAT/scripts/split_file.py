@@ -2,9 +2,6 @@
 split_file.py - split a file into parts
 =======================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

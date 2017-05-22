@@ -3,8 +3,6 @@ pheno2plot.py - format and manipulate phenotype files
 ====================================================
 
 :Author:
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

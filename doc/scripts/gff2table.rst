@@ -1,5 +1,5 @@
 
-.. automodule:: gff2table
+.. automodule:: CGAT.scripts.gff2table
 
-.. program-output:: python ../scripts/gff2table.py --help
+.. program-output:: cgat gff2table -?
 

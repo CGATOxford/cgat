@@ -2,9 +2,6 @@
 psl2stats.py - output genomic coverage from psl formatted alignments
 ====================================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

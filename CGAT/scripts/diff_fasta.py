@@ -1,9 +1,6 @@
 '''diff_fasta.py - compare contents of two fasta files
 ===================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics Sequences FASTA Comparison
 
 Purpose

@@ -2,9 +2,6 @@
 data2stats.py - summary statistics on table columns/rows
 ========================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

@@ -3,8 +3,6 @@ geno2geno.py - format, manipulate and process genotying data files
 ====================================================
 
 :Author:
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

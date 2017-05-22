@@ -1,9 +1,6 @@
 """convert adjacency lists to edge lists
 =====================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

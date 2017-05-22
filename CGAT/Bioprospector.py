@@ -2,9 +2,6 @@
 Bioprospector.py - Parser for Bioprospector output
 ==================================================
 
-:Author: 
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 """
 

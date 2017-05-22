@@ -1,5 +1,5 @@
 
-.. automodule:: coverage2stats
+.. automodule:: CGAT.scripts.coverage2stats
 
-.. program-output:: python ../scripts/coverage2stats.py --help
+.. program-output:: cgat coverage2stats -?
 

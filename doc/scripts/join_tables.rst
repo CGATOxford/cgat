@@ -1,5 +1,5 @@
 
-.. automodule:: join_tables
+.. automodule:: CGAT.scripts.join_tables
 
-.. program-output:: python ../scripts/join_tables.py --help
+.. program-output:: cgat join-tables -?
 

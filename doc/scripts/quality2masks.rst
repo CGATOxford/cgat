@@ -1,5 +1,5 @@
 
-.. automodule:: quality2masks
+.. automodule:: CGAT.scripts.quality2masks
 
-.. program-output:: python ../scripts/quality2masks.py --help
+.. program-output:: cgat quality2masks -?
 

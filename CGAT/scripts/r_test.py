@@ -2,9 +2,6 @@
 r_test.py - t-test and wilcoxon tests
 =====================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

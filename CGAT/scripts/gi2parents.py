@@ -1,9 +1,6 @@
 '''gi2parents.py
 =============================================
 
-:Author: Nick Ilott
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

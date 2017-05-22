@@ -2,9 +2,6 @@
 runMEDIPS.py - wrap MEDIPS analysis
 ===================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

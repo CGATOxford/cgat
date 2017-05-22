@@ -1,7 +1,6 @@
 '''table2table.py - operate on tables
 ==================================
 
-:Date: |today|
 :Tags: Python
 
 Purpose

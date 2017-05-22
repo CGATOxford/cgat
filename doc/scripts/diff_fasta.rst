@@ -1,5 +1,5 @@
 
-.. automodule:: diff_fasta
+.. automodule:: CGAT.scripts.diff_fasta
 
-.. program-output:: python ../scripts/diff_fasta.py --help
+.. program-output:: cgat diff-fasta -?
 

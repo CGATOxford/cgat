@@ -2,9 +2,6 @@
 medip_merge_intervals.py - merge differentially methylated regions
 ==================================================================
 
-:Author: 
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

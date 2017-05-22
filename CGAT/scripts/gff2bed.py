@@ -1,9 +1,6 @@
 '''gff2bed.py - convert from gff/gtf to bed
 =========================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics Intervals GFF BED Conversion
 
 Purpose

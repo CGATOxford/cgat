@@ -3,8 +3,6 @@ snps2architecture.py - Calculate & plot disease frequency by allele
 ===================================================================
 
 :Author:
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

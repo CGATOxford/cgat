@@ -1,5 +1,5 @@
 
-.. automodule:: vcfstats2db
+.. automodule:: CGAT.scripts.vcfstats2db
 
-.. program-output:: python ../scripts/vcfstats2db.py --help
+.. program-output:: cgat vcfstats2db -?
 

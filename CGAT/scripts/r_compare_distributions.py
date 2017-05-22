@@ -2,9 +2,6 @@
 r_compare_distributions.py - statistical test for distributions
 ===============================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

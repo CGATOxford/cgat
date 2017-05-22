@@ -1,5 +1,5 @@
 
-.. automodule:: revigo
+.. automodule:: CGAT.scripts.revigo
 
-.. program-output:: python ../scripts/revigo.py --help
+.. program-output:: cgat revigo -?
 

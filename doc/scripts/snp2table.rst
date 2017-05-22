@@ -1,5 +1,5 @@
 
-.. automodule:: snp2table
+.. automodule:: CGAT.scripts.snp2table
 
-.. program-output:: python ../scripts/snp2table.py --help
+.. program-output:: cgat snp2table -?
 

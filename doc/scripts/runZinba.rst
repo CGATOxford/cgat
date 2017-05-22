@@ -1,5 +1,5 @@
 
-.. automodule:: runZinba
+.. automodule:: CGAT.scripts.runZinba
 
-.. program-output:: python ../scripts/runZinba.py --help
+.. program-output:: cgat runZinba -?
 

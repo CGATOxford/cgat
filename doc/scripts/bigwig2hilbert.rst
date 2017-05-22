@@ -1,5 +1,5 @@
 
-.. automodule:: bigwig2hilbert
+.. automodule:: CGAT.scripts.bigwig2hilbert
 
-.. program-output:: python ../scripts/bigwig2hilbert.py --help
+.. program-output:: cgat bigwig2hilbert -?
 

@@ -1,9 +1,6 @@
 '''revigo.py - apply semantic clustering to GO output
 ==================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

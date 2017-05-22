@@ -1,5 +1,5 @@
 
-.. automodule:: psl2chain
+.. automodule:: CGAT.scripts.psl2chain
 
-.. program-output:: python ../scripts/psl2chain.py --help
+.. program-output:: cgat psl2chain -?
 

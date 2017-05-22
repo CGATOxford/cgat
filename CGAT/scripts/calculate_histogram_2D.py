@@ -1,9 +1,6 @@
 '''calculate_histogram_2D.py - calculate 2D histogram
 ==================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

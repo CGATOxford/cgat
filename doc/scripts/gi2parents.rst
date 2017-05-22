@@ -1,5 +1,5 @@
 
-.. automodule:: gi2parents
+.. automodule:: CGAT.scripts.gi2parents
 
-.. program-output:: python ../scripts/gi2parents.py --help
+.. program-output:: cgat gi2parents -?
 

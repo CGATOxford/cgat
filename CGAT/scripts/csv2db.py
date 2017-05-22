@@ -1,9 +1,6 @@
 '''csv2db.py - upload table to database
 ====================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

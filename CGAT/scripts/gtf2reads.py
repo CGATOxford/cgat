@@ -2,9 +2,6 @@
 gtf2reads.py - sample reads from genes
 ======================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

@@ -2,9 +2,6 @@
 Stats.py - statistical utility functions
 ========================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Code
@@ -1487,6 +1484,7 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     It has the advantage of preserving the original shape and
     features of the signal better than other types of filtering
     approaches, such as moving averages techniques.
+
     Parameters
     ----------
     y : array_like, shape (N,)
@@ -1499,10 +1497,12 @@ def savitzky_golay(y, window_size, order, deriv=0, rate=1):
     deriv: int
         the order of the derivative to compute (default = 0 means only
         smoothing)
+
     Returns
     -------
     ys : ndarray, shape (N)
         the smoothed signal (or it's n-th derivative).
+
     Notes
     -----
     The Savitzky-Golay is a type of low-pass filter, particularly

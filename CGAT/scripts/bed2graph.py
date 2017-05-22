@@ -2,9 +2,6 @@
 bed2graph.py - compute the overlap graph between two bed files
 ==============================================================
 
-:Author: Andreas Heger
-:Release: $Id: bed2graph.py 2861 2010-02-23 17:36:32Z andreas $
-:Date: |today|
 :Tags: Python
 
 Purpose

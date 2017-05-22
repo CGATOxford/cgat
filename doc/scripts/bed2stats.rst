@@ -1,5 +1,5 @@
 
-.. automodule:: bed2stats
+.. automodule:: CGAT.scripts.bed2stats
 
-.. program-output:: python ../scripts/bed2stats.py --help
+.. program-output:: cgat bed2stats -?
 

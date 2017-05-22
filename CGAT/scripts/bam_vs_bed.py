@@ -2,21 +2,20 @@
 bam_vs_bed.py - count context that reads map to
 ======================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics NGS Intervals BAM BED Counting
 
 Purpose
 -------
 
-This script takes as input a :term:`BAM` file from an RNASeq experiment
-and a :term:`bed` formatted file. The :term:`bed` formatted file needs
-at least four columns. The fourth (name) column is used to group counts.
+This script takes as input a :term:`BAM` file from an RNA-seq or
+similar experiment and a :term:`bed` formatted file. The :term:`bed`
+formatted file needs at least four columns. The fourth (name) column
+is used to group counts.
 
-It counts the number of alignments overlapping in the first input
-file and that overlap each feature in the second file. Annotations in the
-:term:`bed` file can be overlapping - they are counted independently.
+The script counts the number of alignments overlapping in the first
+input file that overlap each feature in the second file. Annotations
+in the :term:`bed` file can be overlapping - they are counted
+independently.
 
 This scripts requires bedtools_ to be installed.
 

@@ -1,19 +1,15 @@
-'''cgat2rdf.py - create rdf description of CGAT script
-======================================================
+'''cgat2dot.py - create a graph between CGAT scripts
+====================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose
 -------
 
-This script creates an rdf description of a CGAT
-script.
+This script creates an rdf description of a CGAT script.
 
-Optionally, the script outputs also a galaxy xml
-description of the scripts' interface.
+Optionally, the script outputs also a galaxy xml description of the
+scripts' interface.
 
 Usage
 -----
@@ -169,6 +165,10 @@ def processScript(script_name, outfile, options):
     if os.path.exists(prefix + ".pyc"):
         os.remove(prefix + ".pyc")
 
+    pyxfile = os.path.join(dirname, "_") + basename + ".pyx"
+    if os.path.exists(pyxfile):
+        pass
+
     try:
         module = imp.load_source(basename, script_name)
     except ImportError as msg:
@@ -176,12 +176,6 @@ def processScript(script_name, outfile, options):
         return
 
     E.info("loaded module %s" % module)
-
-    # scripts with pyximport for now, something does not work
-    pyxfile = os.path.join(dirname, "_") + basename + ".pyx"
-    if os.path.exists(pyxfile):
-        E.warn('pyx file exists - clearing meta path')
-        sys.meta_path = []
 
     E.Start = LocalStart
     try:

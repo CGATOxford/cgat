@@ -1,5 +1,5 @@
 
-.. automodule:: compare_clusters
+.. automodule:: CGAT.scripts.compare_clusters
 
-.. program-output:: python ../scripts/compare_clusters.py --help
+.. program-output:: cgat compare-clusters -?
 

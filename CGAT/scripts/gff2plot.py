@@ -1,9 +1,6 @@
 '''gff2plot.py - plot genomic data
 ===============================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

@@ -2,9 +2,6 @@
 IGV.py - Simple wrapper to the IGV socket interface
 ====================================================
 
-:Author: Brent Pedersen
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 This code was written by Brent Pedersen.

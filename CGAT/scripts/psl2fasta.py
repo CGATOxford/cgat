@@ -2,9 +2,6 @@
 psl2fasta.py - output alignment pairs from psl formatted alignments
 ===================================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

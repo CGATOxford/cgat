@@ -2,9 +2,6 @@
 cgat_rebuild_extensions.py - rebuild all cython extensions
 ==========================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

@@ -2,9 +2,6 @@
 bed2annotator.py - convert bed to annotator format
 ==================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

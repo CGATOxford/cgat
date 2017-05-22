@@ -2,7 +2,6 @@
 randomize_lines.py - randomize lines from stdin
 ===============================================
 
-:Date: |today|
 :Tags: Python
 
 Purpose

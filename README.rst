@@ -1,6 +1,9 @@
 .. image:: https://travis-ci.org/CGATOxford/cgat.svg?branch=master
     :target: https://travis-ci.org/CGATOxford/cgat
 
+.. image:: https://img.shields.io/badge/install%20with-bioconda-brightgreen.svg?style=flat-square
+    :target: http://bioconda.github.io/recipes/cgat-scripts/README.html
+
 ===========================
 The CGAT code collection
 ===========================

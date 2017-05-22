@@ -2,9 +2,6 @@
 diff_transcript_sets.py - 
 ======================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

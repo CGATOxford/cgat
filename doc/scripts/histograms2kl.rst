@@ -1,5 +1,5 @@
 
-.. automodule:: histograms2kl
+.. automodule:: CGAT.scripts.histograms2kl
 
-.. program-output:: python ../scripts/histograms2kl.py --help
+.. program-output:: cgat histograms2kl -?
 

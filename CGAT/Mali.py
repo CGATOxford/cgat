@@ -2,9 +2,6 @@
 Mali.py - Tools for multiple alignments 
 =======================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Code

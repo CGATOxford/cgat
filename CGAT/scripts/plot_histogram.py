@@ -2,9 +2,6 @@
 plot_histogram.py - create line plot of tabular data
 ====================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose

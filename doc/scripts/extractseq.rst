@@ -1,5 +1,5 @@
 
-.. automodule:: extractseq
+.. automodule:: CGAT.scripts.extractseq
 
-.. program-output:: python ../scripts/extractseq.py --help
+.. program-output:: cgat extractseq -?
 

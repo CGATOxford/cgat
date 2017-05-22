@@ -1,5 +1,5 @@
 
-.. automodule:: gff2view
+.. automodule:: CGAT.scripts.gff2view
 
-.. program-output:: python ../scripts/gff2view.py --help
+.. program-output:: cgat gff2view -?
 

@@ -2,9 +2,6 @@
 Tophat.py - working with tophat/cufflinks output files
 ======================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Code

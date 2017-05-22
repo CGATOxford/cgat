@@ -1,5 +1,5 @@
 
-.. automodule:: bam2profile
+.. automodule:: CGAT.scripts.bam2profile
 
-.. program-output:: python ../scripts/bam2profile.py --help
+.. program-output:: cgat bam2profile -?
 

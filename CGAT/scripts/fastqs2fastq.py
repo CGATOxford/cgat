@@ -1,9 +1,6 @@
 '''fastqs2fastq.py - merge reads in fastq files
 ============================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics NGS FASTQ FASTQ Manipulation
 
 Purpose

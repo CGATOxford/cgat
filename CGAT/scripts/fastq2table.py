@@ -1,9 +1,6 @@
 '''fastq2table.py - compute stats on reads in fastq files
 ======================================================
 
-:Author: Andreas Heger
-:Release: $Id$
-:Date: |today|
 :Tags: Genomics NGS Sequences FASTQ Annotation
 
 Purpose

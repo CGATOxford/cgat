@@ -1,5 +1,5 @@
 
-.. automodule:: cgat_rebuild_extensions
+.. automodule:: CGAT.scripts.cgat_rebuild_extensions
 
-.. program-output:: python ../scripts/cgat_rebuild_extensions.py --help
+.. program-output:: cgat cgat-rebuild-extensions -?
 

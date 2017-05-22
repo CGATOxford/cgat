@@ -1,5 +1,5 @@
 
-.. automodule:: chain2stats
+.. automodule:: CGAT.scripts.chain2stats
 
-.. program-output:: python ../scripts/chain2stats.py --help
+.. program-output:: cgat chain2stats -?
 

@@ -1,5 +1,5 @@
 
-.. automodule:: ena2table
+.. automodule:: CGAT.scripts.ena2table
 
-.. program-output:: python ../scripts/ena2table.py --help
+.. program-output:: cgat ena2table -?
 

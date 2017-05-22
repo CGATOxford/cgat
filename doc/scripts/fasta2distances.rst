@@ -1,5 +1,5 @@
 
-.. automodule:: fasta2distances
+.. automodule:: CGAT.scripts.fasta2distances
 
-.. program-output:: python ../scripts/fasta2distances.py --help
+.. program-output:: cgat fasta2distances -?
 

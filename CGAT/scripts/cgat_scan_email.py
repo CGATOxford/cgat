@@ -3,8 +3,6 @@ cgat_scan_email.py - read email folders in a directory
 =======================================================
 
 :Author:
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose
