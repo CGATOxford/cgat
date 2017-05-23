@@ -1,17 +1,11 @@
 '''
-cgat_fasta2cDNA.py - template for CGAT scripts
-====================================================
+cgat_fasta2cDNA.py - converting multi-fasta of exon features into a multi-fasta of spliced cDNAs/RNAs
+======================================================================================================
 
-:Author:
-:Release: $Id$
-:Date: |today|
 :Tags: Python
 
 Purpose
 -------
-
-.. Mike transcript processing - converting multi-fasta of exon
-features into a multi-fasta of spliced cDNAs/RNAs
 
 Usage
 -----
@@ -45,7 +39,7 @@ def makeSplicedFasta(infile):
     '''
 
     fasta_dict = {}
-    with IOTools.openFile(infile, "rb") as fafile:
+    with IOTools.openFile(infile) as fafile:
         for line in fafile.readlines():
             if line[0] == '>':
                 header = line.rstrip("\n")
