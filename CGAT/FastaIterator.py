@@ -92,7 +92,6 @@ def iterate(infile, comment="#", fold=False):
     ------
     FastaRecord
     '''
-
     h = infile.readline()[:-1]
 
     if not h:
