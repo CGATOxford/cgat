@@ -2184,9 +2184,10 @@ class GWASResults(object):
         return df
 
     def get_results(self, association_file,
-                    epistasis=False):
+                    epistasis=False,
+                    file_format="plink"):
         '''
-        Parse a GWA results file and return the table
+        Parse a GWA or epistasis results file and return the table
         '''
 
         # use Pandas for now - try something different later
@@ -2216,16 +2217,40 @@ class GWASResults(object):
                                               index_col=None)
             except StopIteration:
                 results_frame = pd.read_table(association_file,
-                                              sep="\t", header=None,
+                                              sep="\t", header=0,
                                               index_col=None)
 
             # results from fast epistasis are different to others
-            if results_frame.shape[1] == 7:
-                results_frame.columns = ["CHR1", "SNP1", "CHR",
-                                         "SNP", "OR", "STAT", "P"]
-            else:
-                results_frame.columns = ["CHR", "SNP", "BP", "A1", "OR",
-                                         "SE", "STAT", "P"]
+            if file_format == "cassi_covar":
+                if results_frme.shape[1] == 12:
+                    results_frame.columns = ["SNP1", "CHR1", "ID1", "BP1",
+                                             "SNP2", "CHR2", "ID2", "BP2",
+                                             "OR", "SE", "STAT", "P"]
+                elif results_frame.shape[1] == 14:
+                    results_frame.columns = ["SNP1", "CHR1", "ID1", "BP1",
+                                             "SNP2", "CHR2", "ID2", "BP2",
+                                             "OR", "SE", "STAT", "P",
+                                             "CASE_RSQ", "CTRL_RSQ"]
+                elif results_frame.shape[1] == 16:
+                    results_frame.columns = ["SNP1", "CHR1", "ID1", "BP",
+                                             "SNP2", "CHR2", "ID2", "BP2",
+                                             "OR", "SE", "STAT", "P",
+                                             "CASE_RSQ", "CTRL_RSQ",
+                                             "CASE_DPRIME" "CTRL_DPRIME"]
+                results_frame.loc[:, "BP"] = pd.to_numeric(results_frame["BP"],
+                                                           errors="coerce")
+            elif file_format == "cassi":
+                pass
+            elif file_format == "plink":
+                if results_frame.shape[1] == 7:
+                    results_frame.columns = ["CHR1", "SNP1", "CHR",
+                                             "SNP", "OR", "STAT", "P"]
+                elif results_frame.shape[1] == 9:
+                    results_frame.columns = ["CHR", "SNP", "BP", "A1", "NMISS",
+                                             "OR", "SE", "STAT", "P"]
+                else:
+                    results_frame.columns = ["CHR", "SNP", "BP", "A1", "OR",
+                                             "SE", "STAT", "P"]
 
                 results_frame.loc[:, "BP"] = pd.to_numeric(results_frame["BP"],
                                                            errors="coerce")
