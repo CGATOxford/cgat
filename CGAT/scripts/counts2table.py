@@ -200,7 +200,7 @@ def main(argv=None):
                       help="fdr to apply [default=%default].")
 
     # currently not implemented
-    #parser.add_option("-R", "--output-R-code", dest="save_r_environment",
+    # parser.add_option("-R", "--output-R-code", dest="save_r_environment",
     #                  type="string",
     #                  help="save R environment to location [default=%default].")
 
@@ -410,6 +410,8 @@ def main(argv=None):
         results = experiment.run(design,
                                  base_dir=options.dexseq_counts_dir,
                                  model=options.model,
+                                 contrast=options.contrast,
+                                 ref_group=options.ref_group,
                                  outfile_prefix=outfile_prefix,
                                  flattenedfile=options.dexseq_flattened_file,
                                  fdr=options.fdr)

@@ -1126,6 +1126,8 @@ class DEExperiment_DEXSeq(DEExperiment):
             model=None,
             flattenedfile=None,
             outfile_prefix=None,
+            ref_group=None,
+            contrast=None,
             fdr=0.1):
 
         pandas2ri.activate()
@@ -1139,16 +1141,18 @@ class DEExperiment_DEXSeq(DEExperiment):
         # load DEXSeq
         R('''suppressMessages(library('DEXSeq'))''')
 
-        # change group to condition
-        sampleTable = design.table.rename(columns={'group': 'condition'})
+        sampleTable = design.table
 
         allfiles = [file for file in os.listdir(base_dir)]
         countfiles = []
         for item in list(design.table.index):
             countfiles += [base_dir+"/"+x for x in allfiles if item in x]
 
-        E.info("Processing Samples. Sample table:")
-        E.info("%s" % sampleTable)
+        E.warn("Processing Samples. Sample table:")
+        E.warn("%s" % sampleTable)
+        E.warn(countfiles)
+        E.warn(flattenedfile)
+        E.warn(model)
         buildCountDataSet = R('''
         function(countFiles, gff, sampleTable, model){
 
