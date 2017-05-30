@@ -2155,7 +2155,11 @@ class GWASResults(object):
             E.info("multiple results files detected")
             self.infiles = assoc_file
             self.infile = None
-            self.results = self.parse_genome_wide(assoc_file)
+            try:
+                self.file_format = kwargs["file_format"]
+                self.results = self.parse_cassi(assoc_file)
+            except KeyError:
+                self.results = self.parse_genome_wide(assoc_file, **kwargs)
         else:
             E.info("single results file detected")
             self.infile = assoc_file
@@ -2163,7 +2167,28 @@ class GWASResults(object):
             # results is a pandas dataframe to operate on
             self.results = self.get_results(assoc_file, **kwargs)
 
-    def parse_genome_wide(self, association_files):
+    def parse_cassi(self, association_files):
+        '''
+        Parse and aggregate cassi results files
+        '''
+
+        file0 = association_files.pop(0)
+        df = self.get_results(file0, epistasis=True,
+                              file_format="cassi_covar")
+        for assoc_file in association_files:
+            _df = self.get_results(assoc_file,
+                                   epistasis=True,
+                                   file_format="cassi_covar")
+            df = df.append(_df)
+
+
+        # split by target SNP
+        for snp, group in df.groupby("ID1"):
+            group.sort_values(by=["CHR", "BP"],
+                              inplace=True)
+            yield snp, group
+
+    def parse_genome_wide(self, association_files, **kwargs):
         '''
         Accept a list of results files, merge them together
         and output as a single dataframe
@@ -2222,22 +2247,23 @@ class GWASResults(object):
 
             # results from fast epistasis are different to others
             if file_format == "cassi_covar":
-                if results_frme.shape[1] == 12:
+                if results_frame.shape[1] == 12:
                     results_frame.columns = ["SNP1", "CHR1", "ID1", "BP1",
-                                             "SNP2", "CHR2", "ID2", "BP2",
+                                             "SNP2", "CHR", "ID2", "BP2",
                                              "OR", "SE", "STAT", "P"]
                 elif results_frame.shape[1] == 14:
                     results_frame.columns = ["SNP1", "CHR1", "ID1", "BP1",
-                                             "SNP2", "CHR2", "ID2", "BP2",
+                                             "SNP2", "CHR", "ID2", "BP",
                                              "OR", "SE", "STAT", "P",
                                              "CASE_RSQ", "CTRL_RSQ"]
                 elif results_frame.shape[1] == 16:
-                    results_frame.columns = ["SNP1", "CHR1", "ID1", "BP",
-                                             "SNP2", "CHR2", "ID2", "BP2",
+                    results_frame.columns = ["SNP1", "CHR1", "ID1", "BP1",
+                                             "SNP2", "CHR", "ID2", "BP",
                                              "OR", "SE", "STAT", "P",
                                              "CASE_RSQ", "CTRL_RSQ",
-                                             "CASE_DPRIME" "CTRL_DPRIME"]
-                results_frame.loc[:, "BP"] = pd.to_numeric(results_frame["BP"],
+                                             "CASE_DPRIME", "CTRL_DPRIME"]
+
+                results_frame.loc[:, "BP"] = pd.to_numeric(results_frame.loc[:, "BP"],
                                                            errors="coerce")
             elif file_format == "cassi":
                 pass
@@ -2384,6 +2410,7 @@ class GWASResults(object):
         r_df = py2ri.py2ri_pandasdataframe(self.results)
         R.assign("assoc.df", r_df)
         if resolution == "chromosome":
+            R('''print(head(unique(assoc.df$CHR)))''')
             R('''assoc.df$CHR <- factor(assoc.df$CHR, '''
               '''levels=levels(ordered(unique(assoc.df$CHR))),'''
               '''labels=unique(paste0("chr", assoc.df$CHR)))''')

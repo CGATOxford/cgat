@@ -14,7 +14,8 @@ Usage
 -----
 
 * `extract_results` - extract GWAS results for a specific SNP set
-* `merge_freq` - merge results with a .bim file to get allele information
+* `merge_freq` - merge results with a .bim file to get allele -information
+* `process_epi` - split and aggregate epistasis results file by SNP and chromosome
 Example::
 
    python assoc2assoc.py
@@ -31,6 +32,7 @@ Command line options
 '''
 
 import sys
+import os
 import CGAT.Experiment as E
 import CGAT.PipelineGWAS as gwas
 import CGAT.IOTools as IOTools
@@ -49,9 +51,14 @@ def main(argv=None):
     parser = E.OptionParser(version="%prog version: $Id$",
                             usage=globals()["__doc__"])
 
+    parser.add_option("--file-format", dest="file_format",
+                      type="choice", choices=["plink", "cassi"],
+                      help="results file format.  Accepted formats "
+                      "are plink or cassi")
+    
     parser.add_option("--task", dest="task", type="choice",
                       choices=["get_hits", "extract_results",
-                               "merge_freq"],
+                               "merge_freq", "process_epi"],
                       help="task to perform")
 
     parser.add_option("--p-threshold", dest="p_threshold", type="float",
@@ -72,11 +79,18 @@ def main(argv=None):
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
 
+    parser.set_defaults(file_format="plink")
+
     # if the input is a list of files, split them
     infile = argv[-1]
     infiles = infile.split(",")
     if len(infiles) > 1:
-        results = gwas.GWASResults(assoc_file=infiles)
+        if options.file_format == "cassi":
+            results = gwas.GWASResults(assoc_file=infiles,
+                                       file_format=options.file_format)
+        else:
+            results = gwas.GWASResults(assoc_file=infiles,
+                                       file_format=options.file_format)
     elif len(infiles) == 1:
         results = gwas.GWASResults(assoc_file=infile)
     else:
@@ -143,6 +157,15 @@ def main(argv=None):
         cojo_df = results.mergeFrequencyResults(options.freq_dir,
                                                 file_regex=regex)
         cojo_df.to_csv(options.stdout, sep="\t", index=None)
+    elif options.task == "process_epi":
+        # split results files by SNP, and aggregate by
+        # chromosome
+        # results is a generator containing a tuple of
+        # (snpID, dataframe)
+        out_stub = os.path.join(options.outdir, "{}_cassi.epi")
+        for snp, df in results.results:
+            df.to_csv(out_stub.format(snp),
+                      sep="\t", index=None)
     else:
         pass
 
