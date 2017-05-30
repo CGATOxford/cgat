@@ -2181,7 +2181,6 @@ class GWASResults(object):
                                    file_format="cassi_covar")
             df = df.append(_df)
 
-
         # split by target SNP
         for snp, group in df.groupby("ID1"):
             group.sort_values(by=["CHR", "BP"],

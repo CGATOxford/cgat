@@ -55,7 +55,7 @@ def main(argv=None):
                       type="choice", choices=["plink", "cassi"],
                       help="results file format.  Accepted formats "
                       "are plink or cassi")
-    
+
     parser.add_option("--task", dest="task", type="choice",
                       choices=["get_hits", "extract_results",
                                "merge_freq", "process_epi"],
