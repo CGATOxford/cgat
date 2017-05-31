@@ -394,7 +394,7 @@ def main(argv=None):
                                  ref_group=options.ref_group)
 
     # DEXSeq reads in data itself
-    if options.method == "dexseq":
+    elif options.method == "dexseq":
         assert options.dexseq_counts_dir, (
             "need to specify the location of the .txt counts files")
 
