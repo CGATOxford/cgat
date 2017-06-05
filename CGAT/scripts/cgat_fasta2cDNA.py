@@ -47,7 +47,7 @@ def makeSplicedFasta(infile):
             else:
                 fasta_dict[header] += line.rstrip("\n")
 
-    for key, value in fasta_dict.items():
+    for key, value in sorted(fasta_dict.items()):
         yield "%s\n%s\n" % (key, value)
 
 
