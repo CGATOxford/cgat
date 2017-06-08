@@ -288,12 +288,10 @@ conda update -q conda --yes
 conda info -a
 
 log "installing conda CGAT environment"
-#conda create -q -n $CONDA_INSTALL_ENV $CONDA_INSTALL_TYPE python=$INSTALL_PYTHON_VERSION gcc --override-channels --channel bioconda --channel r --channel defaults --channel conda-forge --yes
+# SLV workaround until problems are resolved for:
+# * Latest R 3.3.2 available in conda: Problems with icu here https://travis-ci.org/CGATOxford/cgat/builds/240711411
+# * Latest pysam works with the CGAT code: the gff3 support is broken, best not to use 0.11.2 for now (AH comment)
 conda create -q -n $CONDA_INSTALL_ENV $CONDA_INSTALL_TYPE python=$INSTALL_PYTHON_VERSION pysam=0.11.1 r=3.3.1 gcc --override-channels --channel bioconda --channel r --channel defaults --channel conda-forge --yes
-
-# SLV brute force until pysam problem is solved
-#conda uninstall -n $CONDA_INSTALL_ENV pysam --override-channels --channel bioconda --channel r --channel defaults --channel conda-forge --yes
-#conda install -n $CONDA_INSTALL_ENV pysam=0.11.1 pybedtools --override-channels --channel bioconda --channel r --channel defaults --channel conda-forge --yes
 
 log "installing CGAT code into conda environment"
 # if installation is 'devel' (outside of travis), checkout latest version from github

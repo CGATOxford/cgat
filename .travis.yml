@@ -20,7 +20,7 @@ env:
     - TEST_ALL=1
 
 python:
-#  - "2.7"
+  - "2.7"
   - "3.5"
 
 # Using xvfb to Run Tests That Require a GUI
