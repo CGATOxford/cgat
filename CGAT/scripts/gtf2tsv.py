@@ -163,8 +163,6 @@ def main(argv=None):
             options.stdout.write("\t".join(header) + "\n")
 
             for gff3 in data:
-                attribute_list = gff3.attributes.split(";")
-                attribute_list = "\t".join(attribute_list)
                 for a in header:
                     val = getattr(gff3, a)
                     options.stdout.write("%s\t" % (val))
