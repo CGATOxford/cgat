@@ -24,6 +24,15 @@ table into a :term:`gtf` formatted file.
 When using the ``-m, --map`` option, the script will output a table
 mapping gene identifiers to transcripts or peptides.
 
+USING GFF3 FILE:
+The script also can convert gff3 formatted files to tsv files when
+specifiying the option --is-gff3 and --attributes-as-columns. Currently only
+the full GFF3 to tasv is implimented. Further improvements to this script can
+be made to only output the attributes only, i.e. --output-only-attributes.
+
+
+
+
 Usage
 -----
 
@@ -55,6 +64,11 @@ To build a map between gene and transcrip identiers, type::
 |ENST00000327790|ENSG00000141934|
 +---------------+---------------+
 
+To run the script to convert a gff3 formatted file to tsv, type::
+
+   cat file.gff3.gz | cgat gtf3tsv --is-gff3 --attributes-as-columns
+   > outfile.tsv
+
 Type::
 
    cgat gtf2tsv --help
@@ -66,6 +80,8 @@ Command line options
 
 '''
 import sys
+import pysam
+import CGAT.IOTools as IOTools
 import CGAT.GTF as GTF
 import CGAT.Experiment as E
 
@@ -81,6 +97,12 @@ def main(argv=None):
     parser = E.OptionParser(
         version="%prog version: $Id$",
         usage=globals()["__doc__"])
+
+    parser.add_option(
+        "-g", "--is-gff3", dest="gff3_input",
+        action="store_true",
+        help="filename in gff3 format"
+        "[default=%default].")
 
     parser.add_option(
         "-o", "--output-only-attributes", dest="only_attributes",
@@ -113,69 +135,99 @@ def main(argv=None):
         output_full=False,
         invert=False,
         output_map=None,
+        gff3_input=False
     )
 
     (options, args) = E.Start(parser, argv=argv)
 
     if options.output_full:
-
         # output full table with column for each attribute
-        attributes = set()
-        data = []
-        for gtf in GTF.iterator(options.stdin):
-            data.append(gtf)
-            attributes = attributes.union(set(gtf.keys()))
 
-        # remove gene_id and transcript_id, as they are used
-        # explicitely later
-        attributes.difference_update(["gene_id", "transcript_id"])
+        # to specify gff3 format
+        if options.gff3_input is True:
+            gff = pysam.tabix_iterator(options.stdin,
+                                       parser=pysam.asGFF3())
+            attributes = set()
+            data = []
+            for line in gff:
+                # get keys to write out to header
+                data.append(line)
+                attributes = attributes.union(set(line.keys()))
 
-        attributes = sorted(list(attributes))
+            attributes = sorted(list(attributes))
 
-        if options.only_attributes:
-            header = ["gene_id", "transcript_id"] + attributes
-        else:
             header = ["contig", "source", "feature",
                       "start", "end", "score", "strand",
-                      "frame", "gene_id",
-                      "transcript_id", ] + attributes
+                      "frame"] + attributes
 
-        options.stdout.write("\t".join(header) + "\n")
+            options.stdout.write("\t".join(header) + "\n")
 
-        if options.only_attributes:
-            for gtf in data:
-                options.stdout.write("\t".join(map(str, (gtf.gene_id,
-                                                         gtf.transcript_id,
-                                                         ))))
-                for a in attributes:
-                    if a in ("gene_id", "transcript_id"):
-                        continue
-                    try:
-                        val = getattr(gtf, a)
-                    except AttributeError:
-                        val = ""
-                    options.stdout.write("\t%s" % val)
+            for gff3 in data:
+                attribute_list = gff3.attributes.split(";")
+                attribute_list = "\t".join(attribute_list)
+                for a in header:
+                    val = getattr(gff3, a)
+                    options.stdout.write("%s\t" % (val))
                 options.stdout.write("\n")
+
         else:
-            for gtf in data:
-                options.stdout.write("\t".join(map(str, (gtf.contig,
-                                                         gtf.source,
-                                                         gtf.feature,
-                                                         gtf.start,
-                                                         gtf.end,
-                                                         gtf.score,
-                                                         gtf.strand,
-                                                         gtf.frame,
-                                                         gtf.gene_id,
-                                                         gtf.transcript_id,
-                                                         ))))
-                for a in attributes:
-                    try:
-                        val = getattr(gtf, a)
-                    except AttributeError:
-                        val = ""
-                    options.stdout.write("\t%s" % val)
-                options.stdout.write("\n")
+
+            attributes = set()
+            data = []
+            for gtf in GTF.iterator(options.stdin):
+                data.append(gtf)
+                attributes = attributes.union(set(gtf.keys()))
+
+            # remove gene_id and transcript_id, as they are used
+            # explicitely later
+            attributes.difference_update(["gene_id", "transcript_id"])
+
+            attributes = sorted(list(attributes))
+
+            if options.only_attributes:
+                header = ["gene_id", "transcript_id"] + attributes
+            else:
+                header = ["contig", "source", "feature",
+                           "start", "end", "score", "strand",
+                           "frame", "gene_id",
+                           "transcript_id", ] + attributes
+
+            options.stdout.write("\t".join(header) + "\n")
+
+            if options.only_attributes:
+                for gtf in data:
+                    options.stdout.write("\t".join(map(str, (gtf.gene_id,
+                                                              gtf.transcript_id,
+                                                              ))))
+                    for a in attributes:
+                        if a in ("gene_id", "transcript_id"):
+                            continue
+                        try:
+                            val = getattr(gtf, a)
+                        except AttributeError:
+                            val = ""
+                        options.stdout.write("\t%s" % val)
+                    options.stdout.write("\n")
+            else:
+                for gtf in data:
+                    options.stdout.write("\t".join(map(str, (gtf.contig,
+                                                              gtf.source,
+                                                              gtf.feature,
+                                                              gtf.start,
+                                                              gtf.end,
+                                                              gtf.score,
+                                                              gtf.strand,
+                                                              gtf.frame,
+                                                              gtf.gene_id,
+                                                              gtf.transcript_id,
+                                                              ))))
+                    for a in attributes:
+                        try:
+                            val = getattr(gtf, a)
+                        except AttributeError:
+                            val = ""
+                        options.stdout.write("\t%s" % val)
+                    options.stdout.write("\n")
 
     elif options.invert:
 
