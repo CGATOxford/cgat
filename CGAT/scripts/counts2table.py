@@ -187,7 +187,8 @@ def main(argv=None):
                       choices=("pooled", "per-condition", "blind"),
                       help="dispersion method for deseq2 [default=%default].")
 
-    parser.add_option("--deseq2-fit-type", dest="deseq2_fit_type", type="choice",
+    parser.add_option("--deseq2-fit-type", dest="deseq2_fit_type",
+                      type="choice",
                       choices=("parametric", "local"),
                       help="fit type for deseq2 [default=%default].")
 
@@ -202,7 +203,7 @@ def main(argv=None):
     # currently not implemented
     # parser.add_option("-R", "--output-R-code", dest="save_r_environment",
     #                  type="string",
-    #                  help="save R environment to location [default=%default].")
+    #                  help="save R environment to loc [default=%default]")
 
     parser.add_option("-r", "--reference-group", dest="ref_group",
                       type="string",

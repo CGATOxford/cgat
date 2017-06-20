@@ -1233,7 +1233,6 @@ class DEResult_DEXSeq(DEResult):
         # if multiple constrasts have been tested
         # self.table.set_index("test_id", inplace=True)
 
-
     def plotMAplot(self, design, outfile_prefix):
         # need to implement DEXSeq specific MA plot
         raise ValueError("MA plotting is not yet implemented for DESeq")
