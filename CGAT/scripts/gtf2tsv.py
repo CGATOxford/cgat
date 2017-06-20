@@ -169,6 +169,7 @@ def main(argv=None):
                     val = getattr(gff3, a)
                     options.stdout.write("%s\t" % (val))
                 options.stdout.write("\n")
+            
 
         else:
 
