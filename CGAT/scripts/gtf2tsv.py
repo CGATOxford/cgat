@@ -188,17 +188,16 @@ def main(argv=None):
                 header = ["gene_id", "transcript_id"] + attributes
             else:
                 header = ["contig", "source", "feature",
-                           "start", "end", "score", "strand",
-                           "frame", "gene_id",
-                           "transcript_id", ] + attributes
+                          "start", "end", "score", "strand",
+                          "frame", "gene_id",
+                          "transcript_id", ] + attributes
 
             options.stdout.write("\t".join(header) + "\n")
 
             if options.only_attributes:
                 for gtf in data:
                     options.stdout.write("\t".join(map(str, (gtf.gene_id,
-                                                              gtf.transcript_id,
-                                                              ))))
+                                                             gtf.transcript_id,))))
                     for a in attributes:
                         if a in ("gene_id", "transcript_id"):
                             continue
@@ -211,16 +210,15 @@ def main(argv=None):
             else:
                 for gtf in data:
                     options.stdout.write("\t".join(map(str, (gtf.contig,
-                                                              gtf.source,
-                                                              gtf.feature,
-                                                              gtf.start,
-                                                              gtf.end,
-                                                              gtf.score,
-                                                              gtf.strand,
-                                                              gtf.frame,
-                                                              gtf.gene_id,
-                                                              gtf.transcript_id,
-                                                              ))))
+                                                             gtf.source,
+                                                             gtf.feature,
+                                                             gtf.start,
+                                                             gtf.end,
+                                                             gtf.score,
+                                                             gtf.strand,
+                                                             gtf.frame,
+                                                             gtf.gene_id,
+                                                             gtf.transcript_id,))))
                     for a in attributes:
                         try:
                             val = getattr(gtf, a)
