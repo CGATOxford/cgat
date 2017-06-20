@@ -232,6 +232,11 @@ def main(argv=None):
                       type="string",
                       help=("model for GLM"))
 
+    parser.add_option("--reduced-model",
+                      dest="reduced_model",
+                      type="string",
+                      help=("reduced model for LRT"))
+
     parser.add_option("--contrast",
                       dest="contrast",
                       type="string",
@@ -330,6 +335,7 @@ def main(argv=None):
         sleuth_genewise=False,
         gene_biomart=None,
         DEtest="wald",
+        reduced_model=None,
         Rhistory=None,
         Rimage=None)
 
@@ -341,6 +347,7 @@ def main(argv=None):
         RH = R.R_with_History()
 
     outfile_prefix = options.output_filename_pattern
+    print outfile_prefix
 
     # Expression.py currently expects a refernce group for edgeR and
     # sleuth, regardless of which test is used
@@ -391,7 +398,8 @@ def main(argv=None):
                                  genewise=options.sleuth_genewise,
                                  gene_biomart=options.gene_biomart,
                                  DE_test=options.DEtest,
-                                 ref_group=options.ref_group)
+                                 ref_group=options.ref_group,
+                                 reduced_model=options.reduced_model)
 
     # DEXSeq reads in data itself
     elif options.method == "dexseq":
