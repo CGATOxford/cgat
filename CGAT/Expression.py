@@ -1126,6 +1126,8 @@ class DEExperiment_DEXSeq(DEExperiment):
             model=None,
             flattenedfile=None,
             outfile_prefix=None,
+            ref_group=None,
+            contrast=None,
             fdr=0.1):
 
         pandas2ri.activate()
@@ -1139,8 +1141,7 @@ class DEExperiment_DEXSeq(DEExperiment):
         # load DEXSeq
         R('''suppressMessages(library('DEXSeq'))''')
 
-        # change group to condition
-        sampleTable = design.table.rename(columns={'group': 'condition'})
+        sampleTable = design.table
 
         allfiles = [file for file in os.listdir(base_dir)]
         countfiles = []
@@ -1160,6 +1161,8 @@ class DEExperiment_DEXSeq(DEExperiment):
                      flattenedfile=gff,
                      design=full_model))
 
+        contrast_levels = as.vector(levels(dxd@colData$%(contrast)s))
+
         dxd = estimateSizeFactors(dxd)
         dxd = estimateDispersions(dxd)
 
@@ -1168,15 +1171,28 @@ class DEExperiment_DEXSeq(DEExperiment):
         dev.off()
 
         dxd = testForDEU(dxd)
+        dxd = estimateExonFoldChanges( dxd, fitExpToVar="%(contrast)s")
 
         result = DEXSeqResults(dxd)
         result = as.data.frame(result)
 
+        result$contrast = "%(contrast)s"
+        result$log2FoldChange = result$log2fold
+
+        if(length(contrast_levels)==2) {
+           result$control = contrast_levels[1]
+           result$treatment = contrast_levels[2]
+        } else {
+            result$control = "%(contrast)s"
+            result$treatment = "%(contrast)s"
+        }
         return(result)
         }''' % locals())
         result = pandas2ri.ri2py(
             buildCountDataSet(countfiles, flattenedfile, sampleTable, model))
 
+        result['test_id'] = result.index
+        result['contrast'] = contrast
         final_result = DEResult_DEXSeq(result)
 
         return final_result
@@ -1187,7 +1203,34 @@ class DEResult_DEXSeq(DEResult):
     def getResults(self, fdr):
         ''' post-process test results table into generic results output '''
 
-        self.table = pandas.DataFrame(self.table)
+        E.info("Generating output - results table")
+
+        df_dict = collections.defaultdict()
+
+        n_rows = self.table.shape[0]
+
+        df_dict["treatment_name"] = self.table['treatment']
+        df_dict["control_name"] = self.table['control']
+        df_dict["test_id"] = self.table['test_id']
+        df_dict["contrast"] = self.table['contrast']
+        df_dict["control_mean"] = self.table['exonBaseMean']
+        df_dict["treatment_mean"] = self.table['exonBaseMean']
+        df_dict["control_std"] = (0,)*n_rows
+        df_dict["treatment_std"] = (0,)*n_rows
+        df_dict["p_value"] = self.table['pvalue']
+        df_dict["p_value_adj"] = adjustPvalues(self.table['pvalue'])
+        df_dict["significant"] = pvaluesToSignficant(
+            df_dict["p_value_adj"], fdr)
+        df_dict["l2fold"] = ("NA",)*n_rows
+
+        # Transformed l2fold is the shrunken values
+        df_dict["transformed_l2fold"] = self.table['log2FoldChange']
+        df_dict["fold"] = ("NA",)*n_rows
+        df_dict["status"] = ("OK",)*n_rows
+
+        self.table = pandas.DataFrame(df_dict)
+        # causes errors if multiple instance of same test_id exist, for example
+        # if multiple constrasts have been tested
         # self.table.set_index("test_id", inplace=True)
 
     def plotMAplot(self, design, outfile_prefix):

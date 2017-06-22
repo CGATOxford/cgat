@@ -187,7 +187,8 @@ def main(argv=None):
                       choices=("pooled", "per-condition", "blind"),
                       help="dispersion method for deseq2 [default=%default].")
 
-    parser.add_option("--deseq2-fit-type", dest="deseq2_fit_type", type="choice",
+    parser.add_option("--deseq2-fit-type", dest="deseq2_fit_type",
+                      type="choice",
                       choices=("parametric", "local"),
                       help="fit type for deseq2 [default=%default].")
 
@@ -200,9 +201,9 @@ def main(argv=None):
                       help="fdr to apply [default=%default].")
 
     # currently not implemented
-    #parser.add_option("-R", "--output-R-code", dest="save_r_environment",
+    # parser.add_option("-R", "--output-R-code", dest="save_r_environment",
     #                  type="string",
-    #                  help="save R environment to location [default=%default].")
+    #                  help="save R environment to loc [default=%default]")
 
     parser.add_option("-r", "--reference-group", dest="ref_group",
                       type="string",
@@ -231,6 +232,11 @@ def main(argv=None):
                       dest="model",
                       type="string",
                       help=("model for GLM"))
+
+    parser.add_option("--reduced-model",
+                      dest="reduced_model",
+                      type="string",
+                      help=("reduced model for LRT"))
 
     parser.add_option("--contrast",
                       dest="contrast",
@@ -330,6 +336,7 @@ def main(argv=None):
         sleuth_genewise=False,
         gene_biomart=None,
         DEtest="wald",
+        reduced_model=None,
         Rhistory=None,
         Rimage=None)
 
@@ -341,6 +348,7 @@ def main(argv=None):
         RH = R.R_with_History()
 
     outfile_prefix = options.output_filename_pattern
+    print outfile_prefix
 
     # Expression.py currently expects a refernce group for edgeR and
     # sleuth, regardless of which test is used
@@ -391,10 +399,11 @@ def main(argv=None):
                                  genewise=options.sleuth_genewise,
                                  gene_biomart=options.gene_biomart,
                                  DE_test=options.DEtest,
-                                 ref_group=options.ref_group)
+                                 ref_group=options.ref_group,
+                                 reduced_model=options.reduced_model)
 
     # DEXSeq reads in data itself
-    if options.method == "dexseq":
+    elif options.method == "dexseq":
         assert options.dexseq_counts_dir, (
             "need to specify the location of the .txt counts files")
 
@@ -410,6 +419,8 @@ def main(argv=None):
         results = experiment.run(design,
                                  base_dir=options.dexseq_counts_dir,
                                  model=options.model,
+                                 contrast=options.contrast,
+                                 ref_group=options.ref_group,
                                  outfile_prefix=outfile_prefix,
                                  flattenedfile=options.dexseq_flattened_file,
                                  fdr=options.fdr)
