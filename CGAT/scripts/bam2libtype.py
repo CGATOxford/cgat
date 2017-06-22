@@ -153,8 +153,9 @@ def main(argv=None):
 
     outfile.write("MSR\tISR\tOSR\tISF\tMSF\tOSF\tSF\tSR\n")
     outfile.write("%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n" %
-                  (MSR_total, ISR_total, OSR_total, ISF_total, MSF_total,
-                   OSF_total, SF_total, SR_total))
+                  (int(MSR_total), int(ISR_total), int(OSR_total),
+                   int(ISF_total), int(MSF_total),
+                   int(OSF_total), int(SF_total), int(SR_total)))
 
     E.Stop()
 
