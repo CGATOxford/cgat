@@ -198,13 +198,18 @@ def main(argv=None):
                     options.stdout.write("\t".join(map(str, (gtf.gene_id,
                                                              gtf.transcript_id,))))
                     for a in attributes:
+                        #options.stdout.write("\t%s\n\n" % a)
+                        #options.stdout.write("\t%s\n\n" % gtf)
                         if a in ("gene_id", "transcript_id"):
                             continue
                         try:
                             val = getattr(gtf, a)
                         except AttributeError:
                             val = ""
+                        except KeyError:
+                            val = ""
                         options.stdout.write("\t%s" % val)
+                        
                     options.stdout.write("\n")
             else:
                 for gtf in data:
