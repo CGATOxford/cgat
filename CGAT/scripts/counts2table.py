@@ -348,7 +348,6 @@ def main(argv=None):
         RH = R.R_with_History()
 
     outfile_prefix = options.output_filename_pattern
-    print outfile_prefix
 
     # Expression.py currently expects a refernce group for edgeR and
     # sleuth, regardless of which test is used
