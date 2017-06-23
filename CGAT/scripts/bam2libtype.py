@@ -59,8 +59,6 @@ def main(argv=None):
     samfile = pysam.AlignmentFile(options.stdin, "rb")
     outfile = options.stdout
 
-    n = 0
-
     # initialise counts for each library type
     MSR = 0
     MSF = 0
