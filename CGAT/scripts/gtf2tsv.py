@@ -167,7 +167,6 @@ def main(argv=None):
                     val = getattr(gff3, a)
                     options.stdout.write("%s\t" % (val))
                 options.stdout.write("\n")
-            
 
         else:
 
@@ -204,7 +203,10 @@ def main(argv=None):
                             val = getattr(gtf, a)
                         except AttributeError:
                             val = ""
+                        except KeyError:
+                            val = ""
                         options.stdout.write("\t%s" % val)
+
                     options.stdout.write("\n")
             else:
                 for gtf in data:
