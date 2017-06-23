@@ -56,7 +56,6 @@ def main(argv=None):
 
     (options, args) = E.Start(parser, argv=argv)
 
-    iterations = "1000000"
     samfile = pysam.AlignmentFile(options.stdin, "rb")
     outfile = options.stdout
 
@@ -72,71 +71,62 @@ def main(argv=None):
     SR = 0
     SF = 0
 
-    reads_processed = set()
-
     for read in samfile:
 
-        n += 1
-        if n <= int(iterations):
+        # to handle paired end reads:
+        if read.is_paired and read.is_proper_pair:
 
-            # to handle paired end reads:
-            if read.is_paired and read.is_proper_pair:
-                if read.qname in reads_processed:
-                    pass
-                else:
+            # get attributes of read
+            read_start = read.reference_start
+            read_end = read.reference_end
+            read_neg = read.is_reverse
 
-                    # get attributes of read
-                    read_start = read.reference_start
-                    read_end = read.reference_end
-                    read_neg = read.is_reverse
+            # specify which read is R1 and which is R2:
+            # specify which read is R1 and which is R2:
+            if read.is_read1 is True:
+                R1_is_reverse = read.is_reverse
+                R1_reference_start = read.reference_start
 
-                    # specify which read is R1 and which is R2:
-                    # specify which read is R1 and which is R2:
-                    if read.is_read1 is True:
-                        R1_is_reverse = read.is_reverse
-                        R1_reference_start = read.reference_start
-
-                        R2_is_reverse = read.mate_is_reverse
-                        R2_reference_start = read.next_reference_start
-                    else:
-                        R1_is_reverse = read.mate_is_reverse
-                        R1_reference_start = read.next_reference_start
-
-                        R2_is_reverse = read.is_reverse
-                        R2_reference_start = read.reference_start
-
-                        # Decision tree to specify strandness:
-                        # potential to convert this to a machine learning
-                        # decision tree algorithm in the future:
-                    if R1_is_reverse is True:
-
-                        if R2_is_reverse is True:
-
-                            MSF += 1
-                        else:
-                            if R2_reference_start - R1_reference_start >= 0:
-                                OSR += 1
-                            else:
-                                ISR += 1
-
-                    else:
-
-                        if R2_is_reverse is True:
-
-                            if R1_reference_start - R2_reference_start >= 0:
-
-                                OSF += 1
-                            else:
-                                ISF += 1
-                        else:
-                            MSR += 1
+                R2_is_reverse = read.mate_is_reverse
+                R2_reference_start = read.next_reference_start
             else:
-                if read.is_reverse:
-                    SR += 1
+                R1_is_reverse = read.mate_is_reverse
+                R1_reference_start = read.next_reference_start
+
+                R2_is_reverse = read.is_reverse
+                R2_reference_start = read.reference_start
+
+                # Decision tree to specify strandness:
+                # potential to convert this to a machine learning
+                # decision tree algorithm in the future:
+            if R1_is_reverse is True:
+
+                if R2_is_reverse is True:
+
+                    MSF += 1
                 else:
-                    SF += 1
+                    if R2_reference_start - R1_reference_start >= 0:
+                        OSR += 1
+                    else:
+                        ISR += 1
+
+            else:
+
+                if R2_is_reverse is True:
+
+                    if R1_reference_start - R2_reference_start >= 0:
+
+                        OSF += 1
+                    else:
+                        ISF += 1
+                else:
+                    MSR += 1
         else:
-            break
+            if read.is_reverse:
+                SR += 1
+            else:
+                SF += 1
+
     total = MSR + ISR + OSR + ISF + MSF + OSF + SF + SR
 
     def total_percent(strand, total):
