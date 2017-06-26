@@ -68,7 +68,7 @@ def getFirstLine(filename, nlines=1):
     return line
 
 
-def getLastLine(filename, nlines=1, read_size=1024):
+def getLastLine(filename, nlines=1, read_size=1024, encoding="utf-8"):
     """return the last line of a file.
 
     This method works by working back in blocks of `read_size` until
@@ -90,8 +90,8 @@ def getLastLine(filename, nlines=1, read_size=1024):
 
     """
 
-    # U is to open it with Universal newline support
-    f = open(filename, 'rU')
+    # py3 requires binary mode for negative seeks
+    f = open(filename, 'rb')
     offset = read_size
     f.seek(0, 2)
     file_size = f.tell()
@@ -102,10 +102,8 @@ def getLastLine(filename, nlines=1, read_size=1024):
             offset = file_size
         f.seek(-1 * offset, 2)
         read_str = f.read(offset)
-        # Remove newline at the end
-        if read_str[offset - 1] == '\n':
-            read_str = read_str[:-1]
-        lines = read_str.split('\n')
+        read_str = read_str.decode(encoding)
+        lines = read_str.strip().splitlines()
         if len(lines) >= nlines + 1:
             return "\n".join(lines[-nlines:])
         if offset == file_size:   # reached the beginning
