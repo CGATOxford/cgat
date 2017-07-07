@@ -2211,7 +2211,9 @@ def runEdgeR(outfile,
                                                             ref_regex)
 
     # output heatmap plot
-    R.png('%(outfile_prefix)sheatmap.png' % locals())
+    fn = '%(outfile_prefix)sheatmap.png' % locals()
+    E.info("outputing heatmap to {}".format(fn))
+    R.png(fn)
     plotCorrelationHeatmap()
     r['dev.off']()
 

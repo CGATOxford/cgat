@@ -145,6 +145,9 @@ def count(AlignmentFile samfile,
 
         if count_fastq:
             read_name = pysam_bam_get_qname(read._delegate)
+            if read_name == NULL:
+                raise ValueError("file does not contain read names, can't count using fastq")
+
             # terminate string at first space to
             # truncate read names containing more than
             # just the id

@@ -239,7 +239,7 @@ class CounterPeaks(Counter):
             # if offsets are given, shift tags.
             for samfile, offset in zip(bamfiles, offsets):
 
-                shift = offset / 2
+                shift = offset // 2
                 # for peak counting I follow the MACS protocoll,
                 # see the function def __tags_call_peak in PeakDetect.py
                 # In words

@@ -80,8 +80,7 @@ def main(argv=None):
         reader = csv.DictReader(CSV.CommentStripper(sys.stdin),
                                 dialect=options.csv_dialect)
 
-    exec("f = lambda r: %s" % statement, locals())
-
+    exec("f = lambda r: %s" % statement, globals())
     counter = E.Counter()
     writer = csv.DictWriter(options.stdout,
                             reader.fieldnames,
