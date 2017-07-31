@@ -368,7 +368,7 @@ def main(argv=None):
 
     if len(bamfiles) == 0:
         bamfiles = ["-"]
-
+        
     for bamfile in bamfiles:
 
         E.info('processing %s' % bamfile)
@@ -383,7 +383,6 @@ def main(argv=None):
 
         # reading bam from stdin does not work with only the "r" tag
         pysam_in = pysam.AlignmentFile(bamfile, "rb")
-
         if bamfile == "-":
             if options.output_sam:
                 pysam_out = pysam.AlignmentFile("-", "wh", template=pysam_in)
@@ -397,8 +396,9 @@ def main(argv=None):
             tmpfile.close()
 
             E.debug("writing temporary bam-file to %s" % tmpfile.name)
-            pysam_out = pysam.AlignmentFile(tmpfile.name, "wb",
-                                      template=pysam_in)
+            pysam_out = pysam.AlignmentFile(tmpfile.name,
+                                            "wb",
+                                            template=pysam_in)
 
         if "filter" in options.methods:
 
@@ -430,7 +430,6 @@ def main(argv=None):
                 remove_unmapped="mapped" in options.filter_methods,
                 remove_mismatches=remove_mismatches,
                 colour_mismatches=colour_mismatches)
-
             options.stdlog.write("category\tcounts\n%s\n" % c.asTable())
         else:
 
@@ -610,8 +609,8 @@ def main(argv=None):
             for read in it:
                 pysam_out.write(read)
 
-            pysam_in.close()
-            pysam_out.close()
+        pysam_in.close()
+        pysam_out.close()
 
         if options.inplace:
             # set date and file permissions according to original
