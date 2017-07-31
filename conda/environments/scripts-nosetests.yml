@@ -15,7 +15,7 @@ dependencies:
 # bioinformatics tools
 - ucsc-wigtobigwig
 # python deps
-- python=3.6
+- python
 - biopython
 - cython
 - alignlib-lite
