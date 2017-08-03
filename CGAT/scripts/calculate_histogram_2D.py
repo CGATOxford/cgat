@@ -46,7 +46,6 @@ param_bin_size2 = 1
 param_titles = True
 
 
-
 def main(argv=None):
     """script main.
 

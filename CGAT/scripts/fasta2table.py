@@ -119,7 +119,6 @@ import CGAT.SequenceProperties as SequenceProperties
 import CGAT.FastaIterator as FastaIterator
 
 
-
 def main(argv=None):
 
     parser = E.OptionParser(version="%prog version: $Id$",

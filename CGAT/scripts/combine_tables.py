@@ -459,7 +459,6 @@ def joinTables(outfile, options, args):
             outfile.write("\n")
 
 
-
 def main(argv=sys.argv):
 
     parser = E.OptionParser(version="%prog version: $Id$",

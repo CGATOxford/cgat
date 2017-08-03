@@ -148,7 +148,6 @@ def getCodons(sequence, gap_chars="-."):
     return full_codons, codons
 
 
-
 def main(argv=None):
     if argv is None:
         argv = sys.argv

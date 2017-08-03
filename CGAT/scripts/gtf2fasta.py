@@ -213,7 +213,6 @@ def setCode(annotation, pos, code):
         E.warn("ambiguous position %i: %s - %s" % (pos, c, code))
 
 
-
 def addSegments(annotation, intervals, is_positive, code):
     """add intervals."""
     if not intervals:

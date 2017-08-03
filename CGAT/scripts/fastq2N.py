@@ -36,7 +36,6 @@ import CGAT.Fastq as Fastq
 import gzip
 
 
-
 def replace(fastqfile, baseToReplace):
     '''replaces the specified base with N'''
 
