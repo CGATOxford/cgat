@@ -1,17 +1,89 @@
+'''
+runGSEA.py - determines whether an a priori defined set of genes 
+shows statistically significant,concordant differences between two 
+biological states. 
+=============================================
 
-# coding: utf-8
+:Tags: Python
 
-# In[10]:
+Usage
+-----
+This script will perform the gene set enrichment analysis as well as leading 
+edge analysis.
+            "Leading edge are defined as genes that are common to multiple 
+             significantly enriched gene sets  and  coordinately  enriched  
+             in a phenotypic comparison of interest.They represent a rich  
+             source of biologically important  genes."
+-----
 
+To run the gene set enrichment analysis,you need to provide
+two input files:
+      1. Ranked list of genes (Expression data set file).
+      2. Gene set
 
-# Other options
-#+++++++++++++
+Notes:
+      - It is important to make sure that the expression data set 
+        does not include duplicate ids (edit your rank list,so that
+        all row ids are unique). Otherwise it will affect results.
+        
+      - A gene sets file defines one or more gene sets. For each gene
+        set,the file contains the gene set name and the list of genes in 
+        that gene set. A gene sets file is a tab-delimited text file in 
+        gmx or gmt format. For descriptions and examples of each file 
+        format please refer to:
+        http://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats
+        
+      - The Molecular Signatures Database (MSigDB)(http://software.broadinstitute.org/gsea/msigdb/index.jsp)
+        is a collection of annotated gene sets, which can be used for gene set enrichment analysis. 
+        OR you can create your own gene set in gmt or gmx format.
+        
+This script will summarize the gene set enrichment and leading edge analysis in the following format:
+       1. GSEA Statistics
+       2. GSEA Report
+       3. Leading edge analysis report
+       
 
-# The script can accept other ontologies than just GO ontologies.
+--------------
+GSEA Statistics
+---------------
+It includes following statistics for GSEA(for each phenotype):
+          - Enrichment Score (ES)
+          - Normalized Enrichment Score (NES)
+          - False Discovery Rate (FDR)
+          - Nominal P Value
+          
+--------------
+GSEA reports
+--------------
+         - Enrichment in Phenotype(up and downregulated genes)
+         - Gene Set Details
+         - Global Statistics and Plots
+         - Detailed Enrichment Results
+Note: By default, enrichment plot for top 20 gene sets will be reported. 
 
-# Command line options
-#--------------------
+----------------------------
+Leading edge analysis report
+----------------------------
+It will report three graphs that help you to visualize the overlap between the selected leading edge subsets.
+        - Heat Map(unclustered)
+        - Heat Map(clustered)
+        - Set-to-Set
+        - Gene in Subsets
+        - Histogram
+Apart from that, it will report you summary of leading edge subsets, which was used for the analysis and dendrogram,
+to illustrate the arrangement of the clusters produced by hierarchical clustering.
 
+For details on the algorithm please refer to 
+Subramanian, Tamayo, et al. (2005, PNAS 102, 15545-15550)
+                    and 
+Mootha, Lindgren, et al. (2003, Nat Genet 34, 267-273).
+
+=============================================
+coding: utf-8
+--------------------
+Command line options
+--------------------
+'''
 import sys
 import CGAT.Experiment as EW
 import CGAT.IOTools as IOTools
