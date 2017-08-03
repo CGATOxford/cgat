@@ -759,10 +759,10 @@ def main(argv=None):
     parser.set_defaults(
         file_name=None,
         geneset=None,
-        min_gene=25,
+        min_gene=15,
         max_gene=500,
         seed=448,
-        iteration=10,
+        iteration=1000,
         plot_no=20,
         fdr_user=0.01,
         fdr_num=11,
@@ -866,8 +866,8 @@ def main(argv=None):
     count = 0
     for PER in range(0, options.iteration):
         e1 = ID_NEW[A[PER, :]]
-        # if((PER%100)==0):
-        print(PER)
+        #if((PER%100)==0):
+        #print(PER)
         for i in range(0, len(SIZE_INFO)):
             tt = SIZE_INFO[i]
             TAR = e1[count:(count + tt)]
