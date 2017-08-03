@@ -25,6 +25,7 @@ Notes:
       - It is important to make sure that the expression data set 
         does not include duplicate ids (edit your rank list,so that
         all row ids are unique). Otherwise it will affect results.
+        Expression data set file is a tab-delimited text file.
         First line of dataset will be considered as header.
         
       - A gene sets file defines one or more gene sets. For each gene
