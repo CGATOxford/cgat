@@ -1,5 +1,5 @@
 '''
-modify_table.py - 
+modify_table.py -
 ======================================================
 
 :Tags: Python
@@ -8,7 +8,7 @@ Purpose
 -------
 
 .. todo::
-   
+
    describe purpose of the script.
 
 Usage
@@ -43,7 +43,6 @@ from functools import reduce
 
 parser = E.OptionParser(
     version="%prog version: $Id$")
-
 
 
 def main(argv=None):

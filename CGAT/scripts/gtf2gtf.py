@@ -287,7 +287,6 @@ import CGAT.Intervals as Intervals
 import CGAT.IOTools as IOTools
 
 
-
 def find_retained_introns(gene):
     '''Given a bundle of transcripts, find intervals matching retained
     introns. A retained intron is defined as an interval from an exon/intron

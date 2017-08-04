@@ -65,7 +65,6 @@ def Old():
     tn = numpy.dot(v, v)
 
 
-
 def GetCounts(nucleotides, val):
     """count number of occurances of val in array.
 
@@ -76,7 +75,6 @@ def GetCounts(nucleotides, val):
         if x == val:
             t += 1
     return t
-
 
 
 def AnalyseOverlaps(references, targets):
@@ -116,7 +114,6 @@ def AnalyseOverlaps(references, targets):
     return (tp, fp, tn, fn)
 
 
-
 def CalculateSpecificitySensitivity(tp, fp, tn, fn):
 
     if fp + tp == 0:
@@ -130,7 +127,6 @@ def CalculateSpecificitySensitivity(tp, fp, tn, fn):
         sens = float(tp) / (tp + fn)
 
     return spec, sens
-
 
 
 def CalculateCorrelationCoefficient(tp, fp, tn, fn):
@@ -166,7 +162,6 @@ def GetFirstOverlaps(gffs, index):
         index += 1
 
     return overlaps, index, min_start, max_end
-
 
 
 def CountMatchesPerGene(gffs,
@@ -247,7 +242,6 @@ def CountMatchesPerGene(gffs,
                         break
 
     return total, total_match, total_partial_match, total_extra
-
 
 
 def main(argv=None):

@@ -163,7 +163,6 @@ def main(argv=None):
     parser.add_option("--quantile", dest="quantile", type="int",
                       help="see pipeline.ini for explanation")
 
-
     (options, args) = E.Start(parser, argv=argv)
 
     infile = argv[-1]

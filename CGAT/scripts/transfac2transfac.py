@@ -14,7 +14,7 @@ Usage
 
 Example::
 
-   python cgat_script_template.py 
+   python cgat_script_template.py
 
 Type::
 
@@ -26,8 +26,6 @@ Command line options
 --------------------
 
 '''
-
-
 
 
 import sys

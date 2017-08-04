@@ -94,7 +94,6 @@ def CalculateDistanceJC69(info, do_gamma=False, alpha=None):
     return distance, variance
 
 
-
 def CalculateDistanceT92(info):
     """
     P,Q: transitions, transversions frequencies
@@ -141,7 +140,6 @@ def CalculateDistanceT92(info):
         c1 * c1 * P + c3 * c3 * Q - math.pow(c1 * P + c3 * Q, 2.0)) / info.mNAligned
 
     return distance, variance
-
 
 
 def main(argv=None):
