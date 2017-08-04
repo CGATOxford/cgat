@@ -1,18 +1,18 @@
 '''
-runGSEA.py - determines whether an a priori defined set of genes 
-shows statistically significant,concordant differences between two 
-biological states. 
+runGSEA.py - determines whether an a priori defined set of genes
+shows statistically significant,concordant differences between two
+biological states.
 =============================================
 
 :Tags: Python
 
 Usage
 -----
-This script will perform the gene set enrichment analysis as well as leading 
+This script will perform the gene set enrichment analysis as well as leading
 edge analysis.
-            "Leading edge are defined as genes that are common to multiple 
-             significantly enriched gene sets  and  coordinately  enriched  
-             in a phenotypic comparison of interest.They represent a rich  
+            "Leading edge are defined as genes that are common to multiple
+             significantly enriched gene sets  and  coordinately  enriched
+             in a phenotypic comparison of interest.They represent a rich
              source of biologically important  genes."
 -----
 
@@ -22,28 +22,28 @@ two input files:
       2. Gene set
 
 Notes:
-      - It is important to make sure that the expression data set 
+      - It is important to make sure that the expression data set
         does not include duplicate ids (edit your rank list,so that
         all row ids are unique). Otherwise it will affect results.
         Expression data set file is a tab-delimited text file.
         First line of dataset will be considered as header.
-        
+
       - A gene sets file defines one or more gene sets. For each gene
-        set,the file contains the gene set name and the list of genes in 
-        that gene set. A gene sets file is a tab-delimited text file in 
-        gmx or gmt format. For descriptions and examples of each file 
+        set,the file contains the gene set name and the list of genes in
+        that gene set. A gene sets file is a tab-delimited text file in
+        gmx or gmt format. For descriptions and examples of each file
         format please refer to:
         http://software.broadinstitute.org/cancer/software/gsea/wiki/index.php/Data_formats
-        
+
       - The Molecular Signatures Database (MSigDB)(http://software.broadinstitute.org/gsea/msigdb/index.jsp)
-        is a collection of annotated gene sets, which can be used for gene set enrichment analysis. 
+        is a collection of annotated gene sets, which can be used for gene set enrichment analysis.
         OR you can create your own gene set in gmt or gmx format.
-        
+
 This script will summarize the gene set enrichment and leading edge analysis in the following format:
        1. GSEA Statistics
        2. GSEA Report
        3. Leading edge analysis report
-       
+
 
 --------------
 GSEA Statistics
@@ -53,7 +53,7 @@ It includes following statistics for GSEA(for each phenotype):
           - Normalized Enrichment Score (NES)
           - False Discovery Rate (FDR)
           - Nominal P Value
-          
+
 --------------
 GSEA reports
 --------------
@@ -61,7 +61,7 @@ GSEA reports
          - Gene Set Details
          - Global Statistics and Plots
          - Detailed Enrichment Results
-Note: By default, enrichment plot for top 20 gene sets will be reported. 
+Note: By default, enrichment plot for top 20 gene sets will be reported.
 
 ----------------------------
 Leading edge analysis report
@@ -75,9 +75,9 @@ It will report three graphs that help you to visualize the overlap between the s
 Apart from that, it will report you summary of leading edge subsets, which was used for the analysis and dendrogram,
 to illustrate the arrangement of the clusters produced by hierarchical clustering.
 
-For details on the algorithm please refer to 
+For details on the algorithm please refer to
 Subramanian, Tamayo, et al. (2005, PNAS 102, 15545-15550)
-                    and 
+                    and
 Mootha, Lindgren, et al. (2003, Nat Genet 34, 267-273).
 
 =============================================
@@ -306,7 +306,7 @@ def generate_leading_edge_m(
         OE,
         OEI,
         ID_for_leading,
-        store_leading,
+        STORE_GENE_LEADING_MATRIX,
         gene_set_a,
         STORE_GENE_LEADING_INFO):
     #####################################################################
@@ -328,7 +328,10 @@ def generate_leading_edge_m(
     inn_u = np.append(f_U, f_D)
     in1 = np.argsort(np.append(f_U, f_D))
     in2 = np.sort(np.append(f_U, f_D))
-    in3 = np.where(in2 < ch)[0][0:hm]
+    if(sum(in2 < ch) < hm):
+        in3 = np.where(in2 < ch)[0]
+    else:
+        in3 = np.where(in2 < ch)[0][0:hm]
     FINAL_L = in1[in3]
     for i in FINAL_L:
         CW = inn_u[i]
@@ -345,14 +348,14 @@ def generate_leading_edge_m(
         else:
             v1 = np.where(matr[0:OEI[AW]] == 1)
         v2 = ID_for_leading[v1]
-        store_leading.append([IN_PRO[AW][0], len(II[0]), len(v1[0]), list(
+        STORE_GENE_LEADING_MATRIX.append([IN_PRO[AW][0], len(II[0]), len(v1[0]), list(
             v2), STORE_GENE_LEADING_INFO[0][AW], STORE_GENE_LEADING_INFO[1][AW], CW])
         matr.fill(0)
         del indices
         del inter
         del II
 
-    return store_leading
+    return STORE_GENE_LEADING_MATRIX
 
 
 def heatmap_plot(hh1, nl):
@@ -418,13 +421,13 @@ def heatmap_plot(hh1, nl):
     return
 
 
-def heatmap_leading_edge_subset(LM, j, SUBSET_dict, jac_f):
-    store_leading_h1 = np.zeros((j, j), dtype=np.float)
+def heatmap_leading_edge_subset(LM, SUBSET_dict, jac_f):
+    store_leading_h1 = np.zeros((len(LM), len(LM)), dtype=np.float)
     o_clus = []
     name_l = []
     for i in LM:
         name_l.append(i[0])
-    idx = list(range(j))
+    idx = list(range(len(LM)))
     pairs = list(ITL.combinations(idx, 2))
     for i in range(0, len(pairs)):
         h = pairs[i]
@@ -581,7 +584,7 @@ def plot_enrichment_score(
         A_W,
         l_ID):
     plt.figure(figsize=(8, 6), dpi=80)
-    plt.xlim(-200,l_ID+50)
+    plt.xlim(-200, l_ID + 50)
     plt.plot(
         STORE_ENRICHMENT_SCORE[A_W],
         color="firebrick",
@@ -624,7 +627,7 @@ def plot_random_ES(store_permute, A_W, IN_list):
     plt.figure(figsize=(8, 6), dpi=80)
     Rans_plot = store_permute[:, A_W]
     n, bins, patches = plt.hist(
-        Rans_plot, 80, normed=False, color='dodgerblue', alpha=0.9, histtype='bar')
+        Rans_plot, 80, normed=False, color='darkorange', alpha=0.9, histtype='bar')
     plt.xticks(fontsize=12, weight='bold')
     plt.yticks(fontsize=12, weight='bold')
     plt.xlabel('\nEnrichment Score', **axis_font)
@@ -636,6 +639,51 @@ def plot_random_ES(store_permute, A_W, IN_list):
     plt.tight_layout()
     plt.savefig(file_to_report_pic, bbox_inches='tight')
     plt.close()
+    return
+
+
+def plot_enrichment_score_subplot(STORE_ENRICHMENT_SCORE, ORIGINAL_ES_INDEX,
+                                  ORIGINAL_ES, IN_list, A_W,
+                                  l_ID, s_p, s_index, en_name, lk):
+    if(s_index == 1):
+        plt.figure(figsize=(22, 60), dpi=80)
+    plt.subplot(s_p, 3, s_index)
+    plt.xlim(-200, l_ID + 50)
+    plt.plot(
+        STORE_ENRICHMENT_SCORE[A_W],
+        color="firebrick",
+        linewidth=4,
+        linestyle="-")
+    plt.plot(
+        ORIGINAL_ES_INDEX[A_W],
+        ORIGINAL_ES[A_W],
+        'go',
+        markersize=14,
+        mfc='none',
+        mew=2.5,
+        label="ES")
+    plt.axhline(y=0, linewidth=2, color="k", linestyle="--")
+    plt.xticks(fontsize=12, weight='bold')
+    plt.yticks(fontsize=12, weight='bold')
+    q = IN_list[A_W]
+    #file_to_report_pic = ".".join(["enplot",q[0],'jpeg'])
+    if(s_index == 10):
+        plt.ylabel(
+            '\n\nR u n n i n g    e n r i c h m e n t    s c o r e (RES)',
+            fontsize=20,
+            weight='bold',
+            labelpad=40)
+    plt.title(''.join(["Gene Set", ":", q[0]]),
+              fontsize=18, color='darkblue', weight='bold')
+    plt.grid()
+    if(s_index == lk):
+        q2 = ''.join(
+            ['\n\nGene List Index', '\n\nNumber of genes: ', str(l_ID), '(in list)'])
+        plt.xlabel(q2, fontsize=20, weight='bold')
+        plt.tight_layout(pad=0.1, w_pad=9, h_pad=1.0)
+        plt.savefig(en_name, bbox_inches='tight')
+        # plt.show()
+        plt.close()
     return
 
 
@@ -869,7 +917,7 @@ def main(argv=None):
     count = 0
     for PER in range(0, options.iteration):
         e1 = ID_NEW[A[PER, :]]
-        if((PER%100)==0):
+        if((PER % 100) == 0):
             print(PER)
         for i in range(0, len(SIZE_INFO)):
             tt = SIZE_INFO[i]
@@ -1030,7 +1078,7 @@ def main(argv=None):
     # plot enrichemnt score for all genesets.
     if(options.plot_no >= len(GG)):
         options.plot_no = len(GG)
-
+    xcc = int(options.plot_no / 2) + 1
     for i in range(0, options.plot_no):
         if(len(NES_UP_INDEX) > 0):
             AW = up_for_plot[NES_UP_INDEX[i]]
@@ -1054,6 +1102,34 @@ def main(argv=None):
                 AW,
                 len(ID))
             plot_random_ES(store_permute, AW, IN_list)
+    for i in range(0, options.plot_no):
+        if(len(NES_UP_INDEX) > 0):
+            AW = up_for_plot[NES_UP_INDEX[i]]
+            plot_enrichment_score_subplot(
+                STORE_ENRICHMENT_SCORE,
+                ORIGINAL_ES_INDEX,
+                ORIGINAL_ES,
+                IN_list,
+                AW,
+                len(ID),
+                xcc,
+                i + 1,
+                "enplot_upregulated_summary.jpeg",
+                options.plot_no)
+    for i in range(0, options.plot_no):
+        if(len(NES_DOWN_INDEX) > 0):
+            AW = down_for_plot[NES_DOWN_INDEX[i]]
+            plot_enrichment_score_subplot(
+                STORE_ENRICHMENT_SCORE,
+                ORIGINAL_ES_INDEX,
+                ORIGINAL_ES,
+                IN_list,
+                AW,
+                len(ID),
+                xcc,
+                i + 1,
+                "enplot_downregulated_summary.jpeg",
+                options.plot_no)
 
     # Generate pvalue vs ES graph.
     AW = down_for_plot[NES_DOWN_INDEX]
@@ -1239,7 +1315,7 @@ def main(argv=None):
     if not os.path.exists(newpath):
         os.makedirs(newpath)
 
-    STORE_GENE_LEADING_MATRIX=generate_leading_edge_m(
+    STORE_GENE_LEADING_MATRIX = generate_leading_edge_m(
         NES_UP_INDEX,
         NES_DOWN_INDEX,
         fdr_upregulated,
@@ -1357,7 +1433,7 @@ def main(argv=None):
     JAC_L = []
     INTENSITY_FOR_CLUSTER = []
     JAC_L, INTENSITY_FOR_CLUSTER = heatmap_leading_edge_subset(
-        STORE_GENE_LEADING_MATRIX, options.fdr_num, SUBSET_dict, JAC_L)
+        STORE_GENE_LEADING_MATRIX, SUBSET_dict, JAC_L)
 
     # HEATMAP OF UNCLUSTERED AND CLUSTERED ASSIGNMENT MATRIX
     cMap = ListedColormap(['white', 'red'])
