@@ -581,6 +581,7 @@ def plot_enrichment_score(
         A_W,
         l_ID):
     plt.figure(figsize=(8, 6), dpi=80)
+    plt.xlim(-200,l_ID+50)
     plt.plot(
         STORE_ENRICHMENT_SCORE[A_W],
         color="firebrick",
@@ -623,7 +624,7 @@ def plot_random_ES(store_permute, A_W, IN_list):
     plt.figure(figsize=(8, 6), dpi=80)
     Rans_plot = store_permute[:, A_W]
     n, bins, patches = plt.hist(
-        Rans_plot, 80, normed=False, color='magenta', alpha=0.9, histtype='bar')
+        Rans_plot, 80, normed=False, color='dodgerblue', alpha=0.9, histtype='bar')
     plt.xticks(fontsize=12, weight='bold')
     plt.yticks(fontsize=12, weight='bold')
     plt.xlabel('\nEnrichment Score', **axis_font)
@@ -868,8 +869,8 @@ def main(argv=None):
     count = 0
     for PER in range(0, options.iteration):
         e1 = ID_NEW[A[PER, :]]
-        #if((PER%100)==0):
-        #print(PER)
+        if((PER%100)==0):
+            print(PER)
         for i in range(0, len(SIZE_INFO)):
             tt = SIZE_INFO[i]
             TAR = e1[count:(count + tt)]
@@ -1119,11 +1120,13 @@ def main(argv=None):
     # Write detail report for upregulated gene.
     if(len(NES_UP_INDEX) > 0):
         with open(file_to_report_1, 'w') as f:
-            f.write("GENE SET(GS)\tGS DETAILS\tSIZE\tENRICHMENT SCORE(ES)\tNORMALIZED ENRICHMENT SCORE(NES)\tEMPERICAL p-value\tFDR-q value\tRANK AT MAX\tLEADING EDGE\n")
+            f.write("NAME\tGENE SET(GS)\tGS DETAILS\tSIZE\tENRICHMENT SCORE(ES)\tNORMALIZED ENRICHMENT SCORE(NES)\tEMPERICAL p-value\tFDR-q value\tRANK AT MAX\tLEADING EDGE\n")
             for i in range(0, len(NES_UP_INDEX)):
                 AW = up_for_plot[NES_UP_INDEX[i]]
                 IT = IN_list[AW]
                 f.write(IT[0] +
+                        "\t" +
+                        IT[0] +
                         "\t" +
                         IT[1] +
                         "\t" +
@@ -1150,11 +1153,13 @@ def main(argv=None):
     # Write detail report for downregulated gene.
     if(len(NES_DOWN_INDEX) > 0):
         with open(file_to_report_2, 'w') as f:
-            f.write("GENE SET(GS)\tGS DETAILS\tSIZE\tENRICHMENT SCORE(ES)\tNORMALIZED ENRICHMENT SCORE(NES)\tEMPERICAL p-value\tFDR-q value\tRANK AT MAX\tLEADING EDGE\n")
+            f.write("NAME\tGENE SET(GS)\tGS DETAILS\tSIZE\tENRICHMENT SCORE(ES)\tNORMALIZED ENRICHMENT SCORE(NES)\tEMPERICAL p-value\tFDR-q value\tRANK AT MAX\tLEADING EDGE\n")
             for i in range(0, len(NES_DOWN_INDEX)):
                 AW = down_for_plot[NES_DOWN_INDEX[i]]
                 IT = IN_list[AW]
                 f.write(IT[0] +
+                        "\t" +
+                        IT[0] +
                         "\t" +
                         IT[1] +
                         "\t" +
@@ -1184,7 +1189,7 @@ def main(argv=None):
     MERGE_INDEX = np.argsort(np.append(fdr_upregulated, fdr_downregulated))
 
     with open("CGAT_REPORT_FOR_fdr_sorted_up_down_expression_data.tsv", 'w') as f:
-        f.write("GENE SET(GS)\tGS DETAILS\tSIZE\tENRICHMENT SCORE(ES)\tNORMALIZED ENRICHMENT SCORE(NES)\tEMPERICAL p-value\tFDR-q value\tRANK AT MAX\tLEADING EDGE\n")
+        f.write("NAME\tGENE SET(GS)\tGS DETAILS\tSIZE\tENRICHMENT SCORE(ES)\tNORMALIZED ENRICHMENT SCORE(NES)\tEMPERICAL p-value\tFDR-q value\tRANK AT MAX\tLEADING EDGE\n")
         for i in MERGE_INDEX:
             CW = merge_mat[i]
             if(i >= len(fdr_upregulated)):
@@ -1193,6 +1198,8 @@ def main(argv=None):
                 AW = up_for_plot[NES_UP_INDEX[i]]
             IT = IN_list[AW]
             f.write(IT[0] +
+                    "\t" +
+                    IT[0] +
                     "\t" +
                     IT[1] +
                     "\t" +
@@ -1232,7 +1239,7 @@ def main(argv=None):
     if not os.path.exists(newpath):
         os.makedirs(newpath)
 
-    generate_leading_edge_m(
+    STORE_GENE_LEADING_MATRIX=generate_leading_edge_m(
         NES_UP_INDEX,
         NES_DOWN_INDEX,
         fdr_upregulated,
@@ -1394,7 +1401,7 @@ def main(argv=None):
     labels = ax.get_xticklabels()
     plt.setp(labels, rotation=90, **axis_font_h)
     plt.savefig(
-        'Leading_Edge_Analysis/Gene_in_leading_edge_subset.jpeg',
+        'Leading_Edge_Analysis/Genes_in_leading_edge_subset.jpeg',
         bbox_inches='tight')
     plt.close()
     del temp_dict_k
