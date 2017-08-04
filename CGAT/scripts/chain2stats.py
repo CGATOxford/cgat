@@ -204,7 +204,6 @@ class Chain:
         return(treg, qreg)
 
 
-
 class Bitsets_Container:
 
     "General class for holding bitsets in a {key1: {key2: bitset }} structure"
@@ -404,7 +403,6 @@ class CounterPerChromosomePair(CounterPerChromosome):
             ''.join(["chrom_pair_cov_", self.name]), self.cov_table, E)
 
 
-
 class CounterOfGappedChainLengths(ChainCounter):
 
     header = "Report for chain lengths"
@@ -457,7 +455,6 @@ class CounterOfGappedChainLengths(ChainCounter):
             lines = ["mean\tmedian\tmax\tmin"]
             lines.append(self._wrap_basic_stats(self.stats[i], tabbed=True))
             self._write_tabbed('_'.join([i, "lengths", self.name]), lines, E)
-
 
 
 class CounterPercentIdentify(ChainCounter):

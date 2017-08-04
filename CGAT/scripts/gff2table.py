@@ -52,7 +52,6 @@ import CGAT.Stats as Stats
 import CGAT.GTF as GTF
 
 
-
 def decorator_counts(intervals, start, end, contig, fasta):
     """compute length distribution."""
     d = Stats.DistributionalParameters([x[1] - x[0] for x in intervals])
@@ -120,7 +119,6 @@ def decorator_max_score(values, start, end, contig):
     """compute minumum of values."""
     d = Stats.DistributionalParameters(values)
     return d['max'], str(d)
-
 
 
 def transform_overlap(start, end, intervals_with_gff):

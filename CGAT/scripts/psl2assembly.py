@@ -866,7 +866,6 @@ class BuilderIndels(Builder):
                 self.mName, self.mNDeletions, self.mNInsertions))
 
 
-
 class BuilderConsensus(Builder):
 
     """builds a pileup alignment of reads on the transcript sequence 
@@ -918,7 +917,6 @@ class BuilderConsensus(Builder):
         if options.mali_output_format == "fasta":
             mm = Mali.convertAlignlib2Mali(mali, identifiers, seqs)
             mm.writeToFile(self.mOutFile, format="fasta")
-
 
 
 class BuilderPileUp(Builder):
@@ -1170,7 +1168,6 @@ class BuilderPolyA(Builder):
 
         self.mOutFileTails.flush()
         self.mOutFile.flush()
-
 
 
 class Filter(Processor):

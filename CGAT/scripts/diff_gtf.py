@@ -46,7 +46,7 @@ that overlap with any exons in set2, and vice versa for ngenes_unique2. And
 on for each field in the table above. This makes a total of 9*2=18 fields
 containing counts, each starting with an n.
 
-A further set of 18 fields each start with a ``p`` and are the corresponding 
+A further set of 18 fields each start with a ``p`` and are the corresponding
 percentage values.
 
 Options
@@ -325,7 +325,6 @@ class CounterGenes(Counter):
             self.mSeparator.join(self.mGenesOverlapping2),
             self.mSeparator.join(uniq1),
             self.mSeparator.join(uniq2))))
-
 
 
 def main(argv=None):

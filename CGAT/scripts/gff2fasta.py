@@ -266,7 +266,6 @@ def main(argv=None):
 
     feature = options.feature
 
-
     # iterator is a list containing groups (lists) of features.
     # Each group of features have in common the same transcript ID, in case of
     # GTF files.

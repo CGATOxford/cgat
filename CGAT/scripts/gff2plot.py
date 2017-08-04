@@ -98,7 +98,7 @@ Command line options
 import sys
 import os
 try:
-     import configparser
+    import configparser
 except ImportError:
     import ConfigParser as configparser
 
@@ -188,7 +188,6 @@ def normalizeValuesByWindows(data, window_size=None):
     return xvals, yvals
 
 
-
 def addPlot(ax, track, contig, nplotted,
             nsubplotted=None,
             nsubplots=None,
@@ -238,7 +237,6 @@ def addPlot(ax, track, contig, nplotted,
         plot = ax.plot(xvals, yvals, symbol)
 
     return plot
-
 
 
 def plotContig(contig, tracks, options, plot_legend=False,

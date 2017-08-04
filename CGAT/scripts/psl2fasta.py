@@ -38,13 +38,11 @@ import CGAT.Genomics as Genomics
 import alignlib_lite
 
 
-
 def getAlignmentFull(m, q, t, options):
     """print alignment with gaps in both query and target."""
     a = alignlib_lite.py_AlignmentFormatExplicit(
         m, alignlib_lite.py_makeSequence(q), alignlib_lite.py_makeSequence(t))
     return a.mRowAlignment, a.mColAlignment
-
 
 
 def main(argv=None):
