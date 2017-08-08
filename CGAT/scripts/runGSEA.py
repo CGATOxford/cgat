@@ -99,7 +99,6 @@ import CGAT.Experiment as EW
 import CGAT.IOTools as IOTools
 import collections
 import numpy as np
-from IPython.display import display
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
 import matplotlib.lines as mlines
