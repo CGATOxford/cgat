@@ -44,6 +44,14 @@ This script will summarize the gene set enrichment and leading edge analysis in 
        2. GSEA Report
        3. Leading edge analysis report
 
+example
+-------
+
+The way the test is ran:
+cgat runGSEA -f "Expression_data.tsv" -g "Gene_set.gmt" -n 10 -d 1 -l 4
+
+Default run conditions:
+cgat runGSEA -f "Expression_data.tsv" -g "Gene_set.gmt"
 
 --------------
 GSEA Statistics
@@ -297,7 +305,6 @@ def generate_leading_edge_m(
         f_U,
         f_D,
         IN_PRO,
-        ch,
         hm,
         dict_new,
         dfp,
@@ -328,11 +335,7 @@ def generate_leading_edge_m(
     inn_u = np.append(f_U, f_D)
     in1 = np.argsort(np.append(f_U, f_D))
     in2 = np.sort(np.append(f_U, f_D))
-    if(sum(in2 < ch) < hm):
-        in3 = np.where(in2 < ch)[0]
-    else:
-        in3 = np.where(in2 < ch)[0][0:hm]
-    FINAL_L = in1[in3]
+    FINAL_L = in1[0:hm]
     for i in FINAL_L:
         CW = inn_u[i]
         if(i >= len(f_U)):
@@ -388,7 +391,7 @@ def heatmap_plot(hh1, nl):
     # Format
     fig = plt.gcf()
     fig.set_size_inches(12, 10)
-    #plt.figure(figsize=(8, 6), dpi=80)
+    # plt.figure(figsize=(8, 6), dpi=80)
 
     # turn on the frame
     ax.set_frame_on(True)
@@ -436,17 +439,12 @@ def heatmap_leading_edge_subset(LM, SUBSET_dict, jac_f):
             for vv in range(0, len(F_ID)):
                 SUBSET_dict[F_ID[vv]] = SUBSET_dict[F_ID[vv]] + 1
             store_leading_h1[h[0]][h[1]] = (
-                LM[h[0]][2] / (LM[h[0]][2] + LM[h[1]][2]))
-            jac_f.append((LM[h[0]][2] / (LM[h[0]][2] + LM[h[1]][2])))
+                len(F_ID) / (LM[h[0]][2] + LM[h[1]][2]))
+            jac_f.append((len(F_ID) / (LM[h[0]][2] + LM[h[1]][2])))
         else:
             jac_f.append(0)
-    o_clus.append(0)
-    # This section is for leading edge analysis.
-    for i in range(0, len(store_leading_h1)):
-        # I am storing index to use it clustering
-        o_clus.append(np.argmax(store_leading_h1[i, :]))
     heatmap_plot(store_leading_h1, name_l)
-    return jac_f, o_clus
+    return jac_f, SUBSET_dict
 
 
 def heatmap_plot_assign(ASS_M, name_x, name_y, file_to_save, oi, cMap):
@@ -496,27 +494,44 @@ def heatmap_plot_assign(ASS_M, name_x, name_y, file_to_save, oi, cMap):
     return
 
 
-def leading_edge_clustering(SCB, SCB_2, name_x, name_y, hh):
+def leading_edge_clustering(SCB, SCB_2, name_x, name_y):
+    # For leading edge genes.
     te = scipy.spatial.distance.pdist(np.transpose(SCB), metric='correlation')
-    Z = linkage(scipy.spatial.distance.squareform(te), 'average')
-    plot_dendrogram_for_cluster(Z)
-    ind = scipy.cluster.hierarchy.fcluster(Z, 0.5 * te.max(), 'distance')
+    Z = linkage(te, 'average')
+    Z1 = dendrogram(Z, no_plot=1)
+    idx1 = Z1['leaves']
+    name_l_x_leaf = []
+    for i in idx1:
+        name_l_x_leaf.append(name_x[i])
+    plot_dendrogram_for_cluster(Z, name_l_x_leaf, 'Leading edge genes')
 
+    ind = scipy.cluster.hierarchy.fcluster(Z, 0.5 * te.max(), 'distance')
     name_l_x_clus = []
     yy = np.argsort(ind)
     for i in yy:
         name_l_x_clus.append(name_x[i])
-    hh_copy = np.array(hh)
-    r1 = np.array(range(0, len(name_y)))
-    for i in hh_copy:
-        r1 = r1[r1 != i]
-    hh_copy = np.append(hh_copy, r1)
-    _, idx = np.unique(hh_copy, return_index=True)
-    hh = hh_copy[np.sort(idx)]
+
+    # For geneset.
+    del te
+    del Z
+    del Z1
+    del idx1
+    te = scipy.spatial.distance.pdist(SCB, metric='correlation')
+    Z = linkage(te, 'average')
+    Z1 = dendrogram(Z, no_plot=1)
+    idx1 = Z1['leaves']
+    name_l_y_leaf = []
+    for i in idx1:
+        name_l_y_leaf.append(name_y[i])
+    plot_dendrogram_for_cluster(Z, name_l_y_leaf, 'Leading edge genesets')
+
+    ind_gene = scipy.cluster.hierarchy.fcluster(Z, 0.5 * te.max(), 'distance')
+    yy_gene = np.argsort(ind_gene)
     name_l_y_clus = []
-    for i in hh:
+    for i in yy_gene:
         name_l_y_clus.append(name_y[i])
-    FINAL_BOOLEAN_MA_copy = SCB_2[hh, :]
+
+    FINAL_BOOLEAN_MA_copy = SCB_2[yy_gene, :]
     FINAL_BOOLEAN_MA = FINAL_BOOLEAN_MA_copy[:, yy]
     ##########################################################################
     # CREATE CLUSTERED AND UNCLUSTERED GCT FILES.
@@ -544,7 +559,7 @@ def leading_edge_clustering(SCB, SCB_2, name_x, name_y, hh):
         f2.write(name_l_y_clus[i] + "\t" + "na" + "\t")
         for za in range(0, len(name_x)):
             f.write(str(SCB[i][za]))
-            f2.write(str(SCB[hh[i]][yy[za]]))
+            f2.write(str(SCB[yy_gene[i]][yy[za]]))
             if(za == len(name_x) - 1):
                 f.write("\n")
                 f2.write("\n")
@@ -565,7 +580,9 @@ def leading_edge_clustering(SCB, SCB_2, name_x, name_y, hh):
                            'orangered',
                            'tomato',
                            'red'])
-    #cMap = ListedColormap(['white','palegreen','yellowgreen','limegreen','lawngreen', 'green', 'mediumseagreen','springgreen','darkgreen','red'])
+    # cMap =
+    # ListedColormap(['white','palegreen','yellowgreen','limegreen','lawngreen',
+    # 'green', 'mediumseagreen','springgreen','darkgreen','red'])
     heatmap_plot_assign(
         FINAL_BOOLEAN_MA,
         name_l_x_clus,
@@ -605,7 +622,8 @@ def plot_enrichment_score(
         loc=2,
         prop=legend_properties,
         handletextpad=0)
-    ##plt.axvline(x= ORIGINAL_ES_INDEX[AW], ymin=0, ymax=ORIGINAL_ES[AW], linewidth=3, color="g",linestyle=":")
+    # plt.axvline(x= ORIGINAL_ES_INDEX[AW], ymin=0, ymax=ORIGINAL_ES[AW],
+    # linewidth=3, color="g",linestyle=":")
     plt.axhline(y=0, linewidth=2, color="k", linestyle="--")
     plt.xticks(fontsize=12, weight='bold')
     plt.yticks(fontsize=12, weight='bold')
@@ -627,7 +645,7 @@ def plot_random_ES(store_permute, A_W, IN_list):
     plt.figure(figsize=(8, 6), dpi=80)
     Rans_plot = store_permute[:, A_W]
     n, bins, patches = plt.hist(
-        Rans_plot, 80, normed=False, color='darkorange', alpha=0.9, histtype='bar')
+        Rans_plot, 80, normed=False, color='dodgerblue', alpha=0.9, histtype='bar')
     plt.xticks(fontsize=12, weight='bold')
     plt.yticks(fontsize=12, weight='bold')
     plt.xlabel('\nEnrichment Score', **axis_font)
@@ -666,7 +684,7 @@ def plot_enrichment_score_subplot(STORE_ENRICHMENT_SCORE, ORIGINAL_ES_INDEX,
     plt.xticks(fontsize=12, weight='bold')
     plt.yticks(fontsize=12, weight='bold')
     q = IN_list[A_W]
-    #file_to_report_pic = ".".join(["enplot",q[0],'jpeg'])
+    # file_to_report_pic = ".".join(["enplot",q[0],'jpeg'])
     if(s_index == 10):
         plt.ylabel(
             '\n\nR u n n i n g    e n r i c h m e n t    s c o r e (RES)',
@@ -687,7 +705,7 @@ def plot_enrichment_score_subplot(STORE_ENRICHMENT_SCORE, ORIGINAL_ES_INDEX,
     return
 
 
-def plot_dendrogram_for_cluster(ZZ):
+def plot_dendrogram_for_cluster(ZZ, name_leaf, text_to_save):
     fig, ax = plt.subplots()
     fig.set_size_inches(20, 10)
     fancy_dendrogram(
@@ -702,25 +720,101 @@ def plot_dendrogram_for_cluster(ZZ):
     plt.yticks(fontsize=12, weight='bold')
     plt.xticks(weight='bold')
     plt.tight_layout()
-    plt.savefig(
-        "Leading_Edge_Analysis/Last_20_merged_cluster_dendrogram",
-        bbox_inches='tight')
+    t_s = "Leading_Edge_Analysis/Last_20_merged_cluster_dendrogram_" + text_to_save + ".jpeg"
+    plt.savefig(t_s, bbox_inches='tight')
     plt.close()
     fig, ax = plt.subplots()
+    del t_s
     fig.set_size_inches(50, 10)
     dendrogram(
         ZZ,
         leaf_rotation=90.,  # rotates the x axis labels
         leaf_font_size=10.,  # font size for the x axis labels
+        labels=name_leaf,
     )
     plt.yticks(fontsize=12, weight='bold')
     plt.xticks(weight='bold')
     plt.title('Hierarchical Clustering Dendrogram', **title_font)
-    plt.xlabel('\nGene set index', fontsize=18, weight='bold')
+    plt.xlabel(text_to_save, fontsize=18, weight='bold')
     plt.ylabel('Distance', fontsize=18, weight='bold', labelpad=28)
     plt.tight_layout()
+    t_s = "Leading_Edge_Analysis/Hierarchical_cluster_dendrogram_" + text_to_save + ".jpeg"
+    plt.savefig(t_s, bbox_inches='tight')
+    plt.close()
+    return
+
+
+def plot_summary_report(nui, fg1, ufp, g_set, c):
+    # nui = NES_UP_INDEX
+    # fg1 = ORIGINAL_NES
+    # ufp = up_for_plot
+    # g_set=IN_list
+    # c="upregulated"
+    pl_x = []
+    pl_y = []
+    for i in range(0, 20):
+        AW = ufp[nui[i]]
+        IT = g_set[AW]
+        pl_y.append(fg1[AW])
+        pl_x.append(IT[0])
+    fig, ax = plt.subplots()
+    fig.set_size_inches(20, 14)
+    ax.set_frame_on(True)
+    plt.barh(
+        list(
+            range(
+                0,
+                20)),
+        pl_y,
+        color='orange',
+        align="center",
+        height=0.6)
+    cc = "Gene sets (" + c + ") by treatment"
+    plt.ylabel(cc, labelpad=28, fontsize=25, weight='bold', color='darkblue')
+    ax.xaxis.tick_top()
+    plt.yticks(fontsize=16, weight='bold')
+    plt.yticks(range(21), pl_x)
+    plt.xticks(fontsize=16, weight='bold')
+    ax.grid(which='major', linestyle='-', linewidth='0.3')
+    plt.title("Normalized Enrichment Score(NES)", y=1.08,
+              fontsize=25, weight='bold', color='darkblue')
+    plt.gca().invert_yaxis()
+    plt.tight_layout()
+    c2 = "Top_20_" + c + "_genesets_by_treatment.jpeg"
+    plt.savefig(c2, bbox_inches='tight')
+    plt.close()
+    return
+
+
+def plot_summary_report_for_fdr(pl_x, pl_y):
+    fig, ax = plt.subplots()
+    fig.set_size_inches(20, 14)
+    ax.set_frame_on(True)
+    plt.barh(
+        list(
+            range(
+                0,
+                20)),
+        pl_y,
+        color='c',
+        align="center",
+        height=0.7,
+        alpha=0.9)
+    plt.axvline(x=0, linewidth=2, color="k")
+    plt.yticks(range(21), pl_x)
+    cc = "Top 20 enriched gene sets" + "\n(sorted by FDR-q values)"
+    plt.ylabel(cc, labelpad=30, fontsize=25, weight='bold', color='darkblue')
+    ax.xaxis.tick_top()
+    plt.yticks(fontsize=16, weight='bold')
+    ax.grid(which='major', linestyle='-', linewidth='0.4')
+    plt.xticks(fontsize=16, weight='bold')
+    plt.title("Normalized Enrichment Score(NES)", y=1.08,
+              fontsize=25, weight='bold', color='darkblue')
+    plt.gca().invert_yaxis()
+    plt.grid(b=True, which='minor', linestyle='--')
+    plt.tight_layout()
     plt.savefig(
-        "Leading_Edge_Analysis/Hierarchical_cluster_dendrogram",
+        "Top_20_enriched_genesets(fdr_sorted).jpeg",
         bbox_inches='tight')
     plt.close()
     return
@@ -794,28 +888,21 @@ def main(argv=None):
         help="Displays enrichment plots for the specified no. of gene sets with the highest absolute normalized enrichment scores(each phenotype) [default=%default].")
 
     parser.add_option(
-        "-t",
-        "--threshold",
-        dest="fdr_user",
-        type="float",
-        help="false discovery rate (significance threshold) for leading edge analysis")
-
-    parser.add_option(
         "-l",
         "--num_leading",
         dest="fdr_num",
         type="int",
-        help="Number of genesets with specified FDR for leading edge analysis[default=%default].")
+        help="Number of genesets for leading edge analysis, by default top 11 enriched genesets will be used for this analysis."
+        "Minimum number of genesets should be 4. [default=%default].")
 
     parser.set_defaults(
         file_name=None,
         geneset=None,
-        min_gene=15,
+        min_gene=25,
         max_gene=500,
-        seed=448,
+        seed=42,
         iteration=1000,
         plot_no=20,
-        fdr_user=0.01,
         fdr_num=11,
     )
     (options, args) = EW.Start(parser, add_database_options=True)
@@ -910,22 +997,19 @@ def main(argv=None):
 
     # Random index generation
     np.random.seed(options.seed)
-    A = np.random.randint(len(ID), size=(options.iteration, s))
     ID_NEW = np.array(ID)
 
     # Calculate enrichment score for permuted genesets
     count = 0
     for PER in range(0, options.iteration):
-        e1 = ID_NEW[A[PER, :]]
         if((PER % 100) == 0):
             print(PER)
         for i in range(0, len(SIZE_INFO)):
             tt = SIZE_INFO[i]
-            TAR = e1[count:(count + tt)]
-            count = tt
-            inter = intersect(ind_dict, TAR)
+            tar = ID_NEW[np.random.randint(len(ID), size=(1, tt))]
+            inter = intersect(ind_dict, tar[0])
             indices = sorted([ind_dict[x] for x in inter])
-            S = len(TAR)
+            S = len(tar[0])
             E = calculate_enrichment_score(
                 indices, temp, expression_value, S, temp_2)
             del indices
@@ -996,17 +1080,18 @@ def main(argv=None):
             nominal_p_nes[i] = np.divide(len(A2), options.iteration)
 
     # Extract two set NES>0 and NES<0
-
-    NN = ORIGINAL_NES[ORIGINAL_NES > 0]
-    up_for_plot = np.where(ORIGINAL_NES >= 0)[0]
-    NES_UP = -np.sort(-NN)
-    NES_UP_INDEX = np.argsort(-NN)
-    del NN
-    NN = ORIGINAL_NES[ORIGINAL_NES < 0]
-    down_for_plot = np.where(ORIGINAL_NES < 0)[0]
-    NES_DOWN = np.sort(NN)
-    NES_DOWN_INDEX = np.argsort(NN)
-    del NN
+    if(sum(ORIGINAL_NES > 0) > 0):
+        NN = ORIGINAL_NES[ORIGINAL_NES > 0]
+        up_for_plot = np.where(ORIGINAL_NES >= 0)[0]
+        NES_UP = -np.sort(-NN)
+        NES_UP_INDEX = np.argsort(-NN)
+        del NN
+    if(sum(ORIGINAL_NES < 0) > 0):
+        NN = ORIGINAL_NES[ORIGINAL_NES < 0]
+        down_for_plot = np.where(ORIGINAL_NES < 0)[0]
+        NES_DOWN = np.sort(NN)
+        NES_DOWN_INDEX = np.argsort(NN)
+        del NN
 
     # Calculate FDR
 
@@ -1026,9 +1111,23 @@ def main(argv=None):
             p_value_down[NES_DOWN_INDEX], alpha=0.05, method='fdr_bh', is_sorted=False, returnsorted=False)
 
     print("FDR calculation has been successfully completed")
+    
+    # Generate graphical report and detail table report also
+    kk = os.path.basename(options.file_name)
+    part1, part2 = kk.split('.')
+    kk = os.path.basename(options.geneset)
+    part3, part4 = kk.split('.')
+    nam1 = "CGAT_REPORT_FOR_upregulated"
+    nam2 = "CGAT_REPORT_FOR_downregulated"
+    nam3 = "CGAT_REPORT_FOR_fdr_sorted_up_down"
+    nam4 = "CGAT_Summary_Report"
+    file_to_report_1 = ".".join([nam1, part1, "xls"])
+    file_to_report_2 = ".".join([nam2, part1, "xls"])
+    file_to_report_3 = ".".join([nam3, part1, "xls"])
+    file_to_report_4 = ".".join([nam4, part1, "txt"])
 
     # PREPARE FINAL SUMMARY REPORT.
-    f = open("CGAT_Report_for_expression_dataset.txt", "w")
+    f = open(file_to_report_4, "w")
     f.write("Enrichment in phenotype (upregulated):" + "\n")
     f.write("@ " + str(len(NES_UP_INDEX)) + "/" +
             str(len(IN_list)) + " gene sets are upregulated" + "\n")
@@ -1063,15 +1162,7 @@ def main(argv=None):
             "\n\n")
     f.close()
 
-    # Generate graphical report and detail table report also
-
-    part1, part2 = options.file_name.split('.')
-    part3, part4 = options.geneset.split('.')
-    nam1 = "CGAT_REPORT_FOR_upregulated"
-    nam2 = "CGAT_REPORT_FOR_downregulated"
-    file_to_report_1 = ".".join([nam1, part1, "xls"])
-    file_to_report_2 = ".".join([nam2, part1, "xls"])
-
+   
     # Plot enrichment score of top gene set for each phenotype.
 
     # If specified number of top genesets for plotting enrichemnt score is higher than the total number of genesets.I will
@@ -1130,6 +1221,19 @@ def main(argv=None):
                 i + 1,
                 "enplot_downregulated_summary.jpeg",
                 options.plot_no)
+    # Plot summary of top 20 genesets of each phenotype
+    plot_summary_report(
+        NES_UP_INDEX,
+        ORIGINAL_NES,
+        up_for_plot,
+        IN_list,
+        "upregulated")
+    plot_summary_report(
+        NES_DOWN_INDEX,
+        ORIGINAL_NES,
+        down_for_plot,
+        IN_list,
+        "downregulated")
 
     # Generate pvalue vs ES graph.
     AW = down_for_plot[NES_DOWN_INDEX]
@@ -1167,7 +1271,7 @@ def main(argv=None):
     for label in ax2.get_yticklabels():
         label.set_fontproperties(ticks_font)
     ax2.tick_params('y', colors='firebrick')
-    #ax2.tick_params('y', colors='firebrick',labelsize = 'x-large',width=20)
+    # ax2.tick_params('y', colors='firebrick',labelsize = 'x-large',width=20)
     ax2.yaxis.set_tick_params(
         'y',
         colors='firebrick',
@@ -1263,8 +1367,10 @@ def main(argv=None):
     # sorted by FDR values
     merge_mat = np.append(fdr_upregulated, fdr_downregulated)
     MERGE_INDEX = np.argsort(np.append(fdr_upregulated, fdr_downregulated))
-
-    with open("CGAT_REPORT_FOR_fdr_sorted_up_down_expression_data.tsv", 'w') as f:
+    merge_x = []
+    merge_y = []
+    count = 0
+    with open(file_to_report_3, 'w') as f:
         f.write("NAME\tGENE SET(GS)\tGS DETAILS\tSIZE\tENRICHMENT SCORE(ES)\tNORMALIZED ENRICHMENT SCORE(NES)\tEMPERICAL p-value\tFDR-q value\tRANK AT MAX\tLEADING EDGE\n")
         for i in MERGE_INDEX:
             CW = merge_mat[i]
@@ -1273,6 +1379,13 @@ def main(argv=None):
             else:
                 AW = up_for_plot[NES_UP_INDEX[i]]
             IT = IN_list[AW]
+            ######################################
+            # This section is for summary plot of enriched genesets.
+            if(count < 20):
+                merge_x.append(IT[0])
+                merge_y.append(ORIGINAL_NES[AW])
+            count = count + 1
+            #####################################
             f.write(IT[0] +
                     "\t" +
                     IT[0] +
@@ -1298,9 +1411,12 @@ def main(argv=None):
                     "%" +
                     "\n")
         f.close()
-
+    # Plot top 20 enriched genset sorted by FDR values.
+    plot_summary_report_for_fdr(merge_x, merge_y)
     del merge_mat
     del MERGE_INDEX
+    del merge_x
+    del merge_y
 
     print("Reports have been successfully generated")
 
@@ -1321,7 +1437,6 @@ def main(argv=None):
         fdr_upregulated,
         fdr_downregulated,
         IN_list,
-        options.fdr_user,
         options.fdr_num,
         ind_dict,
         down_for_plot,
@@ -1357,7 +1472,7 @@ def main(argv=None):
     for i in STORE_GENE_LEADING_MATRIX:
         c = i
         f.write(c[0] + "\t" + str(c[1]) + "\t" + str(c[2]) + "\t" +
-                str(c[4]) + "%\t" + str(c[5]) + "\t" + str(c[6]) + "%\n")
+                str(c[4]) + "%\t" + str(c[5]) + "%\t" + str(c[6]) + "\n")
     f.close()
 
     # PREPARE LEADING EDGE MATRIX FILE.
@@ -1432,7 +1547,7 @@ def main(argv=None):
     # PREPARE HEAT MAP FOR OVERLAPPING GENE SET UNCLUSTERED.
     JAC_L = []
     INTENSITY_FOR_CLUSTER = []
-    JAC_L, INTENSITY_FOR_CLUSTER = heatmap_leading_edge_subset(
+    JAC_L, SUBSET_dict = heatmap_leading_edge_subset(
         STORE_GENE_LEADING_MATRIX, SUBSET_dict, JAC_L)
 
     # HEATMAP OF UNCLUSTERED AND CLUSTERED ASSIGNMENT MATRIX
@@ -1448,8 +1563,7 @@ def main(argv=None):
         STORE_UNCLUSTERED_BOOLEAN,
         STORE_CLUSTERED_BOOLEAN,
         name_l_x,
-        name_l_y,
-        INTENSITY_FOR_CLUSTER)
+        name_l_y)
 
     # PLOT DISTRIBUTION oF GENES AMONG LEADING SUBSETS
     temp_dict_k = []
@@ -1469,13 +1583,13 @@ def main(argv=None):
     fig = plt.gcf()
     fig.set_size_inches(12, 10)
     plt.yticks(fontsize=12, weight='bold')
-    #plt.yticks(np.arange(min(temp_dict_v), max(temp_dict_v) + 1, 1.0))
+    # plt.yticks(np.arange(min(temp_dict_v), max(temp_dict_v) + 1, 1.0))
     plt.xlabel('\nGenes', **axis_font)
     plt.ylabel('\nNumber Of Gene Sets', **axis_font)
     plt.title('Distribution of genes among leading edge subsets', **title_font)
-    plt.tight_layout()
     labels = ax.get_xticklabels()
     plt.setp(labels, rotation=90, **axis_font_h)
+    plt.tight_layout()
     plt.savefig(
         'Leading_Edge_Analysis/Genes_in_leading_edge_subset.jpeg',
         bbox_inches='tight')
