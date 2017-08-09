@@ -1,22 +1,20 @@
 '''
-runGSEA.py - determines whether an a priori defined set of genes
-shows statistically significant,concordant differences between two
-biological states.
+runGSEA.py
 =============================================
 
 :Tags: Python
 
 Usage
 -----
-This script will perform the gene set enrichment analysis as well as leading
-edge analysis.
+This script will perform the pathway analysis, which is based on gene set enrichment analysis
+(GSEA) and leading edge analysis.
             "Leading edge are defined as genes that are common to multiple
              significantly enriched gene sets  and  coordinately  enriched
              in a phenotypic comparison of interest.They represent a rich
              source of biologically important  genes."
 -----
 
-To run the gene set enrichment analysis,you need to provide
+To run this pathway analysis with GSEA,you need to provide
 two input files:
       1. Ranked list of genes (Expression data set file).
       2. Gene set
@@ -39,7 +37,7 @@ Notes:
         is a collection of annotated gene sets, which can be used for gene set enrichment analysis.
         OR you can create your own gene set in gmt or gmx format.
 
-This script will summarize the gene set enrichment and leading edge analysis in the following format:
+This script will summarize the analysis in the following format:
        1. GSEA Statistics
        2. GSEA Report
        3. Leading edge analysis report
@@ -95,7 +93,7 @@ Command line options
 --------------------
 '''
 import sys
-import CGAT.Experiment as EW
+import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import collections
 import numpy as np
@@ -108,9 +106,9 @@ import statsmodels.sandbox.stats.multicomp as sm
 from matplotlib.colors import ListedColormap
 from decimal import *
 import pandas as pd
-import random as RND
+import random
 import string
-import itertools as ITL
+import itertools
 import os
 import scipy
 from matplotlib import rc, font_manager
@@ -338,20 +336,20 @@ def generate_leading_edge_m(
     for i in FINAL_L:
         CW = inn_u[i]
         if(i >= len(f_U)):
-            AW = dfp[I_D[i - len(f_U)]]
+            aw = dfp[I_D[i - len(f_U)]]
         else:
-            AW = ufp[I_U[i]]
-        II = gene_set_a[AW]
+            aw = ufp[I_U[i]]
+        II = gene_set_a[aw]
         inter = intersect(dict_new, II[0])
         indices = sorted([dict_new[x] for x in inter])
         matr[indices] = 1
-        if(OE[AW] < 0):
-            v1 = np.where(matr[OEI[AW]:len(matr)] == 1)
+        if(OE[aw] < 0):
+            v1 = np.where(matr[OEI[aw]:len(matr)] == 1)
         else:
-            v1 = np.where(matr[0:OEI[AW]] == 1)
+            v1 = np.where(matr[0:OEI[aw]] == 1)
         v2 = id_for_leading[v1]
-        store_gene_leading_matrix.append([IN_PRO[AW][0], len(II[0]), len(v1[0]), list(
-            v2), store_gene_leading_info[0][AW], store_gene_leading_info[1][AW], CW])
+        store_gene_leading_matrix.append([IN_PRO[aw][0], len(II[0]), len(v1[0]), list(
+            v2), store_gene_leading_info[0][aw], store_gene_leading_info[1][aw], CW])
         matr.fill(0)
         del indices
         del inter
@@ -430,7 +428,7 @@ def heatmap_leading_edge_subset(LM, subset_dict, jac_f):
     for i in LM:
         name_l.append(i[0])
     idx = list(range(len(LM)))
-    pairs = list(ITL.combinations(idx, 2))
+    pairs = list(itertools.combinations(idx, 2))
     for i in range(0, len(pairs)):
         h = pairs[i]
         F_id = intersect(LM[h[0]][3], LM[h[1]][3])
@@ -621,7 +619,7 @@ def plot_enrichment_score(
         loc=2,
         prop=legend_properties,
         handletextpad=0)
-    # plt.axvline(x= original_es_index[AW], ymin=0, ymax=original_es[AW],
+    # plt.axvline(x= original_es_index[aw], ymin=0, ymax=original_es[aw],
     # linewidth=3, color="g",linestyle=":")
     plt.axhline(y=0, linewidth=2, color="k", linestyle="--")
     plt.xticks(fontsize=12, weight='bold')
@@ -752,9 +750,9 @@ def plot_summary_report(nui, fg1, ufp, g_set, c):
     pl_x = []
     pl_y = []
     for i in range(0, 20):
-        AW = ufp[nui[i]]
-        itt = g_set[AW]
-        pl_y.append(fg1[AW])
+        aw = ufp[nui[i]]
+        itt = g_set[aw]
+        pl_y.append(fg1[aw])
         pl_x.append(itt[0])
     fig, ax = plt.subplots()
     fig.set_size_inches(20, 14)
@@ -829,7 +827,7 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-    parser = EW.OptionParser(
+    parser = E.OptionParser(
         version="%prog version: $Id$",
         usage=globals()["__doc__"])
 
@@ -904,7 +902,7 @@ def main(argv=None):
         plot_no=20,
         fdr_num=11,
     )
-    (options, args) = EW.Start(parser, add_database_options=True)
+    (options, args) = E.Start(parser, add_database_options=True)
     # Preprocess expression file.
     id, expression_value = read_expression(options.file_name)
 
@@ -947,22 +945,25 @@ def main(argv=None):
         inter = intersect(ind_dict, i[0])
         indices = sorted([ind_dict[x] for x in inter])
         S = len(i[0])
-        E = calculate_enrichment_score(
+        enrich_score = calculate_enrichment_score(
             indices, temp, expression_value, S, temp_2)
         del indices
         del inter
-        a1 = [np.absolute(np.max(E)), np.absolute(np.min(E))]
-        if(np.absolute(np.max(E)) == np.absolute(np.min(E))):
-            original_es[count] = np.max(E)
-            original_es_index[count] = np.argmax(E)
+        a1 = [
+            np.absolute(
+                np.max(enrich_score)), np.absolute(
+                np.min(enrich_score))]
+        if(np.absolute(np.max(enrich_score)) == np.absolute(np.min(enrich_score))):
+            original_es[count] = np.max(enrich_score)
+            original_es_index[count] = np.argmax(enrich_score)
         else:
             if(a1.index(max(a1)) == 0):
-                original_es[count] = np.max(E)
-                original_es_index[count] = np.argmax(E)
+                original_es[count] = np.max(enrich_score)
+                original_es_index[count] = np.argmax(enrich_score)
             else:
-                original_es[count] = np.min(E)
-                original_es_index[count] = np.argmin(E)
-        store_enrichment_score.append(list(E))
+                original_es[count] = np.min(enrich_score)
+                original_es_index[count] = np.argmin(enrich_score)
+        store_enrichment_score.append(list(enrich_score))
         # This section has been added by me for "Leading Edge Analysis".
         t0 = original_es_index[count]
         if(original_es[count] < 0):
@@ -982,7 +983,7 @@ def main(argv=None):
         temp_2.fill(0)
         temp.fill(0)
         del a1
-        del E
+        del enrich_score
         count = count + 1
 
     print("Enrichment score calculation has been successfully completed")
@@ -1009,22 +1010,25 @@ def main(argv=None):
             inter = intersect(ind_dict, tar[0])
             indices = sorted([ind_dict[x] for x in inter])
             S = len(tar[0])
-            E = calculate_enrichment_score(
+            enrich_score = calculate_enrichment_score(
                 indices, temp, expression_value, S, temp_2)
             del indices
             del inter
-            a1 = [np.absolute(np.max(E)), np.absolute(np.min(E))]
-            if(np.absolute(np.max(E)) == np.absolute(np.min(E))):
-                store_permute[per, i] = np.max(E)
+            a1 = [
+                np.absolute(
+                    np.max(enrich_score)), np.absolute(
+                    np.min(enrich_score))]
+            if(np.absolute(np.max(enrich_score)) == np.absolute(np.min(enrich_score))):
+                store_permute[per, i] = np.max(enrich_score)
             else:
                 if(a1.index(max(a1)) == 0):
-                    store_permute[per, i] = np.max(E)
+                    store_permute[per, i] = np.max(enrich_score)
                 else:
-                    store_permute[per, i] = np.min(E)
+                    store_permute[per, i] = np.min(enrich_score)
             del a1
             temp.fill(0)
             temp_2.fill(0)
-            del E
+            del enrich_score
 
     print("Enrichment score calculation for permuted sets has been successfully completed")
 
@@ -1170,36 +1174,36 @@ def main(argv=None):
     xcc = int(options.plot_no / 2) + 1
     for i in range(0, options.plot_no):
         if(len(nes_up_index) > 0):
-            AW = up_for_plot[nes_up_index[i]]
+            aw = up_for_plot[nes_up_index[i]]
             plot_enrichment_score(
                 store_enrichment_score,
                 original_es_index,
                 original_es,
                 in_list,
-                AW,
+                aw,
                 len(id))
-            plot_random_ES(store_permute, AW, in_list)
+            plot_random_ES(store_permute, aw, in_list)
 
         # Downregulated
         if(len(nes_down_index) > 0):
-            AW = down_for_plot[nes_down_index[i]]
+            aw = down_for_plot[nes_down_index[i]]
             plot_enrichment_score(
                 store_enrichment_score,
                 original_es_index,
                 original_es,
                 in_list,
-                AW,
+                aw,
                 len(id))
-            plot_random_ES(store_permute, AW, in_list)
+            plot_random_ES(store_permute, aw, in_list)
     for i in range(0, options.plot_no):
         if(len(nes_up_index) > 0):
-            AW = up_for_plot[nes_up_index[i]]
+            aw = up_for_plot[nes_up_index[i]]
             plot_enrichment_score_subplot(
                 store_enrichment_score,
                 original_es_index,
                 original_es,
                 in_list,
-                AW,
+                aw,
                 len(id),
                 xcc,
                 i + 1,
@@ -1207,13 +1211,13 @@ def main(argv=None):
                 options.plot_no)
     for i in range(0, options.plot_no):
         if(len(nes_down_index) > 0):
-            AW = down_for_plot[nes_down_index[i]]
+            aw = down_for_plot[nes_down_index[i]]
             plot_enrichment_score_subplot(
                 store_enrichment_score,
                 original_es_index,
                 original_es,
                 in_list,
-                AW,
+                aw,
                 len(id),
                 xcc,
                 i + 1,
@@ -1234,12 +1238,12 @@ def main(argv=None):
         "downregulated")
 
     # Generate pvalue vs ES graph.
-    AW = down_for_plot[nes_down_index]
-    AW2 = up_for_plot[nes_up_index]
+    aw = down_for_plot[nes_down_index]
+    aw2 = up_for_plot[nes_up_index]
     plt.figure(figsize=(8, 6), dpi=80)
     plt.plot(original_nes, nominal_p, 'ko')
-    plt.plot(nes_up, nominal_p[AW2], 'k-')
-    plt.plot(nes_down, nominal_p[AW], 'k-')
+    plt.plot(nes_up, nominal_p[aw2], 'k-')
+    plt.plot(nes_down, nominal_p[aw], 'k-')
     plt.xticks(fontsize=12, weight='bold')
     plt.yticks(fontsize=12, weight='bold')
     plt.xlabel("\nNormalized Enrichment Score(NES)", **axis_font)
@@ -1300,8 +1304,8 @@ def main(argv=None):
         with open(file_to_report_1, 'w') as f:
             f.write("NAME\tGENE SET(GS)\tGS DETAILS\tSIZE\tENRICHMENT SCORE(ES)\tNORMALIZED ENRICHMENT SCORE(NES)\tEMPERICAL p-value\tFDR-q value\tRANK AT MAX\tLEADING EDGE\n")
             for i in range(0, len(nes_up_index)):
-                AW = up_for_plot[nes_up_index[i]]
-                itt = in_list[AW]
+                aw = up_for_plot[nes_up_index[i]]
+                itt = in_list[aw]
                 f.write(itt[0] +
                         "\t" +
                         itt[0] +
@@ -1310,20 +1314,20 @@ def main(argv=None):
                         "\t" +
                         str(itt[3]) +
                         "\t" +
-                        str(original_es[AW]) +
+                        str(original_es[aw]) +
                         "\t" +
-                        str(original_nes[AW]) +
+                        str(original_nes[aw]) +
                         "\t" +
-                        str(nominal_p[AW]) +
+                        str(nominal_p[aw]) +
                         "\t" +
                         str(fdr_upregulated[i]) +
                         "\t" +
-                        str(original_es_index[AW]) +
+                        str(original_es_index[aw]) +
                         "\t" +
                         "tags=" +
-                        str(store_gene_leading_info[0][AW]) +
+                        str(store_gene_leading_info[0][aw]) +
                         "%, list=" +
-                        str(store_gene_leading_info[1][AW]) +
+                        str(store_gene_leading_info[1][aw]) +
                         "%" +
                         "\n")
             f.close()
@@ -1333,8 +1337,8 @@ def main(argv=None):
         with open(file_to_report_2, 'w') as f:
             f.write("NAME\tGENE SET(GS)\tGS DETAILS\tSIZE\tENRICHMENT SCORE(ES)\tNORMALIZED ENRICHMENT SCORE(NES)\tEMPERICAL p-value\tFDR-q value\tRANK AT MAX\tLEADING EDGE\n")
             for i in range(0, len(nes_down_index)):
-                AW = down_for_plot[nes_down_index[i]]
-                itt = in_list[AW]
+                aw = down_for_plot[nes_down_index[i]]
+                itt = in_list[aw]
                 f.write(itt[0] +
                         "\t" +
                         itt[0] +
@@ -1343,20 +1347,20 @@ def main(argv=None):
                         "\t" +
                         str(itt[3]) +
                         "\t" +
-                        str(original_es[AW]) +
+                        str(original_es[aw]) +
                         "\t" +
-                        str(original_nes[AW]) +
+                        str(original_nes[aw]) +
                         "\t" +
-                        str(nominal_p[AW]) +
+                        str(nominal_p[aw]) +
                         "\t" +
                         str(fdr_downregulated[i]) +
                         "\t" +
-                        str(original_es_index[AW]) +
+                        str(original_es_index[aw]) +
                         "\t" +
                         "tags=" +
-                        str(store_gene_leading_info[0][AW]) +
+                        str(store_gene_leading_info[0][aw]) +
                         "%, list=" +
-                        str(store_gene_leading_info[1][AW]) +
+                        str(store_gene_leading_info[1][aw]) +
                         "%" +
                         "\n")
             f.close()
@@ -1373,15 +1377,15 @@ def main(argv=None):
         for i in merge_index:
             CW = merge_mat[i]
             if(i >= len(fdr_upregulated)):
-                AW = down_for_plot[nes_down_index[i - len(fdr_upregulated)]]
+                aw = down_for_plot[nes_down_index[i - len(fdr_upregulated)]]
             else:
-                AW = up_for_plot[nes_up_index[i]]
-            itt = in_list[AW]
+                aw = up_for_plot[nes_up_index[i]]
+            itt = in_list[aw]
             ######################################
             # This section is for summary plot of enriched genesets.
             if(count < 20):
                 merge_x.append(itt[0])
-                merge_y.append(original_nes[AW])
+                merge_y.append(original_nes[aw])
             count = count + 1
             #####################################
             f.write(itt[0] +
@@ -1392,20 +1396,20 @@ def main(argv=None):
                     "\t" +
                     str(itt[3]) +
                     "\t" +
-                    str(original_es[AW]) +
+                    str(original_es[aw]) +
                     "\t" +
-                    str(original_nes[AW]) +
+                    str(original_nes[aw]) +
                     "\t" +
-                    str(nominal_p[AW]) +
+                    str(nominal_p[aw]) +
                     "\t" +
                     str(CW) +
                     "\t" +
-                    str(original_es_index[AW]) +
+                    str(original_es_index[aw]) +
                     "\t" +
                     "tags=" +
-                    str(store_gene_leading_info[0][AW]) +
+                    str(store_gene_leading_info[0][aw]) +
                     "%, list=" +
-                    str(store_gene_leading_info[1][AW]) +
+                    str(store_gene_leading_info[1][aw]) +
                     "%" +
                     "\n")
         f.close()
@@ -1612,7 +1616,7 @@ def main(argv=None):
     plt.close()
 
     print("Leading edge analysis has been finished")
-    EW.Stop()
+    E.Stop()
 
 
 if __name__ == "__main__":
