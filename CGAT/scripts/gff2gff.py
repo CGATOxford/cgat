@@ -325,7 +325,7 @@ def cropGFF(gffs, filename_gff):
         ninput += 1
 
         if gff.contig in cropper:
- 
+
             start, end = gff.start, gff.end
             overlaps = cropper[gff.contig].find(start, end)
 

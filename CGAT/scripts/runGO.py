@@ -764,7 +764,7 @@ def main(argv=None):
                 "genes_in_bg\t%i\tinput background\n" % nbackground)
             outfile.write(
                 "genes_in_bg_with_assignment\t%i\tgenes in background with GO assignments\n" % (
-                len(go_results.mBackgroundGenes)))
+                    len(go_results.mBackgroundGenes)))
             outfile.write(
                 "associations_in_fg\t%i\tassociations in sample\n" %
                 go_results.mSampleCountsTotal)
