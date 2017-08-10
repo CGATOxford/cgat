@@ -231,7 +231,7 @@ def merge(iterator,
                   (by_name and last_name[strand] and last_name[strand] != bed.name)):
 
                 if to_join[strand]:
-                  yield to_join[strand]
+                    yield to_join[strand]
 
                 to_join[strand] = list()
 
