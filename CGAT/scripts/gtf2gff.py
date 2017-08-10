@@ -1063,7 +1063,6 @@ def annotateGenes(iterator, fasta, options):
 
             for start, end in intervals:
                 r = GTF.Entry()
-                print (r)
                 r.copy(v[0])
                 r.start, r.end = start, end
                 cache.append(r)
