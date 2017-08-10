@@ -176,14 +176,12 @@ def connectToEnsembl(options):
         dbhandle = MySQLdb.connect(
             host=options.database_host,
             user=options.database_username,
-            passwd=options.database_password,
             db=options.database_name,
             port=options.database_port)
     else:
         dbhandle = MySQLdb.connect(
             host=options.database_host,
             user=options.database_username,
-            passwd=options.database_password,
             db=options.database_name,
             unix_socket=options.database_socket)
     return dbhandle

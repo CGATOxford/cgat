@@ -222,7 +222,7 @@ def merge(iterator,
             if bed.contig != last.contig:
 
                 for s in to_join:
-                    if sorted(to_join[s]):
+                    if to_join[s]:
                         yield to_join[s]
                     to_join[s] = []
                     max_end[s] = 0

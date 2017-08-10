@@ -302,7 +302,9 @@ def cropGFF(gffs, filename_gff):
     E.info("reading gff for cropping: started.")
 
     other_gffs = GTF.iterator(IOTools.openFile(filename_gff, "r"))
+
     cropper = GTF.readAsIntervals(other_gffs)
+
     ntotal = 0
     for contig in list(cropper.keys()):
         intersector = bx.intervals.intersection.Intersecter()
@@ -323,10 +325,12 @@ def cropGFF(gffs, filename_gff):
         ninput += 1
 
         if gff.contig in cropper:
+ 
             start, end = gff.start, gff.end
             overlaps = cropper[gff.contig].find(start, end)
 
             if overlaps:
+
                 l = end - start
                 a = numpy.ones(l)
                 for i in overlaps:
@@ -335,7 +339,6 @@ def cropGFF(gffs, filename_gff):
                     a[s:e] = 0
 
                 segments = Intervals.fromArray(a)
-
                 if len(segments) == 0:
                     ndeleted += 1
                 else:
@@ -349,6 +352,7 @@ def cropGFF(gffs, filename_gff):
                 continue
 
         noutput += 1
+
         yield(gff)
 
     E.info("ninput=%i, noutput=%i, ncropped=%i, ndeleted=%i" %
