@@ -228,12 +228,12 @@ def merge(iterator,
                     max_end[s] = 0
 
             elif (d > max_distance or
-                  (by_name and last_name[strand] != bed.name)):
+                  (by_name and last_name[strand] and last_name[strand] != bed.name)):
 
                 if to_join[strand]:
-                    yield to_join[strand]
+                  yield to_join[strand]
 
-                to_join[strand] = []
+                to_join[strand] = list()
 
             last = bed
             last_name[strand] = last.name
