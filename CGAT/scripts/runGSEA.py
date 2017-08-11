@@ -6,7 +6,7 @@ runGSEA.py
 
 Usage
 -----
-This script will perform the pathway analysis, which is based on gene set enrichment analysis
+This script will perform the enrichment analysis, by using gene set enrichment analysis
 (GSEA) and leading edge analysis.
             "Leading edge are defined as genes that are common to multiple
              significantly enriched gene sets  and  coordinately  enriched
@@ -14,7 +14,7 @@ This script will perform the pathway analysis, which is based on gene set enrich
              source of biologically important  genes."
 -----
 
-To run this pathway analysis with GSEA,you need to provide
+To run this analysis with GSEA,you need to provide
 two input files:
       1. Ranked list of genes (Expression data set file).
       2. Gene set
@@ -73,6 +73,7 @@ Note: By default, enrichment plot for top 20 gene sets will be reported.
 Leading edge analysis report
 ----------------------------
 It will report three graphs that help you to visualize the overlap between the selected leading edge subsets.
+(By default top 10 enriched genesets will be used for leading edge analysis.)
         - Heat Map(unclustered)
         - Heat Map(clustered)
         - Set-to-Set
@@ -221,12 +222,12 @@ def read_expression(file):
 def calculate_enrichment_score(s_I, ma, value, s, STORE):
     ma[s_I] = 1
     rr1 = value[s_I]
-    rr2 = np.sum(np.absolute(rr1))
+    rr2 = np.sum(np.power(np.absolute(rr1), 0))
     A33 = np.divide(-1, (len(ma) - s))
     enrich_score = 0
     for ii in range(0, len(ma)):
         if(ma[ii] == 1):
-            CC = np.absolute(value[ii])
+            CC = np.power(np.absolute(value[ii]), 0)
             CC = np.divide(CC, rr2)
             CC = CC + enrich_score
             STORE[ii] = CC
@@ -313,22 +314,24 @@ def generate_leading_edge_m(
         store_gene_leading_matrix,
         gene_set_a,
         store_gene_leading_info):
+    '''
     #####################################################################
-    # I am writing this section for leading edge analysis. It is necessary to describe each and every parameter
-    # here (just for myself).
-    # I_U,I_D and f_U,f_D are sorted upregulated and downregulated indexes (on the basis of NES values) and
-    # coreesponding FDR values.
-    # IN_PRO is list of included geneset "in_list"
-    # dict_new is dictionary format of expression dataset "ind_dict"
-    # gene_set_a is stored included gene set "GG"
-    # id_for_leading is id of expression dataset. I am using array format "id_new"
-    # Apart from that, I am using store_gene_leading_info as SGLI, original_es_index as OEI, original_es as OE
-    # I am also using up_for_plot and down_for_plot as ufp and dfp, which stores information for retrieving
-    # original index in original_nes.
-    # ch is choice of user FDR and hm is selected number of genes for leading edge analysis
-    # matr is temp matrix, used by me earlier.
-    # This section is little bit complex.
+    I am writing this section for leading edge analysis. It is necessary to describe each and every parameter
+    here (just for myself).
+    I_U,I_D and f_U,f_D are sorted upregulated and downregulated indexes (on the basis of NES values) and
+    coreesponding FDR values.
+    IN_PRO is list of included geneset "in_list"
+    dict_new is dictionary format of expression dataset "ind_dict"
+    gene_set_a is stored included gene set "GG"
+    id_for_leading is id of expression dataset. I am using array format "id_new"
+    Apart from that, I am using store_gene_leading_info as SGLI, original_es_index as OEI, original_es as OE
+    I am also using up_for_plot and down_for_plot as ufp and dfp, which stores information for retrieving
+    original index in original_nes.
+    ch is choice of user FDR and hm is selected number of genes for leading edge analysis
+    matr is temp matrix, used by me earlier.
+    This section is little bit complex.
     #######################################################################
+    '''
     inn_u = np.append(f_U, f_D)
     in1 = np.argsort(np.append(f_U, f_D))
     in2 = np.sort(np.append(f_U, f_D))
@@ -567,19 +570,7 @@ def leading_edge_clustering(SCB, SCB_2, name_x, name_y):
     f.close()
     f2.close()
     ##########################################################################
-    cMap = ListedColormap(['white',
-                           'limegreen',
-                           'lawngreen',
-                           'darkgreen',
-                           'dodgerblue',
-                           'c',
-                           'blue',
-                           'orangered',
-                           'tomato',
-                           'red'])
-    # cMap =
-    # ListedColormap(['white','palegreen','yellowgreen','limegreen','lawngreen',
-    # 'green', 'mediumseagreen','springgreen','darkgreen','red'])
+    cMap = plt.cm.Reds
     heatmap_plot_assign(
         FINAL_BOOLEAN_MA,
         name_l_x_clus,
@@ -726,7 +717,7 @@ def plot_dendrogram_for_cluster(ZZ, name_leaf, text_to_save):
     dendrogram(
         ZZ,
         leaf_rotation=90.,  # rotates the x axis labels
-        leaf_font_size=10.,  # font size for the x axis labels
+        leaf_font_size=6.,  # font size for the x axis labels
         labels=name_leaf,
     )
     plt.yticks(fontsize=12, weight='bold')
@@ -742,11 +733,13 @@ def plot_dendrogram_for_cluster(ZZ, name_leaf, text_to_save):
 
 
 def plot_summary_report(nui, fg1, ufp, g_set, c):
-    # nui = nes_up_index
-    # fg1 = original_nes
-    # ufp = up_for_plot
-    # g_set=in_list
-    # c="upregulated"
+    """
+    nui = nes_up_index
+    fg1 = original_nes
+    ufp = up_for_plot
+    g_set=in_list
+    c="upregulated"
+    """
     pl_x = []
     pl_y = []
     for i in range(0, 20):
@@ -867,7 +860,7 @@ def main(argv=None):
         "--randomseed",
         dest="seed",
         type="int",
-        help="A number used to initialize a pseudorandom number generator"
+        help="A number use to initialize a pseudorandom number generator"
         " [default=%default].")
 
     parser.add_option(
@@ -882,7 +875,7 @@ def main(argv=None):
         "--display",
         dest="plot_no",
         type="int",
-        help="Displays enrichment plots for the specified no. of gene sets with the highest absolute normalized enrichment scores(each phenotype) [default=%default].")
+        help="Displays enrichment plots for the specified no. of gene sets with the highest absolute normalized enrichment scores (each phenotype) [default=%default].")
 
     parser.add_option(
         "-l",
@@ -900,7 +893,7 @@ def main(argv=None):
         seed=42,
         iteration=1000,
         plot_no=20,
-        fdr_num=11,
+        fdr_num=10,
     )
     (options, args) = E.Start(parser, add_database_options=True)
     # Preprocess expression file.
@@ -1422,10 +1415,12 @@ def main(argv=None):
 
     print("Reports have been successfully generated")
 
-    #********************************************************************************************************************#
-    #                                     LEADING EDGE ANALYSIS
-    #*********************************************************************************************************************#
-    # THIS SECTION IS FOR LEADING EDGE ANALYSIS.
+    '''
+    ********************************************************************************************************************
+                                            LEADING EDGE ANALYSIS
+    *********************************************************************************************************************
+    THIS SECTION IS FOR LEADING EDGE ANALYSIS.
+    '''
 
     print("Leading edge analysis has been started")
     # Make a directory.
