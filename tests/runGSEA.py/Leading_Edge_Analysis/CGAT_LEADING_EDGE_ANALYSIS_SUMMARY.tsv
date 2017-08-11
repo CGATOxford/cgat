@@ -2,7 +2,7 @@ Details of gene sets and signal used in this analysis
 There were 4 gene sets used in the leading edge analysis (see below for details)
 
 Gene set	Members	Members in signal	Tag%	List%	FDR-q value
-CAHOY_ASTROCYTIC	84	27	33%	19%	0.0
-KRAS.300_UP.V1_UP	117	30	25%	15%	0.0
-RELA_DN.V1_UP	126	31	24%	15%	0.0
-GCNP_SHH_UP_LATE.V1_DN	147	27	18%	13%	0.0
+EIF4E_UP	78	49	64%	46%	0.0
+STK33_SKM_UP	221	103	46%	36%	0.0
+CORDENONSI_YAP_CONSERVED_SIGNATURE	48	35	72%	51%	0.0
+AKT_UP_MTOR_DN.V1_UP	155	124	80%	67%	0.0
