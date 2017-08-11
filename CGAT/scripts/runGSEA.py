@@ -63,24 +63,49 @@ It includes following statistics for GSEA(for each phenotype):
 --------------
 GSEA reports
 --------------
-         - Enrichment in Phenotype(up and downregulated genes)
-         - Gene Set Details
-         - Global Statistics and Plots
-         - Detailed Enrichment Results
-Note: By default, enrichment plot for top 20 gene sets will be reported.
+	- Global Statistics and Plots include:
+	    a) Enrichment plot,
+            b) Three separate bar plots that provide a quick overview of top 20 (this number is user defined)
+	       enriched upregulated, downregulated and overall enriched genesets on the basis of their FDR values.
+            c) Global distribution of normalized enrichment score
+            d) Global distribution of normalized enrichment score with corresponding FDR q values and p values.
+        - Reports:
+		1 - Enrichment in Phenotype (of up and downregulated genes)
+           	  This report provides summary of enrichment analysis of each phenotype.
+            	  It includes details of which genesets are up and downregulated and a summary
+	    	  of significant enriched gensets on the basis of FDR and p values.)
+         	2 - Gene Set Details
+                  This report provides summary of preprocessing steps of the genesets provided and
+	   	  lists genes sets that were used in the anlysis and which one were discarded due to set thresholds
+         	3 - Detailed Enrichment Results
+         	  This report provides detail statistics of each geneset(for each phenotype). Three reports are
+         	  generated. report for uoregulated genesets, downregulated genesets, and enriched genesets organised
+         	  on the basis of their FDR values.
+
+	    By default, enrichment plot for top 20 gene sets will be reported.
 
 ----------------------------
 Leading edge analysis report
 ----------------------------
-It will report three graphs that help you to visualize the overlap between the selected leading edge subsets.
-(By default top 10 enriched genesets will be used for leading edge analysis.)
-        - Heat Map(unclustered)
-        - Heat Map(clustered)
-        - Set-to-Set
-        - Gene in Subsets
-        - Histogram
-Apart from that, it will report you summary of leading edge subsets, which was used for the analysis and dendrogram,
-to illustrate the arrangement of the clusters produced by hierarchical clustering.
+It will report graphs that help you visualize the overlap between the selected leading edge subsets. It also
+summarises the analysis in the form of reports. By default top 10 enriched genesets will be used for leading edge analysis.
+	- Leading edge plots include:
+             a) Heat Map(unclustered)
+          	This provides an overview of overlap between leading edge subsets
+             b) Heat Map(clustered)
+          	This heat map will be generated after hierarchical clustering of leading edge subset. It will
+          	show you clustered genes among subsets
+       	     c) Set-to-Set Heat Map
+         	This plot help you to visualize intensity of overlap between subsets (i.e. the extent of overlap between two genesets)
+	     d) Dendogram to illustrate the arrangement of the clusters produced by hierarchical clustering.
+
+        - Reports:
+           1- Leading_edge_summary_report: summary of genesets and corresponding enrichment statistics that were used for the leading edge analysis.
+           2- Leading edge matrix (gmx) file provides detailed information on leading edge analysis genesets
+              (i.e. participating genes in each gene set).
+           3- Leading edge (gct,cluster format) files for unclustered and clustered gene set. It is a boolean matrix.
+              that can be used as an input into other resources for additional analysis as this is ideal format for cluster representation
+              (in GSEA)
 
 For details on the algorithm please refer to
 Subramanian, Tamayo, et al. (2005, PNAS 102, 15545-15550)
