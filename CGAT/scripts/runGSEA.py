@@ -123,6 +123,7 @@ import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import collections
 import numpy as np
+import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
 import matplotlib.lines as mlines
@@ -1100,6 +1101,8 @@ def main(argv=None):
             A2 = permute_nes[A1, i]
             nominal_p_nes[i] = np.divide(len(A2), options.iteration)
 
+    nes_up_index = np.array([], dtype=np.int)
+    nes_down_index = np.array([], dtype=np.int)
     # Extract two set NES>0 and NES<0
     if(sum(original_nes > 0) > 0):
         NN = original_nes[original_nes > 0]
@@ -1115,9 +1118,12 @@ def main(argv=None):
         del NN
 
     # Calculate FDR
-
-    fdr_upregulated = np.zeros((len(nes_up),), dtype=np.float)
-    fdr_downregulated = np.zeros((len(nes_down),), dtype=np.float)
+    fdr_upregulated = np.array([], dtype=np.float)
+    fdr_downregulated = np.array([], dtype=np.float)
+    if(len(nes_up_index) > 0):
+        fdr_upregulated = np.zeros((len(nes_up),), dtype=np.float)
+    if(len(nes_down_index) > 0):
+        fdr_downregulated = np.zeros((len(nes_down),), dtype=np.float)
 
     # For upregulated:
     if(len(nes_up_index) > 0):
@@ -1242,26 +1248,24 @@ def main(argv=None):
                 "enplot_downregulated_summary.jpeg",
                 options.plot_no)
     # Plot summary of top 20 genesets of each phenotype
-    plot_summary_report(
-        nes_up_index,
-        original_nes,
-        up_for_plot,
-        in_list,
-        "upregulated")
-    plot_summary_report(
-        nes_down_index,
-        original_nes,
-        down_for_plot,
-        in_list,
-        "downregulated")
+    if(len(nes_up_index) > 0):
+        plot_summary_report(nes_up_index, original_nes,
+                            up_for_plot, in_list, "upregulated")
+    if(len(nes_down_index) > 0):
+        plot_summary_report(nes_down_index, original_nes,
+                            down_for_plot, in_list, "downregulated")
 
     # Generate pvalue vs ES graph.
-    aw = down_for_plot[nes_down_index]
-    aw2 = up_for_plot[nes_up_index]
+    if(len(nes_down_index) > 0):
+        aw = down_for_plot[nes_down_index]
+    if(len(nes_up_index) > 0):
+        aw2 = up_for_plot[nes_up_index]
     plt.figure(figsize=(8, 6), dpi=80)
     plt.plot(original_nes, nominal_p, 'ko')
-    plt.plot(nes_up, nominal_p[aw2], 'k-')
-    plt.plot(nes_down, nominal_p[aw], 'k-')
+    if(len(nes_up_index) > 0):
+        plt.plot(nes_up, nominal_p[aw2], 'k-')
+    if(len(nes_down_index) > 0):
+        plt.plot(nes_down, nominal_p[aw], 'k-')
     plt.xticks(fontsize=12, weight='bold')
     plt.yticks(fontsize=12, weight='bold')
     plt.xlabel("\nNormalized Enrichment Score(NES)", **axis_font)
@@ -1270,18 +1274,20 @@ def main(argv=None):
     plt.grid()
     plt.tight_layout()
     ax2 = plt.twinx()
-    ax2.plot(
-        nes_up,
-        fdr_upregulated,
-        marker='s',
-        color='firebrick',
-        linestyle='')
-    ax2.plot(
-        nes_down,
-        fdr_downregulated,
-        marker='s',
-        color='firebrick',
-        linestyle='')
+    if(len(nes_up_index) > 0):
+        ax2.plot(
+            nes_up,
+            fdr_upregulated,
+            marker='s',
+            color='firebrick',
+            linestyle='')
+    if(len(nes_down_index) > 0):
+        ax2.plot(
+            nes_down,
+            fdr_downregulated,
+            marker='s',
+            color='firebrick',
+            linestyle='')
     ticks_font = font_manager.FontProperties(
         family='Helvetica',
         style='normal',
@@ -1568,7 +1574,7 @@ def main(argv=None):
 
     # PREPARE HEAT MAP FOR OVERLAPPING GENE SET UNCLUSTERED.
     jac_l = []
-    #intensity_for_cluster = []
+    # intensity_for_cluster = []
     jac_l, subset_dict = heatmap_leading_edge_subset(
         store_gene_leading_matrix, subset_dict, jac_l)
 
