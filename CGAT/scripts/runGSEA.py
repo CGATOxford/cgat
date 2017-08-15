@@ -123,8 +123,10 @@ import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import collections
 import numpy as np
-import matplotlib
+import matplotlib as mpl
+mpl.use('Agg')
 import matplotlib.pyplot as plt
+plt.ioff()
 import matplotlib.font_manager as font_manager
 import matplotlib.lines as mlines
 import csv
