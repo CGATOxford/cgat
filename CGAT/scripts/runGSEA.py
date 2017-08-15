@@ -122,6 +122,7 @@ import CGAT.IOTools as IOTools
 import collections
 import numpy as np
 import matplotlib as mpl
+mpl.use('Agg')  # noqa: E402
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
 import matplotlib.lines as mlines
@@ -140,7 +141,6 @@ from matplotlib import rc, font_manager
 from scipy.cluster.hierarchy import dendrogram, linkage
 ##################################################
 # PLOT CUSTOMIZATION
-mpl.use('Agg')
 plt.ioff()
 legend_properties = {'weight': 'bold'}
 plt.rc('legend', fontsize=20)
