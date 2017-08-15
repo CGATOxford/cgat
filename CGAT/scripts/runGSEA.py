@@ -13,12 +13,10 @@ This script will perform the enrichment analysis, by using gene set enrichment a
              in a phenotypic comparison of interest.They represent a rich
              source of biologically important  genes."
 -----
-
 To run this analysis with GSEA,you need to provide
 two input files:
       1. Ranked list of genes (Expression data set file).
       2. Gene set
-
 Notes:
       - It is important to make sure that the expression data set
         does not include duplicate ids (edit your rank list,so that
@@ -66,7 +64,7 @@ GSEA reports
 	- Global Statistics and Plots include:
 	    a) Enrichment plot,
             b) Three separate bar plots that provide a quick overview of top 20 (this number is user defined)
-	       enriched upregulated, downregulated and overall enriched genesets on the basis of their FDR values.
+               enriched upregulated, downregulated and overall enriched genesets on the basis of their FDR values.
             c) Global distribution of normalized enrichment score
             d) Global distribution of normalized enrichment score with corresponding FDR q values and p values.
         - Reports:
@@ -124,9 +122,7 @@ import CGAT.IOTools as IOTools
 import collections
 import numpy as np
 import matplotlib as mpl
-mpl.use('Agg')
 import matplotlib.pyplot as plt
-plt.ioff()
 import matplotlib.font_manager as font_manager
 import matplotlib.lines as mlines
 import csv
@@ -144,6 +140,8 @@ from matplotlib import rc, font_manager
 from scipy.cluster.hierarchy import dendrogram, linkage
 ##################################################
 # PLOT CUSTOMIZATION
+mpl.use('Agg')
+plt.ioff()
 legend_properties = {'weight': 'bold'}
 plt.rc('legend', fontsize=20)
 plt.style.use('seaborn-white')
