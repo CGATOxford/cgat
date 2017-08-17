@@ -647,7 +647,8 @@ def plot_enrichment_score(
                   str(l_id), '(in list), ', str(q[3]), '(in gene set)'])
     plt.xlabel(q2, **axis_font)
     plt.ylabel('\n\nRunning enrichment score(RES)', **axis_font, labelpad=28)
-    plt.title(''.join(["Gene Set", ":", q[0]]), **title_font)
+    # plt.title(''.join(["Gene Set", ":", q[0]]), **title_font)
+    plt.title(q[0], **title_font_ran)
     plt.grid()
     plt.tight_layout()
     plt.savefig(file_to_report_pic, bbox_inches='tight')
@@ -666,7 +667,8 @@ def plot_random_ES(store_permute, A_W, in_list):
     plt.ylabel('Frequency', **axis_font, labelpad=28)
     q = in_list[A_W]
     file_to_report_pic = ".".join(["random_enplot", q[0], 'jpeg'])
-    plt.title(''.join([q[0], ":Random ES Distribution"]), **title_font_ran)
+    #plt.title(''.join([q[0], ":Random ES Distribution"]), **title_font_ran)
+    plt.title("Random ES Distribution", **title_font_ran)
     plt.grid(b=True, which='both', linestyle='--')
     plt.tight_layout()
     plt.savefig(file_to_report_pic, bbox_inches='tight')
@@ -705,8 +707,10 @@ def plot_enrichment_score_subplot(store_enrichment_score, original_es_index,
             fontsize=20,
             weight='bold',
             labelpad=40)
-    plt.title(''.join(["Gene Set", ":", q[0]]),
-              fontsize=18, color='darkblue', weight='bold')
+    # plt.title(''.join(["Gene Set", ":", q[0]]),
+        # fontsize=18, color='darkblue', weight='bold')
+    plt.title(q[0],
+              fontsize=16, color='darkblue', weight='bold')
     plt.grid()
     if(s_index == lk):
         q2 = ''.join(
