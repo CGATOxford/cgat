@@ -317,7 +317,7 @@ def main(argv=None):
 
     parser.add_option("--subset-filter", dest="filt_subset_filter", type="choice",
                       choices=["cases", "controls", "males", "females",
-                               "founders", "nonfounders"],
+                               "founders", "nonfounders", ''],
                       help="only apply filters to the specific subset of "
                       "individuals supplied")
 
@@ -414,7 +414,8 @@ def main(argv=None):
                         covariate_file=None,
                         covar_col=None,
                         epi_report=0.001,
-                        epi_sig=0.001)
+                        epi_sig=0.001,
+                        filt_subset_filter=None)
 
     if not options.infile_pattern:
         infiles = (argv[-1]).split(",")
