@@ -2,7 +2,7 @@
 bed2fasta.py - get sequences from bed file
 ==========================================
 
-:Tags: Genomics Intervals Sequences Conversion BED FASTA 
+:Tags: Genomics Intervals Sequences Conversion BED FASTA
 
 
 
@@ -48,7 +48,6 @@ import CGAT.Experiment as E
 import CGAT.Bed as Bed
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Masker as Masker
-
 
 
 def main(argv=None):

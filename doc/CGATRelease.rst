@@ -7,6 +7,18 @@ latest code can always be found in the code repository.
 Nevertheless, we occasionally prepare releases. Notes on
 each release are below.
 
+Release 0.3.0
+=============
+
+First release of the code working in Python 3 only.
+
+Release 0.2.7
+=============
+
+This release is compatible with pysam-0.11.1 and is the last
+version of the code compatible with Python 2.7. Next releases
+will be in Python 3 only.
+
 Release 0.2.6
 =============
 

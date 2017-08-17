@@ -398,7 +398,7 @@ def main(argv=None):
 
             E.debug("writing temporary bam-file to %s" % tmpfile.name)
             pysam_out = pysam.AlignmentFile(tmpfile.name, "wb",
-                                      template=pysam_in)
+                                            template=pysam_in)
 
         if "filter" in options.methods:
 
@@ -587,9 +587,9 @@ def main(argv=None):
 
                 else:
                     down = SubsetBam(pysam_in=it,
-                                      downsample=options.downsample,
-                                      paired_end=None,
-                                      single_end=True,
+                                     downsample=options.downsample,
+                                     paired_end=None,
+                                     single_end=True,
                                      random_seed=options.random_seed)
                     it = down.downsample_single()
 
@@ -600,9 +600,9 @@ def main(argv=None):
 
                 else:
                     down = SubsetBam(pysam_in=it,
-                                      downsample=options.downsample,
-                                      paired_end=True,
-                                      single_end=None,
+                                     downsample=options.downsample,
+                                     paired_end=True,
+                                     single_end=None,
                                      random_seed=options.random_seed)
                     it = down.downsample_paired()
 

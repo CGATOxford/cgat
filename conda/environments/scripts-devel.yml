@@ -1,0 +1,89 @@
+
+name: cgat-s
+
+channels:
+- bioconda
+- conda-forge
+- defaults
+
+dependencies:
+# system deps
+- nomkl
+- gcc
+- zlib
+- libpng
+# bioinformatics tools
+- ucsc-wigtobigwig
+- ucsc-bedtobigbed
+- ucsc-bedgraphtobigwig
+# python deps
+- python=3.5
+- biopython
+- cython
+- alignlib-lite
+- future
+- ggplot
+- jinja2
+- python-lzo
+- matplotlib
+- mysqlclient # import MySQLdb
+- networkx
+- nose
+- numpy
+- openpyxl
+- pandas
+- pep8
+- psycopg2
+- pybedtools
+- pysam=0.11.1
+- python-weblogo
+- pyyaml
+- rdflib
+- rpy2
+- scikit-learn
+- scipy
+- setuptools
+- six
+- sqlalchemy
+- pip:
+  - bx-python==0.7.3
+# R deps
+- r-base
+- r-coloc
+- r-flashclust
+- r-ggplot2
+- r-gplots
+- r-gridbase
+- r-gridextra
+- r-gtools
+- r-mapdata
+- r-maps
+- r-optparse
+- r-plyr
+- r-qqman
+- r-rcolorbrewer
+- r-reshape
+- r-reshape2
+- r-samr
+- r-scales
+- r-sleuth
+- r-snow
+- r-vegan
+- r-venndiagram
+- r-wgcna
+- bioconductor-biobase
+- bioconductor-biomart
+- bioconductor-deseq
+- bioconductor-deseq2
+- bioconductor-dexseq
+- bioconductor-edger
+- bioconductor-hilbertvis
+- bioconductor-ihw
+- bioconductor-limma
+- bioconductor-masigpro
+- bioconductor-medips
+- bioconductor-metagenomeseq
+- bioconductor-qvalue
+- bioconductor-rtracklayer
+- bioconductor-siggenes
+

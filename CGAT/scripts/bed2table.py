@@ -239,7 +239,7 @@ class CounterPeaks(Counter):
             # if offsets are given, shift tags.
             for samfile, offset in zip(bamfiles, offsets):
 
-                shift = offset / 2
+                shift = offset // 2
                 # for peak counting I follow the MACS protocoll,
                 # see the function def __tags_call_peak in PeakDetect.py
                 # In words
@@ -320,7 +320,6 @@ class CounterPeaks(Counter):
             return "\t".join(map(str, self.result))
 
 
-
 class CounterCompositionNucleotides(Counter):
 
     headers = SequenceProperties.SequencePropertiesNA().getHeaders()
@@ -339,7 +338,6 @@ class CounterCompositionNucleotides(Counter):
         return str(self.result)
 
 
-
 class CounterMotif(Counter):
 
     headers = ['motif_counts']
@@ -355,7 +353,6 @@ class CounterMotif(Counter):
 
     def __str__(self):
         return str(self.result)
-
 
 
 class CounterCompositionCpG(CounterCompositionNucleotides):
@@ -512,7 +509,6 @@ class ClassifierChIPSeq(GeneModelAnalysis.Classifier):
         for key in self.mKeys:
             h.append(str(self.mCounters[key]))
         return "\t".join(h)
-
 
 
 def main(argv=None):

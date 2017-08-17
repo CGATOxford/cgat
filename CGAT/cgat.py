@@ -30,6 +30,7 @@ To get help for a specific tool, type::
 
 import os
 import sys
+import re
 import glob
 import imp
 import collections
@@ -122,6 +123,8 @@ def main(argv=None):
 
     command = argv[1]
 
+    command = re.sub("-", "_", command)
+    
     (file, pathname, description) = imp.find_module(command, [path, ])
     module = imp.load_module(command, file, pathname, description)
     # remove 'cgat' from sys.argv

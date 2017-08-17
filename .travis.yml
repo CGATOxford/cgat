@@ -11,7 +11,6 @@
 # To mitigate this situation, run your builds on our sudo-enabled Precise infrastructure.
 # Over there, your builds will run on a fully independent VM with 7.5 GB of (unshared) memory.
 sudo: required
-dist: precise
 
 language: python
 
@@ -20,7 +19,7 @@ env:
     - TEST_ALL=1
 
 python:
-  - "2.7"
+#  - "2.7"
   - "3.5"
 
 # Using xvfb to Run Tests That Require a GUI

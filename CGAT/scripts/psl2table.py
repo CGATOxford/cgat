@@ -163,8 +163,6 @@ def main(argv=None):
 
     ninput, noutput, nskipped = 0, 0, 0
 
-
-
     for match in iterator:
         ninput += 1
 

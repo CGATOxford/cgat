@@ -1,0 +1,19 @@
+
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+paired_lib:
+    stdin: paired.bam
+    outputs: [stdout]
+    references: [paired_IU.txt]
+    options: 
+
+single_lib:
+    stdin: single.bam
+    outputs: [stdout]
+    references: [single_U.txt]
+    options: 
+

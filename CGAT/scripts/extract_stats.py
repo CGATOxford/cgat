@@ -95,9 +95,11 @@ def cleanStatsTable(stats_file):
     Take in a table containing aggregated stats
     and clean by removing duplicate columns
     '''
-
+    # , mangle_dupe_cols=False)
+    # AH: disabled, because "ValueError: Setting mangle_dupe_cols=False is not supported yet"
     _df = pd.read_table(stats_file, sep="\t", header=0,
-                        index_col=None, mangle_dupe_cols=False)
+                        index_col=None)
+
     # drop duplicates is case sensitive, convert all to
     # same case - SQL is not case sensitive so will throw
     # a hissy fit for same column names in different cases

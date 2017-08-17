@@ -284,7 +284,7 @@ def main(argv=None):
     (options, args) = E.Start(parser, argv=argv, add_output_options=True)
 
     if options.input_filename_tags == "-":
-        fh = tempfile.NamedTemporaryFile(delete=False)
+        fh = tempfile.NamedTemporaryFile(delete=False, mode="w+t")
         fh.write("".join([x for x in options.stdin]))
         fh.close()
         options.input_filename_tags = fh.name
