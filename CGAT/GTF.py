@@ -837,7 +837,7 @@ class Entry:
         # The current heuristic is to split on a semicolon followed by a
         # space, which seems to be part of the specification, see
         # http://mblab.wustl.edu/GTF22.html
-        fields = [x.strip() for x in attributes.split("; ")[:-1]]
+        fields = [x.strip() for x in attributes[:attributes.rfind(";")].split("; ")]
         self.attributes = collections.OrderedDict()
 
         for f in fields:
