@@ -201,6 +201,23 @@ class Bed(object):
     def __contains__(self, key):
         return self.map_key2field[key] < len(self.fields)
 
+    def compare(self, other):
+        a = (self.contig, self.start, self.end)
+        b = (other.contig, other.start, other.end)
+        return (a > b) - (a < b)
+
+    def __lt__(self, other):
+        return self.__richcmp__(other, 0)
+
+    def __richcmp__(self, other, op):
+        retval = self.compare(other)
+        return ((op == 0 and retval < 0) or
+                (op == 1 and retval <= 0) or
+                (op == 2 and retval == 0) or
+                (op == 3 and retval != 0) or
+                (op == 4 and retval > 0) or
+                (op == 5 and retval >= 0))
+
     def __getitem__(self, key):
         return self.fields[self.map_key2field[key]]
 
@@ -214,8 +231,8 @@ class Bed(object):
             self.fields[position] = value
         except IndexError:
 
-            self.fields.extend([self.default_value]
-                               * (position - len(self.fields) + 1))
+            self.fields.extend([self.default_value] *
+                               (position - len(self.fields) + 1))
 
             self.fields[position] = value
 

@@ -141,3 +141,9 @@ bins-manual:
     stdin: chip_peaks.bed
     references: [chip_peaks.binned.manual.bed]
     options: --method=bins --bin-edges=0,5,10,100 --num-bins=3
+
+issue-347:
+    stdin: issue347.bed
+    outputs: [stdout]
+    references: [issue347.out.bed]
+    options: --method=merge --merge-by-name
