@@ -187,11 +187,9 @@ def generateRead(entry, read_length=50, error_rate=40, paired=False,
         return final_read
 
 
-
 def getTitle(entry):
     ''' return the title for an entry'''
     return entry.title.split()[0]
-
 
 
 def main(argv=None):

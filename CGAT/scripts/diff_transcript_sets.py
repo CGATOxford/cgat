@@ -91,7 +91,6 @@ def getTranscriptsForGenes(genes, transcripts, options):
     return result
 
 
-
 def main(argv=None):
     """script main.
 

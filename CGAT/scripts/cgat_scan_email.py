@@ -38,7 +38,6 @@ import sys
 import CGAT.Experiment as E
 
 
-
 def reverse_readline(filename, buf_size=8192):
     """a generator that returns the lines of a file in reverse order"""
     with IOTools.openFile(filename) as fh:

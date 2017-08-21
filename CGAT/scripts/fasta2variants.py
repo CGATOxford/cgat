@@ -47,7 +47,6 @@ import CGAT.Genomics as Genomics
 import CGAT.FastaIterator as FastaIterator
 
 
-
 def main(argv=None):
 
     parser = E.OptionParser(version="%prog version: $Id$",

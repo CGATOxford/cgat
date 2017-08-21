@@ -12,7 +12,7 @@ threshold
     output windows that contain values above a certain
     threshold.
 
-std-above-mean 
+std-above-mean
     output windows that are a certain number of standard
     deviations above the mean.
 
@@ -43,7 +43,6 @@ import CGAT.IOTools as IOTools
 
 import bx
 import bx.bbi.bigwig_file
-
 
 
 def block_iterator(infile, contig, size, chunk_size=10000000):

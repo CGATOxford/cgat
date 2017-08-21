@@ -93,7 +93,7 @@ contigs, truncates them.  Also removes empty intervals.
 filter-names
 ++++++++++++
 
-Output intervals whose names are in list of desired names. Names are 
+Output intervals whose names are in list of desired names. Names are
 supplied as a file with one name on each line.
 
 shift
@@ -228,12 +228,12 @@ def merge(iterator,
                     max_end[s] = 0
 
             elif (d > max_distance or
-                  (by_name and last_name[strand] != bed.name)):
+                  (by_name and last_name[strand] and last_name[strand] != bed.name)):
 
                 if to_join[strand]:
                     yield to_join[strand]
 
-                to_join[strand] = []
+                to_join[strand] = list()
 
             last = bed
             last_name[strand] = last.name
@@ -427,7 +427,6 @@ def shiftIntervals(iterator, contigs, offset):
 
     E.info("ninput=%i, noutput=%i, nskipped_contig=%i, nskipped_range=%i" %
            (ninput, noutput, nskipped_contig, nskipped_range))
-
 
 
 def extendInterval(iterator, contigs, distance):
