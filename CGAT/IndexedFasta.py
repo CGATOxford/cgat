@@ -740,6 +740,11 @@ class CGATIndexedFasta:
         elif "chrM" not in self.mSynonyms and "MT" in self.mSynonyms:
             self.mSynonyms["chrM"] = "MT"
 
+        # this does the same thing for "chrMito" used in the yeast
+        # genome
+        if "chrM" in self.mIndex and "chrMito" not in self.mIndex:
+            self.mSynonyms["chrMito"] = "chrM"
+
         for key, val in k:
             _add(key, val)
 

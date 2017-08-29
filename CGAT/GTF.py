@@ -117,10 +117,11 @@ def transcript_iterator(gff_iterator, strict=True):
     found = set()
 
     for gff in gff_iterator:
-
         # ignore entries without transcript or gene id
         try:
             this = gff.transcript_id + gff.gene_id
+        except KeyError:
+            continue
         except AttributeError:
             continue
 
@@ -936,8 +937,12 @@ class Entry:
         self.start = other.start
         self.end = other.end
         self.score = other.score
+
         self.strand = other.strand
-        self.frame = other.frame
+        try:
+            self.frame = other.frame
+        except:
+            pass
         if gene_id is not None:
             self.gene_id = gene_id
         else:
@@ -975,7 +980,11 @@ class Entry:
         self.end = other.end
         self.score = other.score
         self.strand = other.strand
-        self.frame = other.frame
+
+        try:
+            self.frame = other.frame
+        except ValueError:
+            pass
         # gene_id and transcript_id can be optional
         try:
             self.gene_id = other.gene_id
@@ -988,6 +997,7 @@ class Entry:
 
         self.attributes = collections.OrderedDict(other.asDict().items())
         # from gff - remove gene_id and transcript_id from attributes
+
         try:
             del self.attributes["gene_id"]
             del self.attributes["transcript_id"]
