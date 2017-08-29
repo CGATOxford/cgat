@@ -192,8 +192,7 @@ log "installing CGAT environment"
 if [[ $INSTALL_SCRIPTS ]] ; then
    conda create -q -n ${CONDA_INSTALL_ENV} cgat-scripts --override-channels -c bioconda -c conda-forge -c defaults -y
 else
-   # to-update once we merge to master:
-   # wget -O env.yml https://raw.githubusercontent.com/CGATOxford/cgat/master/conda/environments/${CONDA_INSTALL_TYPE}
+   [[ -z ${TRAVIS_BRANCH} ]] && TRAVIS_BRANCH=${INSTALL_BRANCH}
    wget -O env.yml https://raw.githubusercontent.com/CGATOxford/cgat/${TRAVIS_BRANCH}/conda/environments/${CONDA_INSTALL_TYPE}
    conda env create -f env.yml
 fi
