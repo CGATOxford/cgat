@@ -9,12 +9,10 @@ RateEstimation.py - utilities for computing rate estimates for codon models.
 import Bio.Data.CodonTable
 try:
     from XGram.Generator.Prebuilt import Codons
-    from XGram.Model import Annotation
     import XGram.Exceptions
 except ImportError:
     pass
 
-from CGAT import Genomics as Genomics
 
 
 def evaluateCodonPair(codon1, codon2):

@@ -85,7 +85,6 @@ regexdict = dict(((x[1], x[0]) for x in iupacdict.items()))
 
 def iupac2regex(pattern):
     '''convert iupac to regex pattern'''
-    pass
 
 
 def regex2iupac(pattern):

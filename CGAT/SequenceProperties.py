@@ -37,7 +37,6 @@ Reference
 
 """
 
-import string
 import re
 import math
 import hashlib

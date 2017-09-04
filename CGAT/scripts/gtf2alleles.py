@@ -75,7 +75,6 @@ Allele = collections.namedtuple('Allele',
 class VariantGetter(object):
 
     '''base class for objects returning variants.'''
-    pass
 
 
 class VariantGetterSqlite(VariantGetter):

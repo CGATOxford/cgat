@@ -47,7 +47,6 @@ Command line options
 '''
 import sys
 import math
-import io
 
 import numpy
 import CGAT.Experiment as E
