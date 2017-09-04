@@ -22,7 +22,7 @@ carriage threshold.  This would provide evidence of a liability threshold
 trait.
 
 The steps are:
-  * select SNPs that are also in gwas results
+  * select SNPs that are also in GWAS results
   * recode A1 alleles as risk alleles
   * set up case and control frequency arrays
   * count risk alleles for each individual
@@ -66,7 +66,7 @@ Command line options
 
 import sys
 import CGAT.Experiment as E
-import CGAT.PipelineGWAS as gwas
+import CGAT.GWAS as GWAS
 import pandas as pd
 import numpy as np
 
@@ -99,8 +99,8 @@ def main(argv=None):
                       help="plink ped file with phenotype and "
                       "genotype data - A2 major allele coded")
 
-    parser.add_option("--gwas-file", dest="gwas", type="string",
-                      help="gwas results file, assumes Plink "
+    parser.add_option("--GWAS-file", dest="GWAS", type="string",
+                      help="GWAS results file, assumes Plink "
                       "output format.  Must contain SNP, BP, "
                       "OR column headers.  Assumes results relate "
                       "to the A1 allele")
@@ -124,21 +124,21 @@ def main(argv=None):
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
 
-    # required files are .ped file, .map file and gwas results file
-    E.info("reading GWAS results file: %s" % options.gwas)
-    snp_df = pd.read_table(options.gwas, sep="\t", header=0,
+    # required files are .ped file, .map file and GWAS results file
+    E.info("reading GWAS results file: %s" % options.GWAS)
+    snp_df = pd.read_table(options.GWAS, sep="\t", header=0,
                            index_col=None)
     snp_list = snp_df["SNP"].values
 
     # parse ped file
     E.info("Reading ped file: %s" % options.ped_file)
-    ped_df = gwas.parsePed(options.ped_file,
+    ped_df = GWAS.parsePed(options.ped_file,
                            compound_geno=True)
 
     # parse map file and get SNP indices that correspond to
     # ped file genotypes
     E.info("Fetching SNPs from map file: %s" % options.map_file)
-    snp_index = gwas.getSNPs(options.map_file,
+    snp_index = GWAS.getSNPs(options.map_file,
                              snp_list)
 
     E.info("SNPs found: %i" % len(snp_index))
@@ -148,7 +148,7 @@ def main(argv=None):
 
     if options.flip:
         E.info("Flipping major alleles to risk alleles")
-        flipped_genos = gwas.flipRiskAlleles(snp_index=snp_index,
+        flipped_genos = GWAS.flipRiskAlleles(snp_index=snp_index,
                                              snp_results=snp_or,
                                              genos=ped_df["GENOS"].tolist())
         # merge flipped genotypes with pedigree frame to get phenotypes
@@ -164,7 +164,7 @@ def main(argv=None):
 
     # frequencies of number of risk alleles by trait frequency
     E.info("count #risk alleles per individual")
-    risk_results = gwas.countRiskAlleles(ped_frame=merged,
+    risk_results = GWAS.countRiskAlleles(ped_frame=merged,
                                          snp_index=snp_index.values(),
                                          report=options.method,
                                          flag=options.explained)
@@ -180,14 +180,14 @@ def main(argv=None):
     # need to add number of individuals into each bin as point size
     if options.plot_stat == "frequency":
         E.info("Generating plot of #risk alleles vs. P(Phenotype)")
-        hist_df = gwas.plotRiskFrequency(bins=bins,
+        hist_df = GWAS.plotRiskFrequency(bins=bins,
                                          frequencies=max_freqs,
                                          counts=risk_results["cases"][:max_indx + 1],
                                          savepath=options.plot_path,
                                          ytitle="P(Phenotype)")
     elif options.plot_stat == "cumulative":
         E.info("Generating plot of #risk alleles vs. cumulative frequency")
-        hist_df = gwas.plotRiskFrequency(bins=bins,
+        hist_df = GWAS.plotRiskFrequency(bins=bins,
                                          frequencies=max_cum,
                                          counts=risk_results["cases"][:max_indx + 1],
                                          savepath=options.plot_path,

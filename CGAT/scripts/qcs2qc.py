@@ -32,7 +32,7 @@ Command line options
 
 import sys
 import CGAT.Experiment as E
-import CGAT.PipelineGWAS as gwas
+import CGAT.GWAS as GWAS
 
 
 def main(argv=None):
@@ -106,20 +106,20 @@ def main(argv=None):
         # individuals > 3 s.d. away from mean value
         # rate = (nonissing - homs) / nonmissing
         # i.e. non-homozygote rate
-        flags = gwas.flagExcessHets(options.hets_file,
+        flags = GWAS.flagExcessHets(options.hets_file,
                                     plot=True,
                                     plot_path=options.plot_path)
         flags.to_csv(options.stdout, index=None, sep="\t")
 
     elif options.task == "merge_exclusions":
-        exclusions = gwas.mergeQcExclusions(hets_file=options.hets_file,
+        exclusions = GWAS.mergeQcExclusions(hets_file=options.hets_file,
                                             inbred_file=options.inbreed_file,
                                             related_file=options.relations,
                                             gender_file=options.gender_check,
                                             mask_file=options.aux_file)
         exclusions.to_csv(options.stdout, index=None, sep="\t")
     elif options.task == "find_inbreds":
-        inbreds = gwas.flagInbred(inbred_file=options.inbreed_file,
+        inbreds = GWAS.flagInbred(inbred_file=options.inbreed_file,
                                   inbreeding_coefficient=options.inbred_coeff,
                                   ibc_threshold=options.inbred_cutoff,
                                   plot=True,
@@ -129,13 +129,13 @@ def main(argv=None):
         # the input file is likely to be huge! Ergo, read the file in chunks
         # calculate any related individuals and store them, store
         # an array of IBD values for plotting, drop the rest
-        relate = gwas.flagRelated(ibd_file=options.relations,
+        relate = GWAS.flagRelated(ibd_file=options.relations,
                                   chunk_size=500000,
                                   threshold=options.ibs_cutoff,
                                   plot=True,
                                   plotting_path=options.plot_path)
     elif options.task == "discordant_gender":
-        sex_discord = gwas.flagGender(gender_file=options.gender_check,
+        sex_discord = GWAS.flagGender(gender_file=options.gender_check,
                                       plot=True,
                                       plot_path=options.plot_path)
         sex_discord.to_csv(options.stdout, index=None, sep="\t")

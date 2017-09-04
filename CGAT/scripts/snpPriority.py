@@ -32,8 +32,7 @@ Command line options
 
 import sys
 import CGAT.Experiment as E
-import CGAT.PipelineGWAS as gwas
-import re
+import CGAT.GWAS as GWAS
 import pandas as pd
 import CGAT.IOTools as IOTools
 
@@ -164,7 +163,7 @@ def main(argv=None):
             clean = True
 
     if options.method == "LDscore":
-        snpscores = gwas.snpPriorityScore(gwas_results=infile,
+        snpscores = GWAS.snpPriorityScore(GWAS_results=infile,
                                           database=options.database,
                                           table_name=options.table,
                                           chromosome=options.chromosome,
@@ -189,13 +188,13 @@ def main(argv=None):
             # get the parameter estimates for the distribution
             # if they have not been provided
             if not options.dist_params:
-                dist_params = gwas.estimateDistributionParameters(data=snp_list.values(),
+                dist_params = GWAS.estimateDistributionParameters(data=snp_list.values(),
                                                                   distribution=options.dist)
             else:
                 dist_params = tuple([float(fx) for fx in options.dist_params.split(",")])
 
             E.info("Calculating priors on SNPs")
-            priors = gwas.calcPriorsOnSnps(snp_list=snp_list,
+            priors = GWAS.calcPriorsOnSnps(snp_list=snp_list,
                                            distribution=options.dist,
                                            params=dist_params)
 
@@ -214,14 +213,14 @@ def main(argv=None):
             # conjugate distributions
             priors = None
 
-        # PICS scores expects the gwas results file to
+        # PICS scores expects the GWAS results file to
         # only contain the region of interest, which
         # represents an independent association signal
         # if a SNP has not been genotyped,
         # but it is in strong LD, it will cause problems
         # downstream <- only allow SNPs that
         # are present in the analysis
-        snpscores = gwas.PICSscore(gwas_results=infile,
+        snpscores = GWAS.PICSscore(GWAS_results=infile,
                                    database=options.database,
                                    table_name=options.table,
                                    chromosome=options.chromosome,
@@ -249,7 +248,7 @@ def main(argv=None):
     elif options.method == "R2_rank":
         # rank SNPs based on their LD with the lead
         # SNP, take the top n% SNPs
-        snpscores = gwas.LdRank(gwas_results=infile,
+        snpscores = GWAS.LdRank(GWAS_results=infile,
                                 database=options.database,
                                 table_name=options.table,
                                 ld_dir=options.ld_dir,
@@ -259,14 +258,14 @@ def main(argv=None):
                                 clean=clean)
 
     elif options.method == "ABF":
-        snpscores = gwas.ABFScore(gwas_results=infile,
+        snpscores = GWAS.ABFScore(GWAS_results=infile,
                                   region_size=options.map_window,
                                   chromosome=options.chromosome,
                                   prior_variance=options.prior_var,
                                   clean=clean)
     elif options.method == "get_eigen":
         E.info("Fetching Eigen scores")
-        snpscores = gwas.getEigenScores(eigen_dir=options.eigen_dir,
+        snpscores = GWAS.getEigenScores(eigen_dir=options.eigen_dir,
                                         bim_file=infile,
                                         snp_file=options.snp_set)
         snpscores = pd.DataFrame(snpscores).T
@@ -274,7 +273,7 @@ def main(argv=None):
     elif options.method == "credible_set":
         E.info("Creating credible set")
 
-        snpscores = gwas.makeCredibleSet(probs_file=infile,
+        snpscores = GWAS.makeCredibleSet(probs_file=infile,
                                          credible_set=options.interval,
                                          lead_snp_indx=options.lead_snp,
                                          filename_sep=options.separator,
@@ -284,7 +283,7 @@ def main(argv=None):
     elif options.method == "summarise":
         E.info("Collating SNP prioritisation resuslts")
         file_list = infile.split(",")
-        snpscores = gwas.summariseResults(file_list=file_list)
+        snpscores = GWAS.summariseResults(file_list=file_list)
 
     snpscores.to_csv(options.stdout, index_label="SNP",
                      sep="\t")

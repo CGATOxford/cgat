@@ -32,10 +32,8 @@ Command line options
 
 import sys
 import CGAT.Experiment as E
-from rpy2.robjects import r as R
-from rpy2.robjects import pandas2ri
 import pandas as pd
-import CGAT.PipelineGWAS as gwas
+import CGAT.GWAS as GWAS
 
 
 def main(argv=None):
@@ -148,7 +146,7 @@ def main(argv=None):
 
         coords_df = pd.read_table(options.coordinates, sep="\t",
                                   header=0, index_col=options.indx)
-        gwas.plotMapPhenotype(data=df,
+        GWAS.plotMapPhenotype(data=df,
                               coords=coords_df,
                               coord_id_col=options.coord_ids,
                               lat_col=options.lat_col,
@@ -160,10 +158,10 @@ def main(argv=None):
                               level=options.ref_val)
 
     elif options.plot_type == "pca":
-        data = gwas.parseFlashPCA(pcs_file=infile,
+        data = GWAS.parseFlashPCA(pcs_file=infile,
                                   fam_file=options.fam_file)
 
-        gwas.plotPCA(data=data,
+        GWAS.plotPCA(data=data,
                      nPCs=options.n_pcs,
                      point_labels=options.group_labs,
                      save_path=options.outfile,
@@ -174,7 +172,7 @@ def main(argv=None):
         df = pd.read_table(infile, sep="\t", index_col=options.indx,
                            header=0)
 
-        gwas.plotPhenotype(data=df,
+        GWAS.plotPhenotype(data=df,
                            plot_type=options.plot_type,
                            x=options.x_col,
                            y=options.y_col,

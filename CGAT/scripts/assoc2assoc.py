@@ -32,7 +32,7 @@ Command line options
 
 import sys
 import CGAT.Experiment as E
-import CGAT.PipelineGWAS as gwas
+import CGAT.GWAS as GWAS
 import CGAT.IOTools as IOTools
 import re
 
@@ -76,9 +76,9 @@ def main(argv=None):
     infile = argv[-1]
     infiles = infile.split(",")
     if len(infiles) > 1:
-        results = gwas.GWASResults(assoc_file=infiles)
+        results = GWAS.GWASResults(assoc_file=infiles)
     elif len(infiles) == 1:
-        results = gwas.GWASResults(assoc_file=infile)
+        results = GWAS.GWASResults(assoc_file=infile)
     else:
         raise IOError("no input files detected, please specifiy association "
                       "results files as the last command line argument")
