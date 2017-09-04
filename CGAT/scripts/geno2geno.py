@@ -32,7 +32,12 @@ Command line options
 
 import sys
 import CGAT.Experiment as E
-import CGAT.GWAS as GWAS
+from rpy2.robjects import r as R
+from rpy2.robjects import pandas2ri
+import pandas as pd
+import re
+import numpy as np
+import CGAT.PipelineGWAS as gwas
 import os
 
 
@@ -100,7 +105,7 @@ def main(argv=None):
                         take_last=False)
 
     if options.task == "mafs":
-        mafs = GWAS.countByVariantAllele(options.ped_file,
+        mafs = gwas.countByVariantAllele(options.ped_file,
                                          options.map_file)
 
         mafs.to_csv(options.stdout,
@@ -108,7 +113,7 @@ def main(argv=None):
                     sep="\t")
 
     elif options.task == "penetrance":
-        summary, pens = GWAS.calcPenetrance(options.ped_file,
+        summary, pens = gwas.calcPenetrance(options.ped_file,
                                             options.map_file,
                                             subset=options.subset,
                                             mafs=options.mafs,
@@ -119,7 +124,7 @@ def main(argv=None):
                        sep="\t", index_label="SNP")
 
     elif options.task == "allele_diff":
-        allele_diffs = GWAS.calcMaxAlleleFreqDiff(ped_file=options.ped_file,
+        allele_diffs = gwas.calcMaxAlleleFreqDiff(ped_file=options.ped_file,
                                                   map_file=options.map_file,
                                                   group_file=options.group_file,
                                                   test=options.test_label,
@@ -132,7 +137,7 @@ def main(argv=None):
         # allele indicative of triallelic variants - also same ID
         # ouput to a filter list
         infile = argv[-1]
-        dups, tris, oves = GWAS.findDuplicateVariants(bim_file=infile,
+        dups, tris, oves = gwas.findDuplicateVariants(bim_file=infile,
                                                       take_last=options.take)
 
         if os.path.isabs(options.out_pattern):

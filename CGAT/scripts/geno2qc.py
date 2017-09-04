@@ -31,7 +31,7 @@ Command line options
 
 import sys
 import CGAT.Experiment as E
-import CGAT.GWAS as GWAS
+import CGAT.PipelineGWAS as gwas
 import re
 import random
 
@@ -305,7 +305,7 @@ def main(argv=None):
         infiles = options.infile_pattern
 
     # create a new filegroup object
-    geno_files = GWAS.FileGroup(files=infiles,
+    geno_files = gwas.FileGroup(files=infiles,
                                 file_format=options.file_format,
                                 genotype_format="imputed")
     if options.pheno_file:
@@ -314,19 +314,19 @@ def main(argv=None):
     else:
         pass
 
-    # add FileGroup object to the GWAS program object
+    # add FileGroup object to the gwas program object
     if options.program == "plink2":
-        GWAS_object = GWAS.Plink2(files=geno_files)
-        GWAS_object.program_call(infiles=geno_files,
+        gwas_object = gwas.Plink2(files=geno_files)
+        gwas_object.program_call(infiles=geno_files,
                                  outfile=options.out_pattern)
     elif options.program == "plinkdev":
-        GWAS_object = GWAS.PlinkDev(files=geno_files)
-        GWAS_object.program_call(infiles=geno_files,
+        gwas_object = gwas.PlinkDev(files=geno_files)
+        gwas_object.program_call(infiles=geno_files,
                                  outfile=options.out_pattern)
 
     elif options.program == "gcta":
-        GWAS_object = GWAS.GCTA(files=geno_files)
-        GWAS_object.program_call(infiles=geno_files,
+        gwas_object = gwas.GCTA(files=geno_files)
+        gwas_object.program_call(infiles=geno_files,
                                  outfile=options.out_pattern)
     else:
         pass
@@ -340,12 +340,12 @@ def main(argv=None):
     for fkey in filter_dict:
         filt_key = fkey.replace("filt_", "")
         filter_value = filter_dict[fkey]
-        GWAS_object.apply_filters(filter_type=filt_key,
+        gwas_object.apply_filters(filter_type=filt_key,
                                   filter_value=filter_value)
 
     # handle summary statistics
     if options.method == "ld_prune":
-        GWAS_object._qc_methods(ld_prune=options.prune_method,
+        gwas_object._qc_methods(ld_prune=options.prune_method,
                                 kb=True,
                                 window=options.window_size,
                                 step=options.step,
@@ -353,35 +353,35 @@ def main(argv=None):
     elif options.method == "IBD":
         # use sum param to pass arguments to ibd estiamte
         # these are norm, full or relatitves
-        GWAS_object._qc_methods(ibd=options.ibd_param)
+        gwas_object._qc_methods(ibd=options.ibd_param)
     elif options.method == "summary":
         if options.summary_method == "allele_frequency":
-            GWAS_object._output_statistics(allele_frequency=options.sum_param)
+            gwas_object._output_statistics(allele_frequency=options.sum_param)
         elif options.summary_method == "hardy_weinberg":
-            GWAS_object._output_statistics(hardy_weinberg=options.sum_param)
+            gwas_object._output_statistics(hardy_weinberg=options.sum_param)
         elif options.summary_method == "missing_data":
-            GWAS_object._output_statistics(missing_data=options.sum_param)
+            gwas_object._output_statistics(missing_data=options.sum_param)
         elif options.summary_method == "mendel_errors":
-            GWAS_object._output_statistics(mendel_errors=options.sum_param)
+            gwas_object._output_statistics(mendel_errors=options.sum_param)
         elif options.summary_method == "inbreeding":
-            GWAS_object._output_statistics(inbreeding=options.sum_param)
+            gwas_object._output_statistics(inbreeding=options.sum_param)
         elif options.summary_method == "inbreeding_coef":
-            GWAS_object._output_statistics(inbreeding_coef=options.sum_param)
+            gwas_object._output_statistics(inbreeding_coef=options.sum_param)
         elif options.summary_method == "gender_checker":
-            GWAS_object._output_statistics(gender_checker=options.sum_param)
+            gwas_object._output_statistics(gender_checker=options.sum_param)
         elif options.summary_method == "wrights_fst":
-            GWAS_object._output_statistics(wrights_fst=options.sum_param)
+            gwas_object._output_statistics(wrights_fst=options.sum_param)
         else:
             pass
     elif options.method == "remove_relations":
-        GWAS_object._run_tasks(remove_relations="cutoff",
+        gwas_object._run_tasks(remove_relations="cutoff",
                                parameter=options.threshold)
     elif options.method == "check_gender":
-        GWAS_object._run_tasks(check_gender="")
+        gwas_object._run_tasks(check_gender="")
     else:
         pass
 
-    GWAS_object.build_statement(infiles=geno_files,
+    gwas_object.build_statement(infiles=geno_files,
                                 outfile=options.out_pattern,
                                 threads=options.threads,
                                 memory=options.memory,

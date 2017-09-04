@@ -31,7 +31,7 @@ Command line options
 
 import sys
 import CGAT.Experiment as E
-import CGAT.GWAS as GWAS
+import CGAT.PipelineGWAS as gwas
 import re
 import random
 
@@ -422,7 +422,7 @@ def main(argv=None):
         infiles = options.infile_pattern
 
     # create a new filegroup object
-    geno_files = GWAS.FileGroup(files=infiles,
+    geno_files = gwas.FileGroup(files=infiles,
                                 file_format=options.file_format,
                                 genotype_format="imputed")
     if options.pheno_file:
@@ -431,18 +431,18 @@ def main(argv=None):
     else:
         pass
 
-    # add FileGroup object to the GWAS program object
+    # add FileGroup object to the gwas program object
     if options.program == "plink2":
-        GWAS_object = GWAS.Plink2(files=geno_files)
-        GWAS_object.program_call(infiles=geno_files,
+        gwas_object = gwas.Plink2(files=geno_files)
+        gwas_object.program_call(infiles=geno_files,
                                  outfile=options.out_pattern)
     elif options.program == "plinkdev":
-        GWAS_object = GWAS.PlinkDev(files=geno_files)
-        GWAS_object.program_call(infiles=geno_files,
+        gwas_object = gwas.PlinkDev(files=geno_files)
+        gwas_object.program_call(infiles=geno_files,
                                  outfile=options.out_pattern)
     elif options.program == "gcta":
-        GWAS_object = GWAS.GCTA(files=geno_files)
-        GWAS_object.program_call(infiles=geno_files,
+        gwas_object = gwas.GCTA(files=geno_files)
+        gwas_object.program_call(infiles=geno_files,
                                  outfile=options.out_pattern)
     else:
         pass
@@ -456,51 +456,51 @@ def main(argv=None):
     for fkey in filter_dict:
         filt_key = fkey.lstrip("filt_")
         filter_value = filter_dict[fkey]
-        GWAS_object.apply_filters(filter_type=filt_key,
+        gwas_object.apply_filters(filter_type=filt_key,
                                   filter_value=filter_value)
 
     # handle summary statistics
     if options.method == "summary":
         if options.summary_method == "allele_frequency":
-            GWAS_object._output_statistics(allele_frequency=options.sum_param)
+            gwas_object._output_statistics(allele_frequency=options.sum_param)
         elif options.summary_method == "hardy_weinberg":
-            GWAS_object._output_statistics(hardy_weinberg=options.sum_param)
+            gwas_object._output_statistics(hardy_weinberg=options.sum_param)
         elif options.summary_method == "missing_data":
-            GWAS_object._output_statistics(missing_data=options.sum_param)
+            gwas_object._output_statistics(missing_data=options.sum_param)
         elif options.summary_method == "mendel_errors":
-            GWAS_object._output_statistics(mendel_errors=options.sum_param)
+            gwas_object._output_statistics(mendel_errors=options.sum_param)
         elif options.summary_method == "inbreeding":
-            GWAS_object._output_statistics(inbreeding=options.sum_param)
+            gwas_object._output_statistics(inbreeding=options.sum_param)
         elif options.summary_method == "gender_checker":
-            GWAS_object._output_statistics(gender_checker=options.sum_param)
+            gwas_object._output_statistics(gender_checker=options.sum_param)
         elif options.summary_method == "wrights_fst":
-            GWAS_object._output_statistics(wrights_fst=options.sum_param)
+            gwas_object._output_statistics(wrights_fst=options.sum_param)
         elif options.summary_method == "case_control_fst":
-            GWAS_object._output_statistics(case_control_fst=options.sum_param)
+            gwas_object._output_statistics(case_control_fst=options.sum_param)
         else:
             pass
     elif options.method == "pca":
-        GWAS_object.PCA(n_pcs=options.num_pcs)
+        gwas_object.PCA(n_pcs=options.num_pcs)
     elif options.method == "ld":
-        GWAS_object.calc_ld(ld_statistic=options.ld_stat,
+        gwas_object.calc_ld(ld_statistic=options.ld_stat,
                             ld_threshold=float(options.ld_min),
                             ld_shape=options.ld_shape)
     elif options.method == "association":
-        GWAS_object.run_association(association=options.assoc_method,
+        gwas_object.run_association(association=options.assoc_method,
                                     permutation=options.permutation,
                                     n_perms=options.n_perms,
                                     random_seed=options.random_seed,
                                     covariates_file=options.covariate_file,
                                     covariates=options.covar_col)
     elif options.method == "estimate_haplotypes":
-        GWAS_object._run_tasks(estimate_haplotypes="haplotype")
+        gwas_object._run_tasks(estimate_haplotypes="haplotype")
     elif options.method == "lmm":
-        GWAS_object.mixed_model(lmm_method=options.lmm_method,
+        gwas_object.mixed_model(lmm_method=options.lmm_method,
                                 grm=options.grm_prefix,
                                 qcovar=options.covariate_file,
                                 dcovar=options.covariate_discrete)
     elif options.method == "epistasis":
-        GWAS_object._detect_interactions(method=options.epi_method,
+        gwas_object._detect_interactions(method=options.epi_method,
                                          modifier=options.epi_param,
                                          set_file=options.set_file,
                                          set_mode=options.set_method,
@@ -509,7 +509,7 @@ def main(argv=None):
                                          covariates_file=options.covariate_file,
                                          covariates=options.covar_col)
     elif options.method == "reml":
-        GWAS_object.reml_analysis(method=options.reml_method,
+        gwas_object.reml_analysis(method=options.reml_method,
                                   parameters=options.reml_param,
                                   prevalence=options.prevalence,
                                   qcovariates=options.covariate_file,
@@ -521,74 +521,74 @@ def main(argv=None):
                 update_samples = opt_dict["sample_update"]
                 if update_samples:
                     E.info("updating samples from %s" % options.format_param)
-                    GWAS_object._run_tasks(change_format=options.reformat,
+                    gwas_object._run_tasks(change_format=options.reformat,
                                            parameter=options.format_param)
-                    GWAS_object._run_tasks(update_samples=options.sample_update,
+                    gwas_object._run_tasks(update_samples=options.sample_update,
                                            parameter=options.format_param)
                 else:
-                    GWAS_object._run_tasks(change_format=options.reformat,
+                    gwas_object._run_tasks(change_format=options.reformat,
                                            parameter=options.format_param)
             except KeyError:
-                GWAS_object._run_tasks(change_format=options.reformat,
+                gwas_object._run_tasks(change_format=options.reformat,
                                        parameter=options.format_param)
         elif options.format_method == "change_missing_values":
-            GWAS_object._run_tasks(change_missing_values=options.apply_missing,
+            gwas_object._run_tasks(change_missing_values=options.apply_missing,
                                    parameter=options.format_param)
         elif options.format_method == "update_variants":
-            GWAS_object._run_tasks(update_variants=options.variant_update,
+            gwas_object._run_tasks(update_variants=options.variant_update,
                                    parameter=options.format_param)
-            GWAS_object._run_tasks(change_format=options.file_format)
+            gwas_object._run_tasks(change_format=options.file_format)
         elif options.format_method == "update_samples":
-            GWAS_object._run_tasks(update_samples=options.sample_update,
+            gwas_object._run_tasks(update_samples=options.sample_update,
                                    parameter=options.format_param)
         elif options.format_method == "flip_strands":
             if options.flip_subset:
-                GWAS_object._run_tasks(flip_strands="subset",
+                gwas_object._run_tasks(flip_strands="subset",
                                        parameter=options.format_param)
             else:
-                GWAS_object._run_tasks(flip_strands="all_samples",
+                gwas_object._run_tasks(flip_strands="all_samples",
                                        parameter=options.format_param)
         elif options.format_method == "flip_scan":
-            GWAS_object._run_tasks(flip_scan=options.scan_param,
+            gwas_object._run_tasks(flip_scan=options.scan_param,
                                    parameter=options.format_param)
         elif options.format_method == "sort":
-            GWAS_object._run_tasks(sort=options.sort_type,
+            gwas_object._run_tasks(sort=options.sort_type,
                                    parameter=options.format_param)
         elif options.format_method == "merge":
             if options.merge_mode:
-                GWAS_object._run_tasks(merge_mode=options.merge_mode,
+                gwas_object._run_tasks(merge_mode=options.merge_mode,
                                        parameter=options.format_param)
             else:
-                GWAS_object._run_tasks(merge=options.merge_format,
+                gwas_object._run_tasks(merge=options.merge_format,
                                        parameter=options.format_param)
         elif options.format_method == "find_duplicates":
-            GWAS_object._run_tasks(find_duplicates=options.dup_method,
+            gwas_object._run_tasks(find_duplicates=options.dup_method,
                                    parameter=options.format_param)
         else:
             pass
     elif options.method == "matrix":
         if options.matrix_form == "distance":
             if options.matrix_metric == "hamming":
-                GWAS_object.hamming_matrix(shape=options.matrix_shape,
+                gwas_object.hamming_matrix(shape=options.matrix_shape,
                                            compression=options.matrix_compress,
                                            options=options.matrix_options)
             elif options.matrix_metric == "ibs":
-                GWAS_object.ibs_matrix(shape=options.matrix_shape,
+                gwas_object.ibs_matrix(shape=options.matrix_shape,
                                        compression=options.matrix_compress,
                                        options=options.matrix_options)
             elif options.matrix_metric == "genomic":
-                GWAS_object.genome_matrix(shape=options.matrix_shape,
+                gwas_object.genome_matrix(shape=options.matrix_shape,
                                           compression=options.matrix_compress,
                                           options=options.matrix_options)
         elif options.matrix_form == "grm":
-            GWAS_object.genetic_relationship_matrix(shape=options.matrix_shape,
+            gwas_object.genetic_relationship_matrix(shape=options.matrix_shape,
                                                     compression=options.matrix_compress,
                                                     metric=options.matrix_metric,
                                                     options=options.matrix_options)
     else:
         pass
 
-    GWAS_object.build_statement(infiles=geno_files,
+    gwas_object.build_statement(infiles=geno_files,
                                 outfile=options.out_pattern,
                                 threads=options.threads,
                                 memory=options.memory,

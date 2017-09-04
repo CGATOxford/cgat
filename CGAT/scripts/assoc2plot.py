@@ -8,7 +8,7 @@ assoc2plot.py - script for post-GWAS plotting
 Purpose
 -------
 
-.. Post-GWAS plotting, for visualization and QC
+.. Post-gwas plotting, for visualization and QC
 
 Usage
 -----
@@ -32,7 +32,7 @@ Command line options
 
 import sys
 import CGAT.Experiment as E
-import CGAT.GWAS as GWAS
+import CGAT.PipelineGWAS as gwas
 
 
 def main(argv=None):
@@ -87,11 +87,11 @@ def main(argv=None):
         epi = False
 
     if len(infiles) > 1:
-        results = GWAS.GWASResults(assoc_file=infiles,
+        results = gwas.GWASResults(assoc_file=infiles,
                                    epistasis=epi,
                                    file_format=options.file_format)
     elif len(infiles) == 1:
-        results = GWAS.GWASResults(assoc_file=infile,
+        results = gwas.GWASResults(assoc_file=infile,
                                    epistasis=epi,
                                    file_format=options.file_format)
     else:
