@@ -126,7 +126,6 @@ def getColumns(fields, columns="all"):
         return c
 
 
-
 def readAndTransposeTable(infile, options):
     """read table from infile and transpose
     """
@@ -160,7 +159,6 @@ def readAndTransposeTable(infile, options):
 
     for row in new_rows:
         options.stdout.write("\t".join(row) + "\n")
-
 
 
 def readAndGroupTable(infile, options):
@@ -254,7 +252,6 @@ def readAndExpandTable(infile, options):
             options.stdout.write("\t".join([d[n] for d in data]) + "\n")
 
 
-
 def readAndCollapseTable(infile, options, missing_value=""):
     '''collapse a table.
 
@@ -303,7 +300,6 @@ def readAndCollapseTable(infile, options, missing_value=""):
         options.stdout.write("%s\t%s\n" % (key, "\t".join(row)))
 
 
-
 def computeFDR(infile, options):
     '''compute FDR on a table.
     '''
@@ -326,7 +322,6 @@ def computeFDR(infile, options):
 
         for n in range(nrows):
             options.stdout.write("\t".join([d[n] for d in data]) + "\n")
-
 
 
 def readAndJoinTable(infile, options):

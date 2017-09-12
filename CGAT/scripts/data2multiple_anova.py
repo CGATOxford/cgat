@@ -31,7 +31,6 @@ import CGAT.IOTools as IOTools
 from rpy2.robjects import r as R
 
 
-
 def main(argv=None):
     """script main.
 

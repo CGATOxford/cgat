@@ -1,0 +1,14 @@
+Enrichment in phenotype (upregulated):
+@ 83/184 gene sets are upregulated
+@ 12 gene sets are significant at FDR < 5%
+@ 12 gene sets are significant at FDR < 1%
+@ 12 gene sets are significantly enriched at nominal pvalue < 1%
+@ 12 gene sets are significantly enriched at nominal pvalue < 5%
+
+Enrichment in phenotype (downregulated):
+@ 101/184 gene sets are upregulated
+@ 21 gene sets are significant at FDR < 5%
+@ 21 gene sets are significant at FDR < 1%
+@ 21 gene sets are significantly enriched at nominal pvalue < 1%
+@ 21 gene sets are significantly enriched at nominal pvalue < 5%
+

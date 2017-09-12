@@ -95,7 +95,7 @@ Usage
 -----
 
 For many downstream applications it is helpful to make sure
-that a :term:`gff` formatted file contains only features on 
+that a :term:`gff` formatted file contains only features on
 placed chromosomes.
 
 As an example, to sanitise hg38 chromosome names and remove
@@ -302,7 +302,9 @@ def cropGFF(gffs, filename_gff):
     E.info("reading gff for cropping: started.")
 
     other_gffs = GTF.iterator(IOTools.openFile(filename_gff, "r"))
+
     cropper = GTF.readAsIntervals(other_gffs)
+
     ntotal = 0
     for contig in list(cropper.keys()):
         intersector = bx.intervals.intersection.Intersecter()
@@ -323,10 +325,12 @@ def cropGFF(gffs, filename_gff):
         ninput += 1
 
         if gff.contig in cropper:
+
             start, end = gff.start, gff.end
             overlaps = cropper[gff.contig].find(start, end)
 
             if overlaps:
+
                 l = end - start
                 a = numpy.ones(l)
                 for i in overlaps:
@@ -335,7 +339,6 @@ def cropGFF(gffs, filename_gff):
                     a[s:e] = 0
 
                 segments = Intervals.fromArray(a)
-
                 if len(segments) == 0:
                     ndeleted += 1
                 else:
@@ -349,6 +352,7 @@ def cropGFF(gffs, filename_gff):
                 continue
 
         noutput += 1
+
         yield(gff)
 
     E.info("ninput=%i, noutput=%i, ncropped=%i, ndeleted=%i" %
@@ -444,6 +448,30 @@ def main(argv=None):
         "ensembl to ucsc contigs when running method sanitize [%default].")
 
     parser.add_option(
+        "--assembly-report-hasids",
+        dest="assembly_report_hasIDs", type="int",
+        help="path to assembly report file which allows mapping of "
+        "ensembl to ucsc contigs when running method sanitize [%default].")
+
+    parser.add_option(
+        "--assembly-report-ucsccol", dest="assembly_report_ucsccol",
+        type="int",
+        help="column in the assembly report containing ucsc contig ids"
+        "[%default].")
+
+    parser.add_option(
+        "--assembly-report-ensemblcol", dest="assembly_report_ensemblcol",
+        type="int",
+        help="column in the assembly report containing ensembl contig ids"
+        "[%default].")
+
+    parser.add_option(
+        "--assembly-extras", dest="assembly_extras",
+        type="str",
+        help="additional mismatches between gtf and fasta to fix when"
+        "sanitizing the genome [%default].")
+
+    parser.add_option(
         "--extension-upstream", dest="extension_upstream", type="float",
         help="extension for upstream end [%default].")
 
@@ -493,6 +521,10 @@ def main(argv=None):
         group_field=None,
         contig_pattern=None,
         assembly_report=None,
+        assembly_report_hasIDs=1,
+        assembly_report_ensemblcol=4,
+        assembly_report_ucsccol=9,
+        assembly_extras=None
     )
 
     (options, args) = E.Start(parser, argv=argv)
@@ -513,16 +545,27 @@ def main(argv=None):
         # fixes naming inconsistency in assembly report: ensembl chromosome
         # contigs found in columnn 0, ensembl unassigned contigs found in
         # column 4.
-        df.ix[df[1] == "assembled-molecule", 4] = df.ix[df[1] == "assembled-molecule", 0]
-        if options.sanitize_method == "ucsc":
-            assembly_dict = df.set_index(4)[9].to_dict()
-        elif options.sanitize_method == "ensembl":
-            assembly_dict = df.set_index(9)[4].to_dict()
+        if options.assembly_report_hasIDs == 1:
+            ucsccol = options.assembly_report_ucsccol
+            ensemblcol = options.assembly_report_ensemblcol
+            df.ix[df[1] == "assembled-molecule", ensemblcol] = df.ix[
+                df[1] == "assembled-molecule", 0]
+            if options.sanitize_method == "ucsc":
+                assembly_dict = df.set_index(ensemblcol)[ucsccol].to_dict()
+            elif options.sanitize_method == "ensembl":
+                assembly_dict = df.set_index(ucsccol)[ensemblcol].to_dict()
+            else:
+                raise ValueError(''' When using assembly report,
+                please specify sanitize method as either
+                "ucsc" or "ensembl" to specify direction of conversion
+                ''')
         else:
-            raise ValueError(''' When using assembly report,
-            please specify sanitize method as either
-            "ucsc" or "ensembl" to specify direction of conversion
-            ''')
+            assembly_dict = {}
+        if options.assembly_extras is not None:
+            assembly_extras = options.assembly_extras.split(",")
+            for item in assembly_extras:
+                item = item.split("-")
+                assembly_dict[item[0]] = item[1]
 
     if options.method in ("forward_coordinates", "forward_strand",
                           "add-flank", "add-upstream-flank",

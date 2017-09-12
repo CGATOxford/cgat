@@ -116,8 +116,8 @@ def main(argv=None):
 
     infile = pysam.AlignmentFile("-", "rb")
     outfile = pysam.AlignmentFile("-", "wb", template=genomefile,
-                            referencenames=referencenames,
-                            referencelengths=referencelengths)
+                                  referencenames=referencenames,
+                                  referencelengths=referencelengths)
 
     if options.colour_mismatches:
         tag = "CM"

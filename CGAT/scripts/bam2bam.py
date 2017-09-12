@@ -354,8 +354,11 @@ def main(argv=None):
     bamfiles = []
 
     if options.stdin != sys.stdin:
+        from_stdin = True
         bamfiles.append(options.stdin.name)
-
+    else:
+        from_stdin = False
+        
     if options.inplace:
         bamfiles.extend(args)
         if len(bamfiles) == 0:
@@ -368,6 +371,8 @@ def main(argv=None):
 
     if len(bamfiles) == 0:
         bamfiles = ["-"]
+
+    to_stdout = False
 
     for bamfile in bamfiles:
 
@@ -383,8 +388,8 @@ def main(argv=None):
 
         # reading bam from stdin does not work with only the "r" tag
         pysam_in = pysam.AlignmentFile(bamfile, "rb")
-
-        if bamfile == "-":
+        if bamfile == "-" or (from_stdin and bamfile == options.stdin.name):
+            to_stdout = True
             if options.output_sam:
                 pysam_out = pysam.AlignmentFile("-", "wh", template=pysam_in)
             else:
@@ -397,8 +402,9 @@ def main(argv=None):
             tmpfile.close()
 
             E.debug("writing temporary bam-file to %s" % tmpfile.name)
-            pysam_out = pysam.AlignmentFile(tmpfile.name, "wb",
-                                      template=pysam_in)
+            pysam_out = pysam.AlignmentFile(tmpfile.name,
+                                            "wb",
+                                            template=pysam_in)
 
         if "filter" in options.methods:
 
@@ -431,7 +437,12 @@ def main(argv=None):
                 remove_mismatches=remove_mismatches,
                 colour_mismatches=colour_mismatches)
 
-            options.stdlog.write("category\tcounts\n%s\n" % c.asTable())
+            if pysam_ref:
+                pysam_ref.close()
+
+            # do not write to stdlog in the middle of a SAM/BAM stdout stream.
+            if options.stdlog != options.stdout:
+                E.info("category\tcounts\n%s\n" % c.asTable())
         else:
 
             # set up the modifying iterators
@@ -587,9 +598,9 @@ def main(argv=None):
 
                 else:
                     down = SubsetBam(pysam_in=it,
-                                      downsample=options.downsample,
-                                      paired_end=None,
-                                      single_end=True,
+                                     downsample=options.downsample,
+                                     paired_end=None,
+                                     single_end=True,
                                      random_seed=options.random_seed)
                     it = down.downsample_single()
 
@@ -600,9 +611,9 @@ def main(argv=None):
 
                 else:
                     down = SubsetBam(pysam_in=it,
-                                      downsample=options.downsample,
-                                      paired_end=True,
-                                      single_end=None,
+                                     downsample=options.downsample,
+                                     paired_end=True,
+                                     single_end=None,
                                      random_seed=options.random_seed)
                     it = down.downsample_paired()
 
@@ -610,8 +621,8 @@ def main(argv=None):
             for read in it:
                 pysam_out.write(read)
 
-            pysam_in.close()
-            pysam_out.close()
+        pysam_in.close()
+        pysam_out.close()
 
         if options.inplace:
             # set date and file permissions according to original

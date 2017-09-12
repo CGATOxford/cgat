@@ -1,0 +1,11 @@
+version:
+    stdin: null
+    outputs: [stdout]
+    references: []
+    options: --version
+
+test_rungsea:
+    stdin: null
+    options: -f <DIR>/Expression_data.tsv -g <DIR>/Gene_set.gmt -n 10 -d 1 -l 4
+    outputs: [CGAT_Gene_set_details.tsv,CGAT_REPORT_FOR_downregulated.Expression_data.xls,CGAT_REPORT_FOR_upregulated.Expression_data.xls,Leading_Edge_Analysis/CGAT_LEADING_EDGE_ANALYSIS_SUMMARY.tsv,Leading_Edge_Analysis/CGAT_leading_edge_matrix_for_results.gmx]
+    references: [CGAT_Gene_set_details.tsv,CGAT_REPORT_FOR_downregulated.Expression_data.xls,CGAT_REPORT_FOR_upregulated.Expression_data.xls,Leading_Edge_Analysis/CGAT_LEADING_EDGE_ANALYSIS_SUMMARY.tsv,Leading_Edge_Analysis/CGAT_leading_edge_matrix_for_results.gmx]

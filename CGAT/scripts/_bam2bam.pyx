@@ -133,12 +133,15 @@ def filter_bam(AlignmentFile input_samfile,
             raise ValueError("require another bam file for mismatch filtering" )
 
         # L = 1 byte (unsigned char)
-        def _gen(): return array.array('B') 
+        def _gen():
+            return array.array('B')
+        
         index = collections.defaultdict(_gen)
 
         while ret > 0:
-            ret = bam_read1(hts_get_bgzfp(reference_samfile.htsfile),
-                            b)
+            ret = bam_read1(
+                hts_get_bgzfp(reference_samfile.htsfile),
+                b)
             if ret > 0:
                 # ignore unmapped reads
                 if b.core.flag & 4:
@@ -151,7 +154,6 @@ def filter_bam(AlignmentFile input_samfile,
                 else:
                     nm = 0
                 index[qname].append(nm)
-
         E.info( "built index for %i reads" % len(index))
         bam_destroy1(b)
 
@@ -167,8 +169,7 @@ def filter_bam(AlignmentFile input_samfile,
     for read in input_samfile:
 
         ninput += 1
-        # if ninput > 10000: break
-
+    
         # remove unmapped reads
         if read._delegate.core.flag & 4:
             if c_remove_unmapped:

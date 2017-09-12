@@ -198,7 +198,7 @@ def main(argv=None):
 
     if options.filename_transcriptome:
         transcripts_samfile = pysam.AlignmentFile(options.filename_transcriptome,
-                                            "rb")
+                                                  "rb")
     else:
         transcripts_samfile = None
 
@@ -212,14 +212,14 @@ def main(argv=None):
             raise IOError("output file %s already exists" %
                           options.filename_mismapped)
         output_mismapped = pysam.AlignmentFile(options.filename_mismapped,
-                                         "wb",
-                                         template=genome_samfile)
+                                               "wb",
+                                               template=genome_samfile)
     else:
         output_mismapped = None
 
     if options.filename_junctions:
         junctions_samfile = pysam.AlignmentFile(options.filename_junctions,
-                                          "rb")
+                                                "rb")
     else:
         junctions_samfile = None
 

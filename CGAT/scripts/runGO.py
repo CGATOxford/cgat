@@ -176,14 +176,12 @@ def connectToEnsembl(options):
         dbhandle = MySQLdb.connect(
             host=options.database_host,
             user=options.database_username,
-            passwd=options.database_password,
             db=options.database_name,
             port=options.database_port)
     else:
         dbhandle = MySQLdb.connect(
             host=options.database_host,
             user=options.database_username,
-            passwd=options.database_password,
             db=options.database_name,
             unix_socket=options.database_socket)
     return dbhandle
@@ -766,7 +764,7 @@ def main(argv=None):
                 "genes_in_bg\t%i\tinput background\n" % nbackground)
             outfile.write(
                 "genes_in_bg_with_assignment\t%i\tgenes in background with GO assignments\n" % (
-                len(go_results.mBackgroundGenes)))
+                    len(go_results.mBackgroundGenes)))
             outfile.write(
                 "associations_in_fg\t%i\tassociations in sample\n" %
                 go_results.mSampleCountsTotal)

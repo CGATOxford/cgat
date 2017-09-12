@@ -292,7 +292,6 @@ def main(argv=None):
         options.stdout.write("\t".join(header) + "\n")
 
         for gtf in GTF.iterator(options.stdin):
-
             attributes = []
             for a in list(gtf.keys()):
                 if a in ("gene_id", "transcript_id"):

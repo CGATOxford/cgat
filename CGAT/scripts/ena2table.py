@@ -100,7 +100,6 @@ MAP_CODE2DESIGN = \
     }
 
 
-
 def main(argv=None):
     """script main.
 
