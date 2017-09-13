@@ -1,7 +1,3 @@
-<<<<<<< HEAD
-# Command line options
-#--------------------
-=======
 '''
 runGSEA.py
 =============================================
@@ -120,14 +116,13 @@ coding: utf-8
 Command line options
 --------------------
 '''
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
 import sys
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import collections
 import numpy as np
-import matplotlib as mpl
-mpl.use('Agg')  # noqa: E402
+#import matplotlib as mpl #noqa:E402
+#mpl.use('Agg') #noqa:E402
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
 import matplotlib.lines as mlines
@@ -137,25 +132,16 @@ import statsmodels.sandbox.stats.multicomp as sm
 from matplotlib.colors import ListedColormap
 from decimal import *
 import pandas as pd
-<<<<<<< HEAD
-import random as RND
-import string
-import itertools as ITL
-=======
 import random
 import string
 import itertools
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
 import os
 import scipy
 from matplotlib import rc, font_manager
 from scipy.cluster.hierarchy import dendrogram, linkage
 ##################################################
 # PLOT CUSTOMIZATION
-<<<<<<< HEAD
-=======
 plt.ioff()
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
 legend_properties = {'weight': 'bold'}
 plt.rc('legend', fontsize=20)
 plt.style.use('seaborn-white')
@@ -167,16 +153,12 @@ title_font = {
     'verticalalignment': 'bottom'}  # Bottom vertical alignment for more space
 axis_font = {'fontname': 'Ubuntu', 'size': '16', 'weight': 'bold'}
 axis_font_h = {'fontname': 'Ubuntu', 'size': '12', 'weight': 'bold'}
-title_font_h = {
-    'fontname': 'Ubuntu',
-    'size': '20',
-    'color': 'darkblue',
-    'weight': 'bold'}
-title_font_ran = {
-    'fontname': 'Ubuntu',
-    'size': '16',
-    'color': 'darkblue',
-    'weight': 'bold'}
+title_font_h = {'fontname': 'Ubuntu', 'size': '20',
+                'color': 'darkblue',
+                'weight': 'bold'}
+title_font_ran = {'fontname': 'Ubuntu', 'size': '16',
+                  'color': 'darkblue',
+                  'weight': 'bold'}
 axis_font_col = {'fontname': 'Ubuntu', 'size': '10', 'weight': 'bold'}
 # Set the font properties (for use in legend)
 font_path = 'C:\Windows\Fonts\Arial.ttf'
@@ -230,17 +212,6 @@ def preprocess_geneset(file, m, n, id_exp):
     excluded_list = []
     included_list = []
     for item in lines:
-<<<<<<< HEAD
-        Gene_ID = item[2:len(item)]
-        F_ID = intersect(Gene_ID, id_exp)
-        if len(F_ID) in range(m, n + 1):
-            included_list.append(
-                [item[0], item[1], len(Gene_ID), len(F_ID), F_ID])
-            t = t + 1
-            INDI[c] = t
-        else:
-            excluded_list.append([item[0], item[1], len(Gene_ID), len(F_ID)])
-=======
         Gene_id = item[2:len(item)]
         F_id = intersect(Gene_id, id_exp)
         if len(F_id) in range(m, n + 1):
@@ -250,7 +221,6 @@ def preprocess_geneset(file, m, n, id_exp):
             INDI[c] = t
         else:
             excluded_list.append([item[0], item[1], len(Gene_id), len(F_id)])
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
             t2 = t2 + 1
             INDI[c] = -(t2)
         c = c + 1
@@ -274,20 +244,12 @@ def read_expression(file):
 def calculate_enrichment_score(s_I, ma, value, s, STORE):
     ma[s_I] = 1
     rr1 = value[s_I]
-<<<<<<< HEAD
-    rr2 = np.sum(np.absolute(rr1))
-=======
     rr2 = np.sum(np.power(np.absolute(rr1), 0))
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
     A33 = np.divide(-1, (len(ma) - s))
     enrich_score = 0
     for ii in range(0, len(ma)):
         if(ma[ii] == 1):
-<<<<<<< HEAD
-            CC = np.absolute(value[ii])
-=======
             CC = np.power(np.absolute(value[ii]), 0)
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
             CC = np.divide(CC, rr2)
             CC = CC + enrich_score
             STORE[ii] = CC
@@ -301,13 +263,8 @@ def calculate_enrichment_score(s_I, ma, value, s, STORE):
     return STORE
 
 
-<<<<<<< HEAD
-def generate_gen_set_report(EX, IN, m, n, Geneset_indicator):
-       # Create gene set details
-=======
 def generate_gen_set_report(EX, IN, m, n, geneset_indicator):
     # Create gene set details
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
     C = len(EX) + len(IN)
     with open("CGAT_Gene_set_details.tsv", 'w') as f:
         f.write("Gene Set details:" + "\n")
@@ -336,36 +293,18 @@ def generate_gen_set_report(EX, IN, m, n, geneset_indicator):
             "\t" +
             "STATUS" +
             "\n")
-<<<<<<< HEAD
-        for i in range(0, len(Geneset_indicator)):
-            if(Geneset_indicator[i] < 0):
-                f.write(EX[abs(Geneset_indicator[i]) -
-                           1][0] +
-                        "\t" +
-                        str(EX[abs(Geneset_indicator[i]) -
-=======
         for i in range(0, len(geneset_indicator)):
             if(geneset_indicator[i] < 0):
                 f.write(EX[abs(geneset_indicator[i]) -
                            1][0] +
                         "\t" +
                         str(EX[abs(geneset_indicator[i]) -
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
                                1][2]) +
                         "\t" +
                         "\t" +
                         " Rejected!" +
                         "\n")
             else:
-<<<<<<< HEAD
-                f.write(IN[Geneset_indicator[i] -
-                           1][0] +
-                        "\t" +
-                        str(IN[Geneset_indicator[i] -
-                               1][2]) +
-                        "\t" +
-                        str(IN[Geneset_indicator[i] -
-=======
                 f.write(IN[geneset_indicator[i] -
                            1][0] +
                         "\t" +
@@ -373,29 +312,19 @@ def generate_gen_set_report(EX, IN, m, n, geneset_indicator):
                                1][2]) +
                         "\t" +
                         str(IN[geneset_indicator[i] -
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
                                1][3]) +
                         '  ' +
                         "\n")
     f.close()
     return
-<<<<<<< HEAD
 
 
-=======
-
-
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
 def generate_leading_edge_m(
         I_U,
         I_D,
         f_U,
         f_D,
         IN_PRO,
-<<<<<<< HEAD
-        ch,
-=======
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
         hm,
         dict_new,
         dfp,
@@ -403,18 +332,11 @@ def generate_leading_edge_m(
         matr,
         OE,
         OEI,
-<<<<<<< HEAD
-        ID_for_leading,
-        store_leading,
-        gene_set_a,
-        STORE_GENE_LEADING_INFO):
-=======
         id_for_leading,
         store_gene_leading_matrix,
         gene_set_a,
         store_gene_leading_info):
     '''
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
     #####################################################################
     I am writing this section for leading edge analysis. It is necessary to describe each and every parameter
     here (just for myself).
@@ -431,30 +353,6 @@ def generate_leading_edge_m(
     matr is temp matrix, used by me earlier.
     This section is little bit complex.
     #######################################################################
-<<<<<<< HEAD
-    inn_u = np.append(f_U, f_D)
-    in1 = np.argsort(np.append(f_U, f_D))
-    in2 = np.sort(np.append(f_U, f_D))
-    in3 = np.where(in2 < ch)[0][0:hm]
-    FINAL_L = in1[in3]
-    for i in FINAL_L:
-        CW = inn_u[i]
-        if(i >= len(f_U)):
-            AW = dfp[I_D[i - len(f_U)]]
-        else:
-            AW = ufp[I_U[i]]
-        II = gene_set_a[AW]
-        inter = intersect(dict_new, II[0])
-        indices = sorted([dict_new[x] for x in inter])
-        matr[indices] = 1
-        if(OE[AW] < 0):
-            v1 = np.where(matr[OEI[AW]:len(matr)] == 1)
-        else:
-            v1 = np.where(matr[0:OEI[AW]] == 1)
-        v2 = ID_for_leading[v1]
-        store_leading.append([IN_PRO[AW][0], len(II[0]), len(v1[0]), list(
-            v2), STORE_GENE_LEADING_INFO[0][AW], STORE_GENE_LEADING_INFO[1][AW], CW])
-=======
     '''
     inn_u = np.append(f_U, f_D)
     in1 = np.argsort(np.append(f_U, f_D))
@@ -477,17 +375,12 @@ def generate_leading_edge_m(
         v2 = id_for_leading[v1]
         store_gene_leading_matrix.append([IN_PRO[aw][0], len(II[0]), len(v1[0]), list(
             v2), store_gene_leading_info[0][aw], store_gene_leading_info[1][aw], CW])
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
         matr.fill(0)
         del indices
         del inter
         del II
 
-<<<<<<< HEAD
-    return store_leading
-=======
     return store_gene_leading_matrix
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
 
 
 def heatmap_plot(hh1, nl):
@@ -538,10 +431,6 @@ def heatmap_plot(hh1, nl):
 
     ax.set_xticklabels(nl, minor=False, **axis_font_h)
     ax.set_yticklabels(nl, minor=False, **axis_font_h)
-<<<<<<< HEAD
-   # ax.set_xlabel("\nOverlap intensity between Leading Edge subsets",fontsize=18,weight='bold',color='darkblue')
-=======
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
     ax.set_title(
         "Overlap intensity between Leading Edge subsets",
         **title_font)
@@ -557,39 +446,12 @@ def heatmap_plot(hh1, nl):
     return
 
 
-<<<<<<< HEAD
-def heatmap_leading_edge_subset(LM, j, SUBSET_dict, jac_f):
-    store_leading_h1 = np.zeros((j, j), dtype=np.float)
-=======
 def heatmap_leading_edge_subset(LM, subset_dict, jac_f):
     store_leading_h1 = np.zeros((len(LM), len(LM)), dtype=np.float)
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
     o_clus = []
     name_l = []
     for i in LM:
         name_l.append(i[0])
-<<<<<<< HEAD
-    idx = list(range(j))
-    pairs = list(ITL.combinations(idx, 2))
-    for i in range(0, len(pairs)):
-        h = pairs[i]
-        F_ID = intersect(LM[h[0]][3], LM[h[1]][3])
-        if (len(F_ID) > 0):
-            for vv in range(0, len(F_ID)):
-                SUBSET_dict[F_ID[vv]] = SUBSET_dict[F_ID[vv]] + 1
-            store_leading_h1[h[0]][h[1]] = (
-                LM[h[0]][2] / (LM[h[0]][2] + LM[h[1]][2]))
-            jac_f.append((LM[h[0]][2] / (LM[h[0]][2] + LM[h[1]][2])))
-        else:
-            jac_f.append(0)
-    o_clus.append(0)
-    # This section is for leading edge analysis.
-    for i in range(0, len(store_leading_h1)):
-        # I am storing index to use it clustering
-        o_clus.append(np.argmax(store_leading_h1[i, :]))
-    heatmap_plot(store_leading_h1, name_l)
-    return jac_f, o_clus
-=======
     idx = list(range(len(LM)))
     pairs = list(itertools.combinations(idx, 2))
     for i in range(0, len(pairs)):
@@ -605,7 +467,6 @@ def heatmap_leading_edge_subset(LM, subset_dict, jac_f):
             jac_f.append(0)
     heatmap_plot(store_leading_h1, name_l)
     return jac_f, subset_dict
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
 
 
 def heatmap_plot_assign(ASS_M, name_x, name_y, file_to_save, oi, cMap):
@@ -655,14 +516,6 @@ def heatmap_plot_assign(ASS_M, name_x, name_y, file_to_save, oi, cMap):
     return
 
 
-<<<<<<< HEAD
-def leading_edge_clustering(SCB, SCB_2, name_x, name_y, hh):
-    te = scipy.spatial.distance.pdist(np.transpose(SCB), metric='correlation')
-    Z = linkage(scipy.spatial.distance.squareform(te), 'average')
-    plot_dendrogram_for_cluster(Z)
-    ind = scipy.cluster.hierarchy.fcluster(Z, 0.5 * te.max(), 'distance')
-
-=======
 def leading_edge_clustering(SCB, SCB_2, name_x, name_y):
     # For leading edge genes.
     te = scipy.spatial.distance.pdist(np.transpose(SCB), metric='correlation')
@@ -675,24 +528,10 @@ def leading_edge_clustering(SCB, SCB_2, name_x, name_y):
     plot_dendrogram_for_cluster(Z, name_l_x_leaf, 'Leading edge genes')
 
     ind = scipy.cluster.hierarchy.fcluster(Z, 0.5 * te.max(), 'distance')
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
     name_l_x_clus = []
     yy = np.argsort(ind)
     for i in yy:
         name_l_x_clus.append(name_x[i])
-<<<<<<< HEAD
-    hh_copy = np.array(hh)
-    r1 = np.array(range(0, len(name_y)))
-    for i in hh_copy:
-        r1 = r1[r1 != i]
-    hh_copy = np.append(hh_copy, r1)
-    _, idx = np.unique(hh_copy, return_index=True)
-    hh = hh_copy[np.sort(idx)]
-    name_l_y_clus = []
-    for i in hh:
-        name_l_y_clus.append(name_y[i])
-    FINAL_BOOLEAN_MA_copy = SCB_2[hh, :]
-=======
 
     # For geneset.
     del te
@@ -715,7 +554,6 @@ def leading_edge_clustering(SCB, SCB_2, name_x, name_y):
         name_l_y_clus.append(name_y[i])
 
     FINAL_BOOLEAN_MA_copy = SCB_2[yy_gene, :]
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
     FINAL_BOOLEAN_MA = FINAL_BOOLEAN_MA_copy[:, yy]
     ##########################################################################
     # CREATE CLUSTERED AND UNCLUSTERED GCT FILES.
@@ -743,11 +581,7 @@ def leading_edge_clustering(SCB, SCB_2, name_x, name_y):
         f2.write(name_l_y_clus[i] + "\t" + "na" + "\t")
         for za in range(0, len(name_x)):
             f.write(str(SCB[i][za]))
-<<<<<<< HEAD
-            f2.write(str(SCB[hh[i]][yy[za]]))
-=======
             f2.write(str(SCB[yy_gene[i]][yy[za]]))
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
             if(za == len(name_x) - 1):
                 f.write("\n")
                 f2.write("\n")
@@ -758,21 +592,7 @@ def leading_edge_clustering(SCB, SCB_2, name_x, name_y):
     f.close()
     f2.close()
     ##########################################################################
-<<<<<<< HEAD
-    cMap = ListedColormap(['white',
-                           'limegreen',
-                           'lawngreen',
-                           'darkgreen',
-                           'dodgerblue',
-                           'c',
-                           'blue',
-                           'orangered',
-                           'tomato',
-                           'red'])
-    #cMap = ListedColormap(['white','palegreen','yellowgreen','limegreen','lawngreen', 'green', 'mediumseagreen','springgreen','darkgreen','red'])
-=======
     cMap = plt.cm.Reds
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
     heatmap_plot_assign(
         FINAL_BOOLEAN_MA,
         name_l_x_clus,
@@ -780,62 +600,6 @@ def leading_edge_clustering(SCB, SCB_2, name_x, name_y):
         'Leading_Edge_Analysis/Leading_Edge_heatmap_clustered.jpeg',
         1,
         cMap)
-<<<<<<< HEAD
-    return
-
-
-def plot_enrichment_score(
-        STORE_ENRICHMENT_SCORE,
-        ORIGINAL_ES_INDEX,
-        ORIGINAL_ES,
-        IN_list,
-        A_W,
-        l_ID):
-    plt.figure(figsize=(8, 6), dpi=80)
-    plt.plot(
-        STORE_ENRICHMENT_SCORE[A_W],
-        color="firebrick",
-        linewidth=3.5,
-        linestyle="-")
-    plt.plot(
-        ORIGINAL_ES_INDEX[A_W],
-        ORIGINAL_ES[A_W],
-        'go',
-        markersize=15,
-        mfc='none',
-        mew=2.5,
-        label="ES")
-    plt.legend(
-        bbox_to_anchor=(
-            0.97,
-            1),
-        loc=2,
-        prop=legend_properties,
-        handletextpad=0)
-    ##plt.axvline(x= ORIGINAL_ES_INDEX[AW], ymin=0, ymax=ORIGINAL_ES[AW], linewidth=3, color="g",linestyle=":")
-    plt.axhline(y=0, linewidth=2, color="k", linestyle="--")
-    plt.xticks(fontsize=12, weight='bold')
-    plt.yticks(fontsize=12, weight='bold')
-    q = IN_list[A_W]
-    file_to_report_pic = ".".join(["enplot", q[0], 'jpeg'])
-    q2 = ''.join(['\nGene List Index', '\n\nNumber of genes: ',
-                  str(l_ID), '(in list), ', str(q[3]), '(in gene set)'])
-    plt.xlabel(q2, **axis_font)
-    plt.ylabel('\n\nRunning enrichment score(RES)', **axis_font, labelpad=28)
-    plt.title(''.join(["Gene Set", ":", q[0]]), **title_font)
-    plt.grid()
-    plt.tight_layout()
-    plt.savefig(file_to_report_pic, bbox_inches='tight')
-    plt.close()
-    return
-
-
-def plot_random_ES(store_permute, A_W, IN_list):
-    plt.figure(figsize=(8, 6), dpi=80)
-    Rans_plot = store_permute[:, A_W]
-    n, bins, patches = plt.hist(
-        Rans_plot, 80, normed=False, color='magenta', alpha=0.9, histtype='bar')
-=======
     return
 
 
@@ -875,11 +639,11 @@ def plot_enrichment_score(
     plt.yticks(fontsize=12, weight='bold')
     q = in_list[A_W]
     file_to_report_pic = ".".join(["enplot", q[0], 'jpeg'])
-    q2 = ''.join(['\nGene List Index', '\n\nNumber of genes: ',
+    q2 = "".join(['\nGene List Index', '\n\nNumber of genes: ',
                   str(l_id), '(in list), ', str(q[3]), '(in gene set)'])
     plt.xlabel(q2, **axis_font)
     plt.ylabel('\n\nRunning enrichment score(RES)', **axis_font, labelpad=28)
-    # plt.title(''.join(["Gene Set", ":", q[0]]), **title_font)
+    # plt.title("".join(["Gene Set", ":", q[0]]), **title_font)
     plt.title(q[0], **title_font_ran)
     plt.grid()
     plt.tight_layout()
@@ -893,27 +657,15 @@ def plot_random_ES(store_permute, A_W, in_list):
     Rans_plot = store_permute[:, A_W]
     n, bins, patches = plt.hist(
         Rans_plot, 80, normed=False, color='dodgerblue', alpha=0.9, histtype='bar')
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
     plt.xticks(fontsize=12, weight='bold')
     plt.yticks(fontsize=12, weight='bold')
     plt.xlabel('\nEnrichment Score', **axis_font)
     plt.ylabel('Frequency', **axis_font, labelpad=28)
-<<<<<<< HEAD
-   # plt.yticks(np.arange(0,max(n)+1, 1.0))
-    q = IN_list[A_W]
-    file_to_report_pic = ".".join(["random_enplot", q[0], 'jpeg'])
-    plt.title(''.join([q[0], ":Random ES Distribution"]), **title_font_ran)
-    plt.grid(b=True, which='both', linestyle='--')
-   # ax = plt.axes()
-   # ax.yaxis.grid() # horizontal lines
-   # ax.xaxis.grid() # vertical lines
-=======
     q = in_list[A_W]
     file_to_report_pic = ".".join(["random_enplot", q[0], 'jpeg'])
     #plt.title(''.join([q[0], ":Random ES Distribution"]), **title_font_ran)
     plt.title("Random ES Distribution", **title_font_ran)
     plt.grid(b=True, which='both', linestyle='--')
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
     plt.tight_layout()
     plt.savefig(file_to_report_pic, bbox_inches='tight')
     plt.close()
@@ -957,7 +709,7 @@ def plot_enrichment_score_subplot(store_enrichment_score, original_es_index,
               fontsize=16, color='darkblue', weight='bold')
     plt.grid()
     if(s_index == lk):
-        q2 = ''.join(
+        q2 = "".join(
             ['\n\nGene List Index', '\n\nNumber of genes: ', str(l_id), '(in list)'])
         plt.xlabel(q2, fontsize=20, weight='bold')
         plt.tight_layout(pad=0.1, w_pad=9, h_pad=1.0)
@@ -982,14 +734,8 @@ def plot_dendrogram_for_cluster(ZZ, name_leaf, text_to_save):
     plt.yticks(fontsize=12, weight='bold')
     plt.xticks(weight='bold')
     plt.tight_layout()
-<<<<<<< HEAD
-    plt.savefig(
-        "Leading_Edge_Analysis/Last_20_merged_cluster_dendrogram",
-        bbox_inches='tight')
-=======
     t_s = "Leading_Edge_Analysis/Last_20_merged_cluster_dendrogram_" + text_to_save + ".jpeg"
     plt.savefig(t_s, bbox_inches='tight')
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
     plt.close()
     fig, ax = plt.subplots()
     del t_s
@@ -1003,13 +749,6 @@ def plot_dendrogram_for_cluster(ZZ, name_leaf, text_to_save):
     plt.yticks(fontsize=12, weight='bold')
     plt.xticks(weight='bold')
     plt.title('Hierarchical Clustering Dendrogram', **title_font)
-<<<<<<< HEAD
-    plt.xlabel('\nGene set index', fontsize=18, weight='bold')
-    plt.ylabel('Distance', fontsize=18, weight='bold', labelpad=28)
-    plt.tight_layout()
-    plt.savefig(
-        "Leading_Edge_Analysis/Hierarchical_cluster_dendrogram",
-=======
     plt.xlabel(text_to_save, fontsize=18, weight='bold')
     plt.ylabel('Distance', fontsize=18, weight='bold', labelpad=28)
     plt.tight_layout()
@@ -1029,7 +768,11 @@ def plot_summary_report(nui, fg1, ufp, g_set, c):
     """
     pl_x = []
     pl_y = []
-    for i in range(0, 20):
+    if(len(nui) <= 20):
+        loop_plot = len(nui)
+    else:
+        loop_plot = 20
+    for i in range(0, loop_plot):
         aw = ufp[nui[i]]
         itt = g_set[aw]
         pl_y.append(fg1[aw])
@@ -1041,7 +784,7 @@ def plot_summary_report(nui, fg1, ufp, g_set, c):
         list(
             range(
                 0,
-                20)),
+                loop_plot)),
         pl_y,
         color='orange',
         align="center",
@@ -1057,7 +800,7 @@ def plot_summary_report(nui, fg1, ufp, g_set, c):
               fontsize=25, weight='bold', color='darkblue')
     plt.gca().invert_yaxis()
     plt.tight_layout()
-    c2 = "Top_20_" + c + "_genesets_by_treatment.jpeg"
+    c2 = "Top_" + str(loop_plot) + "_" + c + "_genesets_by_treatment.jpeg"
     plt.savefig(c2, bbox_inches='tight')
     plt.close()
     return
@@ -1071,15 +814,16 @@ def plot_summary_report_for_fdr(pl_x, pl_y):
         list(
             range(
                 0,
-                20)),
+                len(pl_y))),
         pl_y,
         color='c',
         align="center",
         height=0.7,
         alpha=0.9)
     plt.axvline(x=0, linewidth=2, color="k")
-    plt.yticks(range(21), pl_x)
-    cc = "Top 20 enriched gene sets" + "\n(sorted by FDR-q values)"
+    #plt.yticks(range(21), pl_x)
+    plt.yticks(list(range(0, len(pl_y))), pl_x)
+    cc = "Top enriched gene sets" + "\n(sorted by FDR-q values)"
     plt.ylabel(cc, labelpad=30, fontsize=25, weight='bold', color='darkblue')
     ax.xaxis.tick_top()
     plt.yticks(fontsize=16, weight='bold')
@@ -1091,8 +835,7 @@ def plot_summary_report_for_fdr(pl_x, pl_y):
     plt.grid(b=True, which='minor', linestyle='--')
     plt.tight_layout()
     plt.savefig(
-        "Top_20_enriched_genesets(fdr_sorted).jpeg",
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
+        "Top_enriched_genesets(fdr_sorted).jpeg",
         bbox_inches='tight')
     plt.close()
     return
@@ -1108,11 +851,7 @@ def main(argv=None):
         argv = sys.argv
 
     # setup command line parser
-<<<<<<< HEAD
-    parser = EW.OptionParser(
-=======
     parser = E.OptionParser(
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
         version="%prog version: $Id$",
         usage=globals()["__doc__"])
 
@@ -1152,11 +891,7 @@ def main(argv=None):
         "--randomseed",
         dest="seed",
         type="int",
-<<<<<<< HEAD
-        help="A number used to initialize a pseudorandom number generator"
-=======
         help="A number use to initialize a pseudorandom number generator"
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
         " [default=%default].")
 
     parser.add_option(
@@ -1171,65 +906,21 @@ def main(argv=None):
         "--display",
         dest="plot_no",
         type="int",
-<<<<<<< HEAD
-        help="Displays enrichment plots for the specified no. of gene sets with the highest absolute normalized enrichment scores(each phenotype) [default=%default].")
-
-    parser.add_option(
-        "-t",
-        "--threshold",
-        dest="fdr_user",
-        type="float",
-        help="false discovery rate (significance threshold) for leading edge analysis")
-=======
         help="Displays enrichment plots for the specified no. of gene sets with the highest absolute normalized enrichment scores (each phenotype) [default=%default].")
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
 
     parser.add_option(
         "-l",
         "--num_leading",
         dest="fdr_num",
         type="int",
-<<<<<<< HEAD
-        help="Number of genesets with specified FDR for leading edge analysis[default=%default].")
-=======
         help="Number of genesets for leading edge analysis, by default top 11 enriched genesets will be used for this analysis."
         "Minimum number of genesets should be 4. [default=%default].")
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
 
     parser.set_defaults(
         file_name=None,
         geneset=None,
         min_gene=25,
         max_gene=500,
-<<<<<<< HEAD
-        seed=448,
-        iteration=10,
-        plot_no=20,
-        fdr_user=0.01,
-        fdr_num=11,
-    )
-    (options, args) = EW.Start(parser, add_database_options=True)
-    # Preprocess expression file.
-    ID, expression_value = read_expression(options.file_name)
-
-    # Preprocess geneset
-    EX_list, IN_list, Geneset_indicator = preprocess_geneset(
-        options.geneset, options.min_gene, options.max_gene, ID)
-    generate_gen_set_report(
-        EX_list,
-        IN_list,
-        options.min_gene,
-        options.max_gene,
-        Geneset_indicator)
-
-    # Store filtered geneset. Because IN_list contains annotation and
-    # description also,for each geneset.
-    GG = [item[4:len(item)] for item in IN_list]
-
-    # Store index of each id (from the ranked list of expression data as a
-    # dicitionary)
-    ind_dict = dict((k, i) for i, k in enumerate(ID))
-=======
         seed=42,
         iteration=1000,
         plot_no=20,
@@ -1256,25 +947,10 @@ def main(argv=None):
     # Store index of each id (from the ranked list of expression data as a
     # dicitionary)
     ind_dict = dict((k, i) for i, k in enumerate(id))
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
 
     # Calculate enrichment score for each geneset.
     # Create boolean array for total number of id in expression data and float
     # array for Enrichment Score of options.iteration permutation.
-<<<<<<< HEAD
-    temp = np.zeros((len(ID),), dtype=np.bool)
-    temp_2 = np.zeros((len(ID),), dtype=np.float)
-    store_permute = np.zeros((options.iteration, len(GG)), dtype=np.float)
-    ORIGINAL_ES = np.zeros((len(GG),), dtype=np.float)
-    ORIGINAL_ES_INDEX = np.zeros((len(GG),), dtype=np.int)
-    ORIGINAL_NES = np.zeros((len(GG),), dtype=np.float)
-    PERMUTE_NES = np.zeros((options.iteration, len(GG)), dtype=np.float)
-    nominal_p = np.zeros((len(GG),), dtype=np.float)
-    nominal_p_nes = np.zeros((len(GG),), dtype=np.float)
-    STORE_ENRICHMENT_SCORE = []
-    STORE_GENE_LEADING_INFO = np.zeros((3, len(GG)), dtype=np.int)
-    STORE_GENE_LEADING_MATRIX = []
-=======
     temp = np.zeros((len(id),), dtype=np.bool)
     temp_2 = np.zeros((len(id),), dtype=np.float)
     store_permute = np.zeros((options.iteration, len(GG)), dtype=np.float)
@@ -1287,35 +963,12 @@ def main(argv=None):
     store_enrichment_score = []
     store_gene_leading_info = np.zeros((3, len(GG)), dtype=np.int)
     store_gene_leading_matrix = []
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
 
     count = 0
     for i in GG:
         inter = intersect(ind_dict, i[0])
         indices = sorted([ind_dict[x] for x in inter])
         S = len(i[0])
-<<<<<<< HEAD
-        E = calculate_enrichment_score(
-            indices, temp, expression_value, S, temp_2)
-        del indices
-        del inter
-        a1 = [np.absolute(np.max(E)), np.absolute(np.min(E))]
-        if(np.absolute(np.max(E)) == np.absolute(np.min(E))):
-            ORIGINAL_ES[count] = np.max(E)
-            ORIGINAL_ES_INDEX[count] = np.argmax(E)
-        else:
-            if(a1.index(max(a1)) == 0):
-                ORIGINAL_ES[count] = np.max(E)
-                ORIGINAL_ES_INDEX[count] = np.argmax(E)
-            else:
-                ORIGINAL_ES[count] = np.min(E)
-                ORIGINAL_ES_INDEX[count] = np.argmin(E)
-        STORE_ENRICHMENT_SCORE.append(list(E))
-        # This section has been added by me for "Leading Edge Analysis".
-        t0 = ORIGINAL_ES_INDEX[count]
-        if(ORIGINAL_ES[count] < 0):
-            se = temp[t0:len(ID)]
-=======
         enrich_score = calculate_enrichment_score(
             indices, temp, expression_value, S, temp_2)
         del indices
@@ -1339,25 +992,11 @@ def main(argv=None):
         t0 = original_es_index[count]
         if(original_es[count] < 0):
             se = temp[t0:len(id)]
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
         else:
             se = temp[0:t0 + 1]
         c0 = np.sum(se == 1)
         c1 = len(se)
         tag = (c0 * 100) / S
-<<<<<<< HEAD
-        tag2 = (c0 * 100) / len(ID)
-        gene_l = (c1 * 100) / len(ID)
-        signal_l = (tag / 100) * (1 - (gene_l / 100)) * \
-            (len(ID) / (len(ID) - S))
-        STORE_GENE_LEADING_INFO[0][count] = tag
-        STORE_GENE_LEADING_INFO[1][count] = gene_l
-        STORE_GENE_LEADING_INFO[2][count] = signal_l * 100
-        temp_2.fill(0)
-        temp.fill(0)
-        del a1
-        del E
-=======
         tag2 = (c0 * 100) / len(id)
         gene_l = (c1 * 100) / len(id)
         signal_l = (tag / 100) * (1 - (gene_l / 100)) * \
@@ -1369,7 +1008,6 @@ def main(argv=None):
         temp.fill(0)
         del a1
         del enrich_score
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
         count = count + 1
 
     print("Enrichment score calculation has been successfully completed")
@@ -1379,44 +1017,6 @@ def main(argv=None):
     s = 0
     for t in GG:
         s = s + len(t[0])
-<<<<<<< HEAD
-    SIZE_INFO = [len(t[0]) for t in GG]
-
-    # Random index generation
-    np.random.seed(options.seed)
-    A = np.random.randint(len(ID), size=(options.iteration, s))
-    ID_NEW = np.array(ID)
-
-    # Calculate enrichment score for permuted genesets
-    count = 0
-    for PER in range(0, options.iteration):
-        e1 = ID_NEW[A[PER, :]]
-        # if((PER%100)==0):
-        print(PER)
-        for i in range(0, len(SIZE_INFO)):
-            tt = SIZE_INFO[i]
-            TAR = e1[count:(count + tt)]
-            count = tt
-            inter = intersect(ind_dict, TAR)
-            indices = sorted([ind_dict[x] for x in inter])
-            S = len(TAR)
-            E = calculate_enrichment_score(
-                indices, temp, expression_value, S, temp_2)
-            del indices
-            del inter
-            a1 = [np.absolute(np.max(E)), np.absolute(np.min(E))]
-            if(np.absolute(np.max(E)) == np.absolute(np.min(E))):
-                store_permute[PER, i] = np.max(E)
-            else:
-                if(a1.index(max(a1)) == 0):
-                    store_permute[PER, i] = np.max(E)
-                else:
-                    store_permute[PER, i] = np.min(E)
-            del a1
-            temp.fill(0)
-            temp_2.fill(0)
-            del E
-=======
     size_info = [len(t[0]) for t in GG]
 
     # Random index generation
@@ -1453,20 +1053,10 @@ def main(argv=None):
             temp.fill(0)
             temp_2.fill(0)
             del enrich_score
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
 
     print("Enrichment score calculation for permuted sets has been successfully completed")
 
     # Calculation of empirical p-value.
-<<<<<<< HEAD
-    for i in range(0, len(ORIGINAL_ES)):
-        if(ORIGINAL_ES[i] >= 0):
-            A1 = store_permute[:, i] >= ORIGINAL_ES[i]
-            A2 = store_permute[A1, i]
-            nominal_p[i] = np.divide(len(A2), options.iteration)
-        else:
-            A1 = store_permute[:, i] <= ORIGINAL_ES[i]
-=======
     for i in range(0, len(original_es)):
         if(original_es[i] >= 0):
             A1 = store_permute[:, i] >= original_es[i]
@@ -1474,36 +1064,12 @@ def main(argv=None):
             nominal_p[i] = np.divide(len(A2), options.iteration)
         else:
             A1 = store_permute[:, i] <= original_es[i]
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
             A2 = store_permute[A1, i]
             nominal_p[i] = np.divide(len(A2), options.iteration)
 
     # Normalization of enrichment score
 
     for i in range(0, len(GG)):
-<<<<<<< HEAD
-        if(ORIGINAL_ES[i] < 0):
-            A1 = store_permute[:, i] < 0
-            A2 = np.mean(np.absolute(store_permute[A1, i]))
-            ORIGINAL_NES[i] = np.divide(ORIGINAL_ES[i], A2)
-        else:
-            A1 = store_permute[:, i] >= 0
-            A2 = np.mean(np.absolute(store_permute[A1, i]))
-            ORIGINAL_NES[i] = np.divide(ORIGINAL_ES[i], A2)
-
-    # Normalization of enrichment score for each permutation.
-
-    for PER in range(0, options.iteration):
-        for i in range(0, len(GG)):
-            if(store_permute[PER, i] < 0):
-                A1 = store_permute[:, i] < 0
-                A2 = np.mean(np.absolute(store_permute[A1, i]))
-                PERMUTE_NES[PER, i] = np.divide(store_permute[PER, i], A2)
-            else:
-                A1 = store_permute[:, i] >= 0
-                A2 = np.mean(np.absolute(store_permute[A1, i]))
-                PERMUTE_NES[PER, i] = np.divide(store_permute[PER, i], A2)
-=======
         if(original_es[i] < 0):
             A1 = store_permute[:, i] < 0
             A2 = np.mean(np.absolute(store_permute[A1, i]))
@@ -1525,22 +1091,11 @@ def main(argv=None):
                 A1 = store_permute[:, i] >= 0
                 A2 = np.mean(np.absolute(store_permute[A1, i]))
                 permute_nes[per, i] = np.divide(store_permute[per, i], A2)
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
 
     print("Normalization has been successfully completed")
 
     # Calculation of empirical p-value for normalized enrichment score.
 
-<<<<<<< HEAD
-    for i in range(0, len(ORIGINAL_NES)):
-        if(ORIGINAL_NES[i] >= 0):
-            A1 = PERMUTE_NES[:, i] >= ORIGINAL_NES[i]
-            A2 = PERMUTE_NES[A1, i]
-            nominal_p_nes[i] = np.divide(len(A2), options.iteration)
-        else:
-            A1 = PERMUTE_NES[:, i] <= ORIGINAL_NES[i]
-            A2 = PERMUTE_NES[A1, i]
-=======
     for i in range(0, len(original_nes)):
         if(original_nes[i] >= 0):
             A1 = permute_nes[:, i] >= original_nes[i]
@@ -1549,25 +1104,11 @@ def main(argv=None):
         else:
             A1 = permute_nes[:, i] <= original_nes[i]
             A2 = permute_nes[A1, i]
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
             nominal_p_nes[i] = np.divide(len(A2), options.iteration)
 
     nes_up_index = np.array([], dtype=np.int)
     nes_down_index = np.array([], dtype=np.int)
     # Extract two set NES>0 and NES<0
-<<<<<<< HEAD
-
-    NN = ORIGINAL_NES[ORIGINAL_NES > 0]
-    up_for_plot = np.where(ORIGINAL_NES >= 0)[0]
-    NES_UP = -np.sort(-NN)
-    NES_UP_INDEX = np.argsort(-NN)
-    del NN
-    NN = ORIGINAL_NES[ORIGINAL_NES < 0]
-    down_for_plot = np.where(ORIGINAL_NES < 0)[0]
-    NES_DOWN = np.sort(NN)
-    NES_DOWN_INDEX = np.argsort(NN)
-    del NN
-=======
     if(sum(original_nes > 0) > 0):
         NN = original_nes[original_nes > 0]
         up_for_plot = np.where(original_nes >= 0)[0]
@@ -1580,7 +1121,6 @@ def main(argv=None):
         nes_down = np.sort(NN)
         nes_down_index = np.argsort(NN)
         del NN
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
 
     # Calculate FDR
     fdr_upregulated = np.array([], dtype=np.float)
@@ -1591,65 +1131,6 @@ def main(argv=None):
         fdr_downregulated = np.zeros((len(nes_down),), dtype=np.float)
 
     # For upregulated:
-<<<<<<< HEAD
-    if(len(NES_UP_INDEX) > 0):
-        p_value_up = nominal_p_nes[ORIGINAL_NES >= 0]
-        b, fdr_upregulated, w1, w2 = sm.multipletests(
-            p_value_up[NES_UP_INDEX], alpha=0.05, method='fdr_bh', is_sorted=False, returnsorted=False)
-
-    # For downregulated
-    if(len(NES_DOWN_INDEX) > 0):
-        p_value_down = nominal_p_nes[ORIGINAL_NES < 0]
-        b, fdr_downregulated, w1, w2 = sm.multipletests(
-            p_value_down[NES_DOWN_INDEX], alpha=0.05, method='fdr_bh', is_sorted=False, returnsorted=False)
-
-    print("FDR calculation has been successfully completed")
-
-    # PREPARE FINAL SUMMARY REPORT.
-    f = open("CGAT_Report_for_expression_dataset.txt", "w")
-    f.write("Enrichment in phenotype (upregulated):" + "\n")
-    f.write("@ " + str(len(NES_UP_INDEX)) + "/" +
-            str(len(IN_list)) + " gene sets are upregulated" + "\n")
-    f.write("@ " + str(sum(fdr_upregulated < 0.05)) +
-            " gene sets are significant at FDR < 5%" + "\n")
-    f.write("@ " + str(sum(fdr_upregulated < 0.01)) +
-            " gene sets are significant at FDR < 1%" + "\n")
-    w1 = nominal_p[ORIGINAL_NES >= 0]
-    w2 = nominal_p[ORIGINAL_NES < 0]
-    f.write("@ " +
-            str(sum(w1 < 0.01)) +
-            " gene sets are significantly enriched at nominal pvalue < 1%" +
-            "\n")
-    f.write("@ " +
-            str(sum(w1 < 0.05)) +
-            " gene sets are significantly enriched at nominal pvalue < 5%" +
-            "\n\n")
-    f.write("Enrichment in phenotype (downregulated):" + "\n")
-    f.write("@ " + str(len(NES_DOWN_INDEX)) + "/" +
-            str(len(IN_list)) + " gene sets are upregulated" + "\n")
-    f.write("@ " + str(sum(fdr_downregulated < 0.05)) +
-            " gene sets are significant at FDR < 5%" + "\n")
-    f.write("@ " + str(sum(fdr_downregulated < 0.01)) +
-            " gene sets are significant at FDR < 1%" + "\n")
-    f.write("@ " +
-            str(sum(w2 < 0.01)) +
-            " gene sets are significantly enriched at nominal pvalue < 1%" +
-            "\n")
-    f.write("@ " +
-            str(sum(w2 < 0.05)) +
-            " gene sets are significantly enriched at nominal pvalue < 5%" +
-            "\n\n")
-    f.close()
-
-    # Generate graphical report and detail table report also
-
-    part1, part2 = options.file_name.split('.')
-    part3, part4 = options.geneset.split('.')
-    nam1 = "CGAT_REPORT_FOR_upregulated"
-    nam2 = "CGAT_REPORT_FOR_downregulated"
-    file_to_report_1 = ".".join([nam1, part1, "xls"])
-    file_to_report_2 = ".".join([nam2, part1, "xls"])
-=======
     if(len(nes_up_index) > 0):
         p_value_up = nominal_p_nes[original_nes > 0]
         b, fdr_upregulated, w1, w2 = sm.multipletests(
@@ -1712,48 +1193,17 @@ def main(argv=None):
             " gene sets are significantly enriched at nominal pvalue < 5%" +
             "\n\n")
     f.close()
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
 
     # Plot enrichment score of top gene set for each phenotype.
 
     # If specified number of top genesets for plotting enrichemnt score is higher than the total number of genesets.I will
     # plot enrichemnt score for all genesets.
-    if(options.plot_no >= len(GG)):
-        options.plot_no = len(GG)
-<<<<<<< HEAD
-
-    for i in range(0, options.plot_no):
-        if(len(NES_UP_INDEX) > 0):
-            AW = up_for_plot[NES_UP_INDEX[i]]
-            plot_enrichment_score(
-                STORE_ENRICHMENT_SCORE,
-                ORIGINAL_ES_INDEX,
-                ORIGINAL_ES,
-                IN_list,
-                AW,
-                len(ID))
-            plot_random_ES(store_permute, AW, IN_list)
-
-        # Downregulated
-        if(len(NES_DOWN_INDEX) > 0):
-            AW = down_for_plot[NES_DOWN_INDEX[i]]
-            plot_enrichment_score(
-                STORE_ENRICHMENT_SCORE,
-                ORIGINAL_ES_INDEX,
-                ORIGINAL_ES,
-                IN_list,
-                AW,
-                len(ID))
-            plot_random_ES(store_permute, AW, IN_list)
-
-     # Generate pvalue vs ES graph.
-    AW = down_for_plot[NES_DOWN_INDEX]
-    AW2 = up_for_plot[NES_UP_INDEX]
-    plt.figure(figsize=(8, 6), dpi=80)
-    plt.plot(ORIGINAL_NES, nominal_p, 'ko')
-    plt.plot(NES_UP, nominal_p[AW2], 'k-')
-    plt.plot(NES_DOWN, nominal_p[AW], 'k-')
-=======
+    #if(options.plot_no >= len(GG)):
+    #options.plot_no = len(GG)
+    if(options.plot_no >= len(nes_up_index)):
+        options.plot_no = len(nes_up_index)
+    if(options.plot_no >= len(nes_down_index)):
+        options.plot_no = len(nes_down_index)
     xcc = int(options.plot_no / 2) + 1
     for i in range(0, options.plot_no):
         if(len(nes_up_index) > 0):
@@ -1825,7 +1275,6 @@ def main(argv=None):
         plt.plot(nes_up, nominal_p[aw2], 'k-')
     if(len(nes_down_index) > 0):
         plt.plot(nes_down, nominal_p[aw], 'k-')
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
     plt.xticks(fontsize=12, weight='bold')
     plt.yticks(fontsize=12, weight='bold')
     plt.xlabel("\nNormalized Enrichment Score(NES)", **axis_font)
@@ -1834,20 +1283,6 @@ def main(argv=None):
     plt.grid()
     plt.tight_layout()
     ax2 = plt.twinx()
-<<<<<<< HEAD
-    ax2.plot(
-        NES_UP,
-        fdr_upregulated,
-        marker='s',
-        color='firebrick',
-        linestyle='')
-    ax2.plot(
-        NES_DOWN,
-        fdr_downregulated,
-        marker='s',
-        color='firebrick',
-        linestyle='')
-=======
     if(len(nes_up_index) > 0):
         ax2.plot(
             nes_up,
@@ -1862,7 +1297,6 @@ def main(argv=None):
             marker='s',
             color='firebrick',
             linestyle='')
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
     ticks_font = font_manager.FontProperties(
         family='Helvetica',
         style='normal',
@@ -1872,11 +1306,7 @@ def main(argv=None):
     for label in ax2.get_yticklabels():
         label.set_fontproperties(ticks_font)
     ax2.tick_params('y', colors='firebrick')
-<<<<<<< HEAD
-    #ax2.tick_params('y', colors='firebrick',labelsize = 'x-large',width=20)
-=======
     # ax2.tick_params('y', colors='firebrick',labelsize = 'x-large',width=20)
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
     ax2.yaxis.set_tick_params(
         'y',
         colors='firebrick',
@@ -1888,11 +1318,7 @@ def main(argv=None):
 
     # The histogram of the ES across all genesets
     plt.figure(figsize=(11, 6), dpi=80)
-<<<<<<< HEAD
-    n, bins, patches = plt.hist(ORIGINAL_NES, 50, normed=False, facecolor='darkgreen',
-=======
     n, bins, patches = plt.hist(original_nes, 50, normed=False, facecolor='darkgreen',
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
                                 alpha=0.9, histtype='step', lw=4, color='darkgreen')
     plt.xticks(fontsize=12, weight='bold')
     plt.yticks(fontsize=12, weight='bold')
@@ -1907,34 +1333,6 @@ def main(argv=None):
     print("Graphical reports has been successfully completed")
 
     # Write detail report for upregulated gene.
-<<<<<<< HEAD
-    if(len(NES_UP_INDEX) > 0):
-        with open(file_to_report_1, 'w') as f:
-            f.write("GENE SET(GS)\tGS DETAILS\tSIZE\tENRICHMENT SCORE(ES)\tNORMALIZED ENRICHMENT SCORE(NES)\tEMPERICAL p-value\tFDR-q value\tRANK AT MAX\tLEADING EDGE\n")
-            for i in range(0, len(NES_UP_INDEX)):
-                AW = up_for_plot[NES_UP_INDEX[i]]
-                IT = IN_list[AW]
-                f.write(IT[0] +
-                        "\t" +
-                        IT[1] +
-                        "\t" +
-                        str(IT[3]) +
-                        "\t" +
-                        str(ORIGINAL_ES[AW]) +
-                        "\t" +
-                        str(ORIGINAL_NES[AW]) +
-                        "\t" +
-                        str(nominal_p[AW]) +
-                        "\t" +
-                        str(fdr_upregulated[i]) +
-                        "\t" +
-                        str(ORIGINAL_ES_INDEX[AW]) +
-                        "\t" +
-                        "tags=" +
-                        str(STORE_GENE_LEADING_INFO[0][AW]) +
-                        "%, list=" +
-                        str(STORE_GENE_LEADING_INFO[1][AW]) +
-=======
     if(len(nes_up_index) > 0):
         with open(file_to_report_1, 'w') as f:
             f.write("NAME\tGENE SET(GS)\tGS DETAILS\tSIZE\tENRICHMENT SCORE(ES)\tNORMALIZED ENRICHMENT SCORE(NES)\tEMPERICAL p-value\tFDR-q value\tRANK AT MAX\tLEADING EDGE\n")
@@ -1963,40 +1361,11 @@ def main(argv=None):
                         str(store_gene_leading_info[0][aw]) +
                         "%, list=" +
                         str(store_gene_leading_info[1][aw]) +
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
                         "%" +
                         "\n")
             f.close()
 
     # Write detail report for downregulated gene.
-<<<<<<< HEAD
-    if(len(NES_DOWN_INDEX) > 0):
-        with open(file_to_report_2, 'w') as f:
-            f.write("GENE SET(GS)\tGS DETAILS\tSIZE\tENRICHMENT SCORE(ES)\tNORMALIZED ENRICHMENT SCORE(NES)\tEMPERICAL p-value\tFDR-q value\tRANK AT MAX\tLEADING EDGE\n")
-            for i in range(0, len(NES_DOWN_INDEX)):
-                AW = down_for_plot[NES_DOWN_INDEX[i]]
-                IT = IN_list[AW]
-                f.write(IT[0] +
-                        "\t" +
-                        IT[1] +
-                        "\t" +
-                        str(IT[3]) +
-                        "\t" +
-                        str(ORIGINAL_ES[AW]) +
-                        "\t" +
-                        str(ORIGINAL_NES[AW]) +
-                        "\t" +
-                        str(nominal_p[AW]) +
-                        "\t" +
-                        str(fdr_downregulated[i]) +
-                        "\t" +
-                        str(ORIGINAL_ES_INDEX[AW]) +
-                        "\t" +
-                        "tags=" +
-                        str(STORE_GENE_LEADING_INFO[0][AW]) +
-                        "%, list=" +
-                        str(STORE_GENE_LEADING_INFO[1][AW]) +
-=======
     if(len(nes_down_index) > 0):
         with open(file_to_report_2, 'w') as f:
             f.write("NAME\tGENE SET(GS)\tGS DETAILS\tSIZE\tENRICHMENT SCORE(ES)\tNORMALIZED ENRICHMENT SCORE(NES)\tEMPERICAL p-value\tFDR-q value\tRANK AT MAX\tLEADING EDGE\n")
@@ -2025,7 +1394,6 @@ def main(argv=None):
                         str(store_gene_leading_info[0][aw]) +
                         "%, list=" +
                         str(store_gene_leading_info[1][aw]) +
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
                         "%" +
                         "\n")
             f.close()
@@ -2033,39 +1401,6 @@ def main(argv=None):
     # Write detail report of up and down regulated genes in to a single file,
     # sorted by FDR values
     merge_mat = np.append(fdr_upregulated, fdr_downregulated)
-<<<<<<< HEAD
-    MERGE_INDEX = np.argsort(np.append(fdr_upregulated, fdr_downregulated))
-
-    with open("CGAT_REPORT_FOR_fdr_sorted_up_down_expression_data.tsv", 'w') as f:
-        f.write("GENE SET(GS)\tGS DETAILS\tSIZE\tENRICHMENT SCORE(ES)\tNORMALIZED ENRICHMENT SCORE(NES)\tEMPERICAL p-value\tFDR-q value\tRANK AT MAX\tLEADING EDGE\n")
-        for i in MERGE_INDEX:
-            CW = merge_mat[i]
-            if(i >= len(fdr_upregulated)):
-                AW = down_for_plot[NES_DOWN_INDEX[i - len(fdr_upregulated)]]
-            else:
-                AW = up_for_plot[NES_UP_INDEX[i]]
-            IT = IN_list[AW]
-            f.write(IT[0] +
-                    "\t" +
-                    IT[1] +
-                    "\t" +
-                    str(IT[3]) +
-                    "\t" +
-                    str(ORIGINAL_ES[AW]) +
-                    "\t" +
-                    str(ORIGINAL_NES[AW]) +
-                    "\t" +
-                    str(nominal_p[AW]) +
-                    "\t" +
-                    str(CW) +
-                    "\t" +
-                    str(ORIGINAL_ES_INDEX[AW]) +
-                    "\t" +
-                    "tags=" +
-                    str(STORE_GENE_LEADING_INFO[0][AW]) +
-                    "%, list=" +
-                    str(STORE_GENE_LEADING_INFO[1][AW]) +
-=======
     merge_index = np.argsort(np.append(fdr_upregulated, fdr_downregulated))
     merge_x = []
     merge_y = []
@@ -2108,7 +1443,6 @@ def main(argv=None):
                     str(store_gene_leading_info[0][aw]) +
                     "%, list=" +
                     str(store_gene_leading_info[1][aw]) +
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
                     "%" +
                     "\n")
         f.close()
@@ -2121,19 +1455,12 @@ def main(argv=None):
 
     print("Reports have been successfully generated")
 
-<<<<<<< HEAD
-    #********************************************************************************************************************#
-    #                                     LEADING EDGE ANALYSIS
-    #*********************************************************************************************************************#
-    # THIS SECTION IS FOR LEADING EDGE ANALYSIS.
-=======
     '''
     ********************************************************************************************************************
                                             LEADING EDGE ANALYSIS
     *********************************************************************************************************************
     THIS SECTION IS FOR LEADING EDGE ANALYSIS.
     '''
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
 
     print("Leading edge analysis has been started")
     # Make a directory.
@@ -2141,42 +1468,23 @@ def main(argv=None):
     if not os.path.exists(newpath):
         os.makedirs(newpath)
 
-<<<<<<< HEAD
-    generate_leading_edge_m(
-        NES_UP_INDEX,
-        NES_DOWN_INDEX,
-        fdr_upregulated,
-        fdr_downregulated,
-        IN_list,
-        options.fdr_user,
-=======
     store_gene_leading_matrix = generate_leading_edge_m(
         nes_up_index,
         nes_down_index,
         fdr_upregulated,
         fdr_downregulated,
         in_list,
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
         options.fdr_num,
         ind_dict,
         down_for_plot,
         up_for_plot,
         temp,
-<<<<<<< HEAD
-        ORIGINAL_ES,
-        ORIGINAL_ES_INDEX,
-        ID_NEW,
-        STORE_GENE_LEADING_MATRIX,
-        GG,
-        STORE_GENE_LEADING_INFO)
-=======
         original_es,
         original_es_index,
         id_new,
         store_gene_leading_matrix,
         GG,
         store_gene_leading_info)
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
 
     # PREPARE LEADING EDGE SUMMARY FILE.
     f = open("Leading_Edge_Analysis/CGAT_LEADING_EDGE_ANALYSIS_SUMMARY.tsv", "w")
@@ -2198,51 +1506,30 @@ def main(argv=None):
         "\t" +
         "FDR-q value" +
         "\n")
-<<<<<<< HEAD
-    for i in STORE_GENE_LEADING_MATRIX:
-        c = i
-        f.write(c[0] + "\t" + str(c[1]) + "\t" + str(c[2]) + "\t" +
-                str(c[4]) + "%\t" + str(c[5]) + "\t" + str(c[6]) + "%\n")
-=======
     for i in store_gene_leading_matrix:
         c = i
         f.write(c[0] + "\t" + str(c[1]) + "\t" + str(c[2]) + "\t" +
                 str(c[4]) + "%\t" + str(c[5]) + "%\t" + str(c[6]) + "\n")
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
     f.close()
 
     # PREPARE LEADING EDGE MATRIX FILE.
     with open("Leading_Edge_Analysis/CGAT_leading_edge_matrix_for_results.gmx", 'w') as f:
         for_pd_in = []
         count = 0
-<<<<<<< HEAD
-        for i in STORE_GENE_LEADING_MATRIX:
-            c = i
-            for_pd_in.append(c[3])
-            f.write(c[0] + "_signal")
-            if(count == (len(STORE_GENE_LEADING_MATRIX) - 1)):
-=======
         for i in store_gene_leading_matrix:
             c = i
             for_pd_in.append(c[3])
             f.write(c[0] + "_signal")
             if(count == (len(store_gene_leading_matrix) - 1)):
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
                 f.write("\n")
             else:
                 f.write("\t")
             count = count + 1
 
         count = 0
-<<<<<<< HEAD
-        for i in range(0, len(STORE_GENE_LEADING_MATRIX)):
-            f.write("na")
-            if(count == (len(STORE_GENE_LEADING_MATRIX) - 1)):
-=======
         for i in range(0, len(store_gene_leading_matrix)):
             f.write("na")
             if(count == (len(store_gene_leading_matrix) - 1)):
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
                 f.write("\n")
             else:
                 f.write("\t")
@@ -2254,13 +1541,8 @@ def main(argv=None):
 
     # PREPARE PLOT FOR GENE IN SUBSETS
     G1 = {}
-<<<<<<< HEAD
-    SUBSET_dict = {}
-    SUBSET_dict_assign_matrix = {}
-=======
     subset_dict = {}
     subset_dict_assign_matrix = {}
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
     name_l_x = []
     name_l_y = []
     # exp_for_clustering=[]
@@ -2272,42 +1554,6 @@ def main(argv=None):
         subset_dict_assign_matrix.update(c1)
 
     count = 0
-<<<<<<< HEAD
-    for j in SUBSET_dict_assign_matrix.keys():
-        SUBSET_dict_assign_matrix[j] = count
-        count = count + 1
-        name_l_x.append(j)
-       # exp_for_clustering.append(expression_value[ind_dict[j]])
-
-    name_l_y = []
-    for i in STORE_GENE_LEADING_MATRIX:
-        name_l_y.append(i[0] + "_signal")
-
-    # CREATE ASSIGNMENT MATRIX FOR LEADING EDGE SUBSET
-    STORE_UNCLUSTERED_BOOLEAN = np.zeros(
-        (len(STORE_GENE_LEADING_MATRIX),
-         len(SUBSET_dict_assign_matrix)),
-        dtype=np.int)
-    STORE_CLUSTERED_BOOLEAN = np.zeros(
-        (len(STORE_GENE_LEADING_MATRIX),
-         len(SUBSET_dict_assign_matrix)),
-        dtype=np.float)
-    count = 0
-
-    for i in STORE_GENE_LEADING_MATRIX:
-        c = i
-        for jj in range(0, len(c[3])):
-            xx = SUBSET_dict_assign_matrix[c[3][jj]]
-            STORE_UNCLUSTERED_BOOLEAN[count][xx] = 1
-            STORE_CLUSTERED_BOOLEAN[count][xx] = expression_value[ind_dict[c[3][jj]]]
-        count = count + 1
-
-    # PREPARE HEAT MAP FOR OVERLAPPING GENE SET UNCLUSTERED.
-    JAC_L = []
-    INTENSITY_FOR_CLUSTER = []
-    JAC_L, INTENSITY_FOR_CLUSTER = heatmap_leading_edge_subset(
-        STORE_GENE_LEADING_MATRIX, options.fdr_num, SUBSET_dict, JAC_L)
-=======
     for j in subset_dict_assign_matrix.keys():
         subset_dict_assign_matrix[j] = count
         count = count + 1
@@ -2340,49 +1586,29 @@ def main(argv=None):
     # intensity_for_cluster = []
     jac_l, subset_dict = heatmap_leading_edge_subset(
         store_gene_leading_matrix, subset_dict, jac_l)
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
 
     # HEATMAP OF UNCLUSTERED AND CLUSTERED ASSIGNMENT MATRIX
     cMap = ListedColormap(['white', 'red'])
     heatmap_plot_assign(
-<<<<<<< HEAD
-        STORE_UNCLUSTERED_BOOLEAN,
-=======
         store_unclustered_boolean,
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
         name_l_x,
         name_l_y,
         'Leading_Edge_Analysis/Leading_Edge_heatmap_unclustered.jpeg',
         0,
         cMap)
     leading_edge_clustering(
-<<<<<<< HEAD
-        STORE_UNCLUSTERED_BOOLEAN,
-        STORE_CLUSTERED_BOOLEAN,
-        name_l_x,
-        name_l_y,
-        INTENSITY_FOR_CLUSTER)
-=======
         store_unclustered_boolean,
         store_clustered_boolean,
         name_l_x,
         name_l_y)
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
 
     # PLOT DISTRIBUTION oF GENES AMONG LEADING SUBSETS
     temp_dict_k = []
     temp_dict_v = []
-<<<<<<< HEAD
-    for i in SUBSET_dict.keys():
-        if(SUBSET_dict[i] > 1):
-            temp_dict_k.append(i)
-            temp_dict_v.append(SUBSET_dict[i])
-=======
     for i in subset_dict.keys():
         if(subset_dict[i] > 1):
             temp_dict_k.append(i)
             temp_dict_v.append(subset_dict[i])
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
 
     fig, ax = plt.subplots()
     ax.grid(zorder=3)
@@ -2394,17 +1620,6 @@ def main(argv=None):
     fig = plt.gcf()
     fig.set_size_inches(12, 10)
     plt.yticks(fontsize=12, weight='bold')
-<<<<<<< HEAD
-    plt.yticks(np.arange(min(temp_dict_v), max(temp_dict_v) + 1, 1.0))
-    plt.xlabel('\nGene', **axis_font)
-    plt.ylabel('\nNumber Of Gene Sets', **axis_font)
-    plt.title('Distribution of genes among leading edge subsets', **title_font)
-    plt.tight_layout()
-    labels = ax.get_xticklabels()
-    plt.setp(labels, rotation=90, **axis_font_h)
-    plt.savefig(
-        'Leading_Edge_Analysis/Gene_in_leading_edge_subset.jpeg',
-=======
     # plt.yticks(np.arange(min(temp_dict_v), max(temp_dict_v) + 1, 1.0))
     plt.xlabel('\nGenes', **axis_font)
     plt.ylabel('\nNumber Of Gene Sets', **axis_font)
@@ -2414,7 +1629,6 @@ def main(argv=None):
     plt.tight_layout()
     plt.savefig(
         'Leading_Edge_Analysis/Genes_in_leading_edge_subset.jpeg',
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
         bbox_inches='tight')
     plt.close()
     del temp_dict_k
@@ -2423,11 +1637,7 @@ def main(argv=None):
     # PLOT HISTOGRAM OF JACQUARD
     plt.figure(figsize=(11, 6), dpi=80)
     n, bins, patches = plt.hist(
-<<<<<<< HEAD
-        JAC_L, 70, normed=1, color='darkgreen', alpha=0.9)
-=======
         jac_l, 70, normed=1, color='darkgreen', alpha=0.9)
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
     plt.xticks(fontsize=12, weight='bold')
     plt.yticks(fontsize=12, weight='bold')
     plt.xlabel('\nJacquard', **axis_font)
@@ -2441,12 +1651,7 @@ def main(argv=None):
     plt.close()
 
     print("Leading edge analysis has been finished")
-<<<<<<< HEAD
-    EW.Stop()
-=======
     E.Stop()
-
->>>>>>> 7a02bf814237cbb653367f98f4408820b81d4147
 
 
 if __name__ == "__main__":
