@@ -1,7 +1,6 @@
-import os, sys, re, types
-import matplotlib.pyplot as plt
+import os
+import re
 
-import sqlalchemy
 from SphinxReport.Renderer import *
 from SphinxReport.Tracker import *
 

@@ -1,9 +1,5 @@
 
 import sys
-import re
-import random
-import collections
-import itertools
 import os
 import shutil
 import CGAT.Experiment as E

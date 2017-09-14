@@ -42,14 +42,11 @@ Command line options
 
 import sys
 import CGAT.Experiment as E
-import CGAT.GWAS as gwas
 import re
 import pandas as pd
-import CGAT.IOTools as IOTools
 import rpy2.robjects as ro
 from rpy2.robjects import r as R
 from rpy2.robjects import pandas2ri as py2ri
-from rpy2.robjects.packages import importr
 
 
 def pythonWrapper4Pet(dataframe, snps, covars,

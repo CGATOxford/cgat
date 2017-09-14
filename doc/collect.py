@@ -31,7 +31,8 @@ TEMPLATE_PIPELINEMODULE='''
    :show-inheritance:
 '''
 
-import sys, glob, re, os
+import glob
+import os
 
 import CGAT.Experiment as E
 

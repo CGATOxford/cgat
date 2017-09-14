@@ -118,26 +118,19 @@ Command line options
 '''
 import sys
 import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
-import collections
 import numpy as np
 #import matplotlib as mpl #noqa:E402
 #mpl.use('Agg') #noqa:E402
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
-import matplotlib.lines as mlines
 import csv
-import random
 import statsmodels.sandbox.stats.multicomp as sm
 from matplotlib.colors import ListedColormap
-from decimal import *
 import pandas as pd
-import random
-import string
 import itertools
 import os
 import scipy
-from matplotlib import rc, font_manager
+from matplotlib import font_manager
 from scipy.cluster.hierarchy import dendrogram, linkage
 ##################################################
 # PLOT CUSTOMIZATION

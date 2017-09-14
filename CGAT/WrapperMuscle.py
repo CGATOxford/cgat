@@ -21,7 +21,6 @@ from CGAT import Mali as Mali
 class Error(Exception):
 
     """Base class for exceptions in this module."""
-    pass
 
     def __str__(self):
         return str(self.message)

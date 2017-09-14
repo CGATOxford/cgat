@@ -9,12 +9,9 @@ RateEstimation.py - utilities for computing rate estimates for codon models.
 import Bio.Data.CodonTable
 try:
     from XGram.Generator.Prebuilt import Codons
-    from XGram.Model import Annotation
     import XGram.Exceptions
 except ImportError:
     pass
-
-from CGAT import Genomics as Genomics
 
 
 def evaluateCodonPair(codon1, codon2):
@@ -176,7 +173,7 @@ def getRateMatrix(trained_model, terminals=None):
 def setFrequencies(model, mali, prefix=""):
     """set frequencies in a model according to those observed in data.
 
-    prefix: prefix for rate parameters. 
+    prefix: prefix for rate parameters.
 
     Frequencies are labelled:
     pa0, pc0, ..., pa1, pc1, ..., pa2, pc2, ...

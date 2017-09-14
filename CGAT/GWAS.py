@@ -17,14 +17,12 @@ import subprocess
 import rpy2.robjects as ro
 from rpy2.robjects import r as R
 from rpy2.robjects import pandas2ri as py2ri
-from rpy2.robjects.packages import importr
 # set matplotlib non-interactive backend to Agg to
 # allow running on cluster
 import collections
 import sqlite3 as sql
 from math import *
 import scipy.stats as stats
-import sklearn.metrics as metrics
 
 
 class FileGroup(object):
@@ -515,7 +513,6 @@ class GCTA(GWASProgram):
             except KeyError:
                 E.warn("%s filter not recognised, please see "
                        "documentation for allowed filters" % each)
-                pass
 
         self.filters.append(" ".join(filters))
         self.statement["filters"] = " ".join(self.filters)
@@ -1299,7 +1296,6 @@ class Plink2(GWASProgram):
             except KeyError:
                 E.warn("%s filter not recognised, please see "
                        "documentation for allowed filters" % each)
-                pass
 
         self.filters.append(" ".join(filters))
         self.statement["filters"] = " ".join(self.filters)
@@ -2833,7 +2829,6 @@ def plotPhenotype(data, plot_type, x, y=None, group=None,
                 E.warn("the number of labels does not match the "
                        "number of unique observations, labels not "
                        "used.")
-                pass
         except AttributeError:
             xlabels = None
 
@@ -2854,7 +2849,6 @@ def plotPhenotype(data, plot_type, x, y=None, group=None,
             E.warn("the number of labels does not match the "
                    "number of unique observations, labels not "
                    "used.")
-            pass
 
     # start constructing the plot
     # if X and Y are specified, assume Y is a variable to colour

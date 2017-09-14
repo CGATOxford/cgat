@@ -389,7 +389,6 @@ class DEResult(object):
         - fold
         - status
         '''
-        pass
 
     def calculateIHW(self, alpha=0.1):
         ''' Use the Independent Hypothesis Weighting method from

@@ -81,7 +81,6 @@ Command line options
 '''
 import sys
 import pysam
-import CGAT.IOTools as IOTools
 import CGAT.GTF as GTF
 import CGAT.Experiment as E
 

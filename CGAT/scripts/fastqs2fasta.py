@@ -90,7 +90,6 @@ class PairedReadError(Exception):
     exception raised when reads aren't paired -
     could be not sorted or files of different lengths
     '''
-    pass
 
 
 def main(argv=None):

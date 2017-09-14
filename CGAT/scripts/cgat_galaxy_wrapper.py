@@ -31,7 +31,6 @@ class CGATBase():
     def __init__(self, opts=None, arg0=None):
         """ common stuff needed at init for a picard tool
         """
-        pass
 
     def baseName(self, name=None):
         return os.path.splitext(os.path.basename(name))[0]

@@ -41,7 +41,6 @@ import CGAT.Experiment as E
 import os
 import subprocess
 import re
-import numpy as np
 
 
 # ------------------------------------------------------- #

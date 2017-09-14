@@ -21,7 +21,6 @@
 ##########################################################################
 """unit testing module for the Tree.py class."""
 import random
-import re
 
 
 from CGAT.SequencePairProperties import *
