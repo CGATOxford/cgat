@@ -121,8 +121,8 @@ import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import collections
 import numpy as np
-import matplotlib as mpl
-mpl.use('Agg')  # noqa: E402
+#import matplotlib as mpl #noqa:E402
+#mpl.use('Agg') #noqa:E402
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as font_manager
 import matplotlib.lines as mlines
@@ -153,16 +153,12 @@ title_font = {
     'verticalalignment': 'bottom'}  # Bottom vertical alignment for more space
 axis_font = {'fontname': 'Ubuntu', 'size': '16', 'weight': 'bold'}
 axis_font_h = {'fontname': 'Ubuntu', 'size': '12', 'weight': 'bold'}
-title_font_h = {
-    'fontname': 'Ubuntu',
-    'size': '20',
-    'color': 'darkblue',
-    'weight': 'bold'}
-title_font_ran = {
-    'fontname': 'Ubuntu',
-    'size': '16',
-    'color': 'darkblue',
-    'weight': 'bold'}
+title_font_h = {'fontname': 'Ubuntu', 'size': '20',
+                'color': 'darkblue',
+                'weight': 'bold'}
+title_font_ran = {'fontname': 'Ubuntu', 'size': '16',
+                  'color': 'darkblue',
+                  'weight': 'bold'}
 axis_font_col = {'fontname': 'Ubuntu', 'size': '10', 'weight': 'bold'}
 # Set the font properties (for use in legend)
 font_path = 'C:\Windows\Fonts\Arial.ttf'
@@ -643,11 +639,11 @@ def plot_enrichment_score(
     plt.yticks(fontsize=12, weight='bold')
     q = in_list[A_W]
     file_to_report_pic = ".".join(["enplot", q[0], 'jpeg'])
-    q2 = ''.join(['\nGene List Index', '\n\nNumber of genes: ',
+    q2 = "".join(['\nGene List Index', '\n\nNumber of genes: ',
                   str(l_id), '(in list), ', str(q[3]), '(in gene set)'])
     plt.xlabel(q2, **axis_font)
     plt.ylabel('\n\nRunning enrichment score(RES)', **axis_font, labelpad=28)
-    # plt.title(''.join(["Gene Set", ":", q[0]]), **title_font)
+    # plt.title("".join(["Gene Set", ":", q[0]]), **title_font)
     plt.title(q[0], **title_font_ran)
     plt.grid()
     plt.tight_layout()
@@ -713,7 +709,7 @@ def plot_enrichment_score_subplot(store_enrichment_score, original_es_index,
               fontsize=16, color='darkblue', weight='bold')
     plt.grid()
     if(s_index == lk):
-        q2 = ''.join(
+        q2 = "".join(
             ['\n\nGene List Index', '\n\nNumber of genes: ', str(l_id), '(in list)'])
         plt.xlabel(q2, fontsize=20, weight='bold')
         plt.tight_layout(pad=0.1, w_pad=9, h_pad=1.0)
@@ -772,7 +768,11 @@ def plot_summary_report(nui, fg1, ufp, g_set, c):
     """
     pl_x = []
     pl_y = []
-    for i in range(0, 20):
+    if(len(nui) <= 20):
+        loop_plot = len(nui)
+    else:
+        loop_plot = 20
+    for i in range(0, loop_plot):
         aw = ufp[nui[i]]
         itt = g_set[aw]
         pl_y.append(fg1[aw])
@@ -784,7 +784,7 @@ def plot_summary_report(nui, fg1, ufp, g_set, c):
         list(
             range(
                 0,
-                20)),
+                loop_plot)),
         pl_y,
         color='orange',
         align="center",
@@ -800,7 +800,7 @@ def plot_summary_report(nui, fg1, ufp, g_set, c):
               fontsize=25, weight='bold', color='darkblue')
     plt.gca().invert_yaxis()
     plt.tight_layout()
-    c2 = "Top_20_" + c + "_genesets_by_treatment.jpeg"
+    c2 = "Top_" + str(loop_plot) + "_" + c + "_genesets_by_treatment.jpeg"
     plt.savefig(c2, bbox_inches='tight')
     plt.close()
     return
@@ -814,15 +814,16 @@ def plot_summary_report_for_fdr(pl_x, pl_y):
         list(
             range(
                 0,
-                20)),
+                len(pl_y))),
         pl_y,
         color='c',
         align="center",
         height=0.7,
         alpha=0.9)
     plt.axvline(x=0, linewidth=2, color="k")
-    plt.yticks(range(21), pl_x)
-    cc = "Top 20 enriched gene sets" + "\n(sorted by FDR-q values)"
+    #plt.yticks(range(21), pl_x)
+    plt.yticks(list(range(0, len(pl_y))), pl_x)
+    cc = "Top enriched gene sets" + "\n(sorted by FDR-q values)"
     plt.ylabel(cc, labelpad=30, fontsize=25, weight='bold', color='darkblue')
     ax.xaxis.tick_top()
     plt.yticks(fontsize=16, weight='bold')
@@ -834,7 +835,7 @@ def plot_summary_report_for_fdr(pl_x, pl_y):
     plt.grid(b=True, which='minor', linestyle='--')
     plt.tight_layout()
     plt.savefig(
-        "Top_20_enriched_genesets(fdr_sorted).jpeg",
+        "Top_enriched_genesets(fdr_sorted).jpeg",
         bbox_inches='tight')
     plt.close()
     return
@@ -1197,8 +1198,12 @@ def main(argv=None):
 
     # If specified number of top genesets for plotting enrichemnt score is higher than the total number of genesets.I will
     # plot enrichemnt score for all genesets.
-    if(options.plot_no >= len(GG)):
-        options.plot_no = len(GG)
+    #if(options.plot_no >= len(GG)):
+    #options.plot_no = len(GG)
+    if(options.plot_no >= len(nes_up_index)):
+        options.plot_no = len(nes_up_index)
+    if(options.plot_no >= len(nes_down_index)):
+        options.plot_no = len(nes_down_index)
     xcc = int(options.plot_no / 2) + 1
     for i in range(0, options.plot_no):
         if(len(nes_up_index) > 0):
