@@ -507,7 +507,8 @@ def run(infile, options, report_step=10000):
 
         while 1:
             try:
-                dbhandle.executemany(statement, data)
+                if isinstance(dbhandle, str):
+                    dbhandle.executemany(statement, data)
             except error as msg:
                 E.warn("import failed: msg=%s, statement=\n  %s" %
                        (msg, statement))
