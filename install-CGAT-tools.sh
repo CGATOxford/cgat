@@ -230,7 +230,7 @@ hash -r
 
 # install cgat environment
 log "updating conda environment"
-conda install --quiet --yes conda=4.3
+conda install --quiet --yes 'conda=4.3'
 conda info -a
 
 log "installing CGAT environment"
@@ -249,8 +249,7 @@ fi
 source $CONDA_INSTALL_DIR/bin/activate $CONDA_INSTALL_ENV
 
 # bx-python is not py3 yet
-pip install bx-python
-
+pip install 'bx-python==0.7.3'
 
 log "installing CGAT code into conda environment"
 # if installation is 'devel' (outside of travis), checkout latest version from github
