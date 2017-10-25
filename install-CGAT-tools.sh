@@ -644,6 +644,10 @@ case $key in
     shift 2
     ;;
 
+    *)
+    help_message
+    ;;
+
 esac
 done
 
