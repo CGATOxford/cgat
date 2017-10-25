@@ -515,7 +515,7 @@ echo " This script uses Conda to install the CGAT Code Collection:"
 echo " https://www.cgat.org/downloads/public/cgat/documentation/"
 echo
 echo " If you only need to use the scripts published here:"
-echo "   https://www.ncbi.nlm.nih.gov/pubmed/24395753"
+echo "   https://doi.org/10.1093/bioinformatics/btt756"
 echo " type:"
 echo " ./install-CGAT-tools.sh --production [--location </full/path/to/folder/without/trailing/slash>]"
 echo
