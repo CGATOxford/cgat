@@ -230,7 +230,7 @@ hash -r
 
 # install cgat environment
 log "updating conda environment"
-conda update -q conda --yes
+conda install --quiet --yes conda=4.3
 conda info -a
 
 log "installing CGAT environment"
@@ -238,11 +238,11 @@ log "installing CGAT environment"
 # https://conda.io/docs/using/envs.html#use-environment-from-file
 
 if [[ $INSTALL_PRODUCTION ]] ; then
-   conda create -q -n ${CONDA_INSTALL_ENV} cgat-scripts gcc rpy2=2.8.5 --override-channels -c bioconda -c conda-forge -c defaults -y
+   conda create --quiet --name ${CONDA_INSTALL_ENV} cgat-scripts gcc rpy2=2.8.5 --override-channels --channel bioconda --channel conda-forge --channel defaults --yes
 else
    [[ -z ${TRAVIS_BRANCH} ]] && TRAVIS_BRANCH=${INSTALL_BRANCH}
    curl -o env.yml -O https://raw.githubusercontent.com/CGATOxford/cgat/${TRAVIS_BRANCH}/conda/environments/${CONDA_INSTALL_TYPE}
-   conda env create -f env.yml
+   conda env create --file env.yml
 fi
 
 # activate cgat environment
