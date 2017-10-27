@@ -99,6 +99,25 @@ def is_cgat_executable_name(node):
     return result
 
 
+def is_cgat_append(node):
+    '''
+       Auxiliary function to check for cgat statement:
+           statment.append("command")
+    '''
+
+    result = False
+    result = type(node) is ast.Expr and \
+             hasattr(node, 'value') and \
+             hasattr(node.value, 'func') and \
+             hasattr(node.value.func, 'value') and \
+             hasattr(node.value.func.value, 'id') and \
+             node.value.func.value.id == "statement" and \
+             hasattr(node.value.func, 'attr') and \
+             node.value.func.attr == "append"
+
+    return result
+
+
 def get_cmd_string(node):
     '''
        Auxiliary function to get commands in the cgat statement:
@@ -110,6 +129,21 @@ def get_cmd_string(node):
         result = node.value.s
     elif hasattr(node.value, 'left') and hasattr(node.value.left, 's'):
         result = node.value.left.s
+
+    return result
+
+
+def get_append_string(node):
+    '''
+       Auxiliary function to get commands in the cgat statement:
+           statement.append("command")
+    '''
+
+    result = ""
+    if hasattr(node, 'value') and \
+       hasattr(node.value, 'args') and \
+       hasattr(node.value.args[0], 's'):
+        result = node.value.args[0].s
 
     return result
 
@@ -177,15 +211,19 @@ def checkDepedencies(pipeline):
     # really helpful, used astviewer (installed in a conda-env) to inspect examples
     # https://github.com/titusjan/astviewer
     for node in ast.walk(tree):
+        statement = ""
         if is_cgat_statement(node) or \
            is_cgat_executable(node) or \
            is_cgat_executable_name(node):
 
             statement = get_cmd_string(node)
 
-            if len(statement) > 0 and not statement.startswith(' -'):
-                statement = cleanup_statement(statement)
-                statements.append(statement)
+        elif is_cgat_append(node):
+            statement = get_append_string(node)
+
+        if len(statement) > 0 and not statement.startswith(' -'):
+            statement = cleanup_statement(statement)
+            statements.append(statement)
 
     # dictionary where:
     # key = program name

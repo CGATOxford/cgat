@@ -153,6 +153,9 @@ MISC_DEPS[bedToBigBed]="ucsc-bedtobigbed"
 MISC_DEPS[bedGraphToBigWig]="ucsc-bedgraphtobigwig"
 MISC_DEPS[srapath]="sra-tools"
 MISC_DEPS[zcat]="ignore" # gzip not available in conda
+MISC_DEPS[tar]="tar"
+MISC_DEPS[rename]="util-linux"
+MISC_DEPS[gdc-client]="gdc-client"
 
 
 # function to report issues and exit
