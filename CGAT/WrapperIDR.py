@@ -37,7 +37,7 @@ WrapperIDR.r in the scripts directory.
 import os
 import sys
 
-from CGAT import Experiment as E
+from CGATCore import Experiment as E
 
 from rpy2.robjects import r as R
 

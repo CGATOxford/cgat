@@ -33,7 +33,7 @@ import string
 import math
 import tempfile
 import random
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.SVGdraw as SVGdraw
 from types import *
 

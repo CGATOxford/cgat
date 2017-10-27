@@ -29,8 +29,8 @@ Command line options
 
 '''
 import sys
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
+import CGATCore.Experiment as E
+import CGATCore.IOTools as IOTools
 
 """ program $Id: diff_transcript_sets.py 2781 2009-09-10 11:33:14Z andreas $
 

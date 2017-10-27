@@ -38,7 +38,7 @@ Command line options
 
 import sys
 import pysam
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 
 
 def main(argv=None):

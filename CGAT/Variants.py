@@ -10,7 +10,7 @@ Code
 '''
 import collections
 
-from CGAT import Experiment as E
+from CGATCore import Experiment as E
 from CGAT import Genomics as Genomics
 from CGAT import NCL as ncl
 

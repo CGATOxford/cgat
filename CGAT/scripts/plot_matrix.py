@@ -31,7 +31,7 @@ import os
 import numpy
 import pylab
 import CGAT.MatlabTools as MatlabTools
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 
 
 param_grid_size_x = 6

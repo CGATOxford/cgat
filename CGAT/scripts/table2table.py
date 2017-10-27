@@ -101,10 +101,10 @@ import math
 import itertools
 import collections
 
-import CGAT.Experiment as E
-import CGAT.CSV as CSV
+import CGATCore.Experiment as E
+import CGATCore.CSV as CSV
 import CGAT.Stats as Stats
-import CGAT.IOTools as IOTools
+import CGATCore.IOTools as IOTools
 import scipy
 from functools import reduce
 

@@ -30,7 +30,7 @@ Command line options
 '''
 import sys
 
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Blat as Blat
 import CGAT.Genomics as Genomics

@@ -56,7 +56,7 @@ from __future__ import print_function
 import sys
 import os.path as op
 import scipy.stats as ss
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 
 
 def hypergeom(m, n, n1, n2, p=False):

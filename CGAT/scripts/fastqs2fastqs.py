@@ -86,8 +86,8 @@ Command line options
 
 import sys
 import re
-import CGAT.IOTools as IOTools
-import CGAT.Experiment as E
+import CGATCore.IOTools as IOTools
+import CGATCore.Experiment as E
 
 
 class PatternGetter:

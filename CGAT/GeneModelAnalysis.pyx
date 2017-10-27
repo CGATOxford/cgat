@@ -5,7 +5,6 @@ from pysam.libcalignmentfile cimport *
 from posix.stdlib cimport drand48
 
 import collections, array, struct
-import CGAT.Experiment as E
 import numpy
 import os
 import sys
@@ -22,8 +21,8 @@ import collections
 import itertools
 import CGAT.GTF as GTF
 import CGAT.Bed as Bed
-import CGAT.IOTools as IOTools
-import CGAT.Experiment as E
+import CGATCore.IOTools as IOTools
+from CGATCore import Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Stats as Stats
 import CGAT.SequenceProperties as SequenceProperties

@@ -33,7 +33,7 @@ from __future__ import print_function
 
 import sys
 import re
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import numpy
 
 

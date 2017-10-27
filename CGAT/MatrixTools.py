@@ -12,7 +12,7 @@ import string
 import collections
 import numpy
 import pandas
-from CGAT import IOTools as IOTools
+from CGATCore import IOTools as IOTools
 
 
 class Matrix:

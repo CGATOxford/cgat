@@ -38,8 +38,8 @@ import sys
 import collections
 import sqlite3
 
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
+import CGATCore.Experiment as E
+import CGATCore.IOTools as IOTools
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Genomics as Genomics
 import CGAT.GTF as GTF

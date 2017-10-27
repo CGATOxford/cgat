@@ -35,7 +35,7 @@ import os
 import glob
 import re
 import sys
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 
 
 def reverse_readline(filename, buf_size=8192):

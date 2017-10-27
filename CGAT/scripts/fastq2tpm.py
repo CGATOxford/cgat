@@ -37,7 +37,7 @@ Command line options
 '''
 
 import sys
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import os
 import subprocess
 import re

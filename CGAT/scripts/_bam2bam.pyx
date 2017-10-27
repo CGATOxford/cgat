@@ -2,7 +2,7 @@ from pysam.libchtslib cimport *
 from pysam.libcalignmentfile cimport *
 
 import collections, array, struct, itertools
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 
 cdef class SetNH:
 

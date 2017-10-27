@@ -97,9 +97,9 @@ Command line options
 '''
 import sys
 import os
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.GTF as GTF
-import CGAT.IOTools as IOTools
+import CGATCore.IOTools as IOTools
 import bx.intervals.intersection
 
 

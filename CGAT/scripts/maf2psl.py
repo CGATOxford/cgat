@@ -24,7 +24,7 @@ Command line options
 """
 
 import sys
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 try:
     from bx.align import maf
     from bx.align.tools import get_components_for_species

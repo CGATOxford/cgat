@@ -31,10 +31,10 @@ Command line options
 '''
 
 import sys
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.GWAS as gwas
 import pandas as pd
-import CGAT.IOTools as IOTools
+import CGATCore.IOTools as IOTools
 
 
 def main(argv=None):

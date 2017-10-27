@@ -42,8 +42,8 @@ import sys
 import re
 import numpy
 from six import StringIO
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
+import CGATCore.Experiment as E
+import CGATCore.IOTools as IOTools
 import CGAT.MatlabTools as MatlabTools
 import CGAT.Stats as Stats
 

@@ -33,7 +33,7 @@ Command line options
 
 import collections
 import sys
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.Style
 
 DATA = collections.namedtuple('DATA', 'count code description')

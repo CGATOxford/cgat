@@ -82,10 +82,10 @@ Command line options
 
 import sys
 
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.GFF3 as GFF3
 import CGAT.GTF as GTF
-import CGAT.IOTools as IOTools
+import CGATCore.IOTools as IOTools
 
 
 def search_hierarchy(ID, hierarchy, options):

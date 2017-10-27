@@ -35,7 +35,7 @@ import math
 import tempfile
 import bisect
 import numpy
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.SVGdraw as SVGdraw
 import CGAT.CorrespondenceAnalysis as CorrespondenceAnalysis
 import CGAT.Stats as Stats

@@ -35,7 +35,7 @@ import sys
 import subprocess
 import collections
 
-from CGAT import Experiment as E
+from CGATCore import Experiment as E
 
 from rpy2.robjects import r as R
 

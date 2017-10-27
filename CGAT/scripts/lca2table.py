@@ -29,7 +29,7 @@ Command line options
 
 import sys
 import CGAT.LCA as LCA
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import collections
 
 

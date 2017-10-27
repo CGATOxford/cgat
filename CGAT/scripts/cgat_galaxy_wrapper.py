@@ -6,7 +6,7 @@ import tempfile
 import argparse
 import subprocess
 import time
-from CGAT import IOTools as IOTools
+from CGATCore import IOTools as IOTools
 
 
 def stop_err(msg):

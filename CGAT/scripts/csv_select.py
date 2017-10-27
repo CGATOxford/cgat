@@ -33,8 +33,8 @@ Command line options
 import sys
 import csv
 import _csv
-import CGAT.Experiment as E
-import CGAT.CSV as CSV
+import CGATCore.Experiment as E
+import CGATCore.CSV as CSV
 
 
 def main(argv=None):

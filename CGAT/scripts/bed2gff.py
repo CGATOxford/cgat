@@ -60,7 +60,7 @@ Command line options
 
 """
 import sys
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.GTF as GTF
 import CGAT.Bed as Bed
 

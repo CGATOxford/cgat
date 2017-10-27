@@ -83,7 +83,7 @@ from rdflib import Namespace
 from rdflib.namespace import RDF, RDFS, DCTERMS
 from rdflib import Literal, BNode, URIRef
 from rdflib.collection import Collection
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 
 ORIGINAL_START = None
 

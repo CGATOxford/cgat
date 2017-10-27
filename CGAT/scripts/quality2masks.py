@@ -31,7 +31,7 @@ Command line options
 import sys
 import random
 import alignlib_lite
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.Blat as Blat
 import CGAT.Iterators as Iterators
 import CGAT.IndexedFasta as IndexedFasta

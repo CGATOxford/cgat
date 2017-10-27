@@ -37,7 +37,7 @@ import sys
 import re
 import imp
 
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 
 BASE_URL = "https://www.cgat.org/downloads/public/cgat/documentation/"
 

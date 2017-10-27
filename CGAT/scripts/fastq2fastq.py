@@ -131,8 +131,8 @@ import os
 import sys
 import re
 import random
-import CGAT.IOTools as IOTools
-import CGAT.Experiment as E
+import CGATCore.IOTools as IOTools
+import CGATCore.Experiment as E
 import CGAT.Fastq as Fastq
 import CGAT.Genomics as Genomics
 

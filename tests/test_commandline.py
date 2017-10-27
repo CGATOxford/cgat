@@ -36,8 +36,8 @@ import copy
 import platform
 
 from nose.tools import ok_
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
+import CGATCore.Experiment as E
+import CGATCore.IOTools as IOTools
 
 
 PYTHON_VERSION = platform.python_version()

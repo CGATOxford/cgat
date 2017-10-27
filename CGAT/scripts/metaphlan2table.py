@@ -34,7 +34,7 @@ Code
 import sys
 import optparse
 import CGAT.Metaphlan as Metaphlan
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 
 
 def main(argv=None):

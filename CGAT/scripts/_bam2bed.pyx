@@ -4,7 +4,7 @@ from pysam.libcalignmentfile cimport *
 from libc.stdlib cimport abs
 
 import collections, array, struct, itertools
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 
 def merge_pairs(AlignmentFile input_samfile,
                 outfile,

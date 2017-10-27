@@ -40,7 +40,7 @@ import signal
 import CGAT.IGV as IGV
 import CGAT.Bed as Bed
 
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 
 
 def main(argv=sys.argv):

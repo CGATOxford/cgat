@@ -119,8 +119,8 @@ import re
 import random
 from future.moves.itertools import zip_longest
 
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
+import CGATCore.Experiment as E
+import CGATCore.IOTools as IOTools
 import CGAT.Genomics as Genomics
 import CGAT.FastaIterator as FastaIterator
 import CGAT.Masker as Masker

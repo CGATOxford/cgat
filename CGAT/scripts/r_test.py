@@ -28,8 +28,8 @@ Command line options
 '''
 import sys
 from rpy2.robjects import r as R
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
+import CGATCore.Experiment as E
+import CGATCore.IOTools as IOTools
 import CGAT.Stats as Stats
 
 

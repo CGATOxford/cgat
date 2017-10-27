@@ -29,7 +29,7 @@ Command line options
 '''
 
 import sys
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 from rpy2.robjects import r as R
 
 

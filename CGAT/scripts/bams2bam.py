@@ -57,9 +57,9 @@ import os
 import sys
 import pysam
 
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.GTF as GTF
-import CGAT.IOTools as IOTools
+import CGATCore.IOTools as IOTools
 import CGAT.Bed as Bed
 import CGAT.IndexedGenome as IndexedGenome
 import CGAT.scripts._bams2bam as _bams2bam

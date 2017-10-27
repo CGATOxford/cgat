@@ -34,7 +34,7 @@ import re
 import tempfile
 import math
 import code
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.MatlabTools as MatlabTools
 import numpy
 import CGAT.Stats as Stats

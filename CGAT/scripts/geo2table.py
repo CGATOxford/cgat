@@ -31,8 +31,8 @@ from future.moves.urllib.parse import urlencode
 from future.moves.urllib.request import urlopen
 import xml.etree.ElementTree as ET
 
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
+import CGATCore.Experiment as E
+import CGATCore.IOTools as IOTools
 
 
 def main(argv=None):

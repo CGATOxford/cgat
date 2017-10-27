@@ -288,8 +288,8 @@ Command line options
 
 import os
 import sys
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
+import CGATCore.Experiment as E
+import CGATCore.IOTools as IOTools
 import CGAT.GTF as GTF
 import pysam
 import CGAT.scripts._bam2stats as _bam2stats

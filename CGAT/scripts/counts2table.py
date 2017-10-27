@@ -146,9 +146,9 @@ Document!!!
 import sys
 import pandas as pd
 
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.Expression as Expression
-import CGAT.IOTools as IOTools
+import CGATCore.IOTools as IOTools
 import CGAT.Counts as Counts
 import CGAT.R as R
 

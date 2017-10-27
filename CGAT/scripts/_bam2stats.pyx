@@ -7,7 +7,7 @@ from libc.string cimport strchr
 from libc.stdint cimport int8_t
 from libc.stdio cimport puts, printf
 import collections, array, struct, sys
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 
 import hashlib
 import base64

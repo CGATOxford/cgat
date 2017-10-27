@@ -95,7 +95,7 @@ import pysam
 import numpy
 from functools import partial
 from collections import deque
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 
 
 class ProfileGenerator(object):

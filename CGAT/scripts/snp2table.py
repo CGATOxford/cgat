@@ -107,7 +107,7 @@ Command line options
 import sys
 import collections
 import pysam
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IndexedGenome as IndexedGenome
 import CGAT.Genomics as Genomics

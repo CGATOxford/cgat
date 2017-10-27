@@ -42,7 +42,7 @@ Command line options
 import sys
 import collections
 
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.Genomics as Genomics
 import CGAT.FastaIterator as FastaIterator
 

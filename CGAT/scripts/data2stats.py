@@ -30,7 +30,7 @@ Command line options
 import sys
 import scipy
 import scipy.stats
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 from functools import reduce
 
 

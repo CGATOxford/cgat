@@ -36,8 +36,8 @@ except ImportError:
     pass
 
 import pysam
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
+import CGATCore.Experiment as E
+import CGATCore.IOTools as IOTools
 
 
 def main(argv=None):

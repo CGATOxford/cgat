@@ -32,7 +32,7 @@ Command line options
 import sys
 import webbrowser
 import CGAT.GTF as GTF
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 
 USAGE = """python %s [OPTIONS] < stdin

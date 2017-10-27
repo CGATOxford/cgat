@@ -37,7 +37,7 @@ import gzip
 import sqlite3
 
 import numpy
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Genomics as Genomics
 import CGAT.GTF as GTF

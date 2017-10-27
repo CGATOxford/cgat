@@ -57,7 +57,7 @@ Command line options
 import sys
 import random
 import CGAT.GTF as GTF
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Genomics as Genomics
 import CGAT.SequencePairProperties as SequencePairProperties

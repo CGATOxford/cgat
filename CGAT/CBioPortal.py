@@ -80,9 +80,9 @@ from future.moves.urllib.request import urlopen
 import re
 import optparse
 import sys
-from CGAT import IOTools as IOTools
+from CGATCore import IOTools as IOTools
 from collections import OrderedDict as odict
-from CGAT import Experiment as E
+from CGATCore import Experiment as E
 
 
 class CBioPortal():

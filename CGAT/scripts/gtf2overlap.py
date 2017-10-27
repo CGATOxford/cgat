@@ -32,9 +32,9 @@ Command line options
 import os
 import sys
 import random
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.GTF as GTF
-import CGAT.IOTools as IOTools
+import CGATCore.IOTools as IOTools
 from rpy2.robjects import r as R
 from rpy2.robjects.vectors import FloatVector
 

@@ -28,7 +28,7 @@ Command line options
 
 '''
 import sys
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.Histogram as Histogram
 import numpy
 

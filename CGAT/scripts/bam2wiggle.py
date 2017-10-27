@@ -49,9 +49,9 @@ import sys
 import tempfile
 import shutil
 import subprocess
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import pysam
-import CGAT.IOTools as IOTools
+import CGATCore.IOTools as IOTools
 import CGAT.scripts._bam2bed as _bam2bed
 
 

@@ -17,9 +17,9 @@ import glob
 import tempfile
 import shutil
 import itertools
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.Fastq as Fastq
-import CGAT.IOTools as IOTools
+import CGATCore.IOTools as IOTools
 from future.moves.urllib.request import urlopen
 
 

@@ -96,9 +96,9 @@ import re
 import string
 
 import CGAT.GO as GO
-import CGAT.IOTools as IOTools
+import CGATCore.IOTools as IOTools
 
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import numpy
 import networkx
 import networkx.algorithms.traversal.depth_first_search as traversal

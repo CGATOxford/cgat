@@ -30,7 +30,7 @@ Command line options
 '''
 import sys
 import string
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 from functools import reduce
 
 """read in data and append columns to a density histogram

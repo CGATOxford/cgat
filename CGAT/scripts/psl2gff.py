@@ -29,8 +29,8 @@ Command line options
 '''
 
 import sys
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
+import CGATCore.Experiment as E
+import CGATCore.IOTools as IOTools
 import CGAT.Blat as Blat
 import CGAT.GTF as GTF
 

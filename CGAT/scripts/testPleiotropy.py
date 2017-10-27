@@ -41,7 +41,7 @@ Command line options
 '''
 
 import sys
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import re
 import pandas as pd
 import rpy2.robjects as ro

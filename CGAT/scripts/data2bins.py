@@ -34,8 +34,8 @@ import sys
 import os
 import math
 import bisect
-import CGAT.Experiment as E
-import CGAT.CSV as CSV
+import CGATCore.Experiment as E
+import CGATCore.CSV as CSV
 
 
 class Outputter:

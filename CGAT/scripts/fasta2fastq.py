@@ -113,8 +113,8 @@ import random
 import numpy as np
 import collections
 
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
+import CGATCore.Experiment as E
+import CGATCore.IOTools as IOTools
 
 import CGAT.FastaIterator as FastaIterator
 

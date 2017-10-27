@@ -157,8 +157,8 @@ Command line options
 '''
 import sys
 import collections
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
+import CGATCore.Experiment as E
+import CGATCore.IOTools as IOTools
 try:
     import MySQLdb
     HAS_MYSQL = True

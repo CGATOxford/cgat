@@ -190,10 +190,10 @@ import sys
 import os
 import pandas as pd
 import numpy as np
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.Counts as Counts
 import CGAT.Expression as Expression
-import CGAT.IOTools as IOTools
+import CGATCore.IOTools as IOTools
 
 
 def main(argv=None):

@@ -13,7 +13,7 @@ import re
 import collections
 import itertools
 
-from CGAT import IOTools as IOTools
+from CGATCore import IOTools as IOTools
 
 
 class CuffCompareValues:

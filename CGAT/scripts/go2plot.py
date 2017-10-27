@@ -32,7 +32,7 @@ from __future__ import print_function
 
 import sys
 import math
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 
 """ program $Id: go2plot.py 2782 2009-09-10 11:40:29Z andreas $
 

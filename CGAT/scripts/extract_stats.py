@@ -46,7 +46,7 @@ tasks
 '''
 
 import sys
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import pandas as pd
 import pandas.io.sql as pdsql
 import numpy as np

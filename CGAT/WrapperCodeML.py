@@ -17,9 +17,9 @@ import shutil
 import random
 import traceback
 from types import *
-from CGAT import Experiment as Experiment
+from CGATCore import Experiment as Experiment
 from CGAT import TreeTools as TreeTools
-from CGAT import IOTools as IOTools
+from CGATCore import IOTools as IOTools
 from CGAT import Tree as Tree
 from CGAT import Mali as Mali
 from CGAT import Genomics as Genomics

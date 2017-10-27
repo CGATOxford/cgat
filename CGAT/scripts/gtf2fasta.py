@@ -143,7 +143,7 @@ import sys
 import collections
 import array
 
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.GTF as GTF
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Genomics as Genomics

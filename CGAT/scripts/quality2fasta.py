@@ -30,7 +30,7 @@ Command line options
 '''
 import sys
 import re
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.FastaIterator as FastaIterator
 

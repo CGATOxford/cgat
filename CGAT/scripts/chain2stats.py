@@ -121,7 +121,7 @@ import bx.bitset
 import collections
 import numpy
 
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 
 

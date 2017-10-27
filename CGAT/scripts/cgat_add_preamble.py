@@ -31,7 +31,7 @@ Command line options
 import sys
 import shutil
 
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 
 SCRIPT = """################################################################################
 '''

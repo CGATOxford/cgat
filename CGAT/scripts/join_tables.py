@@ -30,7 +30,7 @@ Command line options
 '''
 import os
 import sys
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 
 USAGE = """python %s < stdin > stdout
 

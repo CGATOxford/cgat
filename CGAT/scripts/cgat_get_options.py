@@ -41,8 +41,8 @@ import glob
 import imp
 import collections
 import pandas
-import CGAT.Experiment as E
-import CGAT.IOTools as IOTools
+import CGATCore.Experiment as E
+import CGATCore.IOTools as IOTools
 
 ORIGINAL_START = None
 

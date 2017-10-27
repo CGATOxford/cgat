@@ -93,7 +93,7 @@ Command line options
 '''
 
 import sys
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 from rpy2.robjects import r as R
 from rpy2.robjects import pandas2ri as py2ri
 from rpy2.robjects import numpy2ri as np2ri

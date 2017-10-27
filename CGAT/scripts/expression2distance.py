@@ -129,7 +129,7 @@ Command line options
 
 import sys
 import pandas as pd
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.Timeseries as TS
 
 

@@ -109,7 +109,7 @@ Command line options
 
 import sys
 import pysam
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.scripts._bam2bed as _bam2bed
 
 

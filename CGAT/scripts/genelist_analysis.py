@@ -31,9 +31,9 @@ Command line options
 
 import sys
 
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.GO as GO
-import CGAT.IOTools as IOTools
+import CGATCore.IOTools as IOTools
 import CGAT.Stats as Stats
 
 

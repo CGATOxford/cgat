@@ -118,10 +118,10 @@ Command line options
 '''
 
 import sys
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import CGAT.GTF as GTF
 import CGAT.Genomics as Genomics
-import CGAT.IOTools as IOTools
+import CGATCore.IOTools as IOTools
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.Intervals as Intervals
 import CGAT.Masker as Masker

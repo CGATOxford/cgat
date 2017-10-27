@@ -34,7 +34,7 @@ import re
 import glob
 import imp
 import collections
-import CGAT.IOTools as IOTools
+import CGATCore.IOTools as IOTools
 import CGAT
 
 

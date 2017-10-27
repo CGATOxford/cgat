@@ -31,7 +31,7 @@ Command line options
 import sys
 import re
 
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 
 USAGE = """python %s [OPTIONS] [genomic_sequence] [ < genomic sequence]
 

@@ -2,7 +2,7 @@ from pysam.libchtslib cimport *
 from pysam.libcalignmentfile cimport *
 
 import collections, array, struct, sys
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 
 
 def filter(AlignmentFile genome_samfile,

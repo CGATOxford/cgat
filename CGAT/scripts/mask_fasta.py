@@ -33,7 +33,7 @@ import string
 import re
 import array
 
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 
 
 def maskSequence(sequence, regions, mask_char="N"):

@@ -37,12 +37,12 @@ Command line options
 '''
 import sys
 import re
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import csv
 import six
 import _csv
 import hashlib
-import CGAT.CSV as CSV
+import CGATCore.CSV as CSV
 
 
 class UniqueBuffer:

@@ -33,7 +33,7 @@ TODO: cache and emit reads rather than iterating over the samfile twice...
 '''
 
 import sys
-import CGAT.Experiment as E
+import CGATCore.Experiment as E
 import pysam
 
 
