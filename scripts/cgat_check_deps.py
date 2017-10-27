@@ -45,6 +45,113 @@ import sys
 import re
 import ast
 import argparse
+import bashlex
+
+
+# inspired by
+# https://docs.python.org/3/library/ast.html#module-ast
+# http://bit.ly/2rDf5xu
+# http://bit.ly/2r0Uv9t
+# really helpful, used astviewer (installed in a conda-env) to inspect examples
+# https://github.com/titusjan/astviewer
+def is_cgat_statement(node):
+    '''
+       Auxiliary function to check for cgat statement:
+           statement = "command"
+    '''
+
+    result = False
+    result = type(node) is ast.Assign and \
+             hasattr(node, 'targets') and \
+             hasattr(node.targets[0], 'id') and \
+             node.targets[0].id == "statement"
+
+    return result
+
+
+def is_cgat_executable(node):
+    '''
+       Auxiliary function to check for cgat statement:
+           executable = "command"
+    '''
+
+    result = False
+    result = type(node) is ast.Assign and \
+             hasattr(node, 'targets') and \
+             hasattr(node.targets[0], 'id') and \
+             node.targets[0].id == "executable"
+
+    return result
+
+
+def is_cgat_executable_name(node):
+    '''
+       Auxiliary function to check for cgat statement:
+           executable_name = "command"
+    '''
+
+    result = False
+    result = type(node) is ast.Assign and \
+             hasattr(node, 'targets') and \
+             hasattr(node.targets[0], 'id') and \
+             node.targets[0].id == "executable_name"
+
+    return result
+
+
+def get_cmd_string(node):
+    '''
+       Auxiliary function to get commands in the cgat statement:
+           statement = "command"
+    '''
+
+    result = ""
+    if hasattr(node.value, 's'):
+        result = node.value.s
+    elif hasattr(node.value, 'left') and hasattr(node.value.left, 's'):
+        result = node.value.left.s
+
+    return result
+
+
+def cleanup_statement(statement):
+    '''
+       Auxiliary function to cleanup cgat statements
+    '''
+    # cleanup whitespaces, tabs, and newlines
+    result = " ".join(statement.split())
+    # cleanup parameter interpolation
+    result = re.sub("\%\(", "", result)
+    result = re.sub("\)s", "", result)
+    return result
+
+
+# Thanks to: https://github.com/idank/bashlex
+# Workflow:
+# statement = ''' <whatever> '''
+# statement = " ".join(statement.split())
+# statement = re.sub("\%\(", "", statement)
+# statement = re.sub("\)s", "", statement)
+# parts = bashlex.parse(statement)
+# commands = []
+# get_cmd_names(parts[0], commands)
+def get_cmd_names(tree, commands):
+    if hasattr(tree, 'parts') and len(tree.parts) == 0:
+        return
+    else:
+        if hasattr(tree, 'kind'):
+            if tree.kind == 'command' and hasattr(tree.parts[0], 'word'):
+                commands.append(str(tree.parts[0].word))
+            if (tree.kind == 'processsubstitution' or tree.kind == 'commandsubstitution') and \
+                    hasattr(tree, 'command') and hasattr(tree.command, 'parts') and \
+                    hasattr(tree.command.parts[0], 'word'):
+                commands.append(str(tree.command.parts[0].word))
+        if hasattr(tree, 'parts'):
+            for e in tree.parts:
+                get_cmd_names(e, commands)
+        if hasattr(tree, 'command'):
+            for e in tree.command.parts:
+                get_cmd_names(e, commands)
 
 
 def checkDepedencies(pipeline):
@@ -70,22 +177,14 @@ def checkDepedencies(pipeline):
     # really helpful, used astviewer (installed in a conda-env) to inspect examples
     # https://github.com/titusjan/astviewer
     for node in ast.walk(tree):
-        if type(node) is ast.Assign and \
-           hasattr(node, 'targets') and \
-           hasattr(node.targets[0], 'id') and \
-           node.targets[0].id == "statement":
+        if is_cgat_statement(node) or \
+           is_cgat_executable(node) or \
+           is_cgat_executable_name(node):
 
-            statement = ""
-            if hasattr(node.value, 's'):
-                statement = node.value.s
-            elif hasattr(node.value, 'left') and hasattr(node.value.left, 's'):
-                statement = node.value.left.s
+            statement = get_cmd_string(node)
 
             if len(statement) > 0 and not statement.startswith(' -'):
-                # clean up statement, code copied from Execution module of Pipeline.py
-                statement = " ".join(re.sub("\t+", " ", statement).split("\n")).strip()
-                if statement.endswith(";"):
-                    statement = statement[:-1]
+                statement = cleanup_statement(statement)
                 statements.append(statement)
 
     # dictionary where:
@@ -100,24 +199,26 @@ def checkDepedencies(pipeline):
                   'attach',
                   'insert',
                   'module',
+                  '%s',
+                  'tool',
                   'checkpoint',
                   'for']
 
     for statement in statements:
-        for command in statement.split("|"):
-            # take program name, thanks http://pythex.org/
-            groups = re.match("^\s*([\w|\-|\.]+)", command)
-            if groups is not None:
-                # program name is first match
-                prog_name = groups.group(0)
-                # clean up duplicated white spaces
-                prog_name = ' '.join(prog_name.split())
-                # filter exceptions
-                if prog_name.lower() not in exceptions:
-                    if prog_name not in deps:
-                        deps[prog_name] = 1
-                    else:
-                        deps[prog_name] += 1
+        # use bashlex to parse statements
+        commands = []
+        try:
+            parts = bashlex.parse(statement)
+            get_cmd_names(parts[0], commands)
+        except bashlex.errors.ParsingError:
+            pass
+        
+        for command in commands:
+            if command.lower() not in exceptions:
+                if command not in deps:
+                    deps[command] = 1
+                else:
+                    deps[command] += 1
 
     # list of unmet dependencies
     check_path_failures = []

@@ -149,6 +149,9 @@ MISC_DEPS[sort]="coreutils"
 MISC_DEPS[tr]="coreutils"
 MISC_DEPS[wget]="wget"
 MISC_DEPS[wigToBigWig]="ucsc-wigtobigwig"
+MISC_DEPS[bedToBigBed]="ucsc-bedtobigbed"
+MISC_DEPS[bedGraphToBigWig]="ucsc-bedgraphtobigwig"
+MISC_DEPS[srapath]="sra-tools"
 MISC_DEPS[zcat]="ignore" # gzip not available in conda
 
 
@@ -453,9 +456,6 @@ done
 # print misc section
 
 # Add these manually, as they are required but don't use the 'statement' variable to run them
-echo "- ucsc-wigtobigwig" >> ${TMP_DEPS}
-[[ ${ALL} -eq 1 ]] && echo "- ucsc-bedtobigbed" >> ${TMP_DEPS}
-[[ ${ALL} -eq 1 ]] && echo "- ucsc-bedgraphtobigwig" >> ${TMP_DEPS}
 echo "- nomkl" >> ${TMP_DEPS}
 echo "- gcc" >> ${TMP_DEPS}
 echo "- zlib" >> ${TMP_DEPS}
