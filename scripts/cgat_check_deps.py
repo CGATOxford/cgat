@@ -62,9 +62,9 @@ def is_cgat_statement(node):
 
     result = False
     result = type(node) is ast.Assign and \
-             hasattr(node, 'targets') and \
-             hasattr(node.targets[0], 'id') and \
-             node.targets[0].id == "statement"
+        hasattr(node, 'targets') and \
+        hasattr(node.targets[0], 'id') and \
+        node.targets[0].id == "statement"
 
     return result
 
@@ -77,9 +77,9 @@ def is_cgat_executable(node):
 
     result = False
     result = type(node) is ast.Assign and \
-             hasattr(node, 'targets') and \
-             hasattr(node.targets[0], 'id') and \
-             node.targets[0].id == "executable"
+        hasattr(node, 'targets') and \
+        hasattr(node.targets[0], 'id') and \
+        node.targets[0].id == "executable"
 
     return result
 
@@ -92,9 +92,9 @@ def is_cgat_executable_name(node):
 
     result = False
     result = type(node) is ast.Assign and \
-             hasattr(node, 'targets') and \
-             hasattr(node.targets[0], 'id') and \
-             node.targets[0].id == "executable_name"
+        hasattr(node, 'targets') and \
+        hasattr(node.targets[0], 'id') and \
+        node.targets[0].id == "executable_name"
 
     return result
 
@@ -107,13 +107,13 @@ def is_cgat_append(node):
 
     result = False
     result = type(node) is ast.Expr and \
-             hasattr(node, 'value') and \
-             hasattr(node.value, 'func') and \
-             hasattr(node.value.func, 'value') and \
-             hasattr(node.value.func.value, 'id') and \
-             node.value.func.value.id == "statement" and \
-             hasattr(node.value.func, 'attr') and \
-             node.value.func.attr == "append"
+        hasattr(node, 'value') and \
+        hasattr(node.value, 'func') and \
+        hasattr(node.value.func, 'value') and \
+        hasattr(node.value.func.value, 'id') and \
+        node.value.func.value.id == "statement" and \
+        hasattr(node.value.func, 'attr') and \
+        node.value.func.attr == "append"
 
     return result
 
@@ -156,7 +156,7 @@ def cleanup_statement(statement):
     result = " ".join(statement.split())
     # cleanup parameter interpolation
     result = re.sub("\%\(", "", result)
-    result = re.sub("\)s", "", result)
+    result = re.sub("\)\w+", "", result)
     return result
 
 
@@ -257,12 +257,14 @@ def checkDepedencies(pipeline):
         # use bashlex to parse statements
         commands = []
         try:
+            #print(statement)
             parts = bashlex.parse(statement)
             get_cmd_names(parts[0], commands)
         except bashlex.errors.ParsingError:
             pass
-        
+
         for command in commands:
+            #print(command)
             if command.lower() not in exceptions:
                 if command not in deps:
                     deps[command] = 1
