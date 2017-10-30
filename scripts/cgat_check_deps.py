@@ -239,6 +239,17 @@ def checkDepedencies(pipeline):
                   'module',
                   '%s',
                   'tool',
+                  'cmd-farm',
+                  'cmd-sql',
+                  'cmd_extract',
+                  'cmds',
+                  'compress',
+                  'conda_env',
+                  'filter_cmd',
+                  'load_statement',
+                  'match_executable',
+                  'transform',
+                  'uncompress',
                   'checkpoint',
                   'for']
 
