@@ -144,6 +144,11 @@ def get_append_string(node):
        hasattr(node.value, 'args') and \
        hasattr(node.value.args[0], 's'):
         result = node.value.args[0].s
+    elif hasattr(node, 'value') and \
+       hasattr(node.value, 'args') and \
+       hasattr(node.value.args[0], 'left') and \
+       hasattr(node.value.args[0].left, 's'):
+        result = node.value.args[0].left.s
 
     return result
 
@@ -222,6 +227,7 @@ def checkDepedencies(pipeline):
             statement = get_append_string(node)
 
         if len(statement) > 0 and not statement.startswith(' -'):
+            #print(statement)
             statement = cleanup_statement(statement)
             statements.append(statement)
 
