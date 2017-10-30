@@ -248,8 +248,13 @@ def checkDepedencies(pipeline):
                   'filter_cmd',
                   'load_statement',
                   'match_executable',
+                  'rscript',
+                  'paired_processing',
+                  'executable',
                   'transform',
                   'uncompress',
+                  'execglam2',
+                  'execglam2scan',
                   'checkpoint',
                   'for']
 
