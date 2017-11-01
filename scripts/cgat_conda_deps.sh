@@ -465,7 +465,8 @@ echo "- zlib" >> ${TMP_DEPS}
 echo "- libpng" >> ${TMP_DEPS}
 
 echo "# Misc dependencies"
-sort -u ${TMP_DEPS}
+egrep -v 'CGATparameter|perm|--' ${TMP_DEPS} \
+ | sort -u
 
 
 # Remove temp files

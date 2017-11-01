@@ -145,9 +145,9 @@ def get_append_string(node):
        hasattr(node.value.args[0], 's'):
         result = node.value.args[0].s
     elif hasattr(node, 'value') and \
-       hasattr(node.value, 'args') and \
-       hasattr(node.value.args[0], 'left') and \
-       hasattr(node.value.args[0].left, 's'):
+            hasattr(node.value, 'args') and \
+            hasattr(node.value.args[0], 'left') and \
+            hasattr(node.value.args[0].left, 's'):
         result = node.value.args[0].left.s
 
     return result
@@ -160,8 +160,7 @@ def cleanup_statement(statement):
     # cleanup whitespaces, tabs, and newlines
     result = " ".join(statement.split())
     # cleanup parameter interpolation
-    result = re.sub("\%\(", "", result)
-    result = re.sub("\)\w+", "", result)
+    result = re.sub("\%\(\w+\)\w+", "CGATparameter", result)
     return result
 
 
@@ -261,6 +260,7 @@ def checkDepedencies(pipeline):
                   'uncompress',
                   'execglam2',
                   'execglam2scan',
+                  'CGATparameter',
                   'checkpoint',
                   'for']
 
