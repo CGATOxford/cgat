@@ -76,6 +76,3 @@ echo "dependencies:"
 # https://shapeshed.com/unix-join/
 join ${TMP_ENV} ${TMP_EXP} | egrep -v '^$' | sed 's/  /=/g' | sed 's/^/- /g'
 
-echo "- pip:"
-echo "  - bx-python==0.7.3"
-
