@@ -28,6 +28,4 @@ dependencies:
 - six=1.10.0
 - ucsc-wigtobigwig=332
 - zlib=1.2.8
-- pip:
-  - bx-python==0.7.3
 
