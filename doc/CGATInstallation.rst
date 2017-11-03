@@ -4,9 +4,12 @@
 Installation instructions
 =========================
 
-The section below describes how to install the CGAT scripts. Please
-note that we can not test our code on all systems and configurations
-out there.
+The section below describes how to install the CGAT scripts. We distinguish between two different installation
+types: production and development. The former refers to a well tested subset of scripts published here_, and is
+the recommended installation. The latter refers to the whole collection of scripts developed at CGAT, which
+may contain code under active development.
+
+Please note that we can not test our code on all systems and configurations out there so please bear with us.
 
 Quick installation
 ==================
@@ -171,3 +174,4 @@ resource.
 .. _biopython: http://biopython.org/
 .. _conda: https://conda.io
 .. _pip: https://pypi.python.org/pypi/CGAT
+.. _here: https://doi.org/10.1093/bioinformatics/btt756
