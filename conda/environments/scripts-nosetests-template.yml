@@ -41,8 +41,6 @@ dependencies:
 - setuptools
 - six
 - sqlalchemy
-- pip:
-  - bx-python
 # R deps
 - r-base
 - r-coloc
