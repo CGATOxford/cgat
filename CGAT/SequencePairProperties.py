@@ -36,7 +36,6 @@ class SequencePairProperties:
 
     def loadPair(self, seq1, seq2):
         """load sequence properties from a pair."""
-        pass
 
     def __str__(self):
         return "\t".join(self.getFields())

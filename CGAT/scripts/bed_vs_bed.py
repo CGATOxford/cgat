@@ -35,8 +35,6 @@ Command line options
 import sys
 import CGAT.Experiment as E
 import glob
-import CGAT.IOTools as IOTools
-import CGAT.Bed as Bed
 
 
 def main(argv=None):

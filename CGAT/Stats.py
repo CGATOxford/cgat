@@ -8,7 +8,6 @@ Code
 ----
 
 '''
-import types
 import math
 import numpy
 import scipy
@@ -162,7 +161,6 @@ def doBinomialTest(p, sample_size, observed, significance_threshold=0.05):
     Given are p: the probability of the NULL hypothesis, the sample_size
     and the number of observed counts.
     """
-    pass
 
 
 class ChiSquaredTest:

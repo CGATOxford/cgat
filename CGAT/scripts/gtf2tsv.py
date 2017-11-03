@@ -81,7 +81,6 @@ Command line options
 '''
 import sys
 import pysam
-import CGAT.IOTools as IOTools
 import CGAT.GTF as GTF
 import CGAT.Experiment as E
 
@@ -292,7 +291,6 @@ def main(argv=None):
         options.stdout.write("\t".join(header) + "\n")
 
         for gtf in GTF.iterator(options.stdin):
-
             attributes = []
             for a in list(gtf.keys()):
                 if a in ("gene_id", "transcript_id"):

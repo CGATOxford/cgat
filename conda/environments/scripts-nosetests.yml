@@ -23,6 +23,7 @@ dependencies:
 - ggplot
 - jinja2
 - matplotlib
+- mysqlclient
 - networkx
 - nose
 - numpy

@@ -32,12 +32,7 @@ Command line options
 
 import sys
 import CGAT.Experiment as E
-from rpy2.robjects import r as R
-from rpy2.robjects import pandas2ri
-import pandas as pd
-import re
-import numpy as np
-import CGAT.PipelineGWAS as gwas
+import CGAT.GWAS as gwas
 import os
 
 

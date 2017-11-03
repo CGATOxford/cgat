@@ -128,7 +128,7 @@ def biomart_iterator(columns,
                          path=path, archive=archive)
 
     if filters is not None:
-        filter_names = rpy2.robjects.vectors.StrVector(filters)
+        filter_names = rpy2.robjects.vectors.StrVector(list(filters))
     else:
         filter_names = ""
 
@@ -139,7 +139,7 @@ def biomart_iterator(columns,
 
     # result is a dataframe
     result = R.getBM(
-        attributes=rpy2.robjects.vectors.StrVector(columns),
+        attributes=rpy2.robjects.vectors.StrVector(list(columns)),
         filters=filter_names,
         values=filter_values,
         mart=mart)

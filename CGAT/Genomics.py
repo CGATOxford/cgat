@@ -1639,7 +1639,6 @@ def CalculateRCSUValuesFromCounts(counts, pseudo_counts=0):
 
     RCSU = relative frequency / uniform frequency
     """
-    pass
 
 
 def CalculateCodonFrequenciesFromCounts(counts, pseudo_counts=0):

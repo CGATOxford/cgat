@@ -4,3 +4,9 @@ version:
     outputs: [stdout]
     references: []
     options: --version
+
+simple_query:
+    stdin: table.csv
+    outputs: [stdout]
+    references: [csvdb.ref]
+    options: --retry --database-backend=sqlite --database-name=csvdb --table=gene_info -L /dev/null -S /dev/null -E /dev/null && sqlite3 <TMP>/csvdb "select * from gene_info;" 2> /dev/null
