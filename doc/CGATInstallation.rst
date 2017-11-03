@@ -6,41 +6,40 @@ Installation instructions
 
 The section below describes how to install the CGAT scripts. Please
 note that we can not test our code on all systems and configurations
-out there. If something does not work, please try a
-:ref:`CGATCleanInstall` or download a copy of the
-:ref:`CGATInstallationVirtualBoxUbuntu` with all the software
-installed.
+out there.
 
 Quick installation
 ==================
-Install using conda
+
+Install using Conda
 -------------------
 
-The preferred methiod for installation of the CGAT code collection is using the CGAT conda channel.
+The preferred method to install the CGAT code collection is using the installation script, which uses conda_.
 
-Before you install, please make sure you have conda installed on your machine, if this is installed all you need to do is to type::
+Here are the steps::
 
-        # add cgat channel
-        conda config --add channels cgat
+        # download installation script:
+        curl -O https://raw.githubusercontent.com/CGATOxford/cgat/master/install-CGAT-tools.sh
 
-        # install CGAT code in Conda's root environment
-        conda install <cgat-package>
+        # see help:
+        bash install-CGAT-tools.sh
 
-where ``<cgat-package>`` can be one of these:
+        # install set of production scripts (well tested):
+        bash install-CGAT-tools.sh --production [--location </full/path/to/folder/without/trailing/slash>]
 
-* ``cgat-scripts``
+        # or go for the latest development version:
+        bash install-CGAT-tools.sh --devel [--location </full/path/to/folder/without/trailing/slash>]
 
-* ``cgat-scripts-lite``
-
-To install the development version of the code please follow instructions here_.
+The installation script will put everything under the specified location. The aim of the script is to
+provide a portable installation that does not interfere with the existing software. As a result, you
+will have a conda environment working with the CGAT scripts which can be enabled on demand according 
+to your needs.
 
 
 Install using pip
 -----------------
 
-The non preferred method for installation is through pip, however a number of dependancies need to be installed before the code collection will work. This is the reason we suggest you install using conda.
-
-Installing CGAT can be straight-forward if all its dependencies are satisfied::
+You can also use pip_ to install the CGAT scripts. To go down this route, please type::
 
    pip install cgat
 
@@ -108,10 +107,6 @@ straight-forward::
 
     pip install cgat
 
-If you continue having problems with the installation please try the
-:ref:`CGATCleanInstall` guide or download a copy of the 
-:ref:`CGATInstallationVirtualBoxUbuntu` with all the software installed.
-
 Troubleshooting
 ---------------
 
@@ -127,30 +122,6 @@ PyGTK
 biopython_
     pip occasionally fails for biopython_. If so, try installing 
     manually.
-
-.. _CGATCleanInstall:
-
-CGAT Code Clean Installation
-============================
-
-In this section you will find detailed information on how to install the CGAT
-Code Collection and all its dependencies inside a newly created environment.
-
-Installation instructions for the following operating systems are available:
-
-.. toctree::
-
-  CGATInstallationOSX
-  CGATInstallationLinux
-
-Furthermore, we also provide different means of getting the CGAT Code Collection
-pre-installed:
-
-.. toctree::
-
-   CGATInstallationVirtualBoxUbuntu
-   CGATInstallationVagrant
-   CGATInstallationDocker
 
 .. _GalaxyInstallation:
 
@@ -198,4 +169,5 @@ resource.
 
 .. _setuptools: https://pypi.python.org/pypi/setuptools
 .. _biopython: http://biopython.org/
-.. _here: CGATInstallationLinux.html
+.. _conda: https://conda.io
+.. _pip: https://pypi.python.org/pypi/CGAT
