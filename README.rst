@@ -63,8 +63,7 @@ You can also use pip to install the CGAT scripts. To go down this route, please 
    pip install cgat
 
 However, CGAT depends on numerous other python packages which themselves might require
-manual intervention. Please see :ref:`ManualInstallation` for a
-step-by-step installation approach.
+manual intervention. Therefore, our preferred method of installation is through conda. 
 
 Example usage of a script
 -------------------------
