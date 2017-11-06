@@ -1013,7 +1013,7 @@ class DEExperiment_DESeq2(DEExperiment):
                                    contrast_levels[2], contrast_levels[1])))
             
             png(paste0(c("%(outfile_prefix)s", "MA.png"), collapse="_"))
-            plotMA(res, alpha=%(fdr)s)
+            DESeq2::plotMA(res, alpha=%(fdr)s)
             dev.off()
 
             res = as.data.frame(res)
@@ -1047,7 +1047,7 @@ class DEExperiment_DESeq2(DEExperiment):
                                    contrast_levels[2], contrast_levels[1])))
 
             png(paste0(c("%(outfile_prefix)s", "MA.png"), collapse="_"))
-            plotMA(res, alpha=%(fdr)s)
+            DESeq2::plotMA(res, alpha=%(fdr)s)
             dev.off()
 
             res = as.data.frame(res)
