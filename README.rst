@@ -19,12 +19,12 @@ The second component is a collection of pipelines that utilise the
 functionality of the CGAT tool collection and these pipelines can be accessed
 `here <https://github.com/CGATOxford/CGATPipelines>`_.
 
-For questions, please subscribe and contact us at the 
-`CGAT user group
-<https://groups.google.com/forum/?fromgroups#!forum/cgat-user-group>`_.
+For questions, please open a discussion on the GitHub 
+`issue page
+<https://github.com/CGATOxford/cgat/issues>`_.
 
 Documentation of CGAT tools is available 
-`here <https://www.cgat.org/downloads/public/cgat/documentation/CGATInstallation.html>`_.
+`here <https://www.cgat.org/downloads/public/cgat/documentation/>`_.
 
 
 CGAT Tools
@@ -69,7 +69,7 @@ Example usage of a script
 -------------------------
 
 To use CGAT Tools, use the ``cgat`` front-end. For example, to
-strip sequence and quality information from a bam_ file, type:
+strip sequence and quality information from a bam file, type:
 
    cgat bam2bam --strip=sequence < in.bam > out.bam
 
