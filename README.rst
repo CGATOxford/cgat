@@ -32,7 +32,7 @@ Install using Conda
 -------------------
 
 The preferred method to install the CGAT code collection is using the installation script, which uses
-`Conda <https://conda.io>_`.
+`Conda <https://conda.io>`_.
 
 Here are the steps::
 
