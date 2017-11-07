@@ -5,35 +5,34 @@
     :target: http://bioconda.github.io/recipes/cgat-scripts/README.html
 
 ===========================
-The CGAT code collection
+The CGAT Code Collection
 ===========================
 
-The CGAT Code collection has two components. The first component
-is a collection of scripts, the CGAT tools. Scripts are located
+The CGAT_ Code Collection has two components. The first component
+is a collection of scripts in this repository, which are located
 `here <https://github.com/CGATOxford/cgat/tree/master/CGAT/scripts>`_
-and can be ran on the commandline. Within this repository we also have a
-number of utility functions that help with working with varuious file formats
-in python. These are located `here <https://github.com/CGATOxford/cgat/tree/master/CGAT>`_.
+and can be run using the ``cgat`` command. Within this repository we also have a
+number of utility modules that help working with various file formats
+in Python. These are located `here <https://github.com/CGATOxford/cgat/tree/master/CGAT>`_.
 
 The second component is a collection of pipelines that utilise the
-functionality of the CGAT tool collection and these pipelines can be accessed
+functionality of the scripts and can be accessed
 `here <https://github.com/CGATOxford/CGATPipelines>`_.
 
 For questions, please open a discussion on the GitHub 
-`issue page
-<https://github.com/CGATOxford/cgat/issues>`_.
+`issue page <https://github.com/CGATOxford/cgat/issues>`_.
 
 Documentation of CGAT tools is available 
 `here <https://www.cgat.org/downloads/public/cgat/documentation/>`_.
 
-
-CGAT Tools
-==========
+Installation
+============
 
 Install using Conda
 -------------------
 
-The preferred method to install the CGAT code collection is using the installation script, which uses conda_.
+The preferred method to install the CGAT code collection is using the installation script, which uses
+`Conda <https://conda.io>_`.
 
 Here are the steps::
 
@@ -65,31 +64,18 @@ You can also use pip to install the CGAT scripts. To go down this route, please 
 However, CGAT depends on numerous other python packages which themselves might require
 manual intervention. Therefore, our preferred method of installation is through conda. 
 
-Example usage of a script
--------------------------
 
-To use CGAT Tools, use the ``cgat`` front-end. For example, to
-strip sequence and quality information from a bam file, type:
+Usage
+=====
+
+Run the ``cgat --help`` command to see what scripts are available and how to use them.
+For example, to strip sequence and quality information from a bam_ file, type::
 
    cgat bam2bam --strip=sequence < in.bam > out.bam
 
 For more extensive examples please refer to the documentation 
 `here <https://www.cgat.org/downloads/public/cgat/documentation/CGATReference.html>`_
 
-
-CGAT Pipelines
-==============
-
-We have developed numerous pipelines in comparative genomics
-and NGS analysis. The pipelines are generally available and should
-be fairly portable. Some documentation of the pipelines is 
-`here <https://www.cgat.org/downloads/public/cgatpipelines/documentation/>`_.
-
-They are under continuous development and changing rapidly.
-However, they might give some ideas or building blocks when developing
-your own pipelines.
-
 .. _bam: http://en.wikipedia.org/wiki/SAMtools
 .. _CGAT: http://www.cgat.org
-
 
