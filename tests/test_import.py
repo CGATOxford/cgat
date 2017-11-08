@@ -33,9 +33,8 @@ from nose.tools import ok_
 # DIRECTORIES to examine for python modules/scripts
 EXPRESSIONS = (
     ('tests', 'tests/*.py'),
-    ('scripts', 'scripts/*.py'),
-    ('CGAT', 'CGAT/*.py'),
-    ('CGATPipelines', 'CGATPipelines/*.py'))
+    ('scripts', 'CGAT/scripts/*.py'),
+    ('CGAT', 'CGAT/*.py'))
 
 # Scripts to exclude as they fail imports.
 EXCLUDE = (

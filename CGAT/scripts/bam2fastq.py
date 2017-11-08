@@ -132,7 +132,7 @@ def main(argv=None):
         E.warn("no reads were found")
         return
 
-    sort_statement = '''zcat %s
+    sort_statement = '''gunzip < %s
     | sort -k1,1
     | awk '{printf("@%%s\\n%%s\\n+\\n%%s\\n", $1,$2,$3)}'
     | gzip > %s'''

@@ -53,7 +53,6 @@ provide a portable installation that does not interfere with the existing softwa
 will have a conda environment working with the CGAT scripts which can be enabled on demand according 
 to your needs.
 
-
 Install using pip
 -----------------
 
@@ -63,7 +62,6 @@ You can also use pip to install the CGAT scripts. To go down this route, please 
 
 However, CGAT depends on numerous other python packages which themselves might require
 manual intervention. Therefore, our preferred method of installation is through conda. 
-
 
 Usage
 =====
@@ -78,4 +76,3 @@ For more extensive examples please refer to the documentation
 
 .. _bam: http://en.wikipedia.org/wiki/SAMtools
 .. _CGAT: http://www.cgat.org
-

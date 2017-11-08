@@ -209,7 +209,7 @@ def main(argv=None):
 
     # SNS: sorting optional, off by default
     if options.sort_bed:
-        bedcmd = "<( zcat %s | sort -k1,1 -k2,2n)" % filename_bed
+        bedcmd = "<( gunzip < %s | sort -k1,1 -k2,2n)" % filename_bed
     else:
         bedcmd = filename_bed
 

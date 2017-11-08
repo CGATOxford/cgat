@@ -1,0 +1,49 @@
+
+name: cgat-s
+
+channels:
+- bioconda
+- conda-forge
+- defaults
+
+dependencies:
+# system deps
+- nomkl
+- gcc
+- zlib
+- libpng
+# bioinformatics tools
+- ucsc-wigtobigwig
+# python deps
+- python
+- alignlib-lite
+- biopython
+- cython
+- future
+- ggplot
+- jinja2
+- matplotlib
+- mysqlclient
+- networkx
+- nose
+- numpy
+- openpyxl
+- pandas
+- pep8
+- pybedtools
+- pysam
+- python-weblogo
+- pyyaml
+- rdflib
+- rpy2
+- scikit-learn
+- scipy
+- setuptools
+- six
+- sqlalchemy
+# R deps
+- r-base
+- r-coloc
+- r-ggplot2
+- r-qqman
+
