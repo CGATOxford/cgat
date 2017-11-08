@@ -9,6 +9,13 @@ Jethro Johnson
 Antonio Berlanga-Taylor
 Katherine Fawcett
 Xiaoming Hu
+Thomas Smith
+Michael Morgan
+Katherine Brown
+Charlotte George
+Adam Cribbs
+Hania Pavlou
+Sebastian Luna-Valero
 
 The CGAT code collection has been made possible by the many developers
 in the bioinformatics and python community that have made their code
