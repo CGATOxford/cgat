@@ -163,12 +163,7 @@ import pysam
 import CGAT.Bed as Bed
 import numpy
 import collections
-
-try:
-    import bx.bbi.bigwig_file
-except ImportError:
-    # py3: cStringIO dependency of BigWigFile
-    pass
+import pyBigWig
 
 import CGAT.scripts._bam2peakshape as _bam2peakshape
 
@@ -568,10 +563,9 @@ def main(argv=None):
     control_files = []
 
     if options.format == "bigwig":
-        fg_file = bx.bbi.bigwig_file.BigWigFile(open(infile))
+        fg_file = pyBigWig.open(infile)
         for control_file in options.control_files:
-            control_files.append(bx.bbi.bigwig_file.BigWigFile(
-               IOTools.openFile(control_file)))
+            control_files.append(pyBigWig.open(control_file))
         counter = _bam2peakshape.CounterBigwig(
             smooth_method=options.smooth_method)
 

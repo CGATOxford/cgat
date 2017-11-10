@@ -466,13 +466,7 @@ import CGAT.GTF as GTF
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.GeneModelAnalysis as GeneModelAnalysis
 
-try:
-    import bx
-    import bx.bbi.bigwig_file
-    import bx.intervals.intersection
-except ImportError:
-    # bx not py3 compatible
-    pass
+import pyBigWig
 
 
 def main(argv=None):
@@ -686,7 +680,7 @@ def main(argv=None):
         bam_files = None
 
     if options.bigwig_file:
-        bigwig_file = bx.bbi.bigwig_file.BigWigFile(open(options.bigwig_file))
+        bigwig_file = pyBigWig.open(options.bigwig_file)
     else:
         bigwig_file = None
 

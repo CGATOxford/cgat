@@ -304,12 +304,6 @@ import CGAT.GTF as GTF
 import numpy
 import pandas
 
-try:
-    from bx.bbi.bigwig_file import BigWigFile
-except ImportError:
-    # py3: cStringIO dependency of BigWigFile
-    pass
-
 import CGAT.scripts._bam2geneprofile as _bam2geneprofile
 
 
