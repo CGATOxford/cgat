@@ -31,6 +31,7 @@ dependencies:
 - pandas
 - pep8
 - pybedtools
+- pybigwig
 - pysam
 - python-weblogo
 - pyyaml

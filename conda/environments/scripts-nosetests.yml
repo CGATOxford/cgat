@@ -24,6 +24,7 @@ dependencies:
 - pandas=0.20.3
 - pep8=1.7.0
 - pybedtools=0.7.10
+- pybigwig=0.3.5
 - pysam=0.11.1
 - python=3.6.3
 - python-weblogo=3.4

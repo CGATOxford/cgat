@@ -41,8 +41,7 @@ import CGAT.Experiment as E
 import CGAT.IndexedFasta as IndexedFasta
 import CGAT.IOTools as IOTools
 
-import bx
-import bx.bbi.bigwig_file
+import pyBigWig
 
 
 def block_iterator(infile, contig, size, chunk_size=10000000):
@@ -140,7 +139,7 @@ def main(argv=sys.argv):
     (options, args) = E.Start(parser, add_pipe_options=True)
 
     if options.bigwig_file:
-        bigwig_file = bx.bbi.bigwig_file.BigWigFile(open(options.bigwig_file))
+        bigwig_file = pyBigWig.open(options.bigwig_file)
     else:
         bigwig_file = None
 
