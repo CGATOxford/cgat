@@ -2578,16 +2578,6 @@ def deseqParseResults(control_name, treatment_name, fdr, vsd=False):
     results = []
     isna = r["is.na"]
 
-    # Get column names from output and edit
-    names = list(r['res'].columns.values)
-    m = dict([(x, x) for x in names])
-    m.update(dict(
-        pval="pvalue",
-        baseMeanA="value1",
-        baseMeanB="value2",
-        id="interval_id",
-        log2FoldChange="lfold"))
-
     counts = E.Counter()
 
     for index, data in r['res'].iterrows():
@@ -2612,7 +2602,8 @@ def deseqParseResults(control_name, treatment_name, fdr, vsd=False):
 
         # set lfold change to 0 if both are not expressed
         if data['baseMeanA'] == 0.0 and data['baseMeanB'] == 0.0:
-            d = d._replace(foldChange=0, log2FoldChange=0)
+            data['foldChange']=0
+            data['log2FoldChange']=0
 
         if data['pval'] != r('''NA'''):
             status = "OK"
