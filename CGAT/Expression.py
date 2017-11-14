@@ -2602,8 +2602,8 @@ def deseqParseResults(control_name, treatment_name, fdr, vsd=False):
 
         # set lfold change to 0 if both are not expressed
         if data['baseMeanA'] == 0.0 and data['baseMeanB'] == 0.0:
-            data['foldChange']=0
-            data['log2FoldChange']=0
+            data['foldChange'] = 0
+            data['log2FoldChange'] = 0
 
         if data['pval'] != r('''NA'''):
             status = "OK"
