@@ -948,9 +948,10 @@ class DEExperiment_DESeq2(DEExperiment):
             plotDispEsts(dds)
             dev.off()
 
-            res = suppressMessages(results(dds, addMLE=TRUE))
+            res = suppressMessages(results(dds, alpha=%(fdr)s))
+            res <- lfcShrink(dds, coef=2)
             png(paste0(c("%(outfile_prefix)s", "MA.png"), collapse="_"))
-            plotMA(res, alpha=%(fdr)s)
+            DESeq2::plotMA(dds)
             dev.off()
 
             res = as.data.frame(res)
@@ -1007,12 +1008,12 @@ class DEExperiment_DESeq2(DEExperiment):
 
             contrast_levels = as.vector(levels(dds@colData$%(contrast)s))
 
-            res = suppressMessages(results(ddsLRT, addMLE=TRUE,
+            res = suppressMessages(results(ddsLRT,
                                    contrast=c("%(contrast)s",
-                                   contrast_levels[2], contrast_levels[1])))
-
+                                   contrast_levels[2], contrast_levels[1], alpha=%(fdr)s)))
+            
             png(paste0(c("%(outfile_prefix)s", "MA.png"), collapse="_"))
-            plotMA(res, alpha=%(fdr)s)
+            DESeq2::plotMA(dds)
             dev.off()
 
             res = as.data.frame(res)
@@ -1041,12 +1042,12 @@ class DEExperiment_DESeq2(DEExperiment):
 
             contrast_levels = as.vector(levels(dds@colData$%(contrast)s))
 
-            res = suppressMessages(results(ddsLRT, addMLE=TRUE,
+            res = suppressMessages(results(ddsLRT,
                                    contrast=c("%(contrast)s",
-                                   contrast_levels[2], contrast_levels[1])))
+                                   contrast_levels[2], contrast_levels[1], alpha=%(fdr)s)))
 
             png(paste0(c("%(outfile_prefix)s", "MA.png"), collapse="_"))
-            plotMA(res, alpha=%(fdr)s)
+            DESeq2::plotMA(dds)
             dev.off()
 
             res = as.data.frame(res)
