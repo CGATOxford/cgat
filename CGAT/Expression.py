@@ -2578,29 +2578,16 @@ def deseqParseResults(control_name, treatment_name, fdr, vsd=False):
     results = []
     isna = r["is.na"]
 
-    # Get column names from output and edit
-    names = list(r['res'].names)
-    m = dict([(x, x) for x in names])
-    m.update(dict(
-        pval="pvalue",
-        baseMeanA="value1",
-        baseMeanB="value2",
-        id="interval_id",
-        log2FoldChange="lfold"))
-
-    rtype = collections.namedtuple("rtype", names)
     counts = E.Counter()
 
-    for data in zip(*r['res']):
+    for index, data in r['res'].iterrows():
         counts.input += 1
 
-        d = rtype._make(data)
-
         # set significant flag
-        if d.padj <= fdr:
+        if data['padj'] <= fdr:
             signif = 1
             counts.significant += 1
-            if d.log2FoldChange > 0:
+            if data['log2FoldChange'] > 0:
                 counts.significant_over += 1
             else:
                 counts.significant_under += 1
@@ -2608,16 +2595,17 @@ def deseqParseResults(control_name, treatment_name, fdr, vsd=False):
             signif = 0
             counts.insignificant += 1
 
-        if d.log2FoldChange > 0:
+        if data['log2FoldChange'] > 0:
             counts.all_over += 1
         else:
             counts.all_under += 1
 
         # set lfold change to 0 if both are not expressed
-        if d.baseMeanA == 0.0 and d.baseMeanB == 0.0:
-            d = d._replace(foldChange=0, log2FoldChange=0)
+        if data['baseMeanA'] == 0.0 and data['baseMeanB'] == 0.0:
+            data['foldChange'] = 0
+            data['log2FoldChange'] = 0
 
-        if d.pval != r('''NA'''):
+        if data['pval'] != r('''NA'''):
             status = "OK"
         else:
             status = "FAIL"
@@ -2628,23 +2616,23 @@ def deseqParseResults(control_name, treatment_name, fdr, vsd=False):
 
         # check if our assumptions about the direction of fold change
         # are correct
-        assert (d.foldChange > 1) == (d.baseMeanB > d.baseMeanA)
+        assert (data['foldChange'] > 1) == (data['baseMeanB'] > data['baseMeanA'])
 
         # note that fold change is computed as second group (B) divided by
         # first (A)
         results.append(GeneExpressionResult._make((
-            d.id,
+            data['id'],
             treatment_name,
-            d.baseMeanB,
+            data['baseMeanB'],
             0,
             control_name,
-            d.baseMeanA,
+            data['baseMeanA'],
             0,
-            d.pval,
-            d.padj,
-            d.log2FoldChange,
-            d.foldChange,
-            d.transformed_log2FoldChange,
+            data['pval'],
+            data['padj'],
+            data['log2FoldChange'],
+            data['foldChange'],
+            data['transformed_log2FoldChange'],
             str(signif),
             status)))
 
