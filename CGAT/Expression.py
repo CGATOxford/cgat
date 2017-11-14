@@ -948,7 +948,7 @@ class DEExperiment_DESeq2(DEExperiment):
             plotDispEsts(dds)
             dev.off()
 
-            res = suppressMessages(results(dds, addMLE=TRUE))
+            res = suppressMessages(results(dds))
             png(paste0(c("%(outfile_prefix)s", "MA.png"), collapse="_"))
             plotMA(res, alpha=%(fdr)s)
             dev.off()
@@ -1096,7 +1096,7 @@ class DEResult_DESeq2(DEResult):
         df_dict["p_value_adj"] = adjustPvalues(self.table['pvalue'])
         df_dict["significant"] = pvaluesToSignficant(
             df_dict["p_value_adj"], fdr)
-        df_dict["l2fold"] = self.table['lfcMLE']
+        df_dict["l2fold"] = self.table['log2FoldChange']
 
         # Transformed l2fold is the shrunken values
         df_dict["transformed_l2fold"] = self.table['log2FoldChange']
