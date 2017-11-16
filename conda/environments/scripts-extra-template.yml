@@ -1,0 +1,16 @@
+
+# This environment will include other dependencies that have not been detected automatically
+# but are required to run the scripts
+
+name: cgat-s
+
+channels:
+- bioconda
+- conda-forge
+- defaults
+
+dependencies:
+- sra-tools
+- ucsc-bigwiginfo
+- graphviz
+

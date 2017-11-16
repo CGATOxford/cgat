@@ -33,8 +33,11 @@ Here are the steps::
         # or go for the latest development version:
         bash install-CGAT-tools.sh --devel [--location </full/path/to/folder/without/trailing/slash>]
 
-        # please run the cgat command-line tool to check:
-        cgat
+        # enable the conda environment as requested by the installation script:
+        source </full/path/to/folder/without/trailing/slash>/conda-install/bin/activate cgat-s
+
+        # finally, please run the cgatflow command-line tool to check the installation:
+        cgat --help
 
 The installation script will put everything under the specified location. It needs 5 GB of disk space
 and it takes about 10 minutes to complete. The aim of the script is to provide a portable installation

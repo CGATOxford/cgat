@@ -48,6 +48,12 @@ Here are the steps::
         # or go for the latest development version:
         bash install-CGAT-tools.sh --devel [--location </full/path/to/folder/without/trailing/slash>]
 
+        # enable the conda environment as requested by the installation script:
+        source </full/path/to/folder/without/trailing/slash>/conda-install/bin/activate cgat-s
+
+        # finally, please run the cgatflow command-line tool to check the installation:
+        cgat --help
+
 The installation script will put everything under the specified location. The aim of the script is to
 provide a portable installation that does not interfere with the existing software. As a result, you
 will have a conda environment working with the CGAT scripts which can be enabled on demand according 
