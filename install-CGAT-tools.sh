@@ -174,6 +174,8 @@ conda clean --packages -y
 # proceed with conda installation
 conda_install() {
 
+ulimit -a
+
 log "installing conda"
 
 detect_cgat_installation
