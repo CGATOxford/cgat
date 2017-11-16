@@ -260,6 +260,10 @@ if [[ "$OS" != "travis" ]] ; then
 
    if [[ $INSTALL_DEVEL ]] ; then
 
+      # install extra deps
+      curl -o env-extra.yml -O https://raw.githubusercontent.com/CGATOxford/cgat/${TRAVIS_BRANCH}/conda/environments/scripts-extra.yml
+      conda env update --quiet --file env-extra.yml
+
       # make sure you are in the CGAT_HOME folder
       cd $CGAT_HOME
 
