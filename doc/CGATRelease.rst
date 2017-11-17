@@ -7,6 +7,31 @@ latest code can always be found in the code repository.
 Nevertheless, we occasionally prepare releases. Notes on
 each release are below.
 
+Release 0.3.1
+=============
+
+* bugfix cgat CLI
+* added scripts to help find R and Python dependencies: scripts/cgat_deps_R.sh, scripts/cgat_deps_python.sh
+* modified install script to use conda environment files instead of conda meta-packages; https://github.com/CGATOxford/cgat/pull/343
+* update test_style.py to reflect new repository structure; https://github.com/CGATOxford/cgat/pull/345
+* update test_import.py to reflect new repository structure; https://github.com/CGATOxford/cgat/commit/decc5ec0e93b4d2c05b6fa3793b5a73caf1fa8b9
+* added script to perform Gene Set Enrichment Analysis; https://github.com/CGATOxford/cgat/pull/344
+* updated scripts to work with Python 3.6; https://github.com/CGATOxford/cgat/pull/346
+* bugfix bed2bed script; https://github.com/CGATOxford/cgat/pull/349; https://github.com/CGATOxford/cgat/issues/347
+* bugfix GTF.py module file; https://github.com/CGATOxford/cgat/issues/350
+* various bugfixes for Python 3 problems when running pipeline_annotations in python 3, plus a modification of the new "assembly report" section to allow genomes without a standard assembly report (e.g. yeast) to be processed; https://github.com/CGATOxford/cgat/pull/348
+* refactor CGAT/PipelineGWAS.py to CGAT/GWAS.py; https://github.com/CGATOxford/cgat/pull/354
+* removed unused imports with autoflakes; https://github.com/CGATOxford/cgat/pull/355
+* removed basestr, use str instead in Python 3; https://github.com/CGATOxford/cgat/pull/359
+* added test for csv2db; https://github.com/CGATOxford/cgat/pull/360
+* fixed rename_transcripts test for gtf2gtf.py; https://github.com/CGATOxford/cgat/pull/361
+* updated installation; https://github.com/CGATOxford/cgat/pull/364 ; https://github.com/CGATOxford/cgat/pull/373
+* updated documentation; https://github.com/CGATOxford/cgat/pull/365 ; https://github.com/CGATOxford/cgat/pull/367
+* replaced bx.bbi.bigwig_file with pyBigWig ; https://github.com/CGATOxford/cgat/pull/369
+* updated Expression.py to iterate over pandas dataframe; https://github.com/CGATOxford/cgat/pull/370
+* updated Expression.py to work with DESeq2 > 1.16 ; https://github.com/CGATOxford/cgat/pull/371
+* moved bed_vs_bed.py to obsolete ; https://github.com/CGATOxford/cgat/pull/372
+
 Release 0.3.0
 =============
 
@@ -101,6 +126,14 @@ The following people have contributed to the CGAT Code collection:
 * Ian Sudbery
 * Hu Xiaoming
 * Lesheng Kong
+* Michael Morgan
+* Thomas Smith
+* Katherine Brown
+* Charlotte George
+* Adam Cribbs
+* Hania Pavlou
+* Reshma Nibhani
+* Sebastian Luna-Valero
 
 3rd party code
 ==============
