@@ -12,10 +12,6 @@ and applies various segmentation algorithms.
 
 The methods implemented (``--methods``) are:
 
-GCProfile
-   use `GCProfile <http://tubic.tju.edu.cn/GC-Profile/>`_ to segment by
-   G+C content. GCProfile needs to be installed and in the PATH.
-
 cpg
    output all locations of cpg in the genome
 
@@ -61,8 +57,6 @@ import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
 import CGAT.FastaIterator as FastaIterator
 import CGAT.IOTools as IOTools
-
-EXECUTABLE = "GCProfile"
 
 
 def segmentWithCpG(infile, with_contig_sizes=False):
@@ -118,85 +112,6 @@ def segmentWindowsCpG(infile, window_size=100, min_cpg=1):
     # return CpG content (not C+C content)
     return [(x.chrom, x.start, x.stop, float(x.name) / (x.stop - x.start) / 2)
             for x in filtered]
-
-
-def segmentWithGCProfile(infile, options):
-    '''segment a fasta file with GCProfile.'''
-
-    ninput, nskipped, noutput = 0, 0, 0
-
-    iterator = FastaIterator.FastaIterator(infile)
-
-    tmpdir = tempfile.mkdtemp()
-    E.info("working in %s" % tmpdir)
-
-    while 1:
-        try:
-            cur_record = next(iterator)
-        except StopIteration:
-            break
-
-        if cur_record is None:
-            break
-        ninput += 1
-
-        contig = re.sub("\s.*", "", cur_record.title)
-        filename = os.path.join(tmpdir, contig) + ".fasta"
-        with IOTools.openFile(filename, "w") as f:
-            f.write(">%s\n%s\n" % (contig, cur_record.sequence))
-
-        E.info("running %s on %s" % (EXECUTABLE, contig))
-
-        statement = "%s %s -t %i -g %f -i %i " % \
-                    (EXECUTABLE, filename,
-                     options.gcprofile_halting_parameter,
-                     options.gcprofile_gap_size,
-                     options.gcprofile_min_length)
-
-        E.debug("statement = %s" % statement)
-
-        process = subprocess.Popen(statement,
-                                   cwd=tmpdir,
-                                   shell=True,
-                                   stdin=None,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE)
-
-        stdout, stderr = process.communicate()
-
-        E.debug("GProfile: stdout=%s" % stdout)
-        E.debug("GProfile: stderr=%s" % stderr)
-
-        # process.stdin.close()
-        if process.returncode != 0:
-            raise OSError("Child was terminated by signal %i: \nThe stderr was: \n%s\n%s\n" %
-                          (-process.returncode, stderr, statement))
-
-        noutput += 1
-
-    segments = []
-
-    for f in glob.glob(os.path.join(tmpdir, "*.SegGC")):
-        contig = os.path.basename(f[:-len(".SegGC")])
-        with IOTools.openFile(f, "r") as infile:
-            start = None
-            for line in infile:
-                pos, gc = line[:-1].split("\t")
-                try:
-                    gc = float(gc)
-                except ValueError:
-                    gc = None
-                end = int(pos)
-                # ignore the double lines
-                if gc is not None and start is not None and end - start > 2:
-                    segments.append((contig, start, end, gc))
-                start = int(pos) - 1
-
-    E.info("ninput=%i, noutput=%i, nskipped=%i" % (ninput, noutput, nskipped))
-
-    # shutil.rmtree( tmpdir )
-
-    return segments
 
 
 def segmentFixedWidthWindows(infile, window_size, window_shift):
@@ -327,28 +242,8 @@ def main(argv=None):
         usage=globals()["__doc__"])
 
     parser.add_option(
-        "--gcprofile-gap-size", dest="gcprofile_gap_size",
-        type="float",
-        help="GCProfile: Choose n as the gap size to be filtered "
-        "(If n > 1, n bp is set as the gap size to be filtered. "
-        "If 0 < n < 1, for example, n = 0.01, means gaps less than 1% "
-        "of the input sequence length will be filtered "
-        "[default=%default].")
-
-    parser.add_option(
-        "--gcprofile-min-length", dest="gcprofile_min_length",
-        type="int",
-        help="GCProfile: minimum length [default=%default]")
-
-    parser.add_option(
-        "--gcprofile-halting-parameter",
-        dest="gcprofile_halting_parameter", type="int",
-        help="GCProfile: halting parameter [default=%default]")
-
-    parser.add_option(
         "-m", "--method", dest="method", type="choice",
         choices=(
-            "GCProfile",
             "fixed-width-windows-gc",
             "cpg",
             "windows-cpg",
@@ -375,11 +270,8 @@ def main(argv=None):
         help="minimum length for ungapped regions [default=%default]")
 
     parser.set_defaults(
-        gcprofile_halting_parameter=1000,
-        gcprofile_gap_size=0.01,
-        gcprofile_min_length=3000,
         window_size=10000,
-        method="GCProfile",
+        method="cpg",
         gap_char="NnXx",
         min_length=0,
         window_shift=10000,
@@ -389,11 +281,7 @@ def main(argv=None):
     # add common options (-h/--help, ...) and parse command line
     (options, args) = E.Start(parser, argv=argv)
 
-    # do sth
-
-    if options.method == "GCProfile":
-        segments = segmentWithGCProfile(options.stdin, options)
-    elif options.method == "cpg":
+    if options.method == "cpg":
         segments = segmentWithCpG(options.stdin)
     elif options.method == "windows-cpg":
         segments = segmentWindowsCpG(options.stdin,
