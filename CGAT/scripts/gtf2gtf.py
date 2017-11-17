@@ -408,6 +408,9 @@ def main(argv=None):
                  "transcript",
                  "longest-gene",
                  "longest-transcript",
+                 "longest-transcript-exon-count",
+                 "longest-transcript-genomic-span",
+                 "longest-transcript-transcript-length",
                  "representative-transcript",
                  "proteincoding",
                  "lincrna"),
@@ -415,7 +418,10 @@ def main(argv=None):
         "'gene': filter by gene_id given in ``--map-tsv-file``, "
         "'transcript': filter by transcript_id given in ``--map-tsv-file``, "
         "'longest-gene': output the longest gene for overlapping genes ,"
-        "'longest-transcript': output the longest transcript per gene,"
+        "'longest-transcript': equivalent to longest-transcript-transcript-length, "
+        "'longest-transcript-exon-count': output the longest transcript (most exons) per gene, "
+        "'longest-transcript-genomic-span': output the longest transcript per gene in terms of genomic span, "
+        "'longest-transcript-transcript-length': output the longest transcript per gene in terms of transcript length, "
         "'representative-transcript': output the representative transcript "
         "per gene. The representative transcript is the transcript "
         "that shares most exons with other transcripts in a gene. "
@@ -968,16 +974,33 @@ def main(argv=None):
                 else:
                     ndiscarded += 1
         elif options.filter_method in ("longest-transcript",
+                                       "longest-transcript-exon-count",
+                                       "longest-transcript-genomic-span",
+                                       "longest-transcript-transcript-length",
                                        "representative-transcript"):
 
             iterator = GTF.gene_iterator(GTF.iterator(options.stdin))
 
-            def selectLongestTranscript(gene):
+            def selectLongestTranscriptGenomicSpan(gene):
                 r = []
                 for transcript in gene:
                     transcript.sort(key=lambda x: x.start)
                     length = transcript[-1].end - transcript[0].start
                     r.append((length, transcript))
+                r.sort()
+                return r[-1][1]
+
+            def selectLongestTranscriptTranscriptLength(gene):
+                r = []
+                for transcript in gene:
+                    r.append((sum([x.end - x.start for x in transcript if x.feature == "exon"]), transcript))
+                r.sort()
+                return r[-1][1]
+
+            def selectLongestTranscriptExonCount(gene):
+                r = []
+                for transcript in gene:
+                    r.append((len([x for x in transcript if x.feature == "exon"]), transcript))
                 r.sort()
                 return r[-1][1]
 
@@ -1008,7 +1031,13 @@ def main(argv=None):
                 return transcript_counts[-1][-1]
 
             if options.filter_method == "longest-transcript":
-                _select = selectLongestTranscript
+                _select = selectLongestTranscriptTranscriptLength
+            elif options.filter_method == "longest-transcript-transcript-length":
+                _select = selectLongestTranscriptTranscriptLength
+            elif options.filter_method == "longest-transcript-exon-count":
+                _select = selectLongestTranscriptExonCount
+            elif options.filter_method == "longest-transcript-genomic-span":
+                _select = selectLongestTranscriptGenomicSpan
             elif options.filter_method == "representative-transcript":
                 _select = selectRepresentativeTranscript
 

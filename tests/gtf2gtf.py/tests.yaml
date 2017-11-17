@@ -120,11 +120,17 @@ filter_longest_gene:
     references: [hg19.small.filter_longest_gene.gtf.gz]
     options: --method=filter --filter-method=longest-gene
 
-filter_longest_transcript:
+filter_longest_transcript_transcript_length:
     stdin: hg19.small.sort_gene.gtf.gz 
     outputs: [stdout]
-    references: [hg19.small.filter_longest_transcript.gtf.gz]
-    options: --method=filter --filter-method=longest-transcript
+    references: [hg19.small.filter_longest_transcript_transcript_length.gtf.gz]
+    options: --method=filter --filter-method=longest-transcript-transcript-length
+
+filter_longest_transcript_genomic_span:
+    stdin: hg19.small.sort_gene.gtf.gz 
+    outputs: [stdout]
+    references: [hg19.small.filter_longest_transcript_genomic_span.gtf.gz]
+    options: --method=filter --filter-method=longest-transcript-genomic-span
 
 filter_representative_transcript:
     stdin: hg19.small.sort_gene.gtf.gz 
@@ -136,7 +142,7 @@ filter_longest_transcript_invert:
     stdin: hg19.small.sort_gene.gtf.gz 
     outputs: [stdout]
     references: [hg19.small.filter_longest_transcript_invert.gtf.gz]
-    options: --method=filter --filter-method=longest-transcript --invert-filter
+    options: --method=filter --filter-method=longest-transcript-transcript-length --invert-filter
 
 filter_proteincoding:
     stdin: hg19.small.gtf.gz
