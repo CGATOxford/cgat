@@ -174,11 +174,6 @@ conda clean --packages -y
 # proceed with conda installation
 conda_install() {
 
-echo
-echo " free -m"
-free -m
-echo
-
 # https://github.com/travis-ci/travis-ci/issues/4192
 echo " ulimits before: "
 ulimit -a
@@ -404,11 +399,6 @@ if [[ $TRAVIS_INSTALL ]] || [[ $JENKINS_INSTALL ]] ; then
    else
       nosetests -v tests/test_scripts.py ;
    fi
-
-   echo
-   echo " free -m"
-   free -m
-   echo
 
 else
 
