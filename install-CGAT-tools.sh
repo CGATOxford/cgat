@@ -174,16 +174,6 @@ conda clean --packages -y
 # proceed with conda installation
 conda_install() {
 
-# https://github.com/travis-ci/travis-ci/issues/4192
-echo " ulimits before: "
-ulimit -a
-echo
-
-echo " ullimits after: "
-ulimit -s 1082768
-ulimit -a
-echo
-
 log "installing conda"
 
 detect_cgat_installation
