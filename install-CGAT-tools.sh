@@ -238,7 +238,7 @@ log "installing CGAT environment"
 # https://conda.io/docs/using/envs.html#use-environment-from-file
 
 if [[ $INSTALL_PRODUCTION ]] ; then
-   conda create --quiet --name ${CONDA_INSTALL_ENV} cgat-scripts gcc rpy2=2.8.5 --override-channels --channel bioconda --channel conda-forge --channel defaults --yes
+   conda create --quiet --name ${CONDA_INSTALL_ENV} cgat-scripts python=3.6 --override-channels --channel bioconda --channel conda-forge --channel defaults --yes
 else
    [[ -z ${TRAVIS_BRANCH} ]] && TRAVIS_BRANCH=${INSTALL_BRANCH}
    curl -o env.yml -O https://raw.githubusercontent.com/CGATOxford/cgat/${TRAVIS_BRANCH}/conda/environments/${CONDA_INSTALL_TYPE}
