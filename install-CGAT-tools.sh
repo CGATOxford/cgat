@@ -308,9 +308,7 @@ if [[ "$OS" != "travis" ]] ; then
       sed -i'' -e '/# dependencies/,/dependency_links=dependency_links,/d' setup.py
       python setup.py develop
 
-      DEV_RESULT=$?
-
-      if [[ $DEV_RESULT -ne 0 ]] ; then
+      if [[ $? -ne 0 ]] ; then
          echo
          echo " There was a problem doing: 'python setup.py develop' "
          echo " Installation did not finish properly. "
@@ -322,6 +320,10 @@ if [[ "$OS" != "travis" ]] ; then
          print_env_vars
 
       fi # if-$?
+
+      # revert setup.py if downloaded with git
+      [[ $CODE_DOWNLOAD_TYPE -ge 1 ]] && git checkout -- setup.py
+
    fi # if INSTALL_DEVEL
 
    # check whether conda create went fine
