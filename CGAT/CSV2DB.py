@@ -300,7 +300,7 @@ def run(infile, options, report_step=10000):
 
     elif options.backend == "sqlite":
         import sqlite3
-        dbhandle = sqlite3.connect(options.database_name)
+        dbhandle = sqlite3.connect(options.database_name, check_same_thread=False)
         try:
             os.chmod(options.database_name, 0o664)
         except OSError as msg:
