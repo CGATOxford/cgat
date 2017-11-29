@@ -133,6 +133,7 @@ The following people have contributed to the CGAT Code collection:
 * Adam Cribbs
 * Hania Pavlou
 * Reshma Nibhani
+* Jakub Scaber
 * Sebastian Luna-Valero
 
 3rd party code
