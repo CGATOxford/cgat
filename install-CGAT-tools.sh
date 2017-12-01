@@ -530,6 +530,19 @@ fi
 }
 
 
+# test whether --git and --git-ssh download is doable
+test_git() {
+   git --version >& /dev/null || GIT_AVAIL=$?
+   if [[ $GIT_AVAIL -ne 0 ]] ; then
+      echo
+      echo " Git is not available but --git or --git-ssh option was given."
+      echo " Please rerun this script on a computer with git installed "
+      echo " or try again without --git or --git-ssh"
+      report_error " "
+   fi
+}
+
+
 # test whether --git-ssh download is doable
 test_git_ssh() {
    ssh-add -L >& /dev/null || SSH_KEYS_LOADED=$?
@@ -647,11 +660,13 @@ case $key in
     --git)
     CODE_DOWNLOAD_TYPE=1
     shift
+    test_git
     ;;
 
     --git-ssh)
     CODE_DOWNLOAD_TYPE=2
     shift
+    test_git
     test_git_ssh
     ;;
 
