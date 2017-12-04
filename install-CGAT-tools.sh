@@ -165,6 +165,7 @@ echo " CONDA_INSTALL_ENV: "$CONDA_INSTALL_ENV
 echo " PYTHONPATH: "$PYTHONPATH
 [[ ! $INSTALL_TEST ]] && echo " INSTALL_BRANCH: "$INSTALL_BRANCH
 [[ ! $INSTALL_TEST ]] && echo " RELEASE: "$RELEASE
+[[ ! $INSTALL_TEST ]] && echo " CODE_DOWNLOAD_TYPE: "$CODE_DOWNLOAD_TYPE
 echo
 
 } # print_env_vars
@@ -283,7 +284,12 @@ if [[ "$OS" != "travis" ]] ; then
          curl -LOk https://github.com/CGATOxford/cgat/archive/$INSTALL_BRANCH.zip
          unzip $INSTALL_BRANCH.zip
          rm $INSTALL_BRANCH.zip
-         mv cgat-$INSTALL_BRANCH/ cgat-scripts/
+         if [[ ${RELEASE} ]] ; then
+            NEW_NAME=`echo $INSTALL_BRANCH | sed 's/^v//g'`
+            mv cgat-$NEW_NAME/ cgat-scripts/
+         else
+            mv cgat-$INSTALL_BRANCH/ cgat-scripts/
+         fi
       elif [[ $CODE_DOWNLOAD_TYPE -eq 1 ]] ; then
          # get latest version from Git Hub with git clone
          git clone --branch=$INSTALL_BRANCH https://github.com/CGATOxford/cgat.git $CGAT_HOME/cgat-scripts
@@ -661,6 +667,8 @@ CGAT_HOME=
 CODE_DOWNLOAD_TYPE=0
 # which github branch to use (default: master)
 INSTALL_BRANCH="master"
+# Install a released version?
+RELEASE=
 
 # parse input parameters
 # https://stackoverflow.com/questions/402377/using-getopts-in-bash-shell-script-to-get-long-and-short-command-line-options
