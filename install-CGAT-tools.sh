@@ -164,6 +164,8 @@ echo " CONDA_INSTALL_TYPE: "$CONDA_INSTALL_TYPE
 echo " CONDA_INSTALL_ENV: "$CONDA_INSTALL_ENV
 echo " PYTHONPATH: "$PYTHONPATH
 [[ ! $INSTALL_TEST ]] && echo " INSTALL_BRANCH: "$INSTALL_BRANCH
+[[ ! $INSTALL_TEST ]] && echo " RELEASE: "$RELEASE
+[[ ! $INSTALL_TEST ]] && echo " CODE_DOWNLOAD_TYPE: "$CODE_DOWNLOAD_TYPE
 echo
 
 } # print_env_vars
@@ -282,7 +284,12 @@ if [[ "$OS" != "travis" ]] ; then
          curl -LOk https://github.com/CGATOxford/cgat/archive/$INSTALL_BRANCH.zip
          unzip $INSTALL_BRANCH.zip
          rm $INSTALL_BRANCH.zip
-         mv cgat-$INSTALL_BRANCH/ cgat-scripts/
+         if [[ ${RELEASE} ]] ; then
+            NEW_NAME=`echo $INSTALL_BRANCH | sed 's/^v//g'`
+            mv cgat-$NEW_NAME/ cgat-scripts/
+         else
+            mv cgat-$INSTALL_BRANCH/ cgat-scripts/
+         fi
       elif [[ $CODE_DOWNLOAD_TYPE -eq 1 ]] ; then
          # get latest version from Git Hub with git clone
          git clone --branch=$INSTALL_BRANCH https://github.com/CGATOxford/cgat.git $CGAT_HOME/cgat-scripts
@@ -558,6 +565,39 @@ test_git_ssh() {
 }
 
 
+# don't mix branch and release options together
+test_mix_branch_release() {
+   # don't mix branch and release options together
+   if [[ $RELEASE ]] ; then
+      if [[ "$INSTALL_BRANCH" != "master" ]] ; then
+         echo
+         echo " You cannot mix git branches and releases for the installation."
+         echo
+         echo " Your input was: "$SCRIPT_PARAMS
+         report_error " Please either use branches or releases but not both."
+      fi
+   fi
+}
+
+
+# test whether a release exists or not
+# https://stackoverflow.com/questions/12199059/how-to-check-if-an-url-exists-with-the-shell-and-probably-curl
+test_release() {
+   RELEASE_TEST=0
+   curl --output /dev/null --silent --head --fail https://raw.githubusercontent.com/CGATOxford/cgat/${RELEASE}/README.rst || RELEASE_TEST=$?
+   if [[ ${RELEASE_TEST} -ne 0 ]] ; then
+      echo
+      echo " The release number provided does not exist: ${RELEASE}"
+      echo
+      echo " Please have a look at valid releases here: "
+      echo " https://github.com/CGATOxford/cgat/releases"
+      echo
+      echo " An example of valid release is: --release v0.3.1"
+      report_error " Please use a valid release and try again."
+   fi
+}
+
+
 # function to display help message
 help_message() {
 echo
@@ -627,6 +667,8 @@ CGAT_HOME=
 CODE_DOWNLOAD_TYPE=0
 # which github branch to use (default: master)
 INSTALL_BRANCH="master"
+# Install a released version?
+RELEASE=
 
 # parse input parameters
 # https://stackoverflow.com/questions/402377/using-getopts-in-bash-shell-script-to-get-long-and-short-command-line-options
@@ -701,6 +743,15 @@ case $key in
     ;;
 
     --branch)
+    INSTALL_BRANCH="$2"
+    test_mix_branch_release
+    shift 2
+    ;;
+
+    --release)
+    RELEASE="$2"
+    test_mix_branch_release
+    test_release
     INSTALL_BRANCH="$2"
     shift 2
     ;;
