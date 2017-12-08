@@ -1,5 +1,4 @@
-'''
-bam_vs_bed.py - count context that reads map to
+'''bam_vs_bed.py - count context that reads map to
 ======================================================
 
 :Tags: Genomics NGS Intervals BAM BED Counting
@@ -16,6 +15,19 @@ The script counts the number of alignments overlapping in the first
 input file that overlap each feature in the second file. Annotations
 in the :term:`bed` file can be overlapping - they are counted
 independently.
+
+Note that duplicate intervals will be counted multiple times. This
+situation can easily arise when building a set of genomic annotations
+based on a geneset with alternative transcripts. For example::
+
+   chr1     10000     20000     protein_coding            # gene1, transrcipt1
+   chr1     10000     20000     protein_coding            # gene1, transcript2
+
+Any reads overlapping the interval chr1:10000-20000 will be counted
+twice into the protein_coding bin by bedtools. To avoid this, remove any
+duplicates from the :term:`bed` file::
+
+   zcat input_with_duplicates.bed.gz | cgat bed2bed --merge-by-name | bgzip > input_without_duplicates.bed.gz
 
 This scripts requires bedtools_ to be installed.
 

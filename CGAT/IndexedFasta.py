@@ -1051,7 +1051,6 @@ class PysamIndexedFasta(CGATIndexedFasta):
                     last_pos, lsequence - first_pos
 
         sequence = self.mDatabaseFile.fetch(contig, first_pos, last_pos)
-
         if str(strand) in ("-", "0", "-1"):
             try:
                 # works in py2 only
