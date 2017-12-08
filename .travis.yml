@@ -17,6 +17,9 @@ os:
 # Over there, your builds will run on a fully independent VM with 7.5 GB of (unshared) memory.
 sudo: required
 
+# http://mailchi.mp/travis-ci/ubuntu-trusty-update-2017q4-and-new-ltslatest-process?e=073d892e7f
+group: edge
+
 language: generic
 
 env:
