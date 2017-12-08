@@ -557,8 +557,7 @@ class MatchPSLX(Match):
                                     other.mSbjctBlockStarts)
 
         if self.strand == "-":
-            query_sequence = string.translate(
-                query_sequence, string.maketrans("ACGTacgt", "TGCAtgca"))[::-1]
+            query_sequence = query_sequence.translate(str.maketrans("ACGTacgt", "TGCAtgca"))[::-1]
 
         self.mQuerySequence = []
         self.mSbjctSequence = []

@@ -418,8 +418,7 @@ def main(argv=None):
                 sequence = "   ".join(seq)
 
             elif method == "reverse-complement":
-                sequence = string.translate(
-                    sequence, string.maketrans("ACGTacgt", "TGCAtgca"))[::-1]
+                sequence = sequence.translate(str.maketrans("ACGTacgt", "TGCAtgca"))[::-1]
 
             elif method in ("mask-stops", "remove-stops"):
                 c = []
