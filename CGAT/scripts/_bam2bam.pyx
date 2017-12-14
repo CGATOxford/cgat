@@ -1,39 +1,11 @@
+import collections
+import array
+import struct
 from pysam.libchtslib cimport *
 from pysam.libcalignmentfile cimport *
 
-import collections, array, struct, itertools
+
 import CGAT.Experiment as E
-
-cdef class SetNH:
-
-    cdef iter
-    cdef stack
-
-    def __cinit__(self, iter ):
-        self.iter = itertools.groupby(iter, lambda x: x.qname)
-        self.stack = []
-
-    def __iter__(self):
-        return self
-
-    def __next__(self): 
-        """python version of next().
-        """
-        
-        while 1:
-            if self.stack:
-                return self.stack.pop(0)
-            else:
-                key, x = next(self.iter)
-                self.stack = list(x)
-                nh = len(self.stack)
-                for read in self.stack:
-                    if not read.is_unmapped:
-                        # deal with paired end reads counted
-                        # as multi-mapping
-                        if read.is_proper_pair and nh > 1:
-                            nh -= 1
-                        read.set_tag("NH", nh)
 
 
 def filter_bam(AlignmentFile input_samfile,

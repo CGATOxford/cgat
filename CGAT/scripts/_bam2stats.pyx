@@ -90,7 +90,7 @@ def count(AlignmentFile samfile,
     cdef int f
 
     # detailed counting
-    cdef PersistentFastqProxy fq
+    cdef FastxRecord fq
     cdef int64_t index, fastq_nreads
     cdef CountsType * fastq_counts
     cdef CountsType * fastq_count

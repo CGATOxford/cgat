@@ -564,7 +564,7 @@ def main(argv=None):
 
             ninput += 1
 
-            gff.setAttribute("transcript_id", gff.gene_id)
+            gff.transcript_id = gff.gene_id
             options.stdout.write("%s\n" % str(gff))
 
             noutput += 1
@@ -577,7 +577,7 @@ def main(argv=None):
             ninput += 1
 
             if "gene_biotype" not in gff.attributes:
-                gff.setAttribute("gene_biotype", gff.source)
+                gff.gene_biotype = gff.source
 
             options.stdout.write("%s\n" % str(gff))
 
@@ -696,7 +696,7 @@ def main(argv=None):
 
             ninput += 1
 
-            gff.setAttribute("gene_id", gff.transcript_id)
+            gff.gene_id = gff.transcript_id
             options.stdout.write("%s\n" % str(gff))
 
             noutput += 1
@@ -706,7 +706,7 @@ def main(argv=None):
 
         for gff in GTF.iterator(options.stdin):
             ninput += 1
-            gff.setAttribute("protein_id", gff.transcript_id)
+            gff.protein_id = gff.transcript_id
             options.stdout.write("%s\n" % str(gff))
             noutput += 1
             nfeatures += 1
@@ -728,8 +728,7 @@ def main(argv=None):
                 ndiscarded += 1
                 continue
 
-            gff.setAttribute(
-                "protein_id", transcript2protein[gff.transcript_id])
+            gff.protein_id = transcript2protein[gff.transcript_id]
             options.stdout.write("%s\n" % str(gff))
             noutput += 1
             nfeatures += 1
@@ -836,7 +835,7 @@ def main(argv=None):
             if gtf.gene_id not in map_old2new:
                 map_old2new[gtf.gene_id] = options.pattern % (
                     len(map_old2new) + 1)
-            gtf.setAttribute("gene_id", map_old2new[gtf.gene_id])
+            gtf.gene_id = map_old2new[gtf.gene_id]
             options.stdout.write("%s\n" % str(gtf))
             noutput += 1
 
@@ -848,7 +847,7 @@ def main(argv=None):
             key = gtf.transcript_id
             if key not in map_old2new:
                 map_old2new[key] = options.pattern % (len(map_old2new) + 1)
-            gtf.setAttribute("gene_id", map_old2new[key])
+            gtf.gene_id = map_old2new[key]
             options.stdout.write("%s\n" % str(gtf))
             noutput += 1
 
@@ -861,7 +860,7 @@ def main(argv=None):
             if key not in map_old2new:
                 map_old2new[key] = options.pattern % (
                     len(map_old2new) + 1)
-            gtf.setAttribute("transcript_id", map_old2new[key])
+            gtf.transcript_id = map_old2new[key]
             options.stdout.write("%s\n" % str(gtf))
             noutput += 1
 
@@ -901,7 +900,7 @@ def main(argv=None):
 
             if is_gene_id:
                 if gff.gene_id in map_old2new:
-                    gff.setAttribute("gene_id", map_old2new[gff.gene_id])
+                    gff.gene_id = map_old2new[gff.gene_id]
                 else:
                     E.debug("removing missing gene_id %s" % gff.gene_id)
                     ndiscarded += 1
@@ -909,8 +908,7 @@ def main(argv=None):
 
             else:
                 if gff.transcript_id in map_old2new:
-                    gff.setAttribute(
-                        "transcript_id", map_old2new[gff.transcript_id])
+                    gff.transcript_id = map_old2new[gff.transcript_id]
                 else:
                     E.debug("removing missing transcript_id %s" %
                             gff.transcript_id)
@@ -1258,9 +1256,7 @@ def main(argv=None):
                         gene_dict[gtf.gene_id] = gene_dict[gtf.gene_id] + 1
                         # TS. patch until pysam.ctabixproxies.pyx bugfixed
                         gtf.attributes = gtf.attributes.strip()
-                        gtf.setAttribute('gene_id',
-                                         gtf.gene_id + "." +
-                                         str(gene_dict[gtf.gene_id]))
+                        gtf.gene_id = str(gtf.gene_id) + "." + str(gene_dict[gtf.gene_id])
 
                 if options.duplicate_feature in ["both", "transcript"]:
                     if gtf.transcript_id in dup_transcript:
@@ -1268,10 +1264,7 @@ def main(argv=None):
                             transcript_dict[gtf.transcript_id] + 1
                         # TS. patch until pysam.ctabixproxies.pyx bugfixed
                         gtf.attributes = gtf.attributes.strip()
-                        gtf.setAttribute(
-                            'transcript_id',
-                            gtf.transcript_id + "." +
-                            str(transcript_dict[gtf.transcript_id]))
+                        gtf.transcript_id = str(gtf.transcript_id) + "." + str(transcript_dict[gtf.transcript_id])
 
             options.stdout.write("%s\n" % gtf)
 

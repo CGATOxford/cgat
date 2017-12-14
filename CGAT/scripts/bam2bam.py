@@ -147,10 +147,11 @@ import sys
 import tempfile
 import shutil
 import random
+import itertools
 import pysam
 import CGAT.Experiment as E
 import CGAT.IOTools as IOTools
-import itertools
+
 
 try:
     import pyximport
@@ -158,6 +159,35 @@ try:
     import _bam2bam
 except ImportError:
     import CGAT.scripts._bam2bam as _bam2bam
+
+
+class SetNH:
+
+    def __init__(self, iter):
+        self.iter = itertools.groupby(iter, lambda x: x.qname)
+        self.stack = []
+
+    def __iter__(self):
+        return self
+
+    def __next__(self): 
+        """python version of next().
+        """
+        
+        while 1:
+            if self.stack:
+                return self.stack.pop(0)
+            else:
+                key, x = next(self.iter)
+                self.stack = list(x)
+                nh = len(self.stack)
+                for read in self.stack:
+                    if not read.is_unmapped:
+                        # deal with paired end reads counted
+                        # as multi-mapping
+                        if read.is_proper_pair and nh > 1:
+                            nh -= 1
+                        read.set_tag("NH", nh)
 
 
 class SubsetBam(object):
@@ -555,7 +585,7 @@ def main(argv=None):
                     it = unstrip_unpaired(it)
 
             if "set-nh" in options.methods:
-                it = _bam2bam.SetNH(it)
+                it = SetNH(it)
 
             # keep first base of reads by changing the cigarstring to
             # '1M' and, in reads mapping to the reverse strand,

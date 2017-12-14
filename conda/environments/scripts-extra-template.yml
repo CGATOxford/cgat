@@ -10,7 +10,6 @@ channels:
 - defaults
 
 dependencies:
-- sra-tools
 - ucsc-bigwiginfo
 - graphviz
 

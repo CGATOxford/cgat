@@ -466,8 +466,8 @@ echo "- libpng" >> ${TMP_DEPS}
 
 echo "# Misc dependencies"
 egrep -v 'CGATparameter|perm|--' ${TMP_DEPS} \
+ | sed 's/^- gdc-client/# WARNING: gdc-client is Py2 only. Please install it on a separate conda env/g' \
  | sort -u
-
 
 # Remove temp files
 rm ${TMP_SFOOD}

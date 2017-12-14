@@ -29,7 +29,7 @@ process_env_file() {
    egrep -v '^name|^channels|bioconda|conda-forge|defaults|^dependencies|pip|bx-python|#|^prefix|^ ' $1 \
     | sed 's/^- //g' \
     | sed 's/=/ /g' \
-    | awk '// {print $1" "$2}' \
+    | awk '{print $1" "$2}' \
     | sort -u > $2
 }
 
@@ -79,5 +79,5 @@ echo "dependencies:"
 
 # join tutorial
 # https://shapeshed.com/unix-join/
-join ${TMP_ENV} ${TMP_EXP} | egrep -v '^$' | sed 's/  /=/g' | sed 's/^/- /g'
+join ${TMP_ENV} ${TMP_EXP} | egrep -v '^$' | awk '{print $1"="$2}' | sed 's/^/- /g'
 

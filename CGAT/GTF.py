@@ -937,12 +937,8 @@ class Entry:
         self.start = other.start
         self.end = other.end
         self.score = other.score
-
         self.strand = other.strand
-        try:
-            self.frame = other.frame
-        except:
-            pass
+        self.frame = other.frame
         if gene_id is not None:
             self.gene_id = gene_id
         else:
@@ -951,6 +947,15 @@ class Entry:
             self.transcript_id = transcript_id
         else:
             self.transcript_id = other.transcript_id
+
+        # capture None values in frame and strand and
+        # revert them to correct . format
+
+        if self.frame is None:
+            self.frame = "."
+        if self.strand is None:
+            self.strand = "."
+
         return self
 
     def fromBed(self, other, **kwargs):
@@ -980,11 +985,15 @@ class Entry:
         self.end = other.end
         self.score = other.score
         self.strand = other.strand
+        self.frame = other.frame
 
-        try:
-            self.frame = other.frame
-        except ValueError:
-            pass
+        # capture if frame and strand are None then
+        # set to appropriate . format
+        if self.frame is None:
+            self.frame = "."
+        if self.strand is None:
+            self.strand = "."
+
         # gene_id and transcript_id can be optional
         try:
             self.gene_id = other.gene_id
