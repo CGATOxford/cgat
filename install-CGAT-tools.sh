@@ -266,7 +266,7 @@ pip install 'bx-python==0.7.3'
 
 log "installing CGAT code into conda environment"
 # if installation is 'devel' (outside of travis), checkout latest version from github
-if [[ "$OS" != "travis" ]] ; then
+if [[ -z ${TRAVIS_INSTALL} ]] ; then
 
    DEV_RESULT=0
 
@@ -276,32 +276,42 @@ if [[ "$OS" != "travis" ]] ; then
       curl -o env-extra.yml -O https://raw.githubusercontent.com/CGATOxford/cgat/${TRAVIS_BRANCH}/conda/environments/scripts-extra.yml
       conda env update --quiet --file env-extra.yml
 
-      # make sure you are in the CGAT_HOME folder
-      cd $CGAT_HOME
+      # download the code out of jenkins
+      if [[ -z ${JENKINS_INSTALL} ]] ; then
 
-      if [[ $CODE_DOWNLOAD_TYPE -eq 0 ]] ; then
-	 # get the latest version from Git Hub in zip format
-         curl -LOk https://github.com/CGATOxford/cgat/archive/$INSTALL_BRANCH.zip
-         unzip $INSTALL_BRANCH.zip
-         rm $INSTALL_BRANCH.zip
-         if [[ ${RELEASE} ]] ; then
-            NEW_NAME=`echo $INSTALL_BRANCH | sed 's/^v//g'`
-            mv cgat-$NEW_NAME/ cgat-scripts/
+         # make sure you are in the CGAT_HOME folder
+         cd $CGAT_HOME
+
+         if [[ $CODE_DOWNLOAD_TYPE -eq 0 ]] ; then
+            # get the latest version from Git Hub in zip format
+            curl -LOk https://github.com/CGATOxford/cgat/archive/$INSTALL_BRANCH.zip
+            unzip $INSTALL_BRANCH.zip
+            rm $INSTALL_BRANCH.zip
+            if [[ ${RELEASE} ]] ; then
+               NEW_NAME=`echo $INSTALL_BRANCH | sed 's/^v//g'`
+               mv cgat-$NEW_NAME/ cgat-scripts/
+            else
+               mv cgat-$INSTALL_BRANCH/ cgat-scripts/
+            fi
+         elif [[ $CODE_DOWNLOAD_TYPE -eq 1 ]] ; then
+            # get latest version from Git Hub with git clone
+            git clone --branch=$INSTALL_BRANCH https://github.com/CGATOxford/cgat.git $CGAT_HOME/cgat-scripts
+         elif [[ $CODE_DOWNLOAD_TYPE -eq 2 ]] ; then
+            # get latest version from Git Hub with git clone
+            git clone --branch=$INSTALL_BRANCH git@github.com:CGATOxford/cgat.git $CGAT_HOME/cgat-scripts
          else
-            mv cgat-$INSTALL_BRANCH/ cgat-scripts/
+            report_error " Unknown download type for CGAT code... "
          fi
-      elif [[ $CODE_DOWNLOAD_TYPE -eq 1 ]] ; then
-         # get latest version from Git Hub with git clone
-         git clone --branch=$INSTALL_BRANCH https://github.com/CGATOxford/cgat.git $CGAT_HOME/cgat-scripts
-      elif [[ $CODE_DOWNLOAD_TYPE -eq 2 ]] ; then
-         # get latest version from Git Hub with git clone
-         git clone --branch=$INSTALL_BRANCH git@github.com:CGATOxford/cgat.git $CGAT_HOME/cgat-scripts
-      else
-         report_error " Unknown download type for CGAT code... "
-      fi
 
-      # make sure you are in the CGAT_HOME/cgat-scripts folder
-      cd $CGAT_HOME/cgat-scripts
+         # make sure you are in the CGAT_HOME/cgat-scripts folder
+         cd $CGAT_HOME/cgat-scripts
+
+      else
+
+         # in jenkins the code is in CGAT_HOME/cgat-scripts
+         cd $CGAT_HOME/cgat
+
+      fi
 
       # Set up other environment variables
       setup_env_vars
@@ -470,7 +480,7 @@ else
       exit 0
    fi
 
-fi # if-OS
+fi # if travis or jenkins
 
 } # conda_test
 
@@ -642,8 +652,6 @@ if [[ $# -eq 0 ]] ; then
 
 fi
 
-# these variables will store the information about input parameters
-OS="default"
 # travis execution
 TRAVIS_INSTALL=
 # jenkins testing
@@ -763,23 +771,31 @@ case $key in
 esac
 done
 
-# sanity checks
+# sanity check 1: don't mix production and development installs
 if [[ $INSTALL_PRODUCTION ]] && [[ $INSTALL_DEVEL ]] ; then
-   echo
-   echo " Incorrect input arguments: mixing --production and --devel is not permitted."
-   echo " Installation aborted. Please run -h option."
-   echo
-   exit 1
+
+   report_error " Incorrect input arguments: mixing --production and --devel is not permitted. "
+
 fi
 
+# sanity check 2: make sure one installation option is selected
+if [[ -z $INSTALL_PRODUCTION ]] && \
+   [[ -z $INSTALL_DEVEL ]] && \
+   [[ -z $TRAVIS_INSTALL ]] && \
+   [[ -z $JENKINS_INSTALL ]] ; then
+
+   report_error " You need to select either --devel or --production. "
+
+fi
+
+# sanity check 3: make sure there is space available in the destination folder (10 GB)
+[[ -z ${TRAVIS_INSTALL} ]] && \
+mkdir -p ${CGAT_HOME} && \
+[[ `df --block-size=1 ${CGAT_HOME} | awk '/\// {print $3}'` -lt 10737418240  ]] && \
+   report_error " Not enought disk space available on the installation folder: "$CGAT_HOME
+
 # perform actions according to the input parameters processed
-if [[ $TRAVIS_INSTALL ]] ; then
-
-  OS="travis"
-  conda_install
-  conda_test
-
-elif [[ $JENKINS_INSTALL  ]] ; then
+if [[ $TRAVIS_INSTALL ]] || [[ $JENKINS_INSTALL  ]] ; then
 
   conda_install
   conda_test

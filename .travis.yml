@@ -24,7 +24,12 @@ language: generic
 
 env:
   global:
-    - TEST_ALL=1
+    - CGAT_TASK_STEPSIZE=50
+  matrix:
+  - CGAT_TASK_ID=1
+  - CGAT_TASK_ID=51
+  - CGAT_TASK_ID=101
+  - CGAT_TASK_ID=151
 
 # Using xvfb to Run Tests That Require a GUI
 # NOTE: The "before_script" section below does not work properly, but right now is not required
