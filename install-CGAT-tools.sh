@@ -96,7 +96,7 @@ if [[ $TRAVIS_INSTALL ]] ; then
 elif [[ $JENKINS_INSTALL ]] ; then
 
    CGAT_HOME=$WORKSPACE
-   CONDA_INSTALL_TYPE="scripts-nosetests.yml"
+   CONDA_INSTALL_TYPE="scripts-devel.yml"
 
 else
 
