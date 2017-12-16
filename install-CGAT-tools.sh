@@ -306,11 +306,6 @@ if [[ -z ${TRAVIS_INSTALL} ]] ; then
          # make sure you are in the CGAT_HOME/cgat-scripts folder
          cd $CGAT_HOME/cgat-scripts
 
-      else
-
-         # in jenkins the code is in CGAT_HOME/cgat-scripts
-         cd $CGAT_HOME/cgat
-
       fi
 
       # Set up other environment variables
