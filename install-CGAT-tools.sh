@@ -270,7 +270,7 @@ if [[ -z ${TRAVIS_INSTALL} ]] ; then
 
    DEV_RESULT=0
 
-   if [[ $INSTALL_DEVEL ]] ; then
+   if [[ $INSTALL_DEVEL ]] || [[ $JENKINS_INSTALL ]] ; then
 
       # install extra deps
       curl -o env-extra.yml -O https://raw.githubusercontent.com/CGATOxford/cgat/${TRAVIS_BRANCH}/conda/environments/scripts-extra.yml
