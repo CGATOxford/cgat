@@ -256,6 +256,7 @@ else
    curl -o env.yml -O https://raw.githubusercontent.com/CGATOxford/cgat/${TRAVIS_BRANCH}/conda/environments/${CONDA_INSTALL_TYPE}
    conda env create --quiet --file env.yml
    cat env.yml
+   conda env export --name cgat-s
 fi
 
 # activate cgat environment
@@ -275,6 +276,7 @@ if [[ -z ${TRAVIS_INSTALL} ]] ; then
       # install extra deps
       curl -o env-extra.yml -O https://raw.githubusercontent.com/CGATOxford/cgat/${TRAVIS_BRANCH}/conda/environments/scripts-extra.yml
       conda env update --quiet --file env-extra.yml
+      conda env export --name cgat-s
 
       # download the code out of jenkins
       if [[ -z ${JENKINS_INSTALL} ]] ; then
