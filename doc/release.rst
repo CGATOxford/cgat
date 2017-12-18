@@ -7,6 +7,14 @@ latest code can always be found in the code repository.
 Nevertheless, we occasionally prepare releases. Notes on
 each release are below.
 
+Release 0.3.2
+=============
+
+* removed GCProfile from fasta2bed; https://github.com/CGATOxford/cgat/pull/374
+* updated installation; https://github.com/CGATOxford/cgat/pull/376, https://github.com/CGATOxford/cgat/pull/379, https://github.com/CGATOxford/cgat/pull/380
+* allow multi-threaded sqlite3 operations; https://github.com/CGATOxford/cgat/pull/377
+* code changes to work with pysam 0.13.0; https://github.com/CGATOxford/cgat/pull/375
+
 Release 0.3.1
 =============
 
