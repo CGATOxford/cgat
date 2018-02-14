@@ -430,7 +430,7 @@ def MapGO2Slims(gene2go, go2slim, ontology=None):
     """filter gene2go lookup by a list of go_ids in go2slim.
 
     gene2go: map of genes to go terms
-    go2slim: map of go categories to goslim go categories   
+    go2slim: map of go categories to goslim go categories
 
     If ontology is given, missing descriptions of go entries
     are added from the ontology.
@@ -645,7 +645,7 @@ def GetGOStatement(go_type, database, species):
             go_field = "acc"
             statement = """SELECT DISTINCTROW
         g.stable_id, xref.dbprimary_acc, go.name, 'NA'
-        FROM gene, transcript, translation, 
+        FROM gene, transcript, translation,
         gene_stable_id as g, object_xref as o, xref,
         %(go_database)s.term AS go
         WHERE gene.gene_id = transcript.gene_id
@@ -664,7 +664,7 @@ def GetGOStatement(go_type, database, species):
 
             statement = """SELECT DISTINCTROW
         g.stable_id, xref.dbprimary_acc, go.name, 'NA'
-        FROM gene, transcript, translation, 
+        FROM gene, transcript, translation,
         gene_stable_id as g, object_xref as o, xref,
         %(go_database)s.term AS go,
         %(go_database)s.ontology AS ontology
@@ -674,19 +674,18 @@ def GetGOStatement(go_type, database, species):
         AND translation.translation_id = o.ensembl_id
         AND xref.xref_id = o.xref_id
         AND go.%(go_field)s = xref.dbprimary_acc
-        AND go.ontology_id = ontology.ontology_id 
+        AND go.ontology_id = ontology.ontology_id
         AND ontology.namespace = '%(go_type)s'
         AND xref.external_db_id = 1000
         """ % locals()
 
-        else:
-
+        elif version <= 88:
             go_database = "ensembl_ontology_%s" % version
             go_field = "accession"
 
             statement = """SELECT DISTINCTROW
         gene.stable_id, xref.dbprimary_acc, go.name, 'NA'
-        FROM gene, transcript, translation, 
+        FROM gene, transcript, translation,
         object_xref as o, xref,
         %(go_database)s.term AS go,
         %(go_database)s.ontology AS ontology
@@ -695,10 +694,30 @@ def GetGOStatement(go_type, database, species):
         AND translation.translation_id = o.ensembl_id
         AND xref.xref_id = o.xref_id
         AND go.%(go_field)s = xref.dbprimary_acc
-        AND go.ontology_id = ontology.ontology_id 
+        AND go.ontology_id = ontology.ontology_id
         AND ontology.namespace = '%(go_type)s'
         AND xref.external_db_id = 1000
         """ % locals()
+
+        else:
+            go_database = "ensembl_ontology_%s" % version
+            go_field = "accession"
+
+            statement = """SELECT DISTINCTROW
+        gene.stable_id, xref.dbprimary_acc, go.name, 'NA'
+        FROM gene, transcript,
+        object_xref as o, xref,
+        %(go_database)s.term AS go,
+        %(go_database)s.ontology AS ontology
+        WHERE gene.gene_id = transcript.gene_id
+        AND transcript.transcript_id = o.ensembl_id
+        AND xref.xref_id = o.xref_id
+        AND go.%(go_field)s = xref.dbprimary_acc
+        AND go.ontology_id = ontology.ontology_id
+        AND ontology.namespace = '%(go_type)s'
+        AND xref.external_db_id = 1000
+        """ % locals()
+
     else:
         raise "unknown ensmart version %s" % database
 
@@ -875,7 +894,7 @@ def countGOs(gene2gos):
 def ReadGeneLists(filename_genes, gene_pattern=None):
     """read gene lists from filename in matrix.
 
-    returns a tuple (list of all genes, dictionary of gene lists) 
+    returns a tuple (list of all genes, dictionary of gene lists)
     """
 
     if filename_genes == "-":
@@ -910,7 +929,7 @@ def ReadGeneLists(filename_genes, gene_pattern=None):
 
 
 def buildGO2Genes(gene2gos, ancestors=None):
-    '''invert the dictionary genes2go. 
+    '''invert the dictionary genes2go.
 
     If ancestors is given, add missing ancestral information.
     '''
@@ -1014,7 +1033,7 @@ def outputResults(outfile,
     '''output GO results to outfile.
 
     If foreground is given, output a list of gene identifiers in the
-    foreground. 
+    foreground.
 
     If gene2name is given, output a columns with gene
     names (instead of identifiers)
@@ -1313,7 +1332,7 @@ def computeFDRs(go_results,
 def getFileName(options, **kwargs):
     '''return a filename
 
-    Placeholders in filename are string-substituted with the 
+    Placeholders in filename are string-substituted with the
     dictionary in kwargs.
     '''
     if options.output_filename_pattern:
@@ -1438,7 +1457,7 @@ def pairwiseGOEnrichment(results_per_genelist, labels, test_ontology, go2info,
     The purpose of this method is to find if there are categories that are differently enriched
     in a pair of gene lists.
 
-    The appropriate test here is the Chi-Squared test. 
+    The appropriate test here is the Chi-Squared test.
 
     The assumption is that the background set is the same in all gene lists.
 
