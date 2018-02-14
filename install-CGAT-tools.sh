@@ -242,7 +242,7 @@ hash -r
 
 # install cgat environment
 log "updating conda environment"
-conda install --quiet --yes 'conda=4.3'
+conda install --quiet --yes 'conda=4.3.33'
 conda info -a
 
 log "installing CGAT environment"
