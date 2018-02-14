@@ -705,12 +705,14 @@ def GetGOStatement(go_type, database, species):
 
             statement = """SELECT DISTINCTROW
         gene.stable_id, xref.dbprimary_acc, go.name, 'NA'
-        FROM gene, transcript,
+        FROM gene, transcript, translation,
         object_xref as o, xref,
         %(go_database)s.term AS go,
         %(go_database)s.ontology AS ontology
         WHERE gene.gene_id = transcript.gene_id
+        AND transcript.transcript_id = translation.transcript_id
         AND transcript.transcript_id = o.ensembl_id
+        AND o.ensembl_object_type = 'Transcript'
         AND xref.xref_id = o.xref_id
         AND go.%(go_field)s = xref.dbprimary_acc
         AND go.ontology_id = ontology.ontology_id
