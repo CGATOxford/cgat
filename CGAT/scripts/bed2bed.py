@@ -171,6 +171,7 @@ from collections import defaultdict as defaultdict
 import pysam
 import csv
 
+
 def filterNames(iterator, names):
     """ Select only those intervals whose name is in names """
 
@@ -612,7 +613,6 @@ def main(argv=sys.argv):
                 chr_map[row[0]] = row[1]
         if not len(chr_map.keys()) > 0:
             raise ValueError("Empty mapping dictionnary")
-
 
     processor = Bed.iterator(options.stdin)
 
