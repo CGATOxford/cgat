@@ -30,6 +30,8 @@ env:
   - CGAT_TASK_ID=51
   - CGAT_TASK_ID=101
   - CGAT_TASK_ID=151
+  - TEST_IMPORT=1
+  - TEST_STYLE=1
 
 # Using xvfb to Run Tests That Require a GUI
 # NOTE: The "before_script" section below does not work properly, but right now is not required
