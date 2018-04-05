@@ -104,6 +104,14 @@ shifted off the end of contigs. Thus if a shift will shift the start
 of end of the contig, the interval is only moved as much as is
 possible without doing this.
 
+rename-chr
++++++
+
+Renames chromosome names. Source and target names are supplied as a file
+with two columns. Examples are available at:
+https://github.com/dpryan79/ChromosomeMappings
+Note that unmapped chromosomes are dropped from the output file.
+
 Other options
 +++++++++++++
 
@@ -138,6 +146,11 @@ of compressed input and output files:
 
     cgat bed2bed --method=block -I transcripts.bed.gz -O transcripts.blocked.bed.gz
 
+Rename UCSC chromosomes to ENSEMBL.
+
+    cat ucsc.bed | cgat bed2bed --method=rename-chr --rename-chr-file=ucsc2ensembl.txt > ensembl.bed
+
+
 Usage
 -----
 
@@ -156,7 +169,7 @@ import CGAT.Bed as Bed
 import CGAT.Intervals as Intervals
 from collections import defaultdict as defaultdict
 import pysam
-
+import csv
 
 def filterNames(iterator, names):
     """ Select only those intervals whose name is in names """
@@ -464,6 +477,26 @@ def extendInterval(iterator, contigs, distance):
            (ninput, noutput, nskipped))
 
 
+def renameChromosomes(iterator, chr_map):
+    
+    ninput, noutput, nskipped = 0, 0, 0
+    
+    for bed in iterator:
+        ninput += 1
+        
+        if bed.contig in chr_map.keys():
+            bed.contig = chr_map[bed.contig]
+        else:
+            nskipped += 1
+            continue
+        
+        noutput += 1
+        yield bed
+    
+    E.info("ninput = %i, noutput=%i, nskipped=%i" %
+           (ninput, noutput, nskipped))
+
+
 def main(argv=sys.argv):
 
     parser = E.OptionParser(version="%prog version: $Id: bed2bed.py 2861 2010-02-23 17:36:32Z andreas $",
@@ -474,7 +507,7 @@ def main(argv=sys.argv):
                       action="append",
                       choices=("merge", "filter-genome", "bins",
                                "block", "sanitize-genome", "shift", "extend",
-                               "filter-names"),
+                               "filter-names", "rename-chr"),
                       help="method to apply [default=%default]")
 
     parser.add_option("--num-bins", dest="num_bins", type="int",
@@ -535,11 +568,16 @@ def main(argv=sys.argv):
     parser.add_option("--filter-names-file", dest="names", type="string",
                       help="list of names to keep. One per line")
 
+    parser.add_option("--rename-chr-file", dest="rename_chr_file", type="string",
+                      help="mapping table between old and new chromosome names."
+                      "TAB separated 2-column file.")
+
     parser.set_defaults(methods=[],
                         merge_distance=0,
                         binning_method="equal-bases",
                         merge_by_name=False,
                         genome_file=None,
+                        rename_chr_file=None,
                         bam_file=None,
                         num_bins=5,
                         merge_min_intervals=1,
@@ -553,6 +591,7 @@ def main(argv=sys.argv):
     (options, args) = E.Start(parser, add_pipe_options=True)
 
     contigs = None
+    chr_map = None
 
     # Why provide full indexed genome, when a tsv of contig sizes would do?
     if options.genome_file:
@@ -562,6 +601,18 @@ def main(argv=sys.argv):
     if options.bam_file:
         samfile = pysam.AlignmentFile(options.bam_file)
         contigs = dict(list(zip(samfile.references, samfile.lengths)))
+    
+    if options.rename_chr_file:
+        chr_map = {}
+        with open(options.rename_chr_file, 'r') as filein:
+            reader = csv.reader(filein, delimiter='\t')
+            for row in reader:
+                if len(row) != 2:
+                    raise ValueError("Mapping table must have exactly two columns")
+                chr_map[row[0]] = row[1]
+        if not len(chr_map.keys()) > 0:
+            raise ValueError("Empty mapping dictionnary")
+
 
     processor = Bed.iterator(options.stdin)
 
@@ -618,6 +669,10 @@ def main(argv=sys.argv):
                 raise ValueError("please supply list of names to filter")
             names = [name.strip() for name in open(options.names)]
             processor = filterNames(processor, names)
+        elif method == "rename-chr":
+            if not chr_map:
+                raise ValueError("please supply mapping file")
+            processor = renameChromosomes(processor, chr_map)
 
     noutput = 0
     for bed in processor:
