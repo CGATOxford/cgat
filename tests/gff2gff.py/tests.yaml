@@ -47,3 +47,8 @@ sanitize_ensembl:
     references: [sanitize_ensembl.gtf]
     options: --method=sanitize --sanitize-method=ensembl --assembly-report=%DIR%/hg19.assembly_report.txt
 
+rename_chr_ensembl:
+    stdin: hg19.small.gtf.gz
+    outputs: [stdout]
+    references: [ensembl_renamed_chr.gtf]
+    options: --method=rename-chr --rename-chr-file=%DIR%/ucsc2ensembl.txt

@@ -89,6 +89,12 @@ option. Below is a list of available transformations:
 
     agp file to map coordinates from contigs to scaffolds
 
+``rename-chr``
+
+    Renames chromosome names. Source and target names are supplied as a file
+    with two columns. Examples are available at:
+    https://github.com/dpryan79/ChromosomeMappings
+    Note that unmapped chromosomes are dropped from the output file.
 
 
 Usage
@@ -110,10 +116,15 @@ chromosome matching the regular expression patterns
 The "--skip-missing" option prevents an exception being
 raised if entries are found on missing chromosomes
 
+Another example, to rename UCSC chromosomes to ENSEMBL.
+
+    cat ucsc.gff
+    | gff2gff.py --method=rename-chr
+                 --rename-chr-file=ucsc2ensembl.txt > ensembl.gff
 
 Type::
 
-   python gff2gff.py --help
+    python gff2gff.py --help
 
 for command line help.
 
@@ -135,6 +146,7 @@ import collections
 import numpy
 import bx.intervals.intersection
 import pandas as pd
+import csv
 
 
 def combineGFF(gffs,
@@ -359,6 +371,27 @@ def cropGFF(gffs, filename_gff):
            (ninput, noutput, ncropped, ndeleted))
 
 
+def renameChromosomes(gffs, chr_map):
+
+    ninput, noutput, nskipped = 0, 0, 0
+
+    for gff in gffs:
+
+        ninput += 1
+
+        if gff.contig in chr_map.keys():
+            gff.contig = chr_map[gff.contig]
+        else:
+            nskipped += 1
+            continue
+
+        noutput += 1
+        yield gff
+
+    E.info("ninput = %i, noutput=%i, nskipped=%i" %
+           (ninput, noutput, nskipped))
+
+
 def main(argv=None):
 
     if argv is None:
@@ -381,7 +414,8 @@ def main(argv=None):
                           "merge-features",
                           "sanitize",
                           "to-forward-coordinates",
-                          "to-forward-strand"),
+                          "to-forward-strand",
+                          "rename-chr"),
                       help="method to apply [%default]")
 
     parser.add_option(
@@ -495,11 +529,17 @@ def main(argv=None):
         "--max-features", dest="max_features", type="int",
         help="maximum number of features to merge/join [%default].")
 
+    parser.add_option(
+        "--rename-chr-file", dest="rename_chr_file", type="string",
+        help="mapping table between old and new chromosome names."
+        "TAB separated 2-column file.")
+
     parser.set_defaults(
         input_filename_contigs=False,
         filename_crop_gff=None,
         input_filename_agp=False,
         genome_file=None,
+        rename_chr_file=None,
         add_up_flank=None,
         add_down_flank=None,
         complement_groups=False,
@@ -531,6 +571,8 @@ def main(argv=None):
 
     contigs = None
     genome_fasta = None
+    chr_map = None
+
     if options.input_filename_contigs:
         contigs = Genomics.readContigSizes(
             IOTools.openFile(options.input_filename_contigs, "r"))
@@ -538,6 +580,18 @@ def main(argv=None):
     if options.genome_file:
         genome_fasta = IndexedFasta.IndexedFasta(options.genome_file)
         contigs = genome_fasta.getContigSizes()
+
+    if options.rename_chr_file:
+        chr_map = {}
+        with open(options.rename_chr_file, 'r') as filein:
+            reader = csv.reader(filein, delimiter='\t')
+            for row in reader:
+                if len(row) != 2:
+                    raise ValueError(
+                        "Mapping table must have exactly two columns")
+                chr_map[row[0]] = row[1]
+        if not len(chr_map.keys()) > 0:
+            raise ValueError("Empty mapping dictionnary")
 
     if options.assembly_report:
         df = pd.read_csv(options.assembly_report, comment="#",
@@ -835,6 +889,13 @@ def main(argv=None):
                    (sum(filtered_contigs.values()),
                     len(list(filtered_contigs.keys())),
                     str(filtered_contigs)))
+
+    elif options.method == "rename-chr":
+        if not chr_map:
+                raise ValueError("please supply mapping file")
+
+        for gff in renameChromosomes(gffs, chr_map):
+            options.stdout.write(str(gff) + "\n")
 
     else:
 

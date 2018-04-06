@@ -147,3 +147,9 @@ issue-347:
     outputs: [stdout]
     references: [issue347.out.bed]
     options: --method=merge --merge-by-name
+
+rename_chr_ensembl:
+    stdin: chip_peaks.bed
+    outputs: [stdout]
+    references: [ensembl_renamed_chr.gtf]
+    options: --method=rename-chr --rename-chr-file=%DIR%/ucsc2ensembl.txt
