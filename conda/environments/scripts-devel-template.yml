@@ -81,7 +81,6 @@ dependencies:
 # WARNING: gdc-client is Py2 only. Please install it on a separate conda env
 - bedtools
 - coreutils
-- gcc
 - grep
 - libpng
 - nomkl

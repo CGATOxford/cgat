@@ -460,7 +460,6 @@ done
 
 # Add these manually, as they are required but don't use the 'statement' variable to run them
 echo "- nomkl" >> ${TMP_DEPS}
-echo "- gcc" >> ${TMP_DEPS}
 echo "- zlib" >> ${TMP_DEPS}
 echo "- libpng" >> ${TMP_DEPS}
 

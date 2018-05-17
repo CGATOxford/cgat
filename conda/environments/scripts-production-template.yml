@@ -31,7 +31,6 @@ dependencies:
 # Misc dependencies
 - bedtools
 - coreutils
-- gcc
 - grep
 - libpng
 - nomkl

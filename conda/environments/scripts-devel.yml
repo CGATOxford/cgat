@@ -28,7 +28,6 @@ dependencies:
 - biopython=1.70
 - cython=0.27.3
 - future=0.16.0
-- gcc=4.8.5
 - ggplot=0.6.8
 - grep=2.14
 - jinja2=2.10

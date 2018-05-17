@@ -9,7 +9,6 @@ channels:
 dependencies:
 # system deps
 - nomkl
-- gcc
 - zlib
 - libpng
 # bioinformatics tools
