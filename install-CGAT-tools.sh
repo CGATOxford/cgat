@@ -215,14 +215,16 @@ MINICONDA=
 if [[ `uname` == "Linux" ]] ; then
 
    # Conda 4.4 breaks everything again!
-   #MINICONDA="Miniconda3-latest-Linux-x86_64.sh"
-   MINICONDA="Miniconda3-4.3.31-Linux-x86_64.sh"
+   # Conda 4.5 looks better
+   MINICONDA="Miniconda3-latest-Linux-x86_64.sh"
+   #MINICONDA="Miniconda3-4.3.31-Linux-x86_64.sh"
 
 elif [[ `uname` == "Darwin" ]] ; then
 
    # Conda 4.4 breaks everything again!
-   #MINICONDA="Miniconda3-latest-MacOSX-x86_64.sh"
-   MINICONDA="Miniconda3-4.3.31-MacOSX-x86_64.sh"
+   # Conda 4.5 looks better
+   MINICONDA="Miniconda3-latest-MacOSX-x86_64.sh"
+   #MINICONDA="Miniconda3-4.3.31-MacOSX-x86_64.sh"
 
 else
 
@@ -246,7 +248,10 @@ hash -r
 
 # install cgat environment
 log "updating conda environment"
-conda install --quiet --yes 'conda=4.3.33'
+# Conda 4.4 breaks everything again!
+# Conda 4.5 looks better
+#conda install --quiet --yes 'conda=4.3.33'
+conda update --all --yes
 conda info -a
 
 log "installing CGAT environment"
