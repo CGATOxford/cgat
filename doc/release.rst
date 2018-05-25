@@ -7,6 +7,17 @@ latest code can always be found in the code repository.
 Nevertheless, we occasionally prepare releases. Notes on
 each release are below.
 
+Release 0.3.3
+=============
+
+* Fix GO.py for dumping ensembl annotations for versions > 88 ; https://github.com/CGATOxford/cgat/pull/384 ; https://github.com/CGATOxford/cgat/pull/385 ; https://github.com/CGATOxford/cgat/pull/386
+* make sure we stick to conda 4.3 until a workaround is found for conda 4.4 ; https://github.com/CGATOxford/cgat/pull/387
+* bed2bed.py: new method rename-chr ; https://github.com/CGATOxford/cgat/pull/389
+* gff2gff.py: new method rename-chr ; https://github.com/CGATOxford/cgat/pull/390
+* put test_import.py and test_style.py back ; https://github.com/CGATOxford/cgat/pull/391
+* update conda from 4.3 to 4.5 (solving "CXXABI_1.3.9' not found" error ; https://github.com/ContinuumIO/anaconda-issues/issues/5191) ; https://github.com/CGATOxford/cgat/compare/beffc47c091b6...abfe82bcec1c7
+* added test for C/C++ compiler ; https://github.com/CGATOxford/cgat/pull/394
+
 Release 0.3.2
 =============
 
