@@ -623,12 +623,14 @@ test_compilers() {
 
 # clean up environment
 cleanup_env() {
+   set +e
    source deactivate >& /dev/null
    source deactivate >& /dev/null
    unset -f conda
    unset PYTHONPATH
    module purge >& /dev/null
    mymodule purge >& /dev/null
+   set -e
 }
 
 
