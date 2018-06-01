@@ -621,6 +621,17 @@ test_compilers() {
 }
 
 
+# clean up environment
+cleanup_env() {
+   source deactivate >& /dev/null
+   source deactivate >& /dev/null
+   unset -f conda
+   unset PYTHONPATH
+   module purge >& /dev/null
+   mymodule purge >& /dev/null
+}
+
+
 # function to display help message
 help_message() {
 echo
@@ -659,6 +670,7 @@ exit 1
 
 # the script starts here
 
+cleanup_env
 test_compilers
 
 if [[ $# -eq 0 ]] ; then
