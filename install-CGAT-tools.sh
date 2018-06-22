@@ -347,6 +347,9 @@ if [[ -z ${TRAVIS_INSTALL} ]] ; then
       # revert setup.py if downloaded with git
       [[ $CODE_DOWNLOAD_TYPE -ge 1 ]] && git checkout -- setup.py
 
+      # environment pinning
+      python scripts/conda.py
+
    fi # if INSTALL_DEVEL
 
    # check whether conda create went fine
