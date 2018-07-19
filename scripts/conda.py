@@ -26,6 +26,7 @@ def run_command(statement):
     process = subprocess.Popen(statement,
                                cwd=os.getcwd(),
                                shell=True,
+                               executable='/bin/bash',
                                stdin=subprocess.PIPE,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE,
