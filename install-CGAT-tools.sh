@@ -633,9 +633,9 @@ cleanup_env() {
    source deactivate >& /dev/null || true
    source deactivate >& /dev/null || true
    unset -f conda || true
+   unset PYTHONPATH || true
    # Next actions disabled. Please see:
    # https://github.com/cgat-developers/cgat-core/issues/44
-   #unset PYTHONPATH || true
    #module purge >& /dev/null || true
    #mymodule purge >& /dev/null || true
    set -e
