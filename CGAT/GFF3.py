@@ -21,7 +21,7 @@ class Entry(GTF.Entry):
 
     def parseInfo(self, attributes, line=None):
         ''' Parse the attributes line of an entry,
-        line parameter provided purely for backwards compatability'''
+        line parameter provided purely for backwards compatibility'''
 
         # remove comments
         attributes = attributes.split("#")[0]
